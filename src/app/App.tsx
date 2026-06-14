@@ -42,7 +42,9 @@ import { PlatformEssentials } from './components/PlatformEssentials';
 import { SchoolTeacherStylesView } from './components/SchoolTeacherStylesView';
 import { InstitutionRegistration } from './components/InstitutionRegistration';
 import { InstitutionDashboard } from './components/InstitutionDashboard';
+import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { runAccountMigration } from './utils/accountMigration';
+
 import { Button } from './components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
