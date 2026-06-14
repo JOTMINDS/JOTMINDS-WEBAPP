@@ -29,6 +29,9 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
+  const [otpToken, setOtpToken] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,30 +42,67 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
       const supabase = createClient();
 
       if (isLogin) {
-        // Sign in using Supabase client
-        console.log('[SupervisorAuth] Signing in with email:', email);
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (signInError) {
-          console.error('[SupervisorAuth] Sign in error:', signInError);
-          setError(signInError.message);
-          setLoading(false);
-          return;
+        let authData: any = null;
+        let authSession: any = null;
+
+        if (loginMethod === 'otp') {
+          if (!otpSent) {
+            console.log('[SupervisorAuth] Requesting OTP...');
+            const { error } = await supabase.auth.signInWithOtp({ email });
+            if (error) {
+              console.error('[SupervisorAuth] OTP request error:', error.message);
+              setError(error.message);
+            } else {
+              setOtpSent(true);
+              setError('');
+            }
+            setLoading(false);
+            return;
+          } else {
+            console.log('[SupervisorAuth] Verifying OTP...');
+            const { data, error } = await supabase.auth.verifyOtp({ email, token: otpToken, type: 'email' });
+            if (error) {
+              console.error('[SupervisorAuth] OTP verification error:', error.message);
+              setError(error.message);
+              setLoading(false);
+              return;
+            }
+            console.log('[SupervisorAuth] OTP verification successful');
+            authData = data.user;
+            authSession = data.session;
+          }
+        } else {
+          // Sign in using Supabase client
+          console.log('[SupervisorAuth] Signing in with email:', email);
+          const { data, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (signInError) {
+            console.error('[SupervisorAuth] Sign in error:', signInError);
+            setError(signInError.message);
+            setLoading(false);
+            return;
+          }
+          authData = data.user;
+          authSession = data.session;
         }
 
-        if (!data.session) {
+        if (!authSession) {
           console.error('[SupervisorAuth] No session returned after sign in');
           setError('Failed to create session. Please try again.');
           setLoading(false);
           return;
         }
 
-        console.log('[SupervisorAuth] Sign in successful, session created');
-        console.log('[SupervisorAuth] Access token:', data.session.access_token.substring(0, 30) + '...');
-        console.log('[SupervisorAuth] User ID:', data.user.id);
+        console.log('[SupervisorAuth] Login successful');
+        // Store auth token using the API utility
+        import('../utils/api').then(({ setAuthToken }) => {
+          setAuthToken(authSession.access_token);
+        });
+        
+        onLogin(authData?.user_metadata as any);
         
         // Fetch user profile from backend
         console.log('[SupervisorAuth] Fetching user profile from backend...');
@@ -246,36 +286,72 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                  />
-                  <Button
+              {isLogin && (
+                <div className="flex justify-between items-center mt-2 mb-2">
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-sm font-medium text-[#7B61FF] hover:text-[#5B7DB1] transition-colors"
+                    onClick={() => {
+                      setLoginMethod(loginMethod === 'password' ? 'otp' : 'password');
+                      setOtpSent(false);
+                      setError('');
+                    }}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span className="sr-only">
-                      {showPassword ? "Hide password" : "Show password"}
-                    </span>
-                  </Button>
+                    {loginMethod === 'password' ? 'Sign in with Email Code Instead' : 'Sign in with Password Instead'}
+                  </button>
                 </div>
-              </div>
+              )}
+
+              {loginMethod === 'password' || !isLogin ? (
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                otpSent && (
+                  <div className="space-y-2">
+                    <Label htmlFor="otpToken">6-Digit Code <span className="text-red-500">*</span></Label>
+                    <div className="relative">
+                      <Input
+                        id="otpToken"
+                        type="text"
+                        placeholder="123456"
+                        value={otpToken}
+                        onChange={(e) => setOtpToken(e.target.value)}
+                        required
+                        className="font-mono tracking-widest"
+                        maxLength={6}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enter the code sent to {email}
+                    </p>
+                  </div>
+                )
+              )}
 
               {!isLogin && (
                 <>
@@ -360,8 +436,10 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
                 </Alert>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {isLogin ? 'Login to Portal' : 'Register Organization'}
+              <Button type="submit" className="w-full" disabled={loading || (isLogin && loginMethod === 'otp' && otpSent && otpToken.length !== 6)}>
+                {loading ? 'Processing...' : (
+                  isLogin ? (loginMethod === 'otp' && !otpSent ? 'Send Code' : 'Login to Portal') : 'Register Organization'
+                )}
               </Button>
 
               <Button

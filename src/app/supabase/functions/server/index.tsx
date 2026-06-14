@@ -168,7 +168,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm email since email server isn't configured
+      email_confirm: false, // User must verify email before logging in
       user_metadata: { name, role, organizationName: finalOrgName, organizationType, industrySector, position, phone, school, educationLevel, dateOfBirth, organizationCode: finalOrgCode, hasConsented, consentType, consentDate }
     });
 

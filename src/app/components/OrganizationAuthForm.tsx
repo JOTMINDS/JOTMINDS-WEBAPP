@@ -207,6 +207,35 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
     try {
       const supabase = createClient();
       
+      if (loginOTPMode) {
+        if (!loginOTPSent) {
+          console.log('[OrganizationAuth] Requesting OTP...');
+          const { error } = await supabase.auth.signInWithOtp({ email });
+          if (error) {
+            console.error('[OrganizationAuth] OTP request error:', error.message);
+            setError(error.message);
+          } else {
+            setLoginOTPSent(true);
+            setError('');
+          }
+          setLoading(false);
+          return;
+        } else {
+          console.log('[OrganizationAuth] Verifying OTP...');
+          const { data, error } = await supabase.auth.verifyOtp({ email, token: loginOTP, type: 'email' });
+          if (error) {
+            console.error('[OrganizationAuth] OTP verification error:', error.message);
+            setError(error.message);
+            setLoading(false);
+            return;
+          }
+          console.log('[OrganizationAuth] OTP verification successful');
+          await finalizeLogin(data.session);
+          setLoading(false);
+          return;
+        }
+      }
+
       console.log('[OrganizationAuth] Signing in with email:', email);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -227,56 +256,13 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
         return;
       }
 
-      console.log('[OrganizationAuth] Password correct, holding session for OTP verification');
-      setPendingSession(data.session);
-      await sendLoginOTP(email);
+      console.log('[OrganizationAuth] Login successful');
+      await finalizeLogin(data.session);
     } catch (err: any) {
       console.error('[OrganizationAuth] Error:', err);
       setError(err.message || 'An error occurred. Please try again.');
       setLoading(false);
     }
-  };
-
-  const sendLoginOTP = async (targetEmail: string) => {
-    setLoading(true);
-    try {
-      const otp = generateOTP(targetEmail);
-      
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: targetEmail, otp })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send OTP email');
-      }
-
-      setLoginOTPSent(true);
-      setLoginOTPMode(true);
-      setError('');
-    } catch (err) {
-      console.error('Login OTP Send Error:', err);
-      // Fallback for local testing without edge function deployed
-      const otp = generateOTP(targetEmail);
-      setSimulatedLoginOTP(otp);
-      setLoginOTPSent(true);
-      setLoginOTPMode(true);
-      setError('Edge function not deployed. Check console or use simulated OTP.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyLoginOTP = async () => {
-    if (!verifyOTP(email, loginOTP)) {
-      setError('Incorrect verification code. Please try again.');
-      return;
-    }
-    
-    // OTP is valid! Proceed with login
-    setError('');
-    await finalizeLogin(pendingSession);
   };
 
   const finalizeLogin = async (session: any) => {
@@ -505,7 +491,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* LOGIN FORM */}
-              {isLogin && !loginOTPMode && (
+              {isLogin && (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="email">
@@ -525,103 +511,85 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password">
-                      Password <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="pl-10 pr-10 shadow-sm"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* LOGIN OTP VERIFICATION SCREEN */}
-              {isLogin && loginOTPMode && (
-                <div className="space-y-4">
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
-                    <div className="flex items-center gap-3 text-slate-800 mb-2">
-                      <Mail className="h-5 w-5 text-indigo-600" />
-                      <h3 className="font-medium">Verify Your Identity</h3>
-                    </div>
-                    <p className="text-sm text-slate-600">
-                      We've sent a 6-digit verification code to <strong>{email}</strong>.
-                      Please enter it below to complete your login.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="login-otp">Verification Code</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="login-otp"
-                        type="text"
-                        placeholder="123456"
-                        maxLength={6}
-                        value={loginOTP}
-                        onChange={(e) => setLoginOTP(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="font-mono tracking-widest text-center text-lg h-12 shadow-sm"
-                      />
-                    </div>
-                    {simulatedLoginOTP && (
-                      <p className="text-xs text-orange-500 mt-1">
-                        Dev Mode Simulated OTP: {simulatedLoginOTP}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setLoginOTPMode(false)}
-                      className="w-full"
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      type="button" 
-                      className="w-full bg-[#18181b] hover:bg-[#18181b]/90" 
-                      onClick={verifyLoginOTP}
-                      disabled={loading || loginOTP.length !== 6}
-                    >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify Login'}
-                    </Button>
-                  </div>
-                  
-                  <div className="text-center mt-4">
+                  <div className="flex justify-between items-center mt-2 mb-2">
                     <button
                       type="button"
-                      onClick={() => sendLoginOTP(email)}
-                      className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline"
+                      className="text-sm font-medium text-[#18181b] hover:text-[#18181b]/80 transition-colors"
+                      onClick={() => {
+                        setLoginOTPMode(!loginOTPMode);
+                        setLoginOTPSent(false);
+                        setError('');
+                      }}
                     >
-                      Didn't receive the code? Send again
+                      {loginOTPMode ? 'Sign in with Password Instead' : 'Sign in with Email Code Instead'}
                     </button>
                   </div>
-                </div>
+
+                  {!loginOTPMode ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="password">
+                        Password <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="pl-10 pr-10 shadow-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    loginOTPSent && (
+                      <div className="space-y-4">
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+                          <div className="flex items-center gap-3 text-slate-800 mb-2">
+                            <Mail className="h-5 w-5 text-indigo-600" />
+                            <h3 className="font-medium">Verify Your Identity</h3>
+                          </div>
+                          <p className="text-sm text-slate-600">
+                            We've sent a 6-digit verification code to <strong>{email}</strong>.
+                            Please enter it below to complete your login.
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="login-otp">Verification Code <span className="text-red-500">*</span></Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="login-otp"
+                              type="text"
+                              placeholder="123456"
+                              maxLength={6}
+                              value={loginOTP}
+                              onChange={(e) => setLoginOTP(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                              required
+                              className="font-mono tracking-widest text-center text-lg h-12 shadow-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </>
               )}
 
               {/* REGISTRATION FORM - STEP 1: Email + Password */}
@@ -982,10 +950,10 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
               )}
 
               {/* Submit Button - For login and final registration step */}
-              {((isLogin && !loginOTPMode) || (!isLogin && registrationStep === 4)) && (
-                <Button type="submit" className="w-full" disabled={loading}>
+              {(isLogin || (!isLogin && registrationStep === 4)) && (
+                <Button type="submit" className="w-full" disabled={loading || (isLogin && loginOTPMode && loginOTPSent && loginOTP.length !== 6)}>
                   {loading ? 'Processing...' : (
-                    isLogin ? 'Login to Portal' : 'Register Organization'
+                    isLogin ? (loginOTPMode && !loginOTPSent ? 'Send Code' : 'Login to Portal') : 'Register Organization'
                   )}
                 </Button>
               )}

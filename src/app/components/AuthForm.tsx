@@ -26,6 +26,9 @@ interface AuthFormProps {
 
 export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
   const [isLogin, setIsLogin] = useState(true);
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
+  const [otpToken, setOtpToken] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [registrationStep, setRegistrationStep] = useState(1); // Step 1-4 for multi-step registration
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -251,8 +254,41 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         }
 
         console.log('[AuthForm] Not admin login, using Supabase...');
-        // Regular sign in through Supabase
         const supabase = createClient();
+        
+        if (loginMethod === 'otp') {
+          if (!otpSent) {
+            console.log('[AuthForm] Requesting OTP...');
+            const { error } = await supabase.auth.signInWithOtp({ email });
+            if (error) {
+              console.error('[AuthForm] OTP request error:', error.message);
+              setError(error.message);
+            } else {
+              setOtpSent(true);
+              setError('');
+            }
+            setLoading(false);
+            return;
+          } else {
+            console.log('[AuthForm] Verifying OTP...');
+            const { data, error } = await supabase.auth.verifyOtp({ email, token: otpToken, type: 'email' });
+            if (error) {
+              console.error('[AuthForm] OTP verification error:', error.message);
+              setError(error.message);
+              setLoading(false);
+              return;
+            }
+            console.log('[AuthForm] OTP verification successful');
+            if (data.session?.access_token) {
+              setAuthToken(data.session.access_token);
+              onLogin();
+            }
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Regular sign in through Supabase
         console.log('[AuthForm] Attempting Supabase signInWithPassword...');
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -507,49 +543,89 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password">
-                      Password <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="pl-10 pr-10 shadow-sm"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <span className="sr-only">
-                          {showPassword ? "Hide password" : "Show password"}
-                        </span>
-                      </Button>
-                    </div>
-                    <div className="text-right">
-                      <button
-                        type="button"
-                        className="text-sm text-[#7B61FF] hover:text-[#5B7DB1] underline transition-colors"
-                        onClick={onForgotPassword}
-                      >
-                        Forgot Password?
-                      </button>
-                    </div>
+                  <div className="flex justify-between items-center mt-2 mb-2">
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-[#7B61FF] hover:text-[#5B7DB1] transition-colors"
+                      onClick={() => {
+                        setLoginMethod(loginMethod === 'password' ? 'otp' : 'password');
+                        setOtpSent(false);
+                        setError('');
+                      }}
+                    >
+                      {loginMethod === 'password' ? 'Sign in with Email Code Instead' : 'Sign in with Password Instead'}
+                    </button>
                   </div>
+
+                  {loginMethod === 'password' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="password">
+                        Password <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="pl-10 pr-10 shadow-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <span className="sr-only">
+                            {showPassword ? "Hide password" : "Show password"}
+                          </span>
+                        </Button>
+                      </div>
+                      <div className="text-right">
+                        <button
+                          type="button"
+                          className="text-sm text-[#7B61FF] hover:text-[#5B7DB1] underline transition-colors"
+                          onClick={onForgotPassword}
+                        >
+                          Forgot Password?
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    otpSent && (
+                      <div className="space-y-2">
+                        <Label htmlFor="otpToken">
+                          6-Digit Code <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="otpToken"
+                            type="text"
+                            placeholder="123456"
+                            value={otpToken}
+                            onChange={(e) => setOtpToken(e.target.value)}
+                            required
+                            className="pl-10 shadow-sm font-mono tracking-widest"
+                            maxLength={6}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Enter the code sent to {email}
+                        </p>
+                      </div>
+                    )
+                  )}
                 </>
               )}
 
@@ -1097,14 +1173,14 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                       Back
                     </Button>
                   )}
-                  <Button type="submit" className="w-full py-6" disabled={loading || (!isLogin && signupOTP.length !== 6)}>
+                  <Button type="submit" className="w-full py-6" disabled={loading || (!isLogin && signupOTP.length !== 6) || (isLogin && loginMethod === 'otp' && otpSent && otpToken.length !== 6)}>
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {isLogin ? 'Logging in...' : 'Creating account...'}
+                        {isLogin ? 'Processing...' : 'Creating account...'}
                       </>
                     ) : (
-                      isLogin ? 'Login' : 'Complete Registration'
+                      isLogin ? (loginMethod === 'otp' && !otpSent ? 'Send Code' : 'Login') : 'Complete Registration'
                     )}
                   </Button>
                 </>
