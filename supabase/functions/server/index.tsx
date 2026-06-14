@@ -79,6 +79,9 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
         subject: 'Your JotMinds Verification Code',
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+            </div>
             <h2>Verification Code</h2>
             <p>Your OTP verification code is:</p>
             <div style="font-size: 24px; font-weight: bold; padding: 10px; background: #f4f4f5; text-align: center; letter-spacing: 4px; border-radius: 6px;">
@@ -124,6 +127,9 @@ app.post('/make-server-fc8eb847/send-login-alert', async (c) => {
         subject: 'New Login Detected to Your JotMinds Account',
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+            </div>
             <h2>New Login Detected</h2>
             <p>Hi ${name || 'there'},</p>
             <p>We noticed a new login to your JotMinds account.</p>
@@ -173,6 +179,9 @@ app.post('/make-server-fc8eb847/send-org-code', async (c) => {
         subject: `Welcome to JotMinds, ${organizationName}!`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+            </div>
             <h2>Account Created Successfully</h2>
             <p>Your organization <strong>${organizationName}</strong> has been registered on JotMinds.</p>
             <div style="background: #f4f4f5; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center;">
@@ -220,6 +229,9 @@ app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
         subject: `You've been invited to join ${institutionName} on JotMinds!`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+            </div>
             <h2>You're Invited!</h2>
             <p>You have been invited to join <strong>${institutionName}</strong> as a teacher on JotMinds.</p>
             <p>To join, simply sign up for a Teacher account on JotMinds and enter the following institution code during registration:</p>
@@ -266,6 +278,9 @@ app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
         subject: `You've been added to ${teacherName}'s class on JotMinds!`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+            </div>
             <h2>Welcome to JotMinds!</h2>
             <p>Hi ${studentName || 'Student'},</p>
             <p>You have been added to <strong>${teacherName}</strong>'s class${schoolName ? ` at <strong>${schoolName}</strong>` : ''} on JotMinds.</p>
@@ -450,6 +465,9 @@ function generateWelcomeEmailHtml(name: string, role: string, email: string, org
           <!-- Header Banner -->
           <tr>
             <td style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); padding: 40px; text-align: center;">
+              <div style="text-align: center; margin-bottom: 15px;">
+                <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+              </div>
               <h1 style="color: #FFFFFF; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Welcome to JotMinds</h1>
               <p style="color: #E2E8F0; margin: 10px 0 0 0; font-size: 16px;">Discover How You Think and Learn</p>
             </td>
@@ -3086,6 +3104,9 @@ app.patch('/make-server-fc8eb847/organization/profile', async (c) => {
               subject: 'Institution Account Deactivated',
               html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                  <div style="margin-bottom: 20px;">
+                    <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+                  </div>
                   <h2 style="color: #e11d48;">Institution Account Deactivated</h2>
                   <p>Hello ${member.name || 'there'},</p>
                   <p>We are writing to inform you that your institution's account (<strong>${updatedOrg.name}</strong>) on JotMinds has been deactivated by the institution administrator.</p>
