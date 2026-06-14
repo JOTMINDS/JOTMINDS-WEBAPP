@@ -45,6 +45,8 @@ export function getAllUsers(): User[] {
   return safeParse<User[]>(STORAGE_KEYS.USERS, []);
 }
 
+import { syncUserToSupabase, deleteUserFromSupabase } from './supabaseSync';
+
 export function saveUser(user: User) {
   const users = getAllUsers();
   const index = users.findIndex(u => u.id === user.id);
@@ -54,13 +56,20 @@ export function saveUser(user: User) {
     users.push(user);
   }
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  
+  // Async background sync to Supabase
+  syncUserToSupabase(user);
 }
 
 export function deleteUser(userId: string) {
   const users = getAllUsers();
   const filteredUsers = users.filter(u => u.id !== userId);
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(filteredUsers));
+  
+  // Async background sync to Supabase
+  deleteUserFromSupabase(userId);
 }
+
 
 export function findUserByEmail(email: string): User | undefined {
   const users = getAllUsers();
@@ -239,10 +248,15 @@ export function getAllAssessments(): Assessment[] {
   return safeParse<Assessment[]>(STORAGE_KEYS.ASSESSMENTS, []);
 }
 
+import { syncAssessmentToSupabase } from './supabaseSync';
+
 export function saveAssessment(assessment: Assessment) {
   const assessments = getAllAssessments();
   assessments.push(assessment);
   localStorage.setItem(STORAGE_KEYS.ASSESSMENTS, JSON.stringify(assessments));
+  
+  // Async background sync to Supabase
+  syncAssessmentToSupabase(assessment);
 }
 
 export function getUserAssessments(userId: string): Assessment[] {

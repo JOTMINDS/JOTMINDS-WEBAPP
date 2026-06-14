@@ -97,10 +97,13 @@ function AppContent() {
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Set document title + run one-time account migrations
+  // Set document title + run one-time account migrations + sync users
   useEffect(() => {
     document.title = 'JotMinds - Discover How You Think';
     runAccountMigration();
+    import('./utils/supabaseSync').then(({ syncAllUsersFromSupabase }) => {
+      syncAllUsersFromSupabase();
+    }).catch(console.error);
   }, []);
 
   useEffect(() => {
