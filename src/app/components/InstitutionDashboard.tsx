@@ -20,7 +20,7 @@ import {
   Institution, InstitutionMember, InstitutionType,
   addMember, approveMember, rejectMember, transferMember, inviteTeacher, validateInstitutionCode
 } from '../utils/institution';
-import { getAllUsers } from '../utils/storage';
+import { getAllUsers, saveUser } from '../utils/storage';
 import { projectId } from '../utils/supabase/info';
 import { TeachingStyleAssessment } from './TeachingStyleAssessment';
 import { SchoolAnalyticsDashboard } from './SchoolAnalyticsDashboard';
@@ -247,7 +247,9 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
     // Clear user organization so they don't auto-sync back
     const userToUpdate = allPlatformUsers.find(u => u.id === userId);
     if (userToUpdate) {
-      updateUser(userId, { organizationName: undefined, organizationCode: undefined });
+      userToUpdate.organizationName = undefined;
+      userToUpdate.organizationCode = undefined;
+      saveUser(userToUpdate);
     }
     
     removeMember(institution.id, userId);
@@ -316,10 +318,9 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
       // Update the user's profile to reflect the new organization
       const userToUpdate = allPlatformUsers.find(u => u.id === transferTargetId);
       if (userToUpdate) {
-        updateUser(transferTargetId, { 
-          organizationName: val.institution?.name, 
-          organizationCode: val.institution?.code 
-        });
+        userToUpdate.organizationName = val.institution?.name;
+        userToUpdate.organizationCode = val.institution?.code;
+        saveUser(userToUpdate);
       }
       
       setTransferTargetId(null);
@@ -336,7 +337,8 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
     
     const userToUpdate = allPlatformUsers.find(u => u.id === studentTransferTargetId);
     if (userToUpdate) {
-      updateUser(studentTransferTargetId, { teacherId: selectedTeacherId });
+      userToUpdate.teacherId = selectedTeacherId;
+      saveUser(userToUpdate);
       setStudentTransferTargetId(null);
       setSelectedTeacherId('');
       setAllPlatformUsers(getAllUsers());

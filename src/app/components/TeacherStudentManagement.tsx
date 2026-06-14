@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
-import { getAllUsers, saveUser, getAssessmentsByUserId } from '../utils/storage';
+import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId } from '../utils/storage';
 import { projectId } from '../utils/supabase/info';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -92,15 +92,10 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
   };
 
   const handleRemove = (studentId: string) => {
-    if (!window.confirm('Are you sure you want to remove this student from your class?')) return;
-    const all = getAllUsers();
-    const existing = all.find(u => u.id === studentId);
-    if (existing) {
-      existing.teacherId = undefined; // Unlink
-      saveUser(existing);
-      toast.success('Student removed from class.');
-      loadStudents();
-    }
+    if (!window.confirm('Are you sure you want to completely delete this student account? This action cannot be undone.')) return;
+    deleteUser(studentId);
+    toast.success('Student account deleted.');
+    loadStudents();
   };
 
   const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

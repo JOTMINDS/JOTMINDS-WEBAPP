@@ -1,6 +1,6 @@
 interface TeacherTabBarProps {
-  activeTab: 'overview' | 'individual' | 'my-style';
-  onTabChange: (tab: 'overview' | 'individual' | 'my-style') => void;
+  activeTab: 'overview' | 'individual' | 'my-style' | 'manage-class';
+  onTabChange: (tab: 'overview' | 'individual' | 'my-style' | 'manage-class') => void;
 }
 
 export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
@@ -42,6 +42,18 @@ export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
           `}
         >
           My Teaching Style
+        </button>
+        <button
+          onClick={() => onTabChange('manage-class')}
+          className={`
+            px-4 py-2 rounded-full text-[14px] font-semibold transition-all duration-200 whitespace-nowrap
+            ${activeTab === 'manage-class'
+              ? 'bg-white text-foreground shadow-sm'
+              : 'bg-transparent text-muted-foreground hover:text-foreground'
+            }
+          `}
+        >
+          Manage Class
         </button>
       </div>
     </div>

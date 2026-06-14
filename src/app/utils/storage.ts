@@ -56,6 +56,12 @@ export function saveUser(user: User) {
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
 }
 
+export function deleteUser(userId: string) {
+  const users = getAllUsers();
+  const filteredUsers = users.filter(u => u.id !== userId);
+  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(filteredUsers));
+}
+
 export function findUserByEmail(email: string): User | undefined {
   const users = getAllUsers();
   return users.find(u => u.email === email);

@@ -17,6 +17,7 @@ import {
 } from './teacher';
 import { TeachingStyleAssessment } from './TeachingStyleAssessment';
 import { TeachingStyleResults } from './TeachingStyleResults';
+import { TeacherStudentManagement } from './TeacherStudentManagement';
 import { calculateTeachingStyleScore } from '../utils/teachingStyleScoring';
 import { getUserJotsCode } from '../utils/jotsCode';
 import { AdultThinkingContainer } from './AdultThinkingContainer';
@@ -39,7 +40,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style'>('individual');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'manage-class'>('individual');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -505,6 +506,12 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 </button>
              </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'manage-class' && (
+        <div className="max-w-4xl mx-auto p-4 lg:p-6 space-y-8">
+          <TeacherStudentManagement teacher={user} />
         </div>
       )}
     </div>
