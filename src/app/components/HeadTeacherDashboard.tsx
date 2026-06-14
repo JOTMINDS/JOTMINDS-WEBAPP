@@ -30,6 +30,7 @@ import {
   type TeacherPerformance,
   type ClassMetrics,
 } from '../utils/schoolAnalytics';
+import { getSchoolRosterAPI } from '../utils/api';
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { SchoolTeacherStylesView } from './SchoolTeacherStylesView';
 import { getUserJotsCode } from '../utils/jotsCode';
@@ -61,25 +62,63 @@ interface Props {
   onViewSettings?: () => void;
 }
 
-export function HeadTeacherDashboard({ schoolId, schoolName, students, teachers, classes, onBack, user, onViewInstitutionDashboard, onViewSettings }: Props) {
+export function HeadTeacherDashboard({ schoolId, schoolName, students: initialStudents, teachers: initialTeachers, classes: initialClasses, onBack, user, onViewInstitutionDashboard, onViewSettings }: Props) {
   const [metrics, setMetrics] = useState<SchoolMetrics | null>(null);
   const [insights, setInsights] = useState<SchoolInsight[]>([]);
   const [teacherPerformances, setTeacherPerformances] = useState<TeacherPerformance[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [showTeacherStyles, setShowTeacherStyles] = useState(false);
 
+  const [students, setStudents] = useState(initialStudents || []);
+  const [teachers, setTeachers] = useState(initialTeachers || []);
+  const [classes, setClasses] = useState(initialClasses || []);
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     loadSchoolData();
   }, [schoolId]);
 
-  const loadSchoolData = () => {
-    const schoolMetrics = calculateSchoolMetrics(schoolId, schoolName, students, teachers, classes);
-    const schoolInsights = generateSchoolInsights(schoolMetrics);
+  const loadSchoolData = async () => {
+    setIsLoading(true);
+    try {
+      if (initialStudents.length === 0) {
+        const response = await getSchoolRosterAPI();
+        if (response && response.success) {
+          setStudents(response.students || []);
+          setTeachers(response.teachers || []);
+          // Generate pseudo-classes if none exist from the backend
+          if (!response.classes || response.classes.length === 0) {
+             const mappedClasses = (response.teachers || []).map((t: any) => ({
+               id: `class-${t.id}`,
+               name: `${t.name}'s Class`,
+               grade: 'Unknown',
+               teacherId: t.id
+             }));
+             setClasses(mappedClasses);
+          } else {
+             setClasses(response.classes);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load school roster', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    // Calculate class metrics for teacher performance
-    const classMetrics: ClassMetrics[] = classes.map(cls => {
-      const classStudents = students.filter(s => s.grade === cls.grade);
-      const teacher = teachers.find(t => t.id === cls.teacherId);
+  useEffect(() => {
+    if (students.length > 0) {
+      const schoolMetrics = calculateSchoolMetrics(schoolId, schoolName, students, teachers, classes);
+      const schoolInsights = generateSchoolInsights(schoolMetrics);
+      
+      setMetrics(schoolMetrics);
+      setInsights(schoolInsights);
+
+      // Calculate class metrics for teacher performance
+      const classMetrics: ClassMetrics[] = classes.map(cls => {
+        const classStudents = students.filter(s => s.grade === cls.grade);
+        const teacher = teachers.find(t => t.id === cls.teacherId);
 
       return {
         classId: cls.id,
@@ -98,16 +137,15 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students, teachers,
       };
     });
 
-    const performances = teachers.map(teacher =>
-      calculateTeacherPerformance(teacher.id, teacher.name, classMetrics)
-    );
+      const performances = teachers.map(teacher =>
+        calculateTeacherPerformance(teacher.id, teacher.name, classMetrics)
+      );
 
-    setMetrics(schoolMetrics);
-    setInsights(schoolInsights);
-    setTeacherPerformances(performances);
-  };
+      setTeacherPerformances(performances);
+    }
+  }, [students, teachers, classes, schoolId, schoolName]);
 
-  if (!metrics) {
+  if (isLoading || !metrics) {
     return <div className="p-8 text-center">Loading school analytics...</div>;
   }
 

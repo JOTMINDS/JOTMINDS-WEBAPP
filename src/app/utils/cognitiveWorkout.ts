@@ -643,9 +643,11 @@ function updateWorkoutStreak(userId: string): void {
 }
 
 // Helper functions
+import { getGamificationProfile } from './gamification';
+
 function getUserLevel(userId: string): number {
-  // TODO: Get from gamification or profile system
-  return 1;
+  const profile = getGamificationProfile(userId);
+  return profile.level || 1;
 }
 
 // Generate daily workout

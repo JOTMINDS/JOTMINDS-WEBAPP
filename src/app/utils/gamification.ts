@@ -781,10 +781,36 @@ export function getGamificationProfile(userId: string): GamificationProfile {
   return profile;
 }
 
+import { updateGamificationProfileAPI, getGamificationProfileAPI } from './api';
+
+// Sync gamification profile from the API
+export async function syncGamificationProfile(userId: string): Promise<void> {
+  try {
+    const response = await getGamificationProfileAPI(userId);
+    if (response && response.success && response.profile) {
+      const serverProfile = response.profile;
+      
+      // Merge logic: ensure missing fields are populated
+      if (!serverProfile.dailyChallenges) serverProfile.dailyChallenges = generateDailyChallenges();
+      if (!serverProfile.weekChallenges) serverProfile.weekChallenges = generateWeeklyChallenges();
+      
+      localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(serverProfile));
+      console.log('[Gamification] Profile synced from server');
+    }
+  } catch (error) {
+    console.error('[Gamification] Failed to sync profile from server', error);
+  }
+}
+
 // Save gamification profile
 export function saveGamificationProfile(profile: GamificationProfile): void {
   profile.updatedAt = new Date().toISOString();
   localStorage.setItem(`${STORAGE_KEY}_${profile.userId}`, JSON.stringify(profile));
+  
+  // Fire and forget push to backend
+  updateGamificationProfileAPI(profile).catch(err => {
+    console.error('[Gamification] Failed to push profile to server', err);
+  });
 }
 
 // Add XP and check for level up
@@ -912,10 +938,18 @@ function checkForNewBadges(profile: GamificationProfile): Badge[] {
       earned = true;
     }
 
-    // Time-based badges (these need additional tracking)
-    if (badge.id === 'early_bird' || badge.id === 'night_owl' || badge.id === 'weekend_warrior') {
-      // TODO: Implement time-based tracking
-      earned = false;
+    // Time-based badges
+    if (badge.id === 'early_bird') {
+      const hour = new Date().getHours();
+      if (hour < 8) earned = true;
+    }
+    if (badge.id === 'night_owl') {
+      const hour = new Date().getHours();
+      if (hour >= 22 || hour < 4) earned = true;
+    }
+    if (badge.id === 'weekend_warrior') {
+      const day = new Date().getDay();
+      if (day === 0 || day === 6) earned = true;
     }
 
     // Activity duration badges

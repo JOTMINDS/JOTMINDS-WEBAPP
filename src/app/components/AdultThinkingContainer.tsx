@@ -4,6 +4,7 @@ import { AdultThinkingResults } from './AdultThinkingResults';
 import { AdultResults } from '../utils/adultScoring';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getAuthToken } from '../utils/api';
+import { createShareLink } from '../utils/cognitiveProfileApi';
 
 interface AdultThinkingContainerProps {
   userId: string;
@@ -68,8 +69,24 @@ export function AdultThinkingContainer({
   };
 
   const handleShareResults = async () => {
-    // TODO: Implement results sharing functionality
-    alert('Share functionality coming soon! Your results have been saved.');
+    try {
+      const { shareToken } = await createShareLink();
+      const shareUrl = `${window.location.origin}/shared/${shareToken}`;
+      
+      if (navigator.share) {
+        await navigator.share({
+          title: 'My Professional Cognitive Profile',
+          text: `Check out my JotMinds cognitive profile! I'm a ${results.archetype}.`,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Share link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing profile:', error);
+      alert('Failed to generate share link. Please try again.');
+    }
   };
 
   const handleReturnToDashboard = () => {

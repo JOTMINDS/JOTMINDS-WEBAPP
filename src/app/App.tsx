@@ -33,6 +33,7 @@ import { EngagementDashboard } from './components/EngagementDashboard';
 import { ProfileImprovementTracker } from './components/ProfileImprovementTracker';
 import { NudgesPanel } from './components/NudgesPanel';
 import { CognitiveWorkoutDashboard } from './components/CognitiveWorkoutDashboard';
+import { DailyChallengeRunner } from './components/DailyChallengeRunner';
 import { LessonViewer } from './components/LessonViewer';
 import { AILearningCoach } from './components/AILearningCoach';
 import { CognitiveGrowthDashboard } from './components/CognitiveGrowthDashboard';
@@ -44,6 +45,7 @@ import { InstitutionRegistration } from './components/InstitutionRegistration';
 import { InstitutionDashboard } from './components/InstitutionDashboard';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { runAccountMigration } from './utils/accountMigration';
+import { syncGamificationProfile } from './utils/gamification';
 
 import { Button } from './components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -179,6 +181,11 @@ function AppContent() {
   useEffect(() => {
     console.log('[App] useEffect - Checking user role:', user?.role, 'currentView:', currentView, 'impersonatedUser:', impersonatedUser?.id);
     
+    if (user) {
+      // Sync gamification profile when a user logs in
+      syncGamificationProfile(user.id);
+    }
+
     if (user?.role === 'admin' && (currentView === 'landing' || currentView === 'auth')) {
       console.log('[App] Admin detected, routing to admin panel');
       setCurrentView('admin');
@@ -611,8 +618,6 @@ function AppContent() {
       return user ? (
         <TeacherAnalyticsDashboard
           teacherId={user.id}
-          classId="class-001" // TODO: Get actual class ID
-          students={[]} // TODO: Get actual students
           onBack={handleBackToDashboard}
         />
       ) : null;
@@ -676,13 +681,12 @@ function AppContent() {
       ) : null;
 
     case 'daily-challenge':
-      // TODO: Create DailyChallengeRunner component
       return user ? (
-        <div className="min-h-screen bg-background p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Daily Challenge</h1>
-          <p className="text-muted-foreground mb-4">Challenge runner coming soon!</p>
-          <Button onClick={handleBackToDashboard}>Back to Dashboard</Button>
-        </div>
+        <DailyChallengeRunner
+          userId={user.id}
+          onBack={handleBackToDashboard}
+          onComplete={handleBackToDashboard}
+        />
       ) : null;
 
     case 'ai-coach':

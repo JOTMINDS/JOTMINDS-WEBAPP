@@ -28,30 +28,60 @@ import {
   type ClassroomDistribution,
   type ClassroomInsight,
 } from '../utils/teacherIntelligence';
+import { getStudentsForTeacher } from '../utils/api';
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 interface Props {
   teacherId: string;
-  classId: string;
-  students: StudentCognitiveProfile[];
+  classId?: string;
+  students?: StudentCognitiveProfile[];
   onBack: () => void;
 }
 
-export function TeacherAnalyticsDashboard({ teacherId, classId, students, onBack }: Props) {
+export function TeacherAnalyticsDashboard({ teacherId, classId, students: initialStudents, onBack }: Props) {
+  const [students, setStudents] = useState<StudentCognitiveProfile[]>(initialStudents || []);
   const [distribution, setDistribution] = useState<ClassroomDistribution | null>(null);
   const [insights, setInsights] = useState<ClassroomInsight[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<StudentCognitiveProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    analyzeData();
-  }, [students]);
+    fetchTeacherData();
+  }, [teacherId]);
 
-  const analyzeData = () => {
+  const fetchTeacherData = async () => {
     setLoading(true);
     try {
-      const dist = analyzeClassroom(students);
-      const classInsights = generateClassroomInsights(dist, students);
+      // Always fetch fresh data from backend
+      const response = await getStudentsForTeacher();
+      if (response.success && response.students) {
+        setStudents(response.students);
+        analyzeData(response.students);
+      } else {
+        analyzeData(initialStudents || []);
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      analyzeData(initialStudents || []);
+    }
+  };
+
+  const analyzeData = (studentList: StudentCognitiveProfile[]) => {
+    try {
+      if (studentList.length === 0) {
+        setDistribution({
+          totalStudents: 0,
+          learningStyles: { diverging: 0, assimilating: 0, converging: 0, accommodating: 0 },
+          thinkingStyles: { analytical: 0, creative: 0, practical: 0 },
+          distribution: { highPerformers: 0, midPerformers: 0, needsSupport: 0 },
+          averageScores: { analytical: 0, creative: 0, practical: 0, reflection: 0, intuition: 0, logic: 0 }
+        });
+        setInsights([]);
+        return;
+      }
+      
+      const dist = analyzeClassroom(studentList);
+      const classInsights = generateClassroomInsights(dist, studentList);
 
       setDistribution(dist);
       setInsights(classInsights);

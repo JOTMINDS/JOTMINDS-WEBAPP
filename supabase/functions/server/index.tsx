@@ -1710,6 +1710,60 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
   }
 });
 
+// Get school roster (students and teachers)
+app.get('/make-server-fc8eb847/school/roster', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+    const userProfile = await kv.get(`user:${user.id}`);
+    
+    // Check school-admin or admin role
+    if (userProfile?.role !== 'school-admin' && userProfile?.role !== 'admin' && userProfile?.role !== 'teacher' && user.id !== 'admin-001') {
+      return c.json({ error: 'Forbidden' }, 403);
+    }
+
+    const schoolName = userProfile?.school;
+    
+    if (!schoolName) {
+      return c.json({ success: true, students: [], teachers: [] });
+    }
+
+    console.log(`[Backend] Fetching roster for school: ${schoolName}`);
+
+    const allUsers = await kv.getByPrefix('user:');
+    
+    const rosterUsers = allUsers.filter((u: any) => 
+      u.school && u.school.toLowerCase().trim() === schoolName.toLowerCase().trim()
+    );
+
+    const students = rosterUsers.filter((u: any) => u.role === 'student').map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      learningStyle: s.learningStyle || 'Unknown',
+      thinkingStyle: s.thinkingStyle || 'Unknown',
+      strengths: s.strengths || [],
+      areasForImprovement: s.areasForImprovement || [],
+      recentScores: s.recentScores || {
+        analytical: 70, creative: 70, practical: 70, reflection: 70, intuition: 70, logic: 70
+      },
+      lastAssessmentDate: s.lastAssessmentDate || s.createdAt || new Date().toISOString()
+    }));
+
+    const teachers = rosterUsers.filter((u: any) => u.role === 'teacher').map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      subjects: t.subjects || [],
+      classes: t.classes || []
+    }));
+
+    return c.json({ success: true, students, teachers });
+  } catch (error) {
+    console.error('[Backend] Error fetching school roster:', error);
+    return c.json({ error: 'Failed to fetch school roster' }, 500);
+  }
+});
+
 // ============= ACCESS REQUEST ROUTES =============
 
 // Create access request (parent requests access to child's data)
@@ -3541,7 +3595,58 @@ app.post('/make-server-fc8eb847/send-email', async (c) => {
   }
 });
 
+// Gamification Profile Endpoints
+app.get('/make-server-fc8eb847/gamification/:userId', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+    
+    const targetUserId = c.req.param('userId');
+    // Basic auth check
+    if (user.id !== targetUserId && user.id !== 'admin-001' && user.role !== 'admin') {
+      const userProfile = await kv.get(`user:${user.id}`);
+      let isAuthorized = false;
+      if (userProfile?.role === 'parent' && userProfile.linkedChildren?.includes(targetUserId)) {
+        isAuthorized = true;
+      } else if (userProfile?.role === 'teacher') {
+        isAuthorized = true; // Simplified for teacher access
+      }
+      
+      if (!isAuthorized) {
+        return c.json({ error: 'Forbidden' }, 403);
+      }
+    }
 
+    const profile = await kv.get(`gamification:${targetUserId}`);
+    return c.json({ success: true, profile: profile || null });
+  } catch (error) {
+    console.error('[Gamification] Error fetching profile:', error);
+    return c.json({ error: 'Failed to fetch gamification profile' }, 500);
+  }
+});
+
+app.post('/make-server-fc8eb847/gamification/update', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+    
+    const { profile } = await c.req.json();
+    if (!profile || !profile.userId) {
+      return c.json({ error: 'Missing profile data' }, 400);
+    }
+
+    const userObj = await kv.get(`user:${user.id}`);
+    if (user.id !== profile.userId && user.id !== 'admin-001' && userObj?.role !== 'admin') {
+      return c.json({ error: 'Forbidden' }, 403);
+    }
+
+    await kv.set(`gamification:${profile.userId}`, profile);
+    return c.json({ success: true, profile });
+  } catch (error) {
+    console.error('[Gamification] Error updating profile:', error);
+    return c.json({ error: 'Failed to update gamification profile' }, 500);
+  }
+});
 Deno.serve((req) => {
   const url = new URL(req.url);
   if (url.pathname.startsWith('/server/')) {

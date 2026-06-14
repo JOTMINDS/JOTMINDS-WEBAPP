@@ -248,6 +248,17 @@ export const getAllAssessmentResults = async () => {
   return makeRequest('/assessment/results');
 };
 
+export const getGamificationProfileAPI = async (userId: string) => {
+  return makeRequest(`/gamification/${userId}`);
+};
+
+export const updateGamificationProfileAPI = async (profile: any) => {
+  return makeRequest('/gamification/update', {
+    method: 'POST',
+    body: JSON.stringify({ profile }),
+  });
+};
+
 export const saveCognitiveProfile = async (profile: any) => {
   return makeRequest('/cognitive-profile', {
     method: 'POST',
@@ -293,6 +304,10 @@ export const assignInstitutionAdmin = async (email: string) => {
 
 export const getStudentsForTeacher = async () => {
   return makeRequest('/teacher/students');
+};
+
+export const getSchoolRosterAPI = async () => {
+  return makeRequest('/school/roster');
 };
 
 export const getSupervisedEmployees = async (supervisorId?: string) => {

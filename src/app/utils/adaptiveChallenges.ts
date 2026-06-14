@@ -402,6 +402,8 @@ const UNLOCKABLE_LEVELS: UnlockableLevel[] = [
   }
 ];
 
+import { getGamificationProfile } from './gamification';
+
 export function getUnlockableLevels(userId: string): UnlockableLevel[] {
   const challenges = getUserChallenges(userId);
   const completedCount = challenges.filter(c => c.completedAt).length;
@@ -414,8 +416,8 @@ export function getUnlockableLevels(userId: string): UnlockableLevel[] {
     ? recentChallenges.reduce((sum, p) => sum + p.performance.accuracy, 0) / recentChallenges.length
     : 0;
 
-  // TODO: Get actual streak from workout system
-  const streak = 0;
+  const gamificationProfile = getGamificationProfile(userId);
+  const streak = gamificationProfile.currentStreak || 0;
 
   return UNLOCKABLE_LEVELS.map(level => {
     let unlocked = level.unlocked;

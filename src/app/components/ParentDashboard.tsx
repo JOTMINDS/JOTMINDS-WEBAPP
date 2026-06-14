@@ -17,7 +17,6 @@ import { User, Assessment, UserRole, AccessRequest, ParentObservationAssessment 
 import { 
   getAllUsers, 
   getUserAssessments, 
-  getLinkedChildren,
   saveUser,
   getParentObservationsByParent,
   hasChildGrantedAccess
@@ -105,29 +104,9 @@ export function ParentDashboard({ user, onLogout }: ParentDashboardProps) {
       console.error('[ParentDashboard] Error loading children data:', error);
       toast.error('Failed to load children data from backend. Please try again.');
       
-      // Fallback to localStorage
-      console.log('[ParentDashboard] Attempting localStorage fallback...');
-      try {
-        const localChildren = getLinkedChildren(user.id);
-        if (localChildren.length > 0) {
-          setChildren(localChildren);
-          const dataMap = new Map();
-          localChildren.forEach(child => {
-            const assessments = getUserAssessments(child.id);
-            dataMap.set(child.id, assessments);
-          });
-          setChildrenData(dataMap);
-          toast.info(`Showing ${localChildren.length} cached ${localChildren.length === 1 ? 'child' : 'children'}`);
-          console.log(`[ParentDashboard] Loaded ${localChildren.length} children from localStorage fallback`);
-        } else {
-          setChildren([]);
-          setChildrenData(new Map());
-        }
-      } catch (fallbackError) {
-        console.error('[ParentDashboard] localStorage fallback also failed:', fallbackError);
-        setChildren([]);
-        setChildrenData(new Map());
-      }
+      // Remove localStorage fallback to strictly use backend
+      setChildren([]);
+      setChildrenData(new Map());
     } finally {
       setLoading(false);
       setIsRefreshing(false);
