@@ -1,0 +1,769 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #2C2E83;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #e0f8fb;
+  --accent-foreground: #0c4a6e;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --input-background: #ffffff;
+  --switch-background: #cbd5e1;
+  --font-weight-medium: 600;
+  --font-weight-normal: 400;
+  --ring: #2C2E83;
+  --chart-1: #1FC8E1;
+  --chart-2: #7B61FF;
+  --chart-3: #FF715B;
+  --chart-4: #2C2E83;
+  --chart-5: #6366f1;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #2C2E83;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #2C2E83;
+  
+  /* JotMinds Brand Colors */
+  --jotminds-indigo: #2C2E83;
+  --jotminds-aqua: #1FC8E1;
+  --jotminds-coral: #FF715B;
+  --jotminds-violet: #7B61FF;
+  
+  /* Typography tokens for ages 11-14 */
+  --line-length-max: 60ch; /* 50-60 character limit for readability */
+  
+  /* Design System Tokens - Standardized values */
+  
+  /* Spacing Scale */
+  --spacing-xs: 0.25rem;   /* 4px */
+  --spacing-sm: 0.5rem;    /* 8px */
+  --spacing-md: 0.75rem;   /* 12px */
+  --spacing-lg: 1rem;      /* 16px */
+  --spacing-xl: 1.5rem;    /* 24px */
+  --spacing-2xl: 2rem;     /* 32px */
+  --spacing-3xl: 3rem;     /* 48px */
+  
+  /* Card Padding Standard */
+  --card-padding: 1rem;    /* 16px - Standard card padding */
+  --card-padding-lg: 1.5rem; /* 24px - Large card padding */
+  --card-padding-sm: 0.75rem; /* 12px - Small card padding */
+  
+  /* Border Radius Scale */
+  --radius-sm: 0.5rem;     /* 8px - Buttons, inputs */
+  --radius-md: 0.75rem;    /* 12px - Cards */
+  --radius-lg: 1rem;       /* 16px - Modals */
+  --radius-xl: 1.5rem;     /* 24px - Large containers */
+  --radius-full: 9999px;   /* Fully rounded */
+  
+  /* Shadow Scale - Consistent elevation */
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-large: 0 10px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+  
+  /* Component Heights */
+  --height-button-sm: 2.25rem;  /* 36px */
+  --height-button: 2.5rem;      /* 40px */
+  --height-button-lg: 3rem;     /* 48px */
+  --height-input: 2.5rem;       /* 40px */
+  --height-input-lg: 3rem;      /* 48px */
+  
+  /* Line Height Standards */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  
+  /* Transition Standards */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+
+    label {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Enhanced UI Utilities - JotMinds Brand */
+@layer utilities {
+  /* Typography utilities for ages 11-14 */
+  .readable-width {
+    max-width: var(--line-length-max);
+  }
+  
+  .text-readable {
+    font-size: var(--text-base); /* 16px */
+    line-height: 1.6;
+    max-width: var(--line-length-max);
+  }
+  
+  /* JotMinds Brand Gradients */
+  .gradient-primary {
+    background: linear-gradient(135deg, #1FC8E1 0%, #7B61FF 100%);
+  }
+  
+  .gradient-indigo-coral {
+    background: linear-gradient(135deg, #2C2E83 0%, #FF715B 100%);
+  }
+  
+  .gradient-aqua-violet {
+    background: linear-gradient(135deg, #1FC8E1 0%, #7B61FF 100%);
+  }
+  
+  .gradient-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+  
+  .gradient-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+  
+  .gradient-purple {
+    background: linear-gradient(135deg, #7B61FF 0%, #2C2E83 100%);
+  }
+  
+  .gradient-jotminds {
+    background: linear-gradient(135deg, #1FC8E1 0%, #7B61FF 50%, #2C2E83 100%);
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  /* Scrollbar utilities */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .shadow-large {
+    box-shadow: var(--shadow-large);
+  }
+  
+  .shadow-hover {
+    box-shadow: var(--shadow-hover);
+  }
+  
+  /* Standardized card padding utilities */
+  .card-padding {
+    padding: var(--card-padding);
+  }
+  
+  .card-padding-lg {
+    padding: var(--card-padding-lg);
+  }
+  
+  .card-padding-sm {
+    padding: var(--card-padding-sm);
+  }
+}
+
+/* Dark mode enhancements */
+.dark .glass-card {
+  background: rgba(30, 41, 59, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* ============================================
+   PRINT STYLESHEET - Clean PDF Generation
+   ============================================ */
+
+@media print {
+  /* ===== PAGE SETUP ===== */
+  @page {
+    size: A4;
+    margin: 1.5cm 2cm;
+  }
+  
+  /* ===== RESET & BASE STYLES ===== */
+  * {
+    /* Force white background, black text for ink savings */
+    background: white !important;
+    color: black !important;
+    /* Remove all shadows and borders for cleaner print */
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  body {
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    background: white !important;
+    color: black !important;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* ===== HIDE INTERACTIVE ELEMENTS ===== */
+  /* These don't work on paper, so hide them */
+  .no-print,
+  button:not(.print-show),
+  nav,
+  header:not(.print-show),
+  footer:not(.print-show),
+  .navbar,
+  .sidebar,
+  [role="navigation"],
+  [aria-label*="navigation"],
+  .share-button,
+  .download-button,
+  .back-button,
+  textarea,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  .feedback-prompt,
+  .toast,
+  .modal,
+  .dialog,
+  .popover,
+  .tooltip,
+  .dropdown,
+  .menu,
+  video,
+  iframe:not(.print-show) {
+    display: none !important;
+  }
+  
+  /* ===== TYPOGRAPHY ===== */
+  h1 {
+    font-size: 20pt !important;
+    font-weight: bold !important;
+    margin-top: 0 !important;
+    margin-bottom: 12pt !important;
+    page-break-after: avoid !important;
+  }
+  
+  h2 {
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    margin-top: 18pt !important;
+    margin-bottom: 10pt !important;
+    page-break-after: avoid !important;
+  }
+  
+  h3 {
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    margin-top: 14pt !important;
+    margin-bottom: 8pt !important;
+    page-break-after: avoid !important;
+  }
+  
+  h4 {
+    font-size: 12pt !important;
+    font-weight: bold !important;
+    margin-top: 12pt !important;
+    margin-bottom: 6pt !important;
+    page-break-after: avoid !important;
+  }
+  
+  p {
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    margin-bottom: 8pt !important;
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+  
+  ul, ol {
+    margin-bottom: 8pt !important;
+  }
+  
+  li {
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    margin-bottom: 4pt !important;
+  }
+  
+  /* ===== LINKS ===== */
+  a {
+    color: black !important;
+    text-decoration: underline !important;
+  }
+  
+  /* Show URLs for important links */
+  a.print-show-url::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #666 !important;
+  }
+  
+  /* ===== PAGE BREAKS ===== */
+  /* Smart page breaks to avoid awkward splits */
+  .page-break-before {
+    page-break-before: always !important;
+  }
+  
+  .page-break-after {
+    page-break-after: always !important;
+  }
+  
+  .page-break-avoid {
+    page-break-inside: avoid !important;
+  }
+  
+  /* Avoid breaking these elements */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  
+  img, svg, figure, table, pre, blockquote {
+    page-break-inside: avoid !important;
+  }
+  
+  /* ===== LAYOUT ADJUSTMENTS ===== */
+  .container,
+  .max-w-4xl,
+  .max-w-3xl,
+  .max-w-2xl {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Remove gradients and fancy backgrounds */
+  .bg-gradient-to-br,
+  .bg-gradient-to-r,
+  .gradient-primary,
+  .gradient-aqua-violet,
+  .gradient-jotminds {
+    background: white !important;
+  }
+  
+  /* ===== CARDS & CONTAINERS ===== */
+  .card,
+  [class*="Card"] {
+    border: 1px solid #ddd !important;
+    border-radius: 0 !important;
+    margin-bottom: 12pt !important;
+    padding: 12pt !important;
+    page-break-inside: avoid !important;
+  }
+  
+  /* ===== BADGES & LABELS ===== */
+  .badge,
+  [class*="Badge"] {
+    border: 1px solid #333 !important;
+    padding: 2pt 6pt !important;
+    border-radius: 0 !important;
+    display: inline-block !important;
+    font-size: 9pt !important;
+    font-weight: bold !important;
+  }
+  
+  /* ===== CHARTS & VISUALIZATIONS ===== */
+  /* Optimize charts for black & white printing */
+  svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  /* Make chart lines thicker for visibility */
+  svg path,
+  svg line {
+    stroke-width: 2px !important;
+    stroke: black !important;
+  }
+  
+  svg text {
+    fill: black !important;
+    font-size: 10pt !important;
+  }
+  
+  /* Chart containers */
+  .recharts-wrapper,
+  .recharts-surface {
+    background: white !important;
+  }
+  
+  /* ===== TABLES ===== */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 12pt !important;
+    page-break-inside: avoid !important;
+  }
+  
+  th, td {
+    border: 1px solid #333 !important;
+    padding: 6pt !important;
+    text-align: left !important;
+    font-size: 10pt !important;
+  }
+  
+  th {
+    background: #f0f0f0 !important;
+    font-weight: bold !important;
+  }
+  
+  /* ===== ICONS ===== */
+  /* Hide decorative icons, keep informational ones small */
+  svg.lucide {
+    width: 12pt !important;
+    height: 12pt !important;
+    vertical-align: middle !important;
+  }
+  
+  /* ===== ASSESSMENT REPORT SPECIFIC ===== */
+  .print-header {
+    display: block !important;
+    margin-bottom: 20pt !important;
+    padding-bottom: 10pt !important;
+    border-bottom: 2px solid black !important;
+  }
+  
+  .print-title {
+    font-size: 24pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    margin-bottom: 10pt !important;
+  }
+  
+  .print-subtitle {
+    font-size: 14pt !important;
+    text-align: center !important;
+    color: #666 !important;
+    margin-bottom: 6pt !important;
+  }
+  
+  .print-meta {
+    font-size: 10pt !important;
+    text-align: center !important;
+    color: #666 !important;
+    margin-bottom: 20pt !important;
+  }
+  
+  .print-section {
+    margin-bottom: 20pt !important;
+    page-break-inside: avoid !important;
+  }
+  
+  .print-section-title {
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    margin-bottom: 10pt !important;
+    padding-bottom: 4pt !important;
+    border-bottom: 1px solid #999 !important;
+  }
+  
+  /* ===== FOOTER (Page Numbers) ===== */
+  .print-footer {
+    display: block !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    text-align: center !important;
+    font-size: 9pt !important;
+    color: #666 !important;
+    padding-top: 10pt !important;
+    border-top: 1px solid #ccc !important;
+  }
+  
+  /* ===== UTILITY CLASSES ===== */
+  /* Force show elements that should appear in print */
+  .print-only {
+    display: block !important;
+  }
+  
+  .print-inline {
+    display: inline !important;
+  }
+  
+  /* Ensure content doesn't overflow */
+  * {
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+  
+  /* ===== STUDENT/USER INFO BOX ===== */
+  .print-info-box {
+    border: 2px solid black !important;
+    padding: 12pt !important;
+    margin-bottom: 20pt !important;
+    background: #f9f9f9 !important;
+  }
+  
+  .print-info-box strong {
+    font-weight: bold !important;
+  }
+  
+  /* ===== SCORE DISPLAYS ===== */
+  .print-score {
+    font-size: 18pt !important;
+    font-weight: bold !important;
+    display: inline-block !important;
+    padding: 6pt 12pt !important;
+    border: 2px solid black !important;
+    margin: 6pt 0 !important;
+  }
+  
+  /* ===== LIST STYLING ===== */
+  ul.print-list {
+    list-style-type: disc !important;
+    margin-left: 20pt !important;
+  }
+  
+  ol.print-list {
+    list-style-type: decimal !important;
+    margin-left: 20pt !important;
+  }
+  
+  /* ===== RECOMMENDATIONS & TIPS ===== */
+  .recommendation-item {
+    margin-bottom: 12pt !important;
+    padding-left: 15pt !important;
+    position: relative !important;
+  }
+  
+  .recommendation-item::before {
+    content: "→" !important;
+    position: absolute !important;
+    left: 0 !important;
+    font-weight: bold !important;
+  }
+  
+  /* ===== EMPHASIS ===== */
+  strong, b {
+    font-weight: bold !important;
+    color: black !important;
+  }
+  
+  em, i {
+    font-style: italic !important;
+  }
+  
+  /* ===== COLORS FOR KEY ELEMENTS ===== */
+  /* Use light grays instead of full black for subtle elements */
+  .text-muted-foreground,
+  .text-gray-500 {
+    color: #666 !important;
+  }
+  
+  /* ===== ACCESSIBLE CONTRAST ===== */
+  /* Ensure sufficient contrast for readability */
+  .bg-blue-50,
+  .bg-green-50,
+  .bg-yellow-50,
+  .bg-purple-50,
+  .bg-muted {
+    background: #f5f5f5 !important;
+    border: 1px solid #ddd !important;
+  }
+  
+  /* ===== QR CODE (if added later) ===== */
+  .print-qr-code {
+    display: block !important;
+    max-width: 100pt !important;
+    margin: 10pt auto !important;
+  }
+  
+  /* ===== FINAL POLISH ===== */
+  /* Remove any remaining interactive states */
+  *:hover,
+  *:focus,
+  *:active {
+    background: inherit !important;
+    color: inherit !important;
+    border-color: inherit !important;
+  }
+  
+  /* Ensure proper spacing between sections */
+  section,
+  article,
+  .section {
+    margin-bottom: 20pt !important;
+  }
+  
+  /* ===== RESPONSIVE CHARTS ===== */
+  /* Make sure charts don't break page layout */
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: 300px !important;
+  }
+  
+  /* ===== PRINT DATE STAMP ===== */
+  .print-date::after {
+    content: " (Printed: " attr(data-date) ")" !important;
+    font-size: 9pt !important;
+    color: #666 !important;
+  }
+}

@@ -1,0 +1,28 @@
+[api]
+enabled = true
+port = 54321
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[functions.server]
+verify_jwt = false
+entrypoint = "./functions/server/index.tsx"
+
+[functions.make-server-fc8eb847]
+verify_jwt = false
+entrypoint = "./functions/make-server-fc8eb847/index.tsx"
+
+[auth.email.smtp]
+enabled = true
+host = "smtpout.secureserver.net"
+port = 465
+user = "service@jotminds.com"
+pass = "Service@0248838540"
+admin_email = "service@jotminds.com"
+sender_name = "JotMinds Support"
