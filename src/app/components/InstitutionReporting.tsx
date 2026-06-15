@@ -36,8 +36,14 @@ export function InstitutionReporting({ institutionId, institutionName, members =
         setAllUsers(users);
 
         // getAllAssessmentResults is async from api.ts
-        const results = await getAllAssessmentResults();
-        setAllAssessments(Array.isArray(results) ? results : []);
+        const response = await getAllAssessmentResults();
+        let assessmentsArray = [];
+        if (response && Array.isArray(response.results)) {
+          assessmentsArray = response.results;
+        } else if (Array.isArray(response)) {
+          assessmentsArray = response;
+        }
+        setAllAssessments(assessmentsArray);
       } catch (err) {
         console.error('Failed to load reporting data:', err);
       } finally {
