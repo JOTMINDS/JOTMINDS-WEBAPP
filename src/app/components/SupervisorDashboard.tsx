@@ -305,7 +305,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                   </div>
                   <Alert className="bg-white/50 border-indigo-200">
                     <AlertDescription className="text-sm">
-                      💡 Team members need to select "Professional/Organization" during signup and enter this code to join your organization
+                      💡 Team members need to select "{isSchool ? 'Teacher' : 'Professional/Organization'}" during signup and enter this code to join your {isSchool ? 'school' : 'organization'}
                     </AlertDescription>
                   </Alert>
                 </CardContent>
