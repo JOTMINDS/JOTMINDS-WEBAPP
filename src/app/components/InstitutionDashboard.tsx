@@ -18,9 +18,11 @@ import {
   getCodeExpiryDate, getDaysUntilExpiry, getMemberCounts, 
   getInstitutionMembers, removeMember, saveInstitution, 
   Institution, InstitutionMember, InstitutionType,
-  addMember, approveMember, rejectMember, transferMember, inviteTeacher, validateInstitutionCode
+  addMember, approveMember, rejectMember, transferMember, inviteMember, validateInstitutionCode,
+  GHANA_REGIONS
 } from '../utils/institution';
 import { getAllUsers, saveUser } from '../utils/storage';
+import { sendEmail } from '../utils/api';
 import { projectId } from '../utils/supabase/info';
 import { TeachingStyleAssessment } from './TeachingStyleAssessment';
 import { SchoolAnalyticsDashboard } from './SchoolAnalyticsDashboard';
@@ -68,7 +70,32 @@ function compressImage(file: File, maxSize = 200): Promise<string> {
 
 export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInstitution }: InstitutionDashboardProps) {
   const [tab, setTab] = useState<Tab>('overview');
-  const [institution, setInstitution] = useState<Institution | null>(initialInstitution ?? getInstitutionByAdminId(user.id));
+  const [institution, setInstitution] = useState<Institution | null>(() => {
+    let inst = initialInstitution ?? getInstitutionByAdminId(user.id);
+    
+    if (!inst && user.organizationType === 'Educational Institution') {
+      inst = {
+        id: `inst_${Date.now()}`,
+        name: user.organizationName || 'My School',
+        type: 'Other',
+        region: 'Not specified',
+        district: 'Not specified',
+        address: 'Not specified',
+        email: user.email,
+        phone: user.phone || '',
+        adminName: user.name,
+        adminEmail: user.email,
+        adminPhone: user.phone || '',
+        adminId: user.id,
+        code: generateInstitutionCode(),
+        codeExpiryDays: 30,
+        createdAt: new Date().toISOString(),
+        isActive: true
+      };
+      saveInstitution(inst);
+    }
+    return inst;
+  });
   const [members, setMembers] = useState<InstitutionMember[]>([]);
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -100,6 +127,7 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
 
   // Teacher Management State
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'teacher' | 'student'>('teacher');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
@@ -274,27 +302,39 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
     
     setIsInviting(true);
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/send-teacher-invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: inviteEmail,
-          institutionName: institution.name,
-          institutionCode: institution.code
-        })
-      });
+      const subject = `You've been invited to join ${institution.name} on JotMinds!`;
+      const signupLink = `${window.location.origin}/?mode=signup&code=${institution.code}&role=${inviteRole}`;
+      
+      const htmlContent = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #6B4C9A; padding: 24px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 24px;">JotMinds</h1>
+          </div>
+          <div style="padding: 24px; color: #374151;">
+            <h2 style="margin-top: 0; color: #111827;">Institution Invitation</h2>
+            <p>Hello!</p>
+            <p>You have been invited to join <strong>${institution.name}</strong> as an <strong>${inviteRole === 'teacher' ? 'Educator' : 'Student'}</strong> on JotMinds.</p>
+            <p>Click the button below to create your account and automatically link your profile to the institution. Your organization code is <strong>${institution.code}</strong>.</p>
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${signupLink}" style="background-color: #6B4C9A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Join Institution</a>
+            </div>
+            <p style="font-size: 14px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 32px;">
+              If the button doesn't work, copy and paste this link into your browser:<br/>
+              <a href="${signupLink}" style="color: #6B4C9A;">${signupLink}</a>
+            </p>
+          </div>
+        </div>
+      `;
 
-      if (!response.ok) {
-        throw new Error('Failed to send email invite.');
-      }
+      await sendEmail(inviteEmail, subject, htmlContent);
 
-      inviteTeacher(inviteEmail, institution.id);
+      inviteMember(inviteEmail, inviteRole, institution.id);
       setIsInviteModalOpen(false);
       setInviteEmail('');
-      alert(`Invitation sent to ${inviteEmail}. They can now sign up using the institution code.`);
+      alert(`Invitation sent to ${inviteEmail}. They will receive an email shortly with a link to join.`);
     } catch (err: any) {
       console.error(err);
-      alert('Error sending invitation. The invite was recorded locally, but the email could not be sent.');
+      alert('Error sending invitation. Please try again.');
     } finally {
       setIsInviting(false);
     }
@@ -419,7 +459,7 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
   const ROLE_COLORS = { admin: '#5B7DB1', teacher: '#6B4C9A', student: '#1E8A6E' };
 
   // Calculate students per teacher
-  const allPlatformUsers = useMemo(() => getAllUsers(), []);
+  const [allPlatformUsers, setAllPlatformUsers] = useState(() => getAllUsers());
   const getStudentsForTeacherCount = (teacherId: string) => {
     return allPlatformUsers.filter(u => u.role === 'student' && u.teacherId === teacherId).length;
   };
@@ -428,7 +468,7 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1"><ArrowLeft className="w-4 h-4" /> Back</Button>
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {institution.logo
@@ -445,7 +485,7 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
             </div>
           </div>
         </div>
-        <div className="max-w-4xl mx-auto px-4 flex gap-1 pb-0 overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-4 flex gap-1 pb-0 overflow-x-auto">
           <div className="flex overflow-x-auto no-scrollbar border-b">
             {['overview', 'code', 'members', 'analytics', 'reports', 'settings', 'profile'].map((t) => (
               <button
@@ -466,7 +506,7 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
 
         {/* ── OVERVIEW ── */}
         {tab === 'overview' && (<>
@@ -517,7 +557,7 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
           </Card>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { label: 'Total Members', value: counts.total, color: '#5B7DB1' },
               { label: 'Teachers', value: counts.teachers, color: '#6B4C9A' },
@@ -683,12 +723,12 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
                 <Upload className="w-4 h-4 mr-2" /> Bulk Upload Students
               </Button>
               <Button style={{ backgroundColor: '#6B4C9A' }} onClick={() => setIsInviteModalOpen(true)}>
-                <UserPlus className="w-4 h-4 mr-2" /> Invite Teacher
+                <UserPlus className="w-4 h-4 mr-2" /> Invite Member
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { label: 'Total', value: counts.total, color: '#5B7DB1' },
               { label: 'Teachers', value: counts.teachers, color: '#6B4C9A' },
@@ -943,12 +983,23 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
       {isInviteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Invite Teacher</h3>
-            <p className="text-sm text-gray-500 mb-4">Send an invitation link and institution code to a teacher's email address.</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Invite Member</h3>
+            <p className="text-sm text-gray-500 mb-4">Send an invitation link and institution code to an email address.</p>
             <div className="space-y-4">
               <div>
+                <Label>Role</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1 mb-4"
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value as 'teacher' | 'student')}
+                >
+                  <option value="teacher">Educator / Teacher</option>
+                  <option value="student">Student</option>
+                </select>
+              </div>
+              <div>
                 <Label>Email Address</Label>
-                <Input type="email" placeholder="teacher@school.edu" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="mt-1" />
+                <Input type="email" placeholder="user@school.edu" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="mt-1" />
               </div>
               <div className="flex gap-3 justify-end mt-6">
                 <Button variant="ghost" onClick={() => setIsInviteModalOpen(false)} disabled={isInviting}>Cancel</Button>
@@ -1114,7 +1165,7 @@ export function InstitutionDashboard({ user, onBack, onRegisterNew, initialInsti
                       <Users className="w-4 h-4 text-[#1E8A6E]" /> Assigned Students ({students.length})
                     </h4>
                     {students.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="bg-white border rounded-lg p-3 text-center">
                           <p className="text-2xl font-bold text-[#1E8A6E]">{students.length}</p>
                           <p className="text-xs text-gray-500">Total Students</p>

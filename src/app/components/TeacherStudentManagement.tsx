@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
 import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId } from '../utils/storage';
+import { getStudentsForTeacher } from '../utils/api';
 import { projectId } from '../utils/supabase/info';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -28,9 +29,28 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
     loadStudents();
   }, [teacher.id]);
 
-  const loadStudents = () => {
+  const loadStudents = async () => {
+    // 1. Fetch from server
+    let serverStudents: User[] = [];
+    try {
+      const result = await getStudentsForTeacher();
+      if (result.success && result.students) {
+        serverStudents = result.students;
+      }
+    } catch (err) {
+      console.error('Failed to fetch students from server:', err);
+    }
+
+    // 2. Fetch from local storage
     const all = getAllUsers();
-    setStudents(all.filter(u => u.role === 'student' && u.teacherId === teacher.id));
+    const localStudents = all.filter(u => u.role === 'student' && (u.teacherId === teacher.id || (u.linkedTeachers && u.linkedTeachers.includes(teacher.id))));
+
+    // 3. Merge avoiding duplicates (server takes precedence)
+    const mergedMap = new Map();
+    localStudents.forEach(stu => mergedMap.set(stu.email.toLowerCase(), stu));
+    serverStudents.forEach(stu => mergedMap.set(stu.email.toLowerCase(), stu));
+
+    setStudents(Array.from(mergedMap.values()));
   };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -61,7 +81,8 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
           email: formData.email,
           studentName: formData.name,
           teacherName: teacher.name,
-          schoolName: teacher.organizationName
+          schoolName: teacher.organizationName,
+          teacherId: teacher.id
         })
       });
 

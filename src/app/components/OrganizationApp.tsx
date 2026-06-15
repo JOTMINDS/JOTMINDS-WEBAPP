@@ -13,9 +13,10 @@ interface OrganizationAppProps {
   initialUser?: User | null;
   onLogout?: () => void;
   onViewSettings?: () => void;
+  onAuthSuccess?: () => void;
 }
 
-export function OrganizationApp({ onBackToMain, initialUser, onLogout, onViewSettings }: OrganizationAppProps) {
+export function OrganizationApp({ onBackToMain, initialUser, onLogout, onViewSettings, onAuthSuccess }: OrganizationAppProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(initialUser || null);
   const [isLoading, setIsLoading] = useState(!initialUser);
 
@@ -73,6 +74,14 @@ export function OrganizationApp({ onBackToMain, initialUser, onLogout, onViewSet
             setCurrentUser(user);
             saveCurrentUser(user);
             setAuthToken(session.access_token);
+            
+            // If they are an Educational Institution, pass control back to App.tsx
+            if (user.role === 'school_admin' || user.organizationType === 'Educational Institution' || user.industrySector === 'Educational Institutions') {
+              if (onAuthSuccess) {
+                onAuthSuccess();
+                return;
+              }
+            }
           } else {
             console.log('[OrganizationApp] User is not an organization, clearing session. Role:', userData.role);
             await supabase.auth.signOut();
@@ -96,6 +105,14 @@ export function OrganizationApp({ onBackToMain, initialUser, onLogout, onViewSet
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     saveCurrentUser(user);
+    
+    // If they are an Educational Institution, pass control back to App.tsx
+    if (user.role === 'school_admin' || user.organizationType === 'Educational Institution' || user.industrySector === 'Educational Institutions') {
+      if (onAuthSuccess) {
+        onAuthSuccess();
+        return;
+      }
+    }
   };
 
   const handleLogout = async () => {

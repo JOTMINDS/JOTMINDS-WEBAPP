@@ -46,6 +46,7 @@ export interface InstitutionInvitation {
   id: string;
   email: string;
   institutionId: string;
+  role?: 'teacher' | 'student';
   invitedAt: string;
 }
 
@@ -154,7 +155,12 @@ export function validateInstitutionCode(code: string): CodeValidationResult {
 // ─── Member Management ────────────────────────────────────────────────────────
 
 export function getInstitutionMembers(institutionId: string): InstitutionMember[] {
-  try { return JSON.parse(localStorage.getItem(MEMBERS_KEY(institutionId)) ?? '[]'); } catch { return []; }
+  try { 
+    const parsed = JSON.parse(localStorage.getItem(MEMBERS_KEY(institutionId)) ?? '[]'); 
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { 
+    return []; 
+  }
 }
 
 function saveMembers(institutionId: string, members: InstitutionMember[]) {
@@ -224,12 +230,13 @@ export function getAllInvitations(): InstitutionInvitation[] {
   try { return JSON.parse(localStorage.getItem(INVITATIONS_KEY) ?? '[]'); } catch { return []; }
 }
 
-export function inviteTeacher(email: string, institutionId: string): InstitutionInvitation {
+export function inviteMember(email: string, role: 'teacher' | 'student', institutionId: string): InstitutionInvitation {
   const list = getAllInvitations();
   const invitation: InstitutionInvitation = {
     id: `inv_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     email: email.trim().toLowerCase(),
     institutionId,
+    role,
     invitedAt: new Date().toISOString()
   };
   list.push(invitation);

@@ -108,6 +108,34 @@ function AppContent() {
     }).catch(console.error);
   }, []);
 
+  // Handle Magic Link (already logged in)
+  useEffect(() => {
+    if (user && user.role !== 'admin' && user.role !== 'school_admin' && !impersonatedUser) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const code = searchParams.get('code');
+      const roleParam = searchParams.get('role');
+      
+      if (code) {
+        import('./utils/institution').then(({ validateInstitutionCode, addMember }) => {
+          const result = validateInstitutionCode(code);
+          if (result.valid && result.institution) {
+             const userRole = roleParam === 'teacher' ? 'teacher' : 'student';
+             addMember(result.institution.id, user.id, userRole);
+             
+             // Update user's role if needed or wait for next refresh
+             alert(`Success! You have been linked to ${result.institution.name} as an ${userRole === 'teacher' ? 'Educator' : 'Student'}.`);
+             
+             // Clean URL
+             window.history.replaceState({}, document.title, window.location.pathname);
+          } else if (result.error !== 'not_found') {
+             alert(result.errorMessage);
+             window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        }).catch(console.error);
+      }
+    }
+  }, [user, impersonatedUser]);
+
   useEffect(() => {
     // Set up auth token on mount
     console.log('[App] ===== MOUNT - Setting up auth =====');
@@ -116,18 +144,21 @@ function AppContent() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Check for password recovery in the URL hash
+      // Check for password recovery in the URL hash or path
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const type = hashParams.get('type');
+      const path = window.location.pathname;
 
-      if (type === 'recovery') {
+      if (type === 'recovery' || path === '/reset-password') {
         console.log('[App] Password recovery detected, showing reset password page');
         setCurrentView('reset-password');
+        // If we want to clean the URL without refreshing
+        if (path === '/reset-password') {
+          window.history.replaceState({}, document.title, window.location.origin + window.location.hash);
+        }
         return;
       }
 
-      // Check for shared profile in the URL path
-      const path = window.location.pathname;
       const searchParams = new URLSearchParams(window.location.search);
 
       // Check for /shared/:token route
@@ -194,13 +225,15 @@ function AppContent() {
       // BUT allow them to view dashboard when impersonating a user
       console.log('[App] ⚠️ Admin in dashboard view without impersonation! Redirecting to admin panel');
       setCurrentView('admin');
-    } else if (user?.role === 'school_admin' && (currentView === 'landing' || currentView === 'auth')) {
-      console.log('[App] School admin detected, routing to school admin dashboard');
-      setCurrentView('school-admin');
+    } else if ((user?.role === 'school_admin' || (user?.role === 'organization' && (user?.organizationType === 'Educational Institution' || user?.industrySector === 'Educational Institutions'))) && (currentView === 'landing' || currentView === 'auth')) {
+      console.log('[App] School admin/Educational Institution detected, routing to school admin dashboard');
+      setCurrentView('institution-dashboard');
     } else if (user?.role === 'supervisor' || user?.role === 'Supervisor' || user?.role === 'organization' || user?.role === 'Organization') {
-      // Supervisors should only use the Supervisor Portal, not the main app
-      console.log('[App] ⚠️ Supervisor detected in main app, redirecting to supervisor portal');
-      setCurrentView('organization');
+      // If it's an Educational Institution, don't force them into the supervisor portal
+      if (user?.organizationType !== 'Educational Institution' && user?.industrySector !== 'Educational Institutions' && currentView !== 'organization') {
+        console.log('[App] ⚠️ Supervisor detected in main app, redirecting to supervisor portal');
+        setCurrentView('organization');
+      }
     } else if (user && user.role !== 'admin' && user.role !== 'supervisor' && user.role !== 'Supervisor' && user.role !== 'organization' && user.role !== 'Organization' && (currentView === 'landing' || currentView === 'auth')) {
       console.log('[App] Regular user detected, routing to dashboard');
       setCurrentView('dashboard');
@@ -236,11 +269,25 @@ function AppContent() {
     
     console.log('[App] Regular user login, refreshing user data...');
     // Refresh user first to get the latest user data
-    await refreshUser();
+    const updatedUser = await refreshUser();
 
     console.log('[App] ===== Auth success complete, user loaded into context =====');
-    // For regular users, show the dashboard
-    setCurrentView('dashboard');
+    
+    if (updatedUser) {
+      if (updatedUser.role === 'school_admin' || (updatedUser.role === 'organization' && (updatedUser.organizationType === 'Educational Institution' || updatedUser.industrySector === 'Educational Institutions'))) {
+        console.log('[App] School admin/Educational Institution detected, routing to institution dashboard');
+        setCurrentView('institution-dashboard');
+      } else if (updatedUser.role === 'supervisor' || updatedUser.role === 'Supervisor' || updatedUser.role === 'organization' || updatedUser.role === 'Organization') {
+        console.log('[App] Supervisor detected, routing to supervisor portal');
+        setCurrentView('organization');
+      } else {
+        console.log('[App] Regular user detected, routing to dashboard');
+        setCurrentView('dashboard');
+      }
+    } else {
+      // Fallback
+      setCurrentView('dashboard');
+    }
   };
 
   const handleGetStarted = () => {
@@ -459,6 +506,11 @@ function AppContent() {
     );
   }
 
+  // Handle password reset independently of user state so it displays correctly
+  if (currentView === 'reset-password') {
+    return <ResetPasswordForm onSuccess={() => setCurrentView('auth')} onBack={() => setCurrentView('auth')} />;
+  }
+
   if (!user) {
     // Show landing page or auth form based on current view
     if (currentView === 'consent') {
@@ -498,11 +550,7 @@ function AppContent() {
     }
     
     if (currentView === 'forgot-password') {
-      return <ForgotPasswordForm onBack={() => setCurrentView('auth')} />;
-    }
-    
-    if (currentView === 'reset-password') {
-      return <ResetPasswordForm onSuccess={() => setCurrentView('auth')} onBack={() => setCurrentView('auth')} />;
+      return <ForgotPasswordForm onBack={() => setCurrentView('auth')} onVerified={() => setCurrentView('reset-password')} />;
     }
 
     if (currentView === 'oauth-consent' && consentData?.state) {
@@ -547,11 +595,19 @@ function AppContent() {
       );
 
     case 'organization':
-      return (
+      return user ? (
         <OrganizationApp 
-          onBackToMain={handleBackToLanding} 
-          initialUser={user} 
+          onBackToMain={handleBackToLanding}
+          initialUser={user}
           onLogout={handleLogout}
+          onViewSettings={() => setIsSettingsOpen(true)}
+          onAuthSuccess={handleAuthSuccess}
+        />
+      ) : (
+        <OrganizationApp 
+          onBackToMain={handleBackToLanding}
+          onLogout={handleLogout}
+          onAuthSuccess={handleAuthSuccess}
         />
       );
 
@@ -772,6 +828,17 @@ function AppContent() {
       
       // Supervisors should not access dashboards - redirect to supervisor portal
       if (normalizedRole === 'supervisor' || normalizedRole === 'organization') {
+        // Educational Institutions should see the Institution Dashboard
+        if (displayUser?.organizationType === 'Educational Institution' || displayUser?.industrySector === 'Educational Institutions') {
+          return (
+            <InstitutionDashboard
+              user={displayUser}
+              onBack={logoutHandler}
+              onRegisterNew={handleViewInstitutionRegister}
+            />
+          );
+        }
+        
         console.log('[App] Supervisor trying to access dashboard, redirecting to supervisor portal');
         return (
           <OrganizationApp 
@@ -779,6 +846,7 @@ function AppContent() {
             initialUser={displayUser} 
             onLogout={logoutHandler}
             onViewSettings={() => setIsSettingsOpen(true)}
+            onAuthSuccess={handleAuthSuccess}
           />
         );
       }

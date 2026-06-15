@@ -38,11 +38,11 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
           setValidSession(true);
         } else {
           console.warn('[ResetPassword] No active session found during recovery flow');
-          setError('Invalid or expired password reset link. Please request a new one.');
+          setError('Invalid or expired password reset session. Please request a new code.');
         }
       } catch (err) {
         console.error('[ResetPassword] Session check error:', err);
-        setError('Failed to verify reset link. Please try again.');
+        setError('Failed to verify session. Please try again.');
       } finally {
         setCheckingSession(false);
       }
@@ -87,7 +87,7 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
 
       if (updateError) {
         console.error('[ResetPassword] Update error:', updateError);
-        setError('Failed to reset password. Please try again or request a new reset link.');
+        setError('Failed to reset password. Please try again or request a new reset code.');
         setLoading(false);
         return;
       }
@@ -113,7 +113,7 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
           <CardContent className="pt-6">
             <div className="flex flex-col items-center justify-center space-y-4 py-8">
               <Loader2 className="h-8 w-8 animate-spin text-[#7B61FF]" />
-              <p className="text-muted-foreground">Verifying reset link...</p>
+              <p className="text-muted-foreground">Loading...</p>
             </div>
           </CardContent>
         </Card>
@@ -181,19 +181,19 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    {error || 'Invalid or expired password reset link.'}
+                    {error || 'Invalid or expired password reset session.'}
                   </AlertDescription>
                 </Alert>
 
                 <p className="text-sm text-muted-foreground text-center">
-                  The password reset link may have expired or already been used. Please request a new password reset link.
+                  The password reset session may have expired. Please request a new password reset code.
                 </p>
 
                 <Button
                   onClick={onBack}
                   className="w-full"
                 >
-                  Request New Reset Link
+                  Request New Reset Code
                 </Button>
               </div>
             ) : (

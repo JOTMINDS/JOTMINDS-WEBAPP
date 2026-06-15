@@ -21,7 +21,12 @@ const STORAGE_KEYS = {
 function safeParse<T>(key: string, fallback: T): T {
   try {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : fallback;
+    if (!item) return fallback;
+    const parsed = JSON.parse(item);
+    if (Array.isArray(fallback) && !Array.isArray(parsed)) {
+      return fallback;
+    }
+    return parsed;
   } catch (error) {
     console.error(`Error parsing localStorage key "${key}":`, error);
     return fallback;

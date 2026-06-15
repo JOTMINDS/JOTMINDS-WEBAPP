@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, GraduationCap, Users, School, Briefcase, Mail, Lock, User } from 'lucide-react';
 import { PhoneInput } from './PhoneInput';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '../utils/supabase/client';
 import { authenticateAdmin, createAdminUser } from '../utils/storage';
 import { setAuthToken } from '../utils/api';
@@ -54,6 +54,32 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
   // OTP States
   const [signupOTP, setSignupOTP] = useState('');
   const [simulatedSignupOTP, setSimulatedSignupOTP] = useState('');
+
+  // Parse URL parameters for magic links
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const mode = searchParams.get('mode');
+    const code = searchParams.get('code');
+    const urlRole = searchParams.get('role');
+
+    if (mode === 'signup') {
+      setIsLogin(false);
+    }
+    if (code) {
+      setOrganizationCode(code);
+      // Auto-validate if code is present
+      setTimeout(() => {
+        const result = validateInstitutionCode(code);
+        if (result.valid && result.institution) {
+          setVerifiedOrgName(result.institution.name);
+          setOrganizationName(result.institution.name);
+        }
+      }, 500);
+    }
+    if (urlRole && (urlRole === 'teacher' || urlRole === 'student')) {
+      setRole(urlRole);
+    }
+  }, []);
 
   // Calculate age from date of birth
   const calculateAge = (dob: string): number => {

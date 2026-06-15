@@ -12,11 +12,22 @@ import careerMatchRoutes from './career-match-routes.tsx';
 import seedQuestionsRoutes from './seed-questions-routes.tsx';
 import aiRoutes from './ai-routes.tsx';
 
+import { rateLimiter } from 'npm:hono-rate-limiter';
+
 const app = new Hono();
+
+// Global Rate Limiter (100 requests per minute per IP)
+const globalLimiter = rateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  limit: 100, // Limit each IP to 100 requests per `window`
+  standardHeaders: "draft-6", // draft-6: `RateLimit-*` headers
+  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown", // IP address from Supabase Edge/Cloudflare
+});
 
 // Middleware
 app.use('*', cors());
 app.use('*', logger(console.log));
+app.use('*', globalLimiter);
 
 // Mount routes
 app.route('/make-server-fc8eb847/daily-challenge', dailyChallengeRoutes);
@@ -260,11 +271,21 @@ app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
 
 app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
   try {
-    const { email, studentName, teacherName, schoolName } = await c.req.json();
+    const { email, studentName, teacherName, schoolName, teacherId } = await c.req.json();
     if (!email || !teacherName) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
-    
+
+    if (teacherId) {
+      console.log(`[send-student-invite] Storing invite for ${email} from teacher ${teacherId}`);
+      await kv.set(`student_invite:${email.toLowerCase()}`, {
+        teacherId,
+        teacherName,
+        schoolName,
+        invitedAt: new Date().toISOString()
+      });
+    }
+
     const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -584,6 +605,27 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       return c.json({ error: error.message }, 400);
     }
 
+    let finalTeacherId = null;
+    let finalLinkedTeachers = [];
+
+    // Magic Email Linking for students
+    if (role === 'student') {
+      const invite = await kv.get(`student_invite:${email.toLowerCase()}`);
+      if (invite && invite.teacherId) {
+        console.log(`[signup] Magic Email Match! Linking student ${email} to teacher ${invite.teacherId}`);
+        finalTeacherId = invite.teacherId;
+        finalLinkedTeachers = [invite.teacherId];
+        
+        // Optionally inherit the school name from the invite if not provided during signup
+        if (!school && invite.schoolName) {
+          finalOrgName = invite.schoolName;
+        }
+
+        // Clean up the invite record
+        await kv.delete(`student_invite:${email.toLowerCase()}`);
+      }
+    }
+
     // Store user profile in KV store
     await kv.set(`user:${data.user.id}`, {
       id: data.user.id,
@@ -598,9 +640,11 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       phone: phone || null,
       secondaryEmail: secondaryEmail || null,
       secondaryPhone: secondaryPhone || null,
-      school: school || null,
+      school: finalOrgName || school || null,
       educationLevel: educationLevel || null,
       dateOfBirth: dateOfBirth || null,
+      teacherId: finalTeacherId,
+      linkedTeachers: finalLinkedTeachers,
       hasConsented: hasConsented || false,
       consentType: consentType || null,
       consentDate: consentDate || null,
@@ -1628,8 +1672,11 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
     
     const students = allUsers.filter((u: any) => 
       u.role === 'student' && 
-      u.school && 
-      u.school.toLowerCase().trim() === schoolName.toLowerCase().trim()
+      (
+        u.teacherId === user.id ||
+        (u.linkedTeachers && u.linkedTeachers.includes(user.id)) ||
+        (u.school && schoolName && u.school.toLowerCase().trim() === schoolName.toLowerCase().trim())
+      )
     );
 
     console.log(`[Backend] Found ${students.length} students for school ${schoolName}`);
@@ -3552,40 +3599,41 @@ app.post('/make-server-fc8eb847/oauth/consent/deny', async (c) => {
 // Send transactional email route via Titan Mail
 app.post('/make-server-fc8eb847/send-email', async (c) => {
   try {
-    const user = await verifyAuth(c.req.raw);
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
     const { recipientEmail, subject, htmlContent, textContent } = await c.req.json();
 
     if (!recipientEmail || !subject || (!htmlContent && !textContent)) {
       return c.json({ error: 'Missing recipientEmail, subject, or message content' }, 400);
     }
 
-    console.log(`[send-email] Attempting to send email to ${recipientEmail} with subject: "${subject}"`);
+    console.log(`[send-email] Attempting to send email to ${recipientEmail} with subject: "${subject}" via Resend`);
 
-    const transporter = nodemailer.createTransport({
-      host: "smtpout.secureserver.net",
-      port: 465,
-      secure: true,
-      auth: {
-        user: "service@jotminds.com",
-        pass: "Service@0248838540",
+    const resendApiKey = "re_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG"; // Hardcoded from user
+    
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${resendApiKey}`
       },
+      body: JSON.stringify({
+        from: 'JotMinds Support <service@jotminds.com>',
+        to: [recipientEmail],
+        subject: subject,
+        html: htmlContent || textContent,
+        text: textContent || undefined
+      })
     });
 
-    await transporter.sendMail({
-      from: `"JotMinds Support" <service@jotminds.com>`,
-      to: recipientEmail,
-      subject: subject,
-      text: textContent || htmlContent,
-      html: htmlContent || textContent,
-    });
+    const data = await res.json();
 
-    console.log(`[send-email] ✓ Email successfully sent to ${recipientEmail}`);
+    if (!res.ok) {
+      console.error(`[send-email] Resend API error:`, data);
+      throw new Error(`Resend API error: ${data.message || JSON.stringify(data)}`);
+    }
 
-    return c.json({ success: true, message: 'Email sent successfully via GoDaddy secureserver' });
+    console.log(`[send-email] ✓ Email successfully sent to ${recipientEmail} (Resend ID: ${data.id})`);
+
+    return c.json({ success: true, message: 'Email sent successfully via Resend', id: data.id });
   } catch (error) {
     console.error('[send-email] ✗ Error sending email:', error);
     return c.json({ 

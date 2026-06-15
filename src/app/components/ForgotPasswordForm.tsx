@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Mail, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Mail, Loader2, AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from './ui/card';
 import { Input } from './ui/input';
@@ -10,15 +10,17 @@ import { Logo } from './Logo';
 
 interface ForgotPasswordFormProps {
   onBack: () => void;
+  onVerified?: () => void;
 }
 
-export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
+export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormProps) {
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<'email' | 'otp'>('email');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -32,24 +34,58 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
 
       const supabase = createClient();
       
-      // Get the current URL origin for the redirect
-      const redirectUrl = `${window.location.origin}/reset-password`;
-      
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
-      });
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
 
       if (resetError) {
         console.error('[ForgotPassword] Error:', resetError);
-        setError('Failed to send password reset email. Please try again or contact support.');
+        setError('Failed to send password reset code. Please try again or contact support.');
         setLoading(false);
         return;
       }
 
-      setSuccess(true);
+      setStep('otp');
     } catch (err: any) {
       console.error('[ForgotPassword] Unexpected error:', err);
       setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (!otp || otp.length < 6) {
+        setError('Please enter a valid 6-digit code');
+        setLoading(false);
+        return;
+      }
+
+      const supabase = createClient();
+      
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'recovery'
+      });
+
+      if (verifyError) {
+        console.error('[ForgotPassword] OTP Verify Error:', verifyError);
+        setError('Invalid or expired code. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Success! Move to reset password view
+      if (onVerified) {
+        onVerified();
+      }
+    } catch (err: any) {
+      console.error('[ForgotPassword] Unexpected verify error:', err);
+      setError('An unexpected error occurred verifying your code.');
     } finally {
       setLoading(false);
     }
@@ -75,46 +111,72 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
               <p className="text-sm text-muted-foreground">Discover How You Think</p>
             </div>
             <CardDescription className="text-center text-base">
-              {success ? 'Check your email' : 'Reset your password'}
+              {step === 'otp' ? 'Check your email' : 'Reset your password'}
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            {success ? (
+            {step === 'otp' ? (
               <div className="space-y-4">
                 <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
                   <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <AlertDescription className="text-sm">
-                    <p className="font-semibold text-green-800 dark:text-green-400 mb-2">
-                      Password Reset Email Sent!
+                    <p className="font-semibold text-green-800 dark:text-green-400 mb-1">
+                      Verification Code Sent!
                     </p>
                     <p className="text-gray-700 dark:text-gray-300">
-                      We've sent a password reset link to <strong>{email}</strong>. 
-                      Please check your inbox and click the link to reset your password.
+                      We've sent a 6-digit code to <strong>{email}</strong>.
                     </p>
                   </AlertDescription>
                 </Alert>
 
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>📧 <strong>Check your email</strong> (including spam folder)</p>
-                  <p>🔗 <strong>Click the reset link</strong> in the email</p>
-                  <p>🔐 <strong>Create a new password</strong> on the next page</p>
-                </div>
+                <form onSubmit={handleVerifyOtp} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="otp">
+                      6-Digit Code <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="otp"
+                        type="text"
+                        placeholder="123456"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        required
+                        className="pl-10 shadow-sm text-lg tracking-widest font-mono"
+                        maxLength={6}
+                      />
+                    </div>
+                  </div>
 
-                <Button
-                  onClick={onBack}
-                  className="w-full"
-                >
-                  Back to Login
-                </Button>
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
 
-                <p className="text-xs text-center text-muted-foreground">
+                  <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      'Verify Code'
+                    )}
+                  </Button>
+                </form>
+
+                <p className="text-xs text-center text-muted-foreground mt-4">
                   Didn't receive the email?{' '}
                   <button
                     type="button"
                     onClick={() => {
-                      setSuccess(false);
-                      setEmail('');
+                      setStep('email');
+                      setOtp('');
+                      setError('');
                     }}
                     className="text-[#7B61FF] hover:text-[#5B7DB1] underline"
                   >
@@ -123,7 +185,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSendEmail} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">
                     Email Address <span className="text-red-500">*</span>
@@ -141,7 +203,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Enter the email address associated with your account. We'll send you a link to reset your password.
+                    Enter the email address associated with your account. We'll send you a 6-digit code to reset your password.
                   </p>
                 </div>
 
@@ -156,10 +218,10 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending reset link...
+                      Sending code...
                     </>
                   ) : (
-                    'Send Reset Link'
+                    'Send Reset Code'
                   )}
                 </Button>
 

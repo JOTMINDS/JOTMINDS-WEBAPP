@@ -19,7 +19,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
   impersonatedUser: User | null;
   setImpersonatedUser: (user: User | null) => void;
 }
@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [impersonatedUser, setImpersonatedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshUser = async () => {
+  const refreshUser = async (): Promise<User | null> => {
     try {
       console.log('[AuthContext] ===== REFRESH USER STARTED =====');
       
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('[AuthContext] ✓ Admin user session established');
         
         setLoading(false);
-        return;
+        return enrichedUser;
       }
 
       console.log('[AuthContext] No admin session, checking Supabase...');
@@ -94,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const enrichedUser = enrichUserWithAge(userData.user);
           console.log('[AuthContext] User data enriched with age:', enrichedUser.age);
           setUser(enrichedUser);
+          return enrichedUser;
         } catch (sessionError: any) {
           // Handle all errors gracefully - could be network issues, 401, or server not ready
           console.log('[AuthContext] Could not fetch session from backend:', sessionError.message);
@@ -112,24 +113,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('[AuthContext] ✗ Error fetching session from backend:', sessionError);
           }
           
-          // Only sign out for auth errors, not network errors
           if (!sessionError.message?.includes('fetch')) {
             console.log('[AuthContext] Clearing invalid session...');
             await supabase.auth.signOut();
           }
           
+          console.log('[AuthContext] Clearing session due to error');
           setUser(null);
-          setAuthToken(null);
+          return null;
         }
       } else {
-        console.log('[AuthContext] No authentication, clearing user');
+        console.log('[AuthContext] No access token found');
         setUser(null);
         setAuthToken(null);
+        return null;
       }
     } catch (error) {
-      console.error('[AuthContext] ✗ Error refreshing user:', error);
+      console.error('[AuthContext] Error refreshing user:', error);
       setUser(null);
       setAuthToken(null);
+      return null;
     } finally {
       setLoading(false);
       console.log('[AuthContext] ===== REFRESH USER COMPLETE =====');

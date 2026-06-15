@@ -447,3 +447,10 @@ export const getReflections = async () => {
 export const getUserReflections = async (userId: string) => {
   return makeRequest(`/admin/user/${userId}/reflections`);
 };
+
+export const sendEmail = async (recipientEmail: string, subject: string, htmlContent: string) => {
+  return makeRequest('/send-email', {
+    method: 'POST',
+    body: JSON.stringify({ recipientEmail, subject, htmlContent }),
+  });
+};

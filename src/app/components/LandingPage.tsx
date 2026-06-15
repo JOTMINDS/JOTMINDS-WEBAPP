@@ -609,7 +609,7 @@ export function LandingPage({ onGetStarted, onSupervisorPortal, onViewPrivacyPol
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-muted-foreground">
             <div className="text-center md:text-left">
               <p className="font-semibold text-foreground mb-1.5 text-[15px]">JotMinds Platform</p>
-              <p className="text-[14px]">© JotMinds Platform – 2025</p>
+              <p className="text-[14px]">© JotMinds Platform – {new Date().getFullYear()}</p>
             </div>
             <div className="text-center">
               <p className="text-[14px] leading-relaxed">Empowering learners through cognitive awareness</p>
