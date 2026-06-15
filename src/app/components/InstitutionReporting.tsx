@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, Assessment } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -22,8 +22,30 @@ export function InstitutionReporting({ institutionId, institutionName, members =
   const [selectedTeacherId, setSelectedTeacherId] = useState(currentTeacherId || 'all');
   const [selectedClass, setSelectedClass] = useState('all');
 
-  const allUsers = getAllUsers();
-  const allAssessments = getAllAssessmentResults();
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [allAssessments, setAllAssessments] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        // getAllUsers is synchronous from local storage but we'll still use it
+        // In a full production app, this should fetch users for the institution from the backend
+        const users = getAllUsers();
+        setAllUsers(users);
+
+        // getAllAssessmentResults is async from api.ts
+        const results = await getAllAssessmentResults();
+        setAllAssessments(Array.isArray(results) ? results : []);
+      } catch (err) {
+        console.error('Failed to load reporting data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [institutionId]);
 
   // Get only approved members of this institution
   const approvedMemberIds = new Set(members.filter(m => m.status === 'approved').map(m => m.userId));
@@ -68,7 +90,15 @@ export function InstitutionReporting({ institutionId, institutionName, members =
       users: usersInScope,
       assessments: relevantAssessments
     };
-  }, [allUsers, allAssessments, approvedMemberIds, selectedTeacherId, dateFrom, dateTo]);
+  }, [allUsers, allAssessments, approvedMemberIds, selectedTeacherId, dateFrom, dateTo, members.length]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
 
   const handleExportCSV = () => {
     const { users, assessments } = filteredData;
