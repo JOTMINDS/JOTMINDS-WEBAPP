@@ -3695,6 +3695,10 @@ app.post('/make-server-fc8eb847/gamification/update', async (c) => {
     return c.json({ error: 'Failed to update gamification profile' }, 500);
   }
 });
+
+
+
+
 Deno.serve((req) => {
   const url = new URL(req.url);
   if (url.pathname.startsWith('/server/')) {
