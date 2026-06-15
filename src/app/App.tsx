@@ -225,7 +225,7 @@ function AppContent() {
       // BUT allow them to view dashboard when impersonating a user
       console.log('[App] ⚠️ Admin in dashboard view without impersonation! Redirecting to admin panel');
       setCurrentView('admin');
-    } else if ((user?.role === 'school_admin' || (user?.role === 'organization' && (user?.organizationType === 'Educational Institution' || user?.industrySector === 'Educational Institutions'))) && (currentView === 'landing' || currentView === 'auth')) {
+    } else if ((user?.role === 'school_admin' || (user?.role === 'organization' && (user?.organizationType === 'Educational Institution' || user?.industrySector === 'Educational Institutions'))) && (currentView === 'landing' || currentView === 'auth' || currentView === 'organization')) {
       console.log('[App] School admin/Educational Institution detected, routing to school admin dashboard');
       setCurrentView('institution-dashboard');
     } else if (user?.role === 'supervisor' || user?.role === 'Supervisor' || user?.role === 'organization' || user?.role === 'Organization') {
