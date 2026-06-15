@@ -153,6 +153,17 @@ export function OrganizationApp({ onBackToMain, initialUser, onLogout, onViewSet
     );
   }
 
+  if (currentUser.organizationType === 'Educational Institution' || currentUser.industrySector === 'Educational Institutions') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Routing to Educational Portal...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <SupervisorDashboard user={currentUser} onLogout={handleLogout} onViewSettings={onViewSettings} />

@@ -853,16 +853,10 @@ function AppContent() {
       
       if (normalizedRole === 'school_admin') {
         return (
-          <HeadTeacherDashboard
-            schoolId={displayUser.school || 'school-001'}
-            schoolName={displayUser.school || 'Demo School'}
-            students={[]}
-            teachers={[]}
-            classes={[]}
-            onBack={handleBackToDashboard}
+          <InstitutionDashboard
             user={displayUser}
-            onViewInstitutionDashboard={handleViewInstitutionDashboard}
-            onViewSettings={() => setIsSettingsOpen(true)}
+            onBack={logoutHandler}
+            onRegisterNew={handleViewInstitutionRegister}
           />
         );
       }
