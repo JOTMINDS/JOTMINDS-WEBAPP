@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
 import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId } from '../utils/storage';
 import { getStudentsForTeacher, updateUserProfile } from '../utils/api';
+import { getInstitutionForMember } from '../utils/institution';
 import { projectId } from '../utils/supabase/info';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -21,6 +22,7 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [institutionId, setInstitutionId] = useState<string | null>(null);
 
   // Join Institution State
   const [joinCode, setJoinCode] = useState('');
@@ -31,6 +33,19 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
 
   useEffect(() => {
     loadStudents();
+
+    // Fetch teacher's institution
+    const fetchInstitution = async () => {
+      try {
+        const inst = await getInstitutionForMember(teacher.id);
+        if (inst) {
+          setInstitutionId(inst.id);
+        }
+      } catch (err) {
+        console.error('Failed to load teacher institution:', err);
+      }
+    };
+    fetchInstitution();
     
     // Auto-generate class code if not exists
     if (!teacher.classCode) {
@@ -93,7 +108,7 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
       saveUser(newStudent);
 
       // 2. Send Invite Email via Edge Function
-      await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-student-invite`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-student-invite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -101,9 +116,15 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
           studentName: formData.name,
           teacherName: teacher.name,
           schoolName: teacher.organizationName,
-          teacherId: teacher.id
+          teacherId: teacher.id,
+          institutionId: institutionId || undefined
         })
       });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to send invite email');
+      }
 
       toast.success('Student added and invite sent!');
       setIsAddModalOpen(false);

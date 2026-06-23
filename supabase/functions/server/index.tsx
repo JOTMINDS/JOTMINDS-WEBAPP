@@ -328,7 +328,22 @@ app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
 // Send Student Invite Endpoint
 app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
   try {
-    const { email, studentName, teacherName, schoolName, teacherId, institutionId } = await c.req.json();
+    let { email, studentName, teacherName, schoolName, teacherId, institutionId } = await c.req.json();
+    
+    const supabase = getSupabaseClient(true);
+    
+    if (!institutionId && teacherId) {
+      const { data: member } = await supabase
+        .from('institution_members')
+        .select('institution_id')
+        .eq('user_id', teacherId)
+        .eq('status', 'approved')
+        .maybeSingle();
+      if (member) {
+        institutionId = member.institution_id;
+      }
+    }
+
     if (!email || !teacherName || !institutionId) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
