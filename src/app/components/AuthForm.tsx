@@ -254,8 +254,12 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
     if (registrationStep === 1 && !validateStep1()) {
       return;
     }
-    if (registrationStep === 2 && !validateStep2()) {
-      return;
+    if (registrationStep === 2) {
+      if (!validateStep2()) return;
+      if (inviteToken) {
+        setRegistrationStep(4);
+        return;
+      }
     }
     if (registrationStep === 3 && !validateStep3()) {
       return;
@@ -266,7 +270,11 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
 
   const handlePreviousStep = () => {
     setError('');
-    setRegistrationStep(registrationStep - 1);
+    if (registrationStep === 4 && inviteToken) {
+      setRegistrationStep(2);
+    } else {
+      setRegistrationStep(registrationStep - 1);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

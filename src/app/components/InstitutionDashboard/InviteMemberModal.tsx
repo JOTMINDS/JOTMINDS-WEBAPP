@@ -47,31 +47,6 @@ export function InviteMemberModal({
 
     setIsInviting(true);
     try {
-      const subject = `You've been invited to join ${institutionName} on JotMinds!`;
-      const signupLink = `${window.location.origin}/?mode=signup&code=${institutionCode}&role=${inviteRole}`;
-
-      const htmlContent = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-          <div style="background-color: #6B4C9A; padding: 24px; text-align: center; color: white;">
-            <h1 style="margin: 0; font-size: 24px;">JotMinds</h1>
-          </div>
-          <div style="padding: 24px; color: #374151;">
-            <h2 style="margin-top: 0; color: #111827;">Institution Invitation</h2>
-            <p>Hello!</p>
-            <p>You have been invited to join <strong>${institutionName}</strong> as an <strong>${inviteRole === 'teacher' ? 'Educator' : 'Student'}</strong> on JotMinds.</p>
-            <p>Click the button below to create your account and automatically link your profile to the institution. Your organization code is <strong>${institutionCode}</strong>.</p>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${signupLink}" style="background-color: #6B4C9A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Join Institution</a>
-            </div>
-            <p style="font-size: 14px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 32px;">
-              If the button doesn't work, copy and paste this link into your browser:<br/>
-              <a href="${signupLink}" style="color: #6B4C9A;">${signupLink}</a>
-            </p>
-          </div>
-        </div>
-      `;
-
-      await sendEmail(inviteEmailState, subject, htmlContent);
       await inviteMember(inviteEmailState, inviteRole, institutionId);
       
       toast.success(`Invitation sent to ${inviteEmailState}. They will receive an email shortly with a link to join.`);
