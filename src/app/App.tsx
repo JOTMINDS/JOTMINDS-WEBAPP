@@ -186,7 +186,7 @@ function AppContent() {
       const searchParams = new URLSearchParams(window.location.search);
       const mode = searchParams.get('mode');
       const inviteToken = searchParams.get('inviteToken');
-      const path = window.location.pathname;
+      
       
       if (mode === 'signup' || inviteToken || path === '/auth') {
         console.log('[App] Auth routing detected (signup, invite, or /auth)');
