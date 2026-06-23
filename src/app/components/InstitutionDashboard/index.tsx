@@ -92,7 +92,7 @@ export function InstitutionDashboard({
         if (!inst) {
           inst = await getInstitutionForMember(user.id);
         }
-        if (!inst && user.organizationType === 'Educational Institution') {
+        if (!inst) {
           // Auto-create a stub institution to avoid blocking the user
           const newInst = await createInstitution({
             name: user.organizationName || 'My School',
