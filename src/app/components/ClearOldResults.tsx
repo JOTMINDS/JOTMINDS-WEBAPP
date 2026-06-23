@@ -32,7 +32,7 @@ export const ClearOldResults: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const clearedTypes: string[] = [];
 
     try {
-      const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847`;
+      const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
       const token = getAuthToken();
 
       // Get all results

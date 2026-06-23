@@ -46,6 +46,8 @@ import { InstitutionDashboard } from './components/InstitutionDashboard';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { runAccountMigration } from './utils/accountMigration';
 import { syncGamificationProfile } from './utils/gamification';
+import { syncAllUsersFromSupabase } from './utils/supabaseSync';
+import { validateInstitutionCode, addMember, validateInviteToken, joinInstitution } from './utils/institution';
 
 import { Button } from './components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -103,9 +105,7 @@ function AppContent() {
   useEffect(() => {
     document.title = 'JotMinds - Discover How You Think';
     runAccountMigration();
-    import('./utils/supabaseSync').then(({ syncAllUsersFromSupabase }) => {
-      syncAllUsersFromSupabase();
-    }).catch(console.error);
+    syncAllUsersFromSupabase();
   }, []);
 
   // Handle Magic Link (already logged in)
@@ -114,9 +114,10 @@ function AppContent() {
       const searchParams = new URLSearchParams(window.location.search);
       const code = searchParams.get('code');
       const roleParam = searchParams.get('role');
+      const inviteToken = searchParams.get('token');
       
       if (code) {
-        import('./utils/institution').then(({ validateInstitutionCode, addMember }) => {
+        const processCode = async () => {
           const result = validateInstitutionCode(code);
           if (result.valid && result.institution) {
              const userRole = roleParam === 'teacher' ? 'teacher' : 'student';
@@ -131,7 +132,30 @@ function AppContent() {
              alert(result.errorMessage);
              window.history.replaceState({}, document.title, window.location.pathname);
           }
-        }).catch(console.error);
+        };
+        processCode().catch(console.error);
+      } else if (inviteToken) {
+        const processToken = async () => {
+          const result = await validateInviteToken(inviteToken);
+          if (result.valid && result.institution) {
+             const userRole = result.role || (roleParam === 'teacher' ? 'teacher' : 'student');
+             await joinInstitution(result.institution.code, {
+                userId: user.id,
+                userName: user.name,
+                userEmail: user.email,
+                role: userRole as 'teacher' | 'student'
+             });
+             
+             alert(`Success! You have been linked to ${result.institution.name} as an ${userRole === 'teacher' ? 'Educator' : 'Student'}.`);
+             
+             // Clean URL
+             const newUrl = window.location.pathname;
+             window.history.replaceState({}, document.title, newUrl);
+          } else {
+             alert(result.error || 'Failed to join institution via invitation link.');
+          }
+        };
+        processToken().catch(console.error);
       }
     }
   }, [user, impersonatedUser]);
@@ -810,7 +834,7 @@ function AppContent() {
       return user ? (
         <InstitutionDashboard
           user={impersonatedUser || user}
-          onBack={handleBackToDashboard}
+          onLogout={handleBackToDashboard}
           onRegisterNew={handleViewInstitutionRegister}
         />
       ) : null;
@@ -833,7 +857,7 @@ function AppContent() {
           return (
             <InstitutionDashboard
               user={displayUser}
-              onBack={logoutHandler}
+              onLogout={logoutHandler}
               onRegisterNew={handleViewInstitutionRegister}
             />
           );
@@ -855,7 +879,7 @@ function AppContent() {
         return (
           <InstitutionDashboard
             user={displayUser}
-            onBack={logoutHandler}
+            onLogout={logoutHandler}
             onRegisterNew={handleViewInstitutionRegister}
           />
         );

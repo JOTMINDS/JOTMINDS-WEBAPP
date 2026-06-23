@@ -107,7 +107,7 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
         // Fetch user profile from backend
         console.log('[SupervisorAuth] Fetching user profile from backend...');
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/session`,
+          `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/session`,
           {
             headers: {
               'Authorization': `Bearer ${data.session.access_token}`
@@ -202,7 +202,7 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
 
         // Fetch user profile
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/session`,
+          `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/session`,
           {
             headers: {
               'Authorization': `Bearer ${data.session.access_token}`

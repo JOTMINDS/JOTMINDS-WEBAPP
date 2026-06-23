@@ -1,6 +1,6 @@
 import { projectId, publicAnonKey } from './supabase/info';
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847`;
+const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
 
 interface ChallengeProgress {
   currentStreak: number;

@@ -300,7 +300,11 @@ export function saveAssessmentProgress(progress: AssessmentProgress) {
   const key = `${STORAGE_KEYS.ASSESSMENT_PROGRESS}_${progress.userId}_${progress.assessmentType}_${progress.isOrganizational}`;
   try {
     const serialized = JSON.stringify(progress);
+    try {
     localStorage.setItem(key, serialized);
+  } catch (e) {
+    console.error('LocalStorage quota exceeded or error:', e);
+  }
     console.log('Saved progress to localStorage with key:', key);
     
     // Verify it was saved
@@ -430,14 +434,14 @@ export function generateId(): string {
 }
 
 // JHS/SHS/Adult Result Management
-export function getJHSResults(userId: string): any[] {
-  const results = safeParse<any[]>(STORAGE_KEYS.JHS_RESULTS, []);
-  return results.filter((r: any) => r.userId === userId);
+export function getJHSResults(userId: string): JHSResults[] {
+  const results = safeParse<JHSResults[]>(STORAGE_KEYS.JHS_RESULTS, []);
+  return results.filter((r) => r.userId === userId);
 }
 
-export function saveJHSResult(result: any) {
-  const results = safeParse<any[]>(STORAGE_KEYS.JHS_RESULTS, []);
-  const index = results.findIndex((r: any) => r.id === result.id || (r.completedAt === result.completedAt && r.userId === result.userId));
+export function saveJHSResult(result: JHSResults) {
+  const results = safeParse<JHSResults[]>(STORAGE_KEYS.JHS_RESULTS, []);
+  const index = results.findIndex((r) => r.id === result.id || (r.completedAt === result.completedAt && r.userId === result.userId));
   if (index >= 0) {
     results[index] = result;
   } else {
@@ -446,14 +450,14 @@ export function saveJHSResult(result: any) {
   localStorage.setItem(STORAGE_KEYS.JHS_RESULTS, JSON.stringify(results));
 }
 
-export function getSHSResults(userId: string): any[] {
-  const results = safeParse<any[]>(STORAGE_KEYS.SHS_RESULTS, []);
-  return results.filter((r: any) => r.userId === userId);
+export function getSHSResults(userId: string): SHSResults[] {
+  const results = safeParse<SHSResults[]>(STORAGE_KEYS.SHS_RESULTS, []);
+  return results.filter((r) => r.userId === userId);
 }
 
-export function saveSHSResult(result: any) {
-  const results = safeParse<any[]>(STORAGE_KEYS.SHS_RESULTS, []);
-  const index = results.findIndex((r: any) => r.id === result.id || (r.completedAt === result.completedAt && r.userId === result.userId));
+export function saveSHSResult(result: SHSResults) {
+  const results = safeParse<SHSResults[]>(STORAGE_KEYS.SHS_RESULTS, []);
+  const index = results.findIndex((r) => r.id === result.id || (r.completedAt === result.completedAt && r.userId === result.userId));
   if (index >= 0) {
     results[index] = result;
   } else {
@@ -462,14 +466,14 @@ export function saveSHSResult(result: any) {
   localStorage.setItem(STORAGE_KEYS.SHS_RESULTS, JSON.stringify(results));
 }
 
-export function getAdultResults(userId: string): any[] {
-  const results = safeParse<any[]>(STORAGE_KEYS.ADULT_RESULTS, []);
-  return results.filter((r: any) => r.userId === userId);
+export function getAdultResults(userId: string): AdultResults[] {
+  const results = safeParse<AdultResults[]>(STORAGE_KEYS.ADULT_RESULTS, []);
+  return results.filter((r) => r.userId === userId);
 }
 
-export function saveAdultResult(result: any) {
-  const results = safeParse<any[]>(STORAGE_KEYS.ADULT_RESULTS, []);
-  const index = results.findIndex((r: any) => r.id === result.id || (r.completedAt === result.completedAt && r.userId === result.userId));
+export function saveAdultResult(result: AdultResults) {
+  const results = safeParse<AdultResults[]>(STORAGE_KEYS.ADULT_RESULTS, []);
+  const index = results.findIndex((r) => r.id === result.id || (r.completedAt === result.completedAt && r.userId === result.userId));
   if (index >= 0) {
     results[index] = result;
   } else {
@@ -496,7 +500,7 @@ export async function syncDataWithServer() {
       'Content-Type': 'application/json'
     };
     
-    const baseUrl = `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847`;
+    const baseUrl = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
     const user = session.user;
 
     // 1. Sync User Profile
@@ -636,4 +640,29 @@ export async function syncDataWithServer() {
   } catch (error) {
     console.error('Global sync failed:', error);
   }
+}
+
+export function getAssessmentFrequency(userId: string): string {
+  const assessments = getAssessmentsByUserId(userId).filter(a => a.completedAt);
+  if (assessments.length === 0) return 'No Tests';
+  
+  assessments.sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+  const lastTest = new Date(assessments[0].completedAt!);
+  const daysSince = Math.floor((Date.now() - lastTest.getTime()) / (1000 * 3600 * 24));
+  
+  if (assessments.length >= 2) {
+    const firstTest = new Date(assessments[assessments.length - 1].completedAt!);
+    const totalDays = Math.max(1, Math.floor((lastTest.getTime() - firstTest.getTime()) / (1000 * 3600 * 24)));
+    const avgDays = totalDays / (assessments.length - 1);
+    
+    if (daysSince > 60) return 'Inactive';
+    if (avgDays <= 10) return 'Weekly';
+    if (avgDays <= 20) return 'Bi-weekly';
+    if (avgDays <= 45) return 'Monthly';
+    return 'Sporadic';
+  }
+  
+  if (daysSince <= 7) return 'Active (New)';
+  if (daysSince > 30) return 'Inactive';
+  return `${daysSince}d ago`;
 }

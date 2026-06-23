@@ -73,7 +73,7 @@ export const AdminDiagnostic: React.FC<AdminDiagnosticProps> = ({ onClose }) => 
     if (adminToken) {
       try {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/admin/stats`,
+          `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/admin/stats`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ export const AdminDiagnostic: React.FC<AdminDiagnosticProps> = ({ onClose }) => 
     if (adminToken) {
       try {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/admin/users`,
+          `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/admin/users`,
           {
             headers: {
               'Content-Type': 'application/json',

@@ -35,7 +35,7 @@ export function AdultThinkingContainer({
       
       // Save results to backend
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/adult-thinking/submit`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/adult-thinking/submit`,
         {
           method: 'POST',
           headers: {

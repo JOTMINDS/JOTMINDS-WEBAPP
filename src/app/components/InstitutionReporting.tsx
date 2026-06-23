@@ -35,13 +35,20 @@ export function InstitutionReporting({ institutionId, institutionName, members =
         const users = getAllUsers();
         setAllUsers(users);
 
-        // getAllAssessmentResults is async from api.ts
-        const response = await getAllAssessmentResults();
+        // Get approved student user IDs in this institution
+        const studentMemberIds = members
+          .filter(m => m.role === 'student' && m.status === 'approved')
+          .map(m => m.userId);
+
         let assessmentsArray = [];
-        if (response && Array.isArray(response.results)) {
-          assessmentsArray = response.results;
-        } else if (Array.isArray(response)) {
-          assessmentsArray = response;
+        if (studentMemberIds.length > 0) {
+          // getAllAssessmentResults is async from api.ts
+          const response = await getAllAssessmentResults(studentMemberIds);
+          if (response && Array.isArray(response.results)) {
+            assessmentsArray = response.results;
+          } else if (Array.isArray(response)) {
+            assessmentsArray = response;
+          }
         }
         setAllAssessments(assessmentsArray);
       } catch (err) {
@@ -51,7 +58,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
       }
     };
     fetchData();
-  }, [institutionId]);
+  }, [institutionId, members]);
 
   // Get only approved members of this institution
   const approvedMemberIds = new Set(members.filter(m => m.status === 'approved').map(m => m.userId));

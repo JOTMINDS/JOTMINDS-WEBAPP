@@ -18,6 +18,7 @@ import { getAssessmentsByUserId } from '../utils/storage';
 
 interface SchoolTeacherStylesViewProps {
   admin: User;
+  teachers?: User[];
   onBack: () => void;
 }
 
@@ -242,14 +243,14 @@ function scoreLabel(n: number) { return n >= 75 ? 'Strong' : n >= 55 ? 'Moderate
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function SchoolTeacherStylesView({ admin, onBack }: SchoolTeacherStylesViewProps) {
+export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onBack }: SchoolTeacherStylesViewProps) {
   const [tab, setTab] = useState<Tab>('overview');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [search, setSearch] = useState('');
 
   const jotsCode = useMemo(() => getUserJotsCode(admin), [admin]);
-  const allTeachers = useMemo(() => getSchoolTeachers(admin), [admin]);
+  const allTeachers = useMemo(() => providedTeachers || getSchoolTeachers(admin), [admin, providedTeachers]);
   const allData = useMemo(() => allTeachers.map(buildTeacherData), [allTeachers]);
 
   const teachers = useMemo(() => {

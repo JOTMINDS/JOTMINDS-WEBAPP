@@ -23,6 +23,8 @@ import {
   TeacherClassOverview, 
   TeacherIndividualStudentView 
 } from './teacher';
+import { getInstitutionForMember } from '../utils/institution';
+import { TeacherManagementContent } from './InstitutionDashboard/TeacherManagementContent';
 
 interface TeacherDashboardProps {
   user: User;
@@ -47,9 +49,12 @@ export function TeacherDashboard({
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
   const [activeStudentTab, setActiveStudentTab] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'manage-class'>('overview');
+  const [institutionId, setInstitutionId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [allPlatformUsers, setAllPlatformUsers] = useState<any[]>([]);
 
   useEffect(() => {
     loadClassData();
@@ -61,6 +66,12 @@ export function TeacherDashboard({
     let assessmentsForStats: any[] = [];
     
     try {
+      const allUsers = getAllUsers();
+      setAllPlatformUsers(allUsers);
+      
+      const inst = await getInstitutionForMember(user.id);
+      if (inst) setInstitutionId(inst.id);
+
       // If viewing as admin (impersonated user), fetch from API
       if (impersonatedUser) {
         const { results: assessmentResults } = await getUserAssessmentResults(user.id);
@@ -339,10 +350,11 @@ export function TeacherDashboard({
           </Alert>
         )}
 
-        <TeacherTabBar />
+        <TeacherTabBar activeTab={activeTab} onTabChange={setActiveTab} />
         
         {/* MAIN TAB: Individual Students with Personalized Tabs */}
-        <TabsContent value="students" className="space-y-6">
+        {activeTab === 'individual' && (
+          <div className="space-y-6">
           <Card className="border-2 border-[#6B4C9A]">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -646,19 +658,23 @@ export function TeacherDashboard({
               })}
             </Tabs>
           )}
-        </TabsContent>
+        </div>
+        )}
 
         {/* Class Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
           <TeacherClassOverview
             classStats={classStats}
             students={students}
             allAssessments={allAssessments}
           />
-        </TabsContent>
+        </div>
+        )}
 
         {/* General Teaching Resources */}
-        <TabsContent value="resources" className="space-y-6">
+        {activeTab === 'my-style' && (
+          <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>General Teaching Resources</CardTitle>
@@ -672,10 +688,12 @@ export function TeacherDashboard({
               />
             </CardContent>
           </Card>
-        </TabsContent>
+          </div>
+        )}
 
-        {/* Feedback Tab */}
-        <TabsContent value="feedback" className="space-y-6">
+        {/* Feedback Tab (Now appended to my-style since there is no button for it) */}
+        {activeTab === 'my-style' && (
+          <div className="space-y-6">
           <div className="max-w-3xl mx-auto">
             <Card className="border-2 border-[#6B4C9A] bg-gradient-to-br from-cyan-50 to-blue-50">
               <CardHeader className="text-center">
@@ -765,8 +783,19 @@ export function TeacherDashboard({
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-      </Tabs>
+          </div>
+        )}
+
+        {activeTab === 'manage-class' && (
+          <div className="h-[800px]">
+            <TeacherManagementContent
+              teacher={user}
+              institutionId={institutionId}
+              allPlatformUsers={allPlatformUsers}
+              onRefresh={loadClassData}
+            />
+          </div>
+        )}
           </>
         )}
       </div>

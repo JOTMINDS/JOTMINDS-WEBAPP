@@ -5,7 +5,7 @@ import * as kv from './kv_store.tsx';
 const app = new Hono();
 
 const getSupabaseClient = () =>
-  createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!);
+  createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
 async function verifyAuth(request: Request) {
   const adminToken = request.headers.get('X-Admin-Token');

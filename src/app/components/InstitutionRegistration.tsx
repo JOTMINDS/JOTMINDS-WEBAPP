@@ -146,37 +146,30 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
   // ── Step 3 — OTP ──
   const sendEmailOTP = async () => {
     try {
-      const otp = generateOTP(email);
-      
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send OTP email');
-      }
-
+      await generateOTP(email);
       setEmailSent(true);
       setError('');
     } catch (err) {
       console.error('OTP Send Error:', err);
-      // Fallback for local testing without edge function deployed
       setEmailSent(true);
-      setError('Edge function not deployed. Check console or use simulated OTP.');
+      setError('Failed to send OTP code.');
     }
   };
 
-  const sendPhoneOTP = () => {
-    const otp = generateOTP(phone);
-    setSimulatedPhoneOTP(otp); // In production, send via SMS
-    setPhoneSent(true);
-    setError('');
+  const sendPhoneOTP = async () => {
+    try {
+      const otp = await generateOTP(phone);
+      setSimulatedPhoneOTP(otp); // In production, send via SMS
+      setPhoneSent(true);
+      setError('');
+    } catch (err) {
+      setPhoneSent(true);
+    }
   };
 
-  const verifyEmailOTP = () => {
-    if (verifyOTP(email, emailOTP)) {
+  const verifyEmailOTP = async () => {
+    const ok = await verifyOTP(email, emailOTP);
+    if (ok) {
       setEmailVerified(true);
       setError('');
     } else {
@@ -184,8 +177,9 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
     }
   };
 
-  const verifyPhoneOTP = () => {
-    if (verifyOTP(phone, phoneOTP)) {
+  const verifyPhoneOTP = async () => {
+    const ok = await verifyOTP(phone, phoneOTP);
+    if (ok) {
       setPhoneVerified(true);
       setError('');
     } else {
@@ -217,10 +211,10 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
   };
 
   // ── Step 5 — Create institution ──
-  const createAndFinish = () => {
+  const createAndFinish = async () => {
     setLoading(true);
     try {
-      const inst = createInstitution({
+      const inst = await createInstitution({
         name: name.trim(),
         type,
         region,

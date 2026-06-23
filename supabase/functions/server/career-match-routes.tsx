@@ -17,7 +17,7 @@ async function verifyAuth(request: Request) {
   const { createClient } = await import('npm:@supabase/supabase-js');
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
   try {

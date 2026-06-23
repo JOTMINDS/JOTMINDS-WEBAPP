@@ -5,23 +5,10 @@ import {
   generateDetailedRecommendations 
 } from './assessmentInsights';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847`;
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
 
-// Get auth token from localStorage
-const getAuthToken = () => {
-  const session = localStorage.getItem('supabase.auth.token');
-  if (session) {
-    try {
-      const parsedSession = JSON.parse(session);
-      return parsedSession.currentSession?.access_token || publicAnonKey;
-    } catch {
-      return publicAnonKey;
-    }
-  }
-  return publicAnonKey;
-};
+import { getAuthToken } from './api';
 
-// Map assessment types to framework names
 const getFrameworkName = (type: string): string => {
   switch (type) {
     case 'learning':
@@ -33,6 +20,25 @@ const getFrameworkName = (type: string): string => {
     default:
       return type;
   }
+};
+
+// Helper for authorized headers that supports admin token bypass
+const getHeaders = (): Record<string, string> => {
+  const token = getAuthToken();
+  const isAdminToken = token?.startsWith('admin-token-');
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  
+  if (isAdminToken) {
+    headers['X-Admin-Token'] = token;
+    headers['Authorization'] = `Bearer ${publicAnonKey}`;
+  } else {
+    headers['Authorization'] = `Bearer ${token || publicAnonKey}`;
+  }
+  
+  return headers;
 };
 
 /**
@@ -72,10 +78,7 @@ export const fetchAssessmentQuestions = async (
     
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
-      }
+      headers: getHeaders()
     });
 
     if (!response.ok) {
@@ -104,10 +107,7 @@ export const listAssessmentVersions = async (framework: string): Promise<any> =>
   try {
     const response = await fetch(`${BASE_URL}/assessment/${framework}/versions`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
-      }
+      headers: getHeaders()
     });
 
     if (!response.ok) {
@@ -135,10 +135,7 @@ export const calculateScoresOnServer = async (
   try {
     const response = await fetch(`${BASE_URL}/assessment/${framework}/score`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ answers, version })
     });
 
@@ -173,10 +170,7 @@ export const autoSaveProgress = async (
   try {
     const response = await fetch(`${BASE_URL}/assessment/progress`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         assessmentType,
         currentQuestion,
@@ -235,10 +229,7 @@ export const submitAssessmentWithServerScoring = async (
     // Submit assessment results
     const response = await fetch(`${BASE_URL}/assessment/submit`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         assessmentType: type,
         answers,

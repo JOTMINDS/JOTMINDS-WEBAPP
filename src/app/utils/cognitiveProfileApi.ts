@@ -1,7 +1,7 @@
 import { projectId, publicAnonKey } from './supabase/info';
 import { getAuthToken } from './api';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/cognitive-profile`;
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/cognitive-profile`;
 
 export interface CognitiveProfile {
   // Core Dimensions (0-100 scale)

@@ -42,7 +42,7 @@ export function OrganizationManager() {
     try {
       const token = getAuthToken();
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/admin/list-organizations`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/admin/list-organizations`,
         {
           method: 'GET',
           headers: {
@@ -82,7 +82,7 @@ export function OrganizationManager() {
     try {
       const token = getAuthToken();
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/admin/create-organization`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/admin/create-organization`,
         {
           method: 'POST',
           headers: {
@@ -128,7 +128,7 @@ export function OrganizationManager() {
     try {
       const token = getAuthToken();
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/admin/delete-organization/${code}`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/admin/delete-organization/${code}`,
         {
           method: 'DELETE',
           headers: {

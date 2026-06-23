@@ -77,6 +77,12 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
       return c.json({ error: 'Email and OTP required' }, 400);
     }
     
+    // Store OTP in KV for secure verification
+    await kv.set(`otp:${email.toLowerCase()}`, {
+      otp: otp.trim(),
+      createdAt: Date.now()
+    });
+    
     const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -98,7 +104,7 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
             <div style="font-size: 24px; font-weight: bold; padding: 10px; background: #f4f4f5; text-align: center; letter-spacing: 4px; border-radius: 6px;">
               ${otp}
             </div>
-            <p>This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+            <p style="margin-top: 20px; font-size: 14px; color: #666;">This code will expire in 10 minutes.</p>
           </div>
         `
       })
@@ -116,6 +122,38 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
     return c.json({ error: 'Failed to send OTP email', message: error.message }, 500);
   }
 });
+
+// Verify OTP Endpoint
+app.post('/make-server-fc8eb847/verify-otp', async (c) => {
+  try {
+    const { email, otp } = await c.req.json();
+    if (!email || !otp) {
+      return c.json({ error: 'Email and OTP required' }, 400);
+    }
+    
+    const stored = await kv.get(`otp:${email.toLowerCase()}`);
+    if (!stored) {
+      return c.json({ verified: false, error: 'OTP not found' });
+    }
+    
+    const expired = Date.now() - stored.createdAt > 10 * 60 * 1000; // 10 minutes expiry
+    if (expired) {
+      await kv.del(`otp:${email.toLowerCase()}`);
+      return c.json({ verified: false, error: 'Expired' });
+    }
+    
+    if (stored.otp === otp.trim()) {
+      await kv.del(`otp:${email.toLowerCase()}`);
+      return c.json({ verified: true });
+    }
+    
+    return c.json({ verified: false, error: 'Incorrect code' });
+  } catch (error: any) {
+    console.error('[verify-otp] Server error:', error);
+    return c.json({ error: 'Failed to verify OTP', message: error.message }, 500);
+  }
+});
+
 
 // Send Login Alert Endpoint
 app.post('/make-server-fc8eb847/send-login-alert', async (c) => {
@@ -222,11 +260,30 @@ app.post('/make-server-fc8eb847/send-org-code', async (c) => {
 // Send Teacher Invite Endpoint
 app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
   try {
-    const { email, institutionName, institutionCode } = await c.req.json();
-    if (!email || !institutionName || !institutionCode) {
+    const { email, institutionName, institutionCode, institutionId } = await c.req.json();
+    if (!email || !institutionName || !institutionCode || !institutionId) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
     
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days expiry
+    
+    const supabase = getSupabaseClient(true);
+    const { error: inviteError } = await supabase.from('institution_invitations').insert({
+      email: email.toLowerCase().trim(),
+      institution_id: institutionId,
+      role: 'teacher',
+      token,
+      expires_at: expiresAt,
+      status: 'pending'
+    });
+
+    if (inviteError) {
+      console.error('[send-teacher-invite] DB Error:', inviteError);
+      return c.json({ error: 'Failed to record invitation' }, 500);
+    }
+    
+    const signupLink = `https://jotminds.com/auth?inviteToken=${token}&role=teacher`;
     const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -245,19 +302,18 @@ app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
             </div>
             <h2>You're Invited!</h2>
             <p>You have been invited to join <strong>${institutionName}</strong> as a teacher on JotMinds.</p>
-            <p>To join, simply sign up for a Teacher account on JotMinds and enter the following institution code during registration:</p>
-            <div style="background: #f4f4f5; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center;">
-              <p style="margin: 0; font-size: 14px; color: #666;">Institution Code</p>
-              <h1 style="margin: 10px 0; font-size: 32px; letter-spacing: 2px; color: #3b82f6;">${institutionCode}</h1>
+            <p>To join, simply click the link below to sign up for a Teacher account on JotMinds. Your invitation is valid for 7 days:</p>
+            <div style="margin-top: 30px; text-align: center;">
+              <a href="${signupLink}" style="background-color: #6B4C9A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Join Institution</a>
             </div>
-            <p>If you already have an account, you can enter this code in your Profile Settings to join the institution.</p>
+            <p style="margin-top: 20px; font-size: 12px; color: #666;">If the button doesn't work, paste this link in your browser: <br/> ${signupLink}</p>
           </div>
         `
       })
     });
     
     if (response.ok) {
-      return c.json({ success: true });
+      return c.json({ success: true, token });
     } else {
       const err = await response.json();
       console.error('[send-teacher-invite] Resend API error:', err);
@@ -269,15 +325,34 @@ app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
   }
 });
 
+// Send Student Invite Endpoint
 app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
   try {
-    const { email, studentName, teacherName, schoolName, teacherId } = await c.req.json();
-    if (!email || !teacherName) {
+    const { email, studentName, teacherName, schoolName, teacherId, institutionId } = await c.req.json();
+    if (!email || !teacherName || !institutionId) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days expiry
+
+    const supabase = getSupabaseClient(true);
+    const { error: inviteError } = await supabase.from('institution_invitations').insert({
+      email: email.toLowerCase().trim(),
+      institution_id: institutionId,
+      role: 'student',
+      token,
+      expires_at: expiresAt,
+      status: 'pending'
+    });
+
+    if (inviteError) {
+      console.error('[send-student-invite] DB Error:', inviteError);
+      return c.json({ error: 'Failed to record student invitation' }, 500);
+    }
+
     if (teacherId) {
-      console.log(`[send-student-invite] Storing invite for ${email} from teacher ${teacherId}`);
+      // Legacy support for tracking student_invite in KV
       await kv.set(`student_invite:${email.toLowerCase()}`, {
         teacherId,
         teacherName,
@@ -286,6 +361,7 @@ app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
       });
     }
 
+    const signupLink = `https://jotminds.com/auth?inviteToken=${token}&role=student`;
     const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -305,17 +381,18 @@ app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
             <h2>Welcome to JotMinds!</h2>
             <p>Hi ${studentName || 'Student'},</p>
             <p>You have been added to <strong>${teacherName}</strong>'s class${schoolName ? ` at <strong>${schoolName}</strong>` : ''} on JotMinds.</p>
-            <p>To get started, please sign up for a Student account on JotMinds. When creating your account, use this email address so you are automatically linked to your class.</p>
-            <div style="margin-top: 30px;">
-              <a href="https://jotminds.com/auth" style="background-color: #6B4C9A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Sign Up Now</a>
+            <p>To get started, please click the link below to sign up for a Student account. This invitation is valid for 7 days:</p>
+            <div style="margin-top: 30px; text-align: center;">
+              <a href="${signupLink}" style="background-color: #6B4C9A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Sign Up Now</a>
             </div>
+            <p style="margin-top: 20px; font-size: 12px; color: #666;">If the button doesn't work, paste this link in your browser: <br/> ${signupLink}</p>
           </div>
         `
       })
     });
     
     if (response.ok) {
-      return c.json({ success: true });
+      return c.json({ success: true, token });
     } else {
       const err = await response.json();
       console.error('[send-student-invite] Resend API error:', err);
@@ -324,6 +401,237 @@ app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
   } catch (error: any) {
     console.error('[send-student-invite] Server error:', error);
     return c.json({ error: 'Failed to send student invite email', message: error.message }, 500);
+  }
+});
+
+// Validate Institution Code Endpoint (Secure validation on the server)
+app.post('/make-server-fc8eb847/institutions/validate-code', async (c) => {
+  try {
+    const { code } = await c.req.json();
+    if (!code) {
+      return c.json({ valid: false, error: 'not_found', errorMessage: 'Institution code is required.' });
+    }
+
+    const supabase = getSupabaseClient(true);
+    const { data: inst, error } = await supabase
+      .from('institutions')
+      .select('*')
+      .eq('code', code.toUpperCase().trim())
+      .maybeSingle();
+
+    if (error || !inst) {
+      return c.json({ valid: false, error: 'not_found', errorMessage: 'Institution code not found. Please check and try again.' });
+    }
+
+    if (!inst.is_active) {
+      return c.json({ valid: false, institution: inst, error: 'inactive', errorMessage: 'This institution account is currently deactivated.' });
+    }
+
+    if (inst.code_expiry_days) {
+      const generated = new Date(inst.code_generated_at).getTime();
+      const expiresAt = generated + inst.code_expiry_days * 24 * 60 * 60 * 1000;
+      if (Date.now() > expiresAt) {
+        return c.json({ valid: false, institution: inst, error: 'expired', errorMessage: 'This institution code has expired.' });
+      }
+    }
+
+    return c.json({ valid: true, institution: inst });
+  } catch (error: any) {
+    console.error('[validate-code] Server error:', error);
+    return c.json({ valid: false, error: 'server_error', errorMessage: 'Internal server error validating code.' });
+  }
+});
+
+// Join Institution Endpoint (Secure joining bypassing RLS)
+app.post('/make-server-fc8eb847/institutions/join', async (c) => {
+  try {
+    const { code, userId, userName, userEmail, userPhone, role } = await c.req.json();
+    
+    if (!code || !userId || !userName || !userEmail || !role) {
+      return c.json({ success: false, error: 'Missing required fields' }, 400);
+    }
+
+    // Verify auth token (though signup may have just happened)
+    const user = await verifyAuth(c.req.raw);
+    if (!user || user.id !== userId) {
+      return c.json({ success: false, error: 'Unauthorized or userId mismatch' }, 401);
+    }
+
+    const supabase = getSupabaseClient(true); // Service role to bypass RLS
+
+    // Validate the code
+    const { data: inst, error: instError } = await supabase
+      .from('institutions')
+      .select('id, is_active, code_expiry_days, code_generated_at')
+      .eq('code', code.toUpperCase().trim())
+      .maybeSingle();
+
+    if (instError || !inst) {
+      return c.json({ success: false, error: 'Institution code not found' }, 404);
+    }
+
+    if (!inst.is_active) {
+      return c.json({ success: false, error: 'Institution is inactive' }, 403);
+    }
+
+    if (inst.code_expiry_days) {
+      const generated = new Date(inst.code_generated_at).getTime();
+      const expiresAt = generated + inst.code_expiry_days * 24 * 60 * 60 * 1000;
+      if (Date.now() > expiresAt) {
+        return c.json({ success: false, error: 'Institution code expired' }, 403);
+      }
+    }
+
+    // Insert into institution_members
+    const { error: insertError } = await supabase
+      .from('institution_members')
+      .upsert({
+        user_id: userId,
+        user_name: userName,
+        user_email: userEmail,
+        user_phone: userPhone || null,
+        role: role,
+        institution_id: inst.id,
+        joined_via_code: code.toUpperCase().trim(),
+        status: 'pending'
+      }, { onConflict: 'user_id, institution_id' });
+
+    if (insertError) {
+      console.error('[join-institution] DB Insert Error:', insertError);
+      return c.json({ success: false, error: 'Database insert failed' }, 500);
+    }
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('[join-institution] Server error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// Validate Invitation Token Endpoint (Secure validation of invite link)
+app.post('/make-server-fc8eb847/institutions/validate-invite-token', async (c) => {
+  try {
+    const { token } = await c.req.json();
+    if (!token) {
+      return c.json({ valid: false, error: 'Missing token' });
+    }
+
+    const supabase = getSupabaseClient(true);
+    const { data: invite, error } = await supabase
+      .from('institution_invitations')
+      .select('*, institutions(*)')
+      .eq('token', token)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (error || !invite) {
+      return c.json({ valid: false, error: 'Invitation not found or already accepted.' });
+    }
+
+    const isExpired = Date.now() > new Date(invite.expires_at).getTime();
+    if (isExpired) {
+      // Auto expire in db
+      await supabase.from('institution_invitations').update({ status: 'expired' }).eq('id', invite.id);
+      return c.json({ valid: false, error: 'Invitation link has expired.' });
+    }
+
+    return c.json({
+      valid: true,
+      role: invite.role,
+      email: invite.email,
+      institution: invite.institutions
+    });
+  } catch (error: any) {
+    console.error('[validate-invite-token] Server error:', error);
+    return c.json({ valid: false, error: 'Server error validating invitation.' });
+  }
+});
+
+// Promote Member to Co-Admin
+app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
+  try {
+    const { institutionId, targetUserId } = await c.req.json();
+    const user = await verifyAuth(c.req);
+    
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    
+    const supabase = getSupabaseClient(true);
+    
+    // Verify caller is the primary admin
+    const { data: inst } = await supabase
+      .from('institutions')
+      .select('admin_id, co_admin_ids')
+      .eq('id', institutionId)
+      .single();
+      
+    if (!inst || inst.admin_id !== user.id) {
+      return c.json({ error: 'Forbidden: Only the head admin can promote members' }, 403);
+    }
+    
+    // Update role to admin
+    await supabase
+      .from('institution_members')
+      .update({ role: 'admin' })
+      .eq('institution_id', institutionId)
+      .eq('user_id', targetUserId);
+      
+    // Add to co_admin_ids array
+    const newCoAdmins = Array.from(new Set([...(inst.co_admin_ids || []), targetUserId]));
+    await supabase
+      .from('institutions')
+      .update({ co_admin_ids: newCoAdmins })
+      .eq('id', institutionId);
+      
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('[promote-member] Error:', error);
+    return c.json({ error: 'Server error' }, 500);
+  }
+});
+
+// Demote Co-Admin to Teacher
+app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
+  try {
+    const { institutionId, targetUserId } = await c.req.json();
+    const user = await verifyAuth(c.req);
+    
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    
+    const supabase = getSupabaseClient(true);
+    
+    // Verify caller is the primary admin
+    const { data: inst } = await supabase
+      .from('institutions')
+      .select('admin_id, co_admin_ids')
+      .eq('id', institutionId)
+      .single();
+      
+    if (!inst || inst.admin_id !== user.id) {
+      return c.json({ error: 'Forbidden: Only the head admin can demote members' }, 403);
+    }
+    
+    // Update role to teacher
+    await supabase
+      .from('institution_members')
+      .update({ role: 'teacher' })
+      .eq('institution_id', institutionId)
+      .eq('user_id', targetUserId);
+      
+    // Remove from co_admin_ids array
+    const newCoAdmins = (inst.co_admin_ids || []).filter((id: string) => id !== targetUserId);
+    await supabase
+      .from('institutions')
+      .update({ co_admin_ids: newCoAdmins })
+      .eq('id', institutionId);
+      
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('[demote-member] Error:', error);
+    return c.json({ error: 'Server error' }, 500);
   }
 });
 
@@ -417,9 +725,47 @@ app.post('/make-server-fc8eb847/validate-org-code', async (c) => {
       return c.json({ error: 'Organization code is required' }, 400);
     }
 
+    // Check if it's a class code
+    if (code.startsWith('CLASS-')) {
+      const allUsers = await kv.getByPrefix('user:');
+      const teacher = allUsers.find((u: any) => u.role === 'teacher' && u.classCode === code);
+      
+      if (teacher) {
+        console.log(`[validate-org-code] ✓ Class found: ${teacher.name} at ${teacher.school || teacher.organizationName || 'Unknown School'}`);
+        return c.json({
+          valid: true,
+          organizationName: teacher.school || teacher.organizationName || 'Unknown School',
+          organizationType: 'Educational Institution',
+          teacherName: teacher.name,
+          teacherId: teacher.id
+        });
+      }
+      
+      console.log(`[validate-org-code] ✗ Class not found for code: ${code}`);
+      return c.json({ valid: false, error: 'Invalid class code' }, 200);
+    }
+
+    // Default: Check if it's an organization code
     const organization = await kv.get(`organization:${code}`);
     
     if (!organization) {
+      // Try to find in the Postgres institutions table (for school codes)
+      const supabase = getSupabaseClient(true);
+      const { data: instData, error: instError } = await supabase
+        .from('institutions')
+        .select('*')
+        .eq('code', code.toUpperCase().trim())
+        .maybeSingle();
+
+      if (instData && !instError) {
+        console.log(`[validate-org-code] ✓ Institution found: ${instData.name}`);
+        return c.json({ 
+          valid: true, 
+          organizationName: instData.name,
+          organizationType: instData.type 
+        });
+      }
+
       console.log(`[validate-org-code] ✗ Organization not found for code: ${code}`);
       return c.json({ valid: false, error: 'Invalid organization code' }, 200);
     }
@@ -556,7 +902,7 @@ function generateWelcomeEmailHtml(name: string, role: string, email: string, org
 // Sign up
 app.post('/make-server-fc8eb847/signup', async (c) => {
   try {
-    const { email, password, name, role, organizationName, organizationType, industrySector, position, phone, secondaryEmail, secondaryPhone, school, educationLevel, dateOfBirth, organizationCode, hasConsented, consentType, consentDate } = await c.req.json();
+    const { email, password, name, role, organizationName, organizationType, industrySector, position, phone, secondaryEmail, secondaryPhone, school, educationLevel, dateOfBirth, organizationCode, hasConsented, consentType, consentDate, inviteToken } = await c.req.json();
     
     if (!email || !password || !name || !role) {
       return c.json({ error: 'Missing required fields' }, 400);
@@ -564,8 +910,31 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
 
     let finalOrgCode = null;
     let finalOrgName = organizationName || null;
+    let inviteRecord = null;
 
-    // Handle organization code for Organizations and Professionals
+    const supabase = getSupabaseClient(true);
+
+    // Secure invite token validation
+    if (inviteToken) {
+      const { data: invite, error: inviteErr } = await supabase
+        .from('institution_invitations')
+        .select('*, institutions(*)')
+        .eq('token', inviteToken)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (!inviteErr && invite && new Date() < new Date(invite.expires_at)) {
+        inviteRecord = invite;
+        finalOrgName = invite.institutions.name;
+        finalOrgCode = invite.institutions.code;
+      } else {
+        return c.json({ error: 'Invalid or expired invitation token.' }, 400);
+      }
+    }
+
+    let matchedTeacher = null;
+
+    // Handle organization code
     if (role === 'organization') {
       // Organization creates a new organization and gets a code
       finalOrgCode = generateOrgCode();
@@ -579,25 +948,46 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         createdAt: new Date().toISOString(),
         createdBy: email
       });
-    } else if ((role === 'professional' || role === 'teacher') && organizationCode) {
-      // Professional or Teacher can optionally provide an organization code
-      const organization = await kv.get(`organization:${organizationCode}`);
-      if (!organization) {
-        return c.json({ error: 'Invalid organization code' }, 400);
+    } else if (organizationCode && !inviteToken) {
+      if (organizationCode.toUpperCase().startsWith('CLASS-')) {
+        // Teacher Class Code
+        const allUsers = await kv.getByPrefix('user:');
+        matchedTeacher = allUsers.find((u: any) => u.role === 'teacher' && u.classCode === organizationCode.toUpperCase());
+        if (!matchedTeacher) {
+          return c.json({ error: 'Invalid class code' }, 400);
+        }
+        finalOrgCode = organizationCode.toUpperCase();
+        finalOrgName = matchedTeacher.school || matchedTeacher.organizationName;
+      } else {
+        // Professional, Teacher, or Student with Organization code
+        const organization = await kv.get(`organization:${organizationCode}`);
+        if (organization) {
+          finalOrgCode = organizationCode;
+          finalOrgName = organization.name;
+        } else {
+          // Try Postgres institutions table
+          const { data: instData } = await supabase
+            .from('institutions')
+            .select('*')
+            .eq('code', organizationCode.toUpperCase().trim())
+            .maybeSingle();
+            
+          if (instData) {
+            finalOrgCode = organizationCode;
+            finalOrgName = instData.name;
+          } else {
+            return c.json({ error: 'Invalid organization code' }, 400);
+          }
+        }
       }
-
-      finalOrgCode = organizationCode;
-      finalOrgName = organization.name;
     }
-
-    const supabase = getSupabaseClient(true);
     
     // Create user in Supabase Auth
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true, // Auto-confirm email since email server isn't configured
-      user_metadata: { name, role, organizationName: finalOrgName, organizationType, industrySector, position, phone, secondaryEmail, secondaryPhone, school, educationLevel, dateOfBirth, organizationCode: finalOrgCode, hasConsented, consentType, consentDate }
+      user_metadata: { name, role, organizationName: finalOrgName, organizationType, industrySector, position, phone, secondaryEmail, secondaryPhone, school: finalOrgName || school, educationLevel, dateOfBirth, organizationCode: finalOrgCode, hasConsented, consentType, consentDate }
     });
 
     if (error) {
@@ -608,22 +998,77 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     let finalTeacherId = null;
     let finalLinkedTeachers = [];
 
-    // Magic Email Linking for students
+    // Magic Email Linking & Class Code Linking for students
     if (role === 'student') {
+      if (matchedTeacher) {
+        console.log(`[signup] Class Code Match! Linking student ${email} to teacher ${matchedTeacher.id}`);
+        finalTeacherId = matchedTeacher.id;
+        finalLinkedTeachers = [matchedTeacher.id];
+      }
+
+      // Check for legacy Magic Link invite
       const invite = await kv.get(`student_invite:${email.toLowerCase()}`);
       if (invite && invite.teacherId) {
         console.log(`[signup] Magic Email Match! Linking student ${email} to teacher ${invite.teacherId}`);
-        finalTeacherId = invite.teacherId;
-        finalLinkedTeachers = [invite.teacherId];
+        // Append instead of overwrite if they also had a class code (rare but possible)
+        if (!finalTeacherId) finalTeacherId = invite.teacherId;
+        if (!finalLinkedTeachers.includes(invite.teacherId)) {
+          finalLinkedTeachers.push(invite.teacherId);
+        }
         
         // Optionally inherit the school name from the invite if not provided during signup
-        if (!school && invite.schoolName) {
+        if (!school && !finalOrgName && invite.schoolName) {
           finalOrgName = invite.schoolName;
         }
 
         // Clean up the invite record
         await kv.delete(`student_invite:${email.toLowerCase()}`);
       }
+    }
+
+    // Auto-link to PostgreSQL institution_members if joining via Class Code or JOTM Org Code
+    if (!inviteRecord && finalOrgCode) {
+      // Which code should we use to look up the institution? 
+      // If it's a CLASS code, we need the teacher's JOTM code
+      const lookupCode = matchedTeacher?.organizationCode || finalOrgCode;
+      
+      const { data: instData } = await supabase
+        .from('institutions')
+        .select('id, code')
+        .eq('code', lookupCode)
+        .maybeSingle();
+
+      if (instData) {
+        console.log(`[signup] Auto-linking ${role} ${email} to institution ${instData.id}`);
+        await supabase.from('institution_members').insert({
+          user_id: data.user.id,
+          user_name: name,
+          user_email: email,
+          role: role === 'professional' ? 'teacher' : role, // Map professional to teacher for institutions
+          institution_id: instData.id,
+          joined_via_code: finalOrgCode, // Store the actual code they typed (CLASS- or JOTM-)
+          status: 'pending'
+        });
+      }
+    }
+
+    // Save to PostgreSQL institution_members if we signed up with an invite
+    if (inviteRecord) {
+      await supabase.from('institution_members').insert({
+        user_id: data.user.id,
+        user_name: name,
+        user_email: email,
+        role: inviteRecord.role,
+        institution_id: inviteRecord.institution_id,
+        joined_via_code: inviteRecord.institutions.code,
+        status: 'pending' // Admin approval required
+      });
+
+      // Mark invite as accepted
+      await supabase
+        .from('institution_invitations')
+        .update({ status: 'accepted' })
+        .eq('id', inviteRecord.id);
     }
 
     // Store user profile in KV store
@@ -1653,33 +2098,16 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
     }
 
     const teacherProfile = await kv.get(`user:${user.id}`);
-    
-    // Allow admin to impersonate or view as teacher if needed, but primarily check for teacher role
-    if (teacherProfile?.role !== 'teacher' && teacherProfile?.role !== 'admin' && user.id !== 'admin-001') {
+
+    // Allow admin to impersonate; also allow if Supabase user_metadata says teacher
+    const profileRole = teacherProfile?.role || user.user_metadata?.role || '';
+    if (profileRole !== 'teacher' && profileRole !== 'admin' && user.id !== 'admin-001') {
       return c.json({ error: 'Forbidden - Teacher access required' }, 403);
     }
 
-    const schoolName = teacherProfile?.school;
-    
-    if (!schoolName) {
-      return c.json({ success: true, students: [] });
-    }
+    const schoolName = teacherProfile?.school || teacherProfile?.organizationName;
 
-    console.log(`[Backend] Fetching students for teacher ${user.id} at school: ${schoolName}`);
-
-    // Get all users and filter by school and role
-    const allUsers = await kv.getByPrefix('user:');
-    
-    const students = allUsers.filter((u: any) => 
-      u.role === 'student' && 
-      (
-        u.teacherId === user.id ||
-        (u.linkedTeachers && u.linkedTeachers.includes(user.id)) ||
-        (u.school && schoolName && u.school.toLowerCase().trim() === schoolName.toLowerCase().trim())
-      )
-    );
-
-    console.log(`[Backend] Found ${students.length} students for school ${schoolName}`);
+    const supabaseAdmin = getSupabaseClient(true);
 
     // Helper function to determine primary style from scores
     const determinePrimaryStyle = (scores: any, type: string) => {
@@ -1703,6 +2131,97 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
       }
       return 'Unknown';
     };
+
+    // ── Strategy 1: look up via institution_members (works for seeded / demo accounts) ──
+    const { data: teacherMemberRows } = await supabaseAdmin
+      .from('institution_members')
+      .select('institution_id')
+      .eq('user_id', user.id)
+      .eq('role', 'teacher')
+      .limit(1);
+
+    let institutionStudents: any[] = [];
+    if (teacherMemberRows && teacherMemberRows.length > 0) {
+      const institutionId = teacherMemberRows[0].institution_id;
+      const { data: studentRows } = await supabaseAdmin
+        .from('institution_members')
+        .select('user_id, user_name, user_email, user_phone, status')
+        .eq('institution_id', institutionId)
+        .eq('role', 'student')
+        .eq('status', 'approved');
+
+      if (studentRows && studentRows.length > 0) {
+        institutionStudents = await Promise.all(
+          studentRows.map(async (m: any) => {
+            const studentId = m.user_id;
+            const allAssessments = await kv.getByPrefix(`result:${studentId}:`);
+            const completedAssessments = allAssessments.filter((a: any) => a.completedAt);
+            
+            const transformedAssessments = completedAssessments.map((assessment: any) => {
+              const assessmentType = assessment.assessmentType;
+              const results = assessment.results || {};
+              
+              let score: any = {};
+              if (assessmentType === 'kolb') {
+                const style = determinePrimaryStyle(results, 'kolb');
+                score.kolb = { style, scores: results };
+              } else if (assessmentType === 'sternberg') {
+                const style = determinePrimaryStyle(results, 'sternberg');
+                score.sternberg = { style, scores: results };
+              } else if (assessmentType === 'dual-process') {
+                const style = determinePrimaryStyle(results, 'dual-process');
+                score.dualProcess = { style, scores: results };
+              } else {
+                score[assessmentType] = results;
+              }
+
+              return {
+                id: assessment.id || `result:${studentId}:${assessmentType}`,
+                userId: studentId,
+                type: assessmentType,
+                completed: true,
+                completedAt: assessment.completedAt,
+                responses: assessment.answers || [],
+                score: score
+              };
+            });
+
+            return {
+              id: studentId,
+              name: m.user_name,
+              email: m.user_email,
+              phone: m.user_phone || '',
+              role: 'student',
+              school: schoolName || '',
+              assessments: transformedAssessments
+            };
+          })
+        );
+        console.log(`[Backend] Found ${institutionStudents.length} students via institution_members for teacher ${user.id}`);
+        return c.json({ success: true, students: institutionStudents });
+      }
+    }
+
+    // ── Strategy 2: KV-based lookup (legacy / non-institution teachers) ──
+    if (!schoolName) {
+      return c.json({ success: true, students: [] });
+    }
+
+    console.log(`[Backend] Fetching students for teacher ${user.id} at school: ${schoolName}`);
+
+    // Get all users and filter by school and role
+    const allUsers = await kv.getByPrefix('user:');
+    
+    const students = allUsers.filter((u: any) => 
+      u.role === 'student' && 
+      (
+        u.teacherId === user.id ||
+        (u.linkedTeachers && u.linkedTeachers.includes(user.id)) ||
+        (u.school && schoolName && u.school.toLowerCase().trim() === schoolName.toLowerCase().trim())
+      )
+    );
+
+    console.log(`[Backend] Found ${students.length} students for school ${schoolName}`);
 
     // Get assessments for each student
     const studentsWithAssessments = await Promise.all(

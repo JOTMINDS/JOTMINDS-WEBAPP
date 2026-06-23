@@ -46,7 +46,7 @@ const verifyAuth = async (request: Request) => {
   }
 
   const token = authHeader.replace('Bearer ', '');
-  const supabase = getSupabaseClient();
+  const supabase = getSupabaseClient(true);
   
   try {
     const { data, error } = await supabase.auth.getUser(token);
@@ -584,12 +584,53 @@ app.get('/assessment/results/:assessmentType', async (c) => {
   }
 });
 
+// Helper function to determine primary style from scores
+const determinePrimaryStyle = (scores: any, type: string) => {
+  if (type === 'kolb') {
+    const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores;
+    const acCE = AC - CE;
+    const aeRO = AE - RO;
+    
+    if (acCE > 0 && aeRO > 0) return 'Converging';
+    if (acCE > 0 && aeRO < 0) return 'Assimilating';
+    if (acCE < 0 && aeRO < 0) return 'Diverging';
+    return 'Accommodating';
+  } else if (type === 'sternberg') {
+    const { analytical = 0, creative = 0, practical = 0 } = scores;
+    if (analytical >= creative && analytical >= practical) return 'Analytical';
+    if (creative >= analytical && creative >= practical) return 'Creative';
+    return 'Practical';
+  } else if (type === 'dual-process') {
+    const { system1 = 0, system2 = 0 } = scores;
+    return system1 > system2 ? 'Intuitive' : 'Reflective';
+  }
+  return 'Unknown';
+};
+
 // Get all assessment results for user
 app.get('/assessment/results', async (c) => {
   try {
     const user = await verifyAuth(c.req.raw);
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userIdsParam = c.req.query('userIds');
+    if (userIdsParam) {
+      // Role validation: Only admins, school admins, or teachers can query others' assessments
+      const profile = await kv.get(`user:${user.id}`);
+      const role = profile?.role || user.user_metadata?.role || '';
+      
+      if (role !== 'school_admin' && role !== 'admin' && role !== 'teacher' && user.id !== 'admin-001') {
+        return c.json({ error: 'Forbidden' }, 403);
+      }
+      
+      const targetIds = userIdsParam.split(',');
+      const allResults = await Promise.all(
+        targetIds.map(id => kv.getByPrefix(`result:${id}:`))
+      );
+      const flattened = allResults.flat();
+      return c.json({ success: true, results: flattened });
     }
 
     const resultKeys = await kv.getByPrefix(`result:${user.id}:`);
@@ -722,6 +763,31 @@ app.get('/assessment/:framework/:version', async (c) => {
         console.log(`[Questions] ✅ Question integrity verified - all questions belong to ${framework}`);
       }
     }
+
+    // Select exactly 12 questions with balanced style/dimension distribution
+    let selectedQuestions = [];
+    if (framework === 'kolb') {
+      const styles = ['Diverging', 'Assimilating', 'Converging', 'Accommodating'];
+      styles.forEach(style => {
+        const styleQuestions = questions.filter((q: any) => q.style === style);
+        selectedQuestions.push(...styleQuestions.slice(0, 3)); // 3 questions per style = 12 total
+      });
+    } else if (framework === 'sternberg') {
+      const styles = ['Analytical', 'Creative', 'Practical'];
+      styles.forEach(style => {
+        const styleQuestions = questions.filter((q: any) => q.style === style);
+        selectedQuestions.push(...styleQuestions.slice(0, 4)); // 4 questions per style = 12 total
+      });
+    } else if (framework === 'dual-process') {
+      const styles = ['Intuitive', 'Reflective'];
+      styles.forEach(style => {
+        const styleQuestions = questions.filter((q: any) => q.style === style);
+        selectedQuestions.push(...styleQuestions.slice(0, 6)); // 6 questions per style = 12 total
+      });
+    } else {
+      selectedQuestions = questions.slice(0, 12);
+    }
+    questions = selectedQuestions;
 
     console.log(`[Questions] Retrieved ${framework} ${version} with ${questions.length} questions${randomize ? ' (randomized)' : ''}`);
 

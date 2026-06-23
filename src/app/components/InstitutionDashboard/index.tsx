@@ -1,0 +1,434 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Badge } from '../ui/badge';
+import {
+  ArrowLeft, Building2, QrCode, Users, BarChart3, Download, Settings, Shield, Loader2, LogOut
+} from 'lucide-react';
+import { User } from '../../types';
+import {
+  Institution,
+  InstitutionMember,
+  InstitutionInvitation,
+  getInstitutionByAdminId,
+  getInstitutionMembers,
+  getAllInvitations,
+  addMember,
+  generateInstitutionCode,
+  saveInstitution,
+  isCodeExpired,
+  getDaysUntilExpiry,
+  getCodeExpiryDate,
+  getInstitutionForMember,
+  promoteMember,
+  demoteMember
+} from '../../utils/institution';
+import { getAllUsers } from '../../utils/storage';
+
+// Child components
+import { InstitutionOverview } from './InstitutionOverview';
+import { InstitutionCodeManager } from './InstitutionCodeManager';
+import { InstitutionMembers } from './InstitutionMembers';
+import { InstitutionSettings } from './InstitutionSettings';
+import { InviteMemberModal } from './InviteMemberModal';
+import { TransferMemberModal } from './TransferMemberModal';
+import { BulkUploadModal } from './BulkUploadModal';
+import { TeacherManagementModal } from './TeacherManagementModal';
+
+// Shared siblings
+import { SchoolAnalyticsDashboard } from '../SchoolAnalyticsDashboard';
+import { InstitutionReporting } from '../InstitutionReporting';
+import { ProfileSettingsModal } from '../ProfileSettingsModal';
+import { SchoolTeacherStylesView } from '../SchoolTeacherStylesView';
+
+interface InstitutionDashboardProps {
+  user: User;
+  onLogout: () => void;
+  onRegisterNew: () => void;
+  initialInstitution?: Institution;
+}
+
+type Tab = 'overview' | 'code' | 'members' | 'analytics' | 'reports' | 'settings' | 'profile' | 'teacher_styles';
+
+export function InstitutionDashboard({
+  user,
+  onLogout,
+  onRegisterNew,
+  initialInstitution
+}: InstitutionDashboardProps) {
+  const [tab, setTab] = useState<Tab>('overview');
+  const [institution, setInstitution] = useState<Institution | null>(initialInstitution || null);
+  const [loading, setLoading] = useState(!initialInstitution);
+  const [members, setMembers] = useState<InstitutionMember[]>([]);
+  const [institutionInvitations, setInstitutionInvitations] = useState<InstitutionInvitation[]>([]);
+  const [allPlatformUsers, setAllPlatformUsers] = useState<any[]>([]);
+
+  // Modal active states
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteModalEmail, setInviteModalEmail] = useState('');
+  const [inviteModalRole, setInviteModalRole] = useState<'teacher' | 'student'>('teacher');
+
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+
+  const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
+  const [transferTargetRole, setTransferTargetRole] = useState<'teacher' | 'student' | null>(null);
+  const [transferTargetName, setTransferTargetName] = useState('');
+
+  const [performanceTargetId, setPerformanceTargetId] = useState<string | null>(null);
+
+  const [copied, setCopied] = useState(false);
+
+  // Initialize Institution
+  useEffect(() => {
+    async function initInstitution() {
+      if (initialInstitution) {
+        setInstitution(initialInstitution);
+        setLoading(false);
+        return;
+      }
+      try {
+        let inst = await getInstitutionByAdminId(user.id);
+        if (!inst) {
+          inst = await getInstitutionForMember(user.id);
+        }
+        if (!inst && user.organizationType === 'Educational Institution') {
+          // If no institution exists, redirect to registration form automatically
+          onRegisterNew();
+          return;
+        }
+        setInstitution(inst);
+      } catch (err) {
+        console.error('Failed to initialize institution:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    initInstitution();
+  }, [user, initialInstitution]);
+
+  // Load members, invitations, and sync platform users
+  const loadData = async () => {
+    if (!institution) return;
+    try {
+      const allUsers = getAllUsers();
+      setAllPlatformUsers(allUsers);
+
+      const currentMembers = await getInstitutionMembers(institution.id);
+      let changed = false;
+
+      // Auto-sync users who registered with this institution's code or name
+      for (const u of allUsers) {
+        if (u.organizationName === institution.name && (u.role === 'teacher' || u.role === 'student')) {
+          if (!currentMembers.some(m => m.userId === u.id)) {
+            await addMember(institution.id, {
+              userId: u.id,
+              userName: u.name,
+              userEmail: u.email,
+              userPhone: u.phone,
+              role: u.role,
+              joinedViaCode: u.organizationCode || institution.code,
+              status: 'pending'
+            });
+            changed = true;
+          }
+        }
+      }
+
+      const updatedMembers = await getInstitutionMembers(institution.id);
+      if (user.role === 'teacher') {
+        const teacherStudents = updatedMembers.filter(m => {
+          if (m.role === 'teacher') {
+            return m.userId === user.id;
+          }
+          if (m.role === 'student') {
+            const studentProfile = allUsers.find(u => u.id === m.userId);
+            return studentProfile && (
+              studentProfile.teacherId === user.id ||
+              (studentProfile.linkedTeachers && studentProfile.linkedTeachers.includes(user.id))
+            );
+          }
+          return false;
+        });
+        setMembers(teacherStudents);
+      } else {
+        setMembers(updatedMembers);
+      }
+
+      const invitations = await getAllInvitations(institution.id);
+      setInstitutionInvitations(invitations);
+    } catch (err) {
+      console.error('Failed to load data:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!institution) return;
+    loadData();
+  }, [institution?.id, institution?.name, institution?.code]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#5B7DB1]" />
+      </div>
+    );
+  }
+
+  if (!institution) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-8 pb-8 text-center">
+            <Building2 className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+            <h2 className="text-xl text-gray-800 mb-2">No Institution Registered</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Register your school or educational institution to unlock teacher profiles, analytics, and institution code management.
+            </p>
+            <Button style={{ backgroundColor: '#5B7DB1' }} onClick={onRegisterNew} className="w-full">
+              <Building2 className="w-4 h-4 mr-2" /> Register Your Institution
+            </Button>
+            <Button variant="ghost" onClick={onLogout} className="w-full mt-2">Back</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const expired = isCodeExpired(institution);
+  const daysLeft = getDaysUntilExpiry(institution);
+  const expiryDate = getCodeExpiryDate(institution);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(institution.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = () => {
+    const text = `Join ${institution.name} on JotMinds!\n\nUse institution code: ${institution.code}\n\nSign up at JotMinds and enter this code to link your account to our school.`;
+    if (navigator.share) {
+      navigator.share({ title: `${institution.name} — JotMinds Code`, text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const isPrimaryAdmin = institution.adminId === user.id;
+  const isCoAdmin = institution.coAdminIds?.includes(user.id) ?? false;
+  
+  let availableTabs: Tab[];
+  if (isPrimaryAdmin) {
+    availableTabs = ['overview', 'code', 'members', 'analytics', 'reports', 'settings', 'profile'];
+  } else if (isCoAdmin) {
+    availableTabs = ['overview', 'members', 'analytics', 'reports', 'profile'];
+  } else {
+    availableTabs = ['overview', 'members', 'analytics', 'reports', 'profile'];
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onLogout} className="gap-1">
+            <LogOut className="w-4 h-4" /> Logout
+          </Button>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {institution.logo ? (
+              <img src={institution.logo} alt="Logo" className="w-8 h-8 object-contain rounded" />
+            ) : (
+              <div className="w-8 h-8 rounded bg-[#5B7DB1] flex items-center justify-center text-white text-sm">
+                {institution.name.charAt(0)}
+              </div>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-base text-gray-900 truncate">{institution.name}</h1>
+              <div className="flex items-center gap-2">
+                <Badge
+                  style={{
+                    backgroundColor: institution.isActive ? '#1E8A6E20' : '#DC262620',
+                    color: institution.isActive ? '#1E8A6E' : '#DC2626'
+                  }}
+                  className="text-[10px]"
+                >
+                  {institution.isActive ? '● Active' : '● Inactive'}
+                </Badge>
+                <span className="text-xs text-gray-500">{institution.type} · {institution.region}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 flex gap-1 pb-0 overflow-x-auto">
+          <div className="flex overflow-x-auto no-scrollbar border-b">
+            {availableTabs.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 shrink-0 transition-colors ${
+                  tab === t ? 'border-[#5B7DB1] text-[#5B7DB1]' : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {t === 'overview' && <Building2 className="h-4 w-4" />}
+                {t === 'code' && <QrCode className="h-4 w-4" />}
+                {t === 'members' && <Users className="h-4 w-4" />}
+                {t === 'analytics' && <BarChart3 className="h-4 w-4" />}
+                {t === 'reports' && <Download className="h-4 w-4" />}
+                {t === 'settings' && <Settings className="h-4 w-4" />}
+                {t === 'profile' && <Shield className="h-4 w-4" />}
+                <span className="capitalize">{t}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
+        {/* tabs */}
+        {tab === 'overview' && (
+          <InstitutionOverview
+            institution={institution}
+            members={members}
+            expired={expired}
+            daysLeft={daysLeft}
+            copied={copied}
+            handleCopyCode={handleCopyCode}
+            handleShare={handleShare}
+            setTab={setTab}
+          />
+        )}
+
+        {tab === 'code' && (
+          <InstitutionCodeManager
+            institution={institution}
+            expired={expired}
+            daysLeft={daysLeft}
+            expiryDate={expiryDate}
+            totalMembersCount={members.length}
+            copied={copied}
+            handleCopyCode={handleCopyCode}
+            handleShare={handleShare}
+            onInstitutionUpdate={setInstitution}
+          />
+        )}
+
+        {tab === 'members' && (
+          <InstitutionMembers
+            institution={institution}
+            members={members}
+            institutionInvitations={institutionInvitations}
+            allPlatformUsers={allPlatformUsers}
+            isPrimaryAdmin={isPrimaryAdmin}
+            onRefresh={loadData}
+            onViewTeacherStyles={() => setTab('teacher_styles')}
+            onOpenInviteModal={(email, role) => {
+              setInviteModalEmail(email || '');
+              setInviteModalRole(role || 'teacher');
+              setIsInviteModalOpen(true);
+            }}
+            onOpenBulkUploadModal={() => setIsBulkUploadOpen(true)}
+            onOpenTransferModal={(memberId, role, name) => {
+              setTransferTargetId(memberId);
+              setTransferTargetRole(role);
+              setTransferTargetName(name);
+            }}
+            onOpenTeacherManagement={setPerformanceTargetId}
+            onPromoteMember={async (userId) => {
+              await promoteMember(institution.id, userId);
+              await loadData();
+            }}
+            onDemoteMember={async (userId) => {
+              await demoteMember(institution.id, userId);
+              await loadData();
+            }}
+          />
+        )}
+
+        {tab === 'analytics' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <SchoolAnalyticsDashboard user={user} onBack={() => setTab('overview')} embedded={true} institutionMembers={members} />
+          </div>
+        )}
+
+        {tab === 'reports' && (
+          <InstitutionReporting institutionId={institution.id} institutionName={institution.name} members={members} currentTeacherId={user.role === 'teacher' ? user.id : undefined} />
+        )}
+
+        {tab === 'profile' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px] relative">
+            <ProfileSettingsModal isOpen={true} onClose={() => setTab('overview')} user={user} onProfileUpdate={() => {}} />
+          </div>
+        )}
+
+        {tab === 'settings' && (
+          <InstitutionSettings institution={institution} onInstitutionUpdate={setInstitution} />
+        )}
+
+        {tab === 'teacher_styles' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px] relative">
+            <SchoolTeacherStylesView 
+              admin={user} 
+              teachers={members.filter(m => m.status === 'approved' && m.role === 'teacher').map(m => allPlatformUsers.find(u => u.id === m.userId)).filter(Boolean) as User[]}
+              onBack={() => setTab('members')} 
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      <InviteMemberModal
+        isOpen={isInviteModalOpen}
+        onClose={() => {
+          setIsInviteModalOpen(false);
+          setInviteModalEmail('');
+          setInviteModalRole('teacher');
+        }}
+        institutionId={institution.id}
+        institutionName={institution.name}
+        institutionCode={institution.code}
+        onInviteSuccess={loadData}
+        initialEmail={inviteModalEmail}
+        initialRole={inviteModalRole}
+      />
+
+      {transferTargetId && transferTargetRole && (
+        <TransferMemberModal
+          isOpen={!!transferTargetId}
+          onClose={() => {
+            setTransferTargetId(null);
+            setTransferTargetRole(null);
+            setTransferTargetName('');
+          }}
+          memberId={transferTargetId}
+          memberRole={transferTargetRole}
+          memberName={transferTargetName}
+          institutionId={institution.id}
+          institutionName={institution.name}
+          allPlatformUsers={allPlatformUsers}
+          onTransferSuccess={loadData}
+        />
+      )}
+
+      <BulkUploadModal
+        isOpen={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        institutionId={institution.id}
+        institutionName={institution.name}
+        institutionCode={institution.code}
+        onUploadSuccess={loadData}
+      />
+
+      {performanceTargetId && (
+        <TeacherManagementModal
+          isOpen={!!performanceTargetId}
+          onClose={() => setPerformanceTargetId(null)}
+          teacherId={performanceTargetId}
+          institutionId={institution.id}
+          allPlatformUsers={allPlatformUsers}
+          onRefresh={loadData}
+        />
+      )}
+    </div>
+  );
+}

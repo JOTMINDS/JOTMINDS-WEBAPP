@@ -1,4 +1,7 @@
-// Institution Management — school registration, code generation, member management
+import { createClient } from './supabase/client';
+import { projectId, publicAnonKey } from './supabase/info';
+
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
 
 export type InstitutionType = 'Primary' | 'JHS' | 'SHS' | 'Tertiary' | 'Vocational' | 'Other';
 
@@ -28,6 +31,7 @@ export interface Institution {
   phoneVerified: boolean;
   createdAt: string;
   updatedAt: string;
+  coAdminIds?: string[];
 }
 
 export interface InstitutionMember {
@@ -57,48 +61,193 @@ export interface CodeValidationResult {
   errorMessage?: string;
 }
 
-const INSTITUTIONS_KEY = 'jm_institutions';
-const MEMBERS_KEY = (id: string) => `jm_inst_members_${id}`;
-const INVITATIONS_KEY = 'jm_inst_invitations';
+const supabase = createClient();
 
-// ─── Storage ──────────────────────────────────────────────────────────────────
-
-export function getAllInstitutions(): Institution[] {
-  try { return JSON.parse(localStorage.getItem(INSTITUTIONS_KEY) ?? '[]'); } catch { return []; }
+// Helper to map DB columns (snake_case) to Frontend model (camelCase)
+export function mapDBInstitutionToLocal(db: any): Institution {
+  return {
+    id: db.id,
+    name: db.name,
+    type: db.type as any,
+    address: db.address || '',
+    region: db.region || '',
+    district: db.district || '',
+    email: db.email || '',
+    phone: db.phone || '',
+    website: db.website || '',
+    logo: db.logo || '',
+    tagline: db.tagline || '',
+    teacherSize: db.teacher_size || '',
+    studentSize: db.student_size || '',
+    adminId: db.admin_id,
+    adminName: db.admin_name || '',
+    adminEmail: db.admin_email || '',
+    adminPhone: db.admin_phone || '',
+    code: db.code,
+    codeGeneratedAt: db.code_generated_at,
+    codeExpiryDays: db.code_expiry_days,
+    isActive: db.is_active,
+    emailVerified: db.email_verified,
+    phoneVerified: db.phone_verified,
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
+    coAdminIds: db.co_admin_ids || [],
+  };
 }
 
-function saveAllInstitutions(list: Institution[]) {
-  localStorage.setItem(INSTITUTIONS_KEY, JSON.stringify(list));
+export function mapDBMemberToLocal(db: any): InstitutionMember {
+  return {
+    userId: db.user_id,
+    userName: db.user_name,
+    userEmail: db.user_email,
+    userPhone: db.user_phone || '',
+    role: db.role,
+    institutionId: db.institution_id,
+    joinedAt: db.joined_at,
+    joinedViaCode: db.joined_via_code,
+    status: db.status
+  };
 }
 
-export function getInstitutionById(id: string): Institution | null {
-  return getAllInstitutions().find(i => i.id === id) ?? null;
+export function mapDBInvitationToLocal(db: any): InstitutionInvitation {
+  return {
+    id: db.token, // Use invitation token as ID on the client
+    email: db.email,
+    institutionId: db.institution_id,
+    role: db.role,
+    invitedAt: db.invited_at
+  };
 }
 
-export function getInstitutionByCode(code: string): Institution | null {
-  return getAllInstitutions().find(i => i.code === code.toUpperCase()) ?? null;
+// Get Auth session token
+async function getAuthToken(): Promise<string> {
+  const session = (await supabase.auth.getSession()).data.session;
+  return session?.access_token || '';
 }
 
-export function getInstitutionByAdminId(adminId: string): Institution | null {
-  return getAllInstitutions().find(i => i.adminId === adminId) ?? null;
+// ─── Storage (Supabase Backend Integrations) ───────────────────────────────────
+
+export async function getInstitutionById(id: string): Promise<Institution | null> {
+  const { data, error } = await supabase
+    .from('institutions')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapDBInstitutionToLocal(data);
 }
 
-export function getInstitutionBySchoolName(name: string): Institution | null {
-  const n = name.toLowerCase().trim();
-  return getAllInstitutions().find(i => i.name.toLowerCase().trim() === n) ?? null;
+export async function getInstitutionByCode(code: string): Promise<Institution | null> {
+  const { data, error } = await supabase
+    .from('institutions')
+    .select('*')
+    .eq('code', code.toUpperCase().trim())
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapDBInstitutionToLocal(data);
 }
 
-export function saveInstitution(institution: Institution): void {
-  const list = getAllInstitutions();
-  const idx = list.findIndex(i => i.id === institution.id);
-  if (idx >= 0) list[idx] = { ...institution, updatedAt: new Date().toISOString() };
-  else list.push(institution);
-  saveAllInstitutions(list);
+export async function getInstitutionByAdminId(adminId: string): Promise<Institution | null> {
+  const { data, error } = await supabase
+    .from('institutions')
+    .select('*')
+    .eq('admin_id', adminId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapDBInstitutionToLocal(data);
 }
 
-export function deleteInstitution(id: string): void {
-  saveAllInstitutions(getAllInstitutions().filter(i => i.id !== id));
-  localStorage.removeItem(MEMBERS_KEY(id));
+export async function getInstitutionBySchoolName(name: string): Promise<Institution | null> {
+  const { data, error } = await supabase
+    .from('institutions')
+    .select('*')
+    .eq('name', name.trim())
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapDBInstitutionToLocal(data);
+}
+
+export async function saveInstitution(institution: Institution): Promise<void> {
+  const dbRecord = {
+    name: institution.name,
+    type: institution.type,
+    address: institution.address,
+    region: institution.region,
+    district: institution.district,
+    email: institution.email,
+    phone: institution.phone,
+    website: institution.website || null,
+    logo: institution.logo || null,
+    tagline: institution.tagline || null,
+    teacher_size: institution.teacherSize || null,
+    student_size: institution.studentSize || null,
+    admin_id: institution.adminId,
+    admin_name: institution.adminName,
+    admin_email: institution.adminEmail,
+    admin_phone: institution.adminPhone,
+    code: institution.code,
+    code_generated_at: institution.codeGeneratedAt,
+    code_expiry_days: institution.codeExpiryDays,
+    is_active: institution.isActive,
+    email_verified: institution.emailVerified,
+    phone_verified: institution.phoneVerified,
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await supabase
+    .from('institutions')
+    .update(dbRecord)
+    .eq('id', institution.id);
+
+  if (error) {
+    console.error('saveInstitution error:', error);
+    throw error;
+  }
+}
+
+export async function deleteInstitution(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('institutions')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function promoteMember(institutionId: string, userId: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(BASE_URL + '/institutions/promote-member', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token || publicAnonKey}` 
+    },
+    body: JSON.stringify({ institutionId, targetUserId: userId })
+  });
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Failed to promote member');
+  }
+}
+
+export async function demoteMember(institutionId: string, userId: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(BASE_URL + '/institutions/demote-member', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token || publicAnonKey}` 
+    },
+    body: JSON.stringify({ institutionId, targetUserId: userId })
+  });
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Failed to demote member');
+  }
 }
 
 // ─── Code Generation ──────────────────────────────────────────────────────────
@@ -111,12 +260,24 @@ export function generateInstitutionCode(): string {
   return `JOTM-${suffix}`;
 }
 
-export function regenerateCode(institutionId: string, expiryDays: number | null): Institution | null {
-  const inst = getInstitutionById(institutionId);
-  if (!inst) return null;
-  const updated = { ...inst, code: generateInstitutionCode(), codeGeneratedAt: new Date().toISOString(), codeExpiryDays: expiryDays, updatedAt: new Date().toISOString() };
-  saveInstitution(updated);
-  return updated;
+export async function regenerateCode(institutionId: string, expiryDays: number | null): Promise<Institution | null> {
+  const newCode = generateInstitutionCode();
+  const timestamp = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('institutions')
+    .update({
+      code: newCode,
+      code_generated_at: timestamp,
+      code_expiry_days: expiryDays,
+      updated_at: timestamp
+    })
+    .eq('id', institutionId)
+    .select()
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapDBInstitutionToLocal(data);
 }
 
 export function isCodeExpired(institution: Institution): boolean {
@@ -138,180 +299,419 @@ export function getDaysUntilExpiry(institution: Institution): number | null {
   return Math.max(0, Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 }
 
-// ─── Code Validation ──────────────────────────────────────────────────────────
+// ─── Code Validation (Secure endpoint wrapper) ───────────────────────────────
 
-export function validateInstitutionCode(code: string): CodeValidationResult {
+export async function validateInstitutionCode(code: string): Promise<CodeValidationResult> {
   const trimmed = code.trim().toUpperCase();
-  if (!trimmed) return { valid: false, error: 'not_found', errorMessage: 'Please enter an institution code.' };
+  if (!trimmed) {
+    return { valid: false, error: 'not_found', errorMessage: 'Please enter an institution code.' };
+  }
 
-  const institution = getInstitutionByCode(trimmed);
-  if (!institution) return { valid: false, error: 'not_found', errorMessage: 'Institution code not found. Please check the code and try again.' };
-  if (!institution.isActive) return { valid: false, institution, error: 'inactive', errorMessage: 'This institution account is currently deactivated. Please contact your administrator.' };
-  if (isCodeExpired(institution)) return { valid: false, institution, error: 'expired', errorMessage: `This institution code expired on ${getCodeExpiryDate(institution)?.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}. Please request a new code from your head teacher.` };
+  try {
+    const response = await fetch(`${BASE_URL}/institutions/validate-code`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${publicAnonKey}`
+      },
+      body: JSON.stringify({ code: trimmed })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Server error');
+    }
+    
+    const result = await response.json();
+    if (result.institution) {
+      result.institution = mapDBInstitutionToLocal(result.institution);
+    }
+    return result;
+  } catch (error) {
+    console.error('[validateInstitutionCode] Error:', error);
+    return { valid: false, error: 'not_found', errorMessage: 'Error communicating with validation server.' };
+  }
+}
 
-  return { valid: true, institution };
+// Validate invite token
+export async function validateInviteToken(token: string): Promise<any> {
+  try {
+    const response = await fetch(`${BASE_URL}/institutions/validate-invite-token`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${publicAnonKey}`
+      },
+      body: JSON.stringify({ token })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Server error');
+    }
+    
+    const result = await response.json();
+    if (result.institution) {
+      result.institution = mapDBInstitutionToLocal(result.institution);
+    }
+    return result;
+  } catch (error) {
+    console.error('[validateInviteToken] Error:', error);
+    return { valid: false, error: 'Connection failed' };
+  }
 }
 
 // ─── Member Management ────────────────────────────────────────────────────────
 
-export function getInstitutionMembers(institutionId: string): InstitutionMember[] {
-  try { 
-    const parsed = JSON.parse(localStorage.getItem(MEMBERS_KEY(institutionId)) ?? '[]'); 
-    return Array.isArray(parsed) ? parsed : [];
-  } catch { 
-    return []; 
+export async function getInstitutionMembers(institutionId: string): Promise<InstitutionMember[]> {
+  const { data, error } = await supabase
+    .from('institution_members')
+    .select('*')
+    .eq('institution_id', institutionId);
+
+  if (error || !data) return [];
+  return data.map(mapDBMemberToLocal);
+}
+
+export async function addMember(institutionId: string, member: Omit<InstitutionMember, 'institutionId' | 'joinedAt'>): Promise<void> {
+  const { error } = await supabase
+    .from('institution_members')
+    .upsert({
+      user_id: member.userId,
+      user_name: member.userName,
+      user_email: member.userEmail,
+      user_phone: member.userPhone || null,
+      role: member.role,
+      institution_id: institutionId,
+      joined_via_code: member.joinedViaCode,
+      status: member.status || 'approved'
+    }, { onConflict: 'user_id, institution_id' });
+
+  if (error) throw error;
+}
+
+export async function joinInstitution(code: string, member: { userId: string; userName: string; userEmail: string; userPhone?: string; role: 'teacher' | 'student' }): Promise<void> {
+  const response = await fetch(`${BASE_URL}/institutions/join`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${publicAnonKey}`
+    },
+    body: JSON.stringify({
+      code,
+      userId: member.userId,
+      userName: member.userName,
+      userEmail: member.userEmail,
+      userPhone: member.userPhone,
+      role: member.role
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to join institution');
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to join institution');
   }
 }
 
-function saveMembers(institutionId: string, members: InstitutionMember[]) {
-  localStorage.setItem(MEMBERS_KEY(institutionId), JSON.stringify(members));
+export async function approveMember(institutionId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('institution_members')
+    .update({ status: 'approved' })
+    .eq('institution_id', institutionId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
 }
 
-export function addMember(institutionId: string, member: Omit<InstitutionMember, 'institutionId' | 'joinedAt'>): void {
-  const members = getInstitutionMembers(institutionId);
-  const existingIndex = members.findIndex(m => m.userId === member.userId);
-  if (existingIndex >= 0) {
-    // update if exists
-    members[existingIndex] = { ...members[existingIndex], ...member, institutionId };
-  } else {
-    members.push({ ...member, institutionId, joinedAt: new Date().toISOString(), status: member.status || 'approved' });
-  }
-  saveMembers(institutionId, members);
+export async function rejectMember(institutionId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('institution_members')
+    .update({ status: 'rejected' })
+    .eq('institution_id', institutionId)
+    .eq('user_id', userId);
 
-  // Update member count on institution
-  const inst = getInstitutionById(institutionId);
-  if (inst) saveInstitution({ ...inst, updatedAt: new Date().toISOString() });
+  if (error) throw error;
 }
 
-export function approveMember(institutionId: string, userId: string): void {
-  const members = getInstitutionMembers(institutionId);
-  const idx = members.findIndex(m => m.userId === userId);
-  if (idx >= 0) {
-    members[idx].status = 'approved';
-    saveMembers(institutionId, members);
-  }
+export async function removeMember(institutionId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('institution_members')
+    .delete()
+    .eq('institution_id', institutionId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
 }
 
-export function rejectMember(institutionId: string, userId: string): void {
-  const members = getInstitutionMembers(institutionId);
-  const idx = members.findIndex(m => m.userId === userId);
-  if (idx >= 0) {
-    members[idx].status = 'rejected';
-    saveMembers(institutionId, members);
-  }
-}
-
-export function transferMember(userId: string, currentInstitutionId: string, newInstitutionCode: string): boolean {
-  const newInst = getInstitutionByCode(newInstitutionCode);
+export async function transferMember(userId: string, currentInstitutionId: string, newInstitutionCode: string): Promise<boolean> {
+  const newInst = await getInstitutionByCode(newInstitutionCode);
   if (!newInst) return false;
-  
-  const currentMembers = getInstitutionMembers(currentInstitutionId);
-  const member = currentMembers.find(m => m.userId === userId);
-  if (!member) return false;
+
+  const { data: member, error } = await supabase
+    .from('institution_members')
+    .select('*')
+    .eq('institution_id', currentInstitutionId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error || !member) return false;
 
   // Remove from old
-  removeMember(currentInstitutionId, userId);
+  await removeMember(currentInstitutionId, userId);
 
-  // Add to new (as pending or approved? Usually transfers by admin are approved, but pending is safer)
-  addMember(newInst.id, { 
-    userId: member.userId, 
-    userName: member.userName, 
-    userEmail: member.userEmail, 
-    userPhone: member.userPhone, 
-    role: member.role, 
+  // Add to new
+  await addMember(newInst.id, {
+    userId: member.user_id,
+    userName: member.user_name,
+    userEmail: member.user_email,
+    userPhone: member.user_phone || undefined,
+    role: member.role,
     joinedViaCode: newInst.code,
-    status: 'approved' // Automatically approved if transferred by an admin
+    status: 'approved'
   });
 
   return true;
 }
 
-export function getAllInvitations(): InstitutionInvitation[] {
-  try { return JSON.parse(localStorage.getItem(INVITATIONS_KEY) ?? '[]'); } catch { return []; }
+export async function updateMemberDetails(institutionId: string, userId: string, details: { userName: string; userPhone: string; role?: 'teacher' | 'student' | 'admin' }): Promise<void> {
+  const { error } = await supabase
+    .from('institution_members')
+    .update({
+      user_name: details.userName,
+      user_phone: details.userPhone,
+      ...(details.role ? { role: details.role } : {})
+    })
+    .eq('institution_id', institutionId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
 }
 
-export function inviteMember(email: string, role: 'teacher' | 'student', institutionId: string): InstitutionInvitation {
-  const list = getAllInvitations();
-  const invitation: InstitutionInvitation = {
-    id: `inv_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+export async function getAllInvitations(institutionId: string): Promise<InstitutionInvitation[]> {
+  const { data, error } = await supabase
+    .from('institution_invitations')
+    .select('*')
+    .eq('institution_id', institutionId);
+
+  if (error || !data) return [];
+  return data.map(mapDBInvitationToLocal);
+}
+
+export async function inviteMember(email: string, role: 'teacher' | 'student', institutionId: string): Promise<InstitutionInvitation> {
+  const inst = await getInstitutionById(institutionId);
+  if (!inst) throw new Error('Institution not found');
+
+  const token = await getAuthToken();
+  const response = await fetch(`${BASE_URL}/send-${role}-invite`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      email: email.trim().toLowerCase(),
+      institutionName: inst.name,
+      institutionCode: inst.code,
+      institutionId: inst.id,
+      teacherName: inst.adminName, // Admin is fallback sender name
+      schoolName: inst.name
+    })
+  });
+
+  const res = await response.json();
+  if (!response.ok || res.error) {
+    throw new Error(res.error || 'Failed to send invite');
+  }
+
+  return {
+    id: res.token,
     email: email.trim().toLowerCase(),
     institutionId,
     role,
     invitedAt: new Date().toISOString()
   };
-  list.push(invitation);
-  localStorage.setItem(INVITATIONS_KEY, JSON.stringify(list));
-  return invitation;
 }
 
-export function removeMember(institutionId: string, userId: string): void {
-  const members = getInstitutionMembers(institutionId).filter(m => m.userId !== userId);
-  saveMembers(institutionId, members);
+export async function cancelInvitation(inviteToken: string): Promise<void> {
+  const { error } = await supabase
+    .from('institution_invitations')
+    .update({ status: 'revoked' })
+    .eq('token', inviteToken);
+
+  if (error) throw error;
 }
 
-export function getMemberCounts(institutionId: string): { total: number; teachers: number; students: number } {
-  const members = getInstitutionMembers(institutionId);
+export function getMemberCounts(members: InstitutionMember[]): { total: number; teachers: number; students: number } {
+  const approved = members.filter(m => m.status === 'approved');
   return {
-    total: members.length,
-    teachers: members.filter(m => m.role === 'teacher').length,
-    students: members.filter(m => m.role === 'student').length,
+    total: approved.length,
+    teachers: approved.filter(m => m.role === 'teacher').length,
+    students: approved.filter(m => m.role === 'student').length,
   };
 }
 
-// ─── OTP Simulation ───────────────────────────────────────────────────────────
-
-const OTP_KEY = (contact: string) => `jm_otp_${contact.replace(/\W/g, '')}`;
-
-export function generateOTP(contact: string): string {
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  localStorage.setItem(OTP_KEY(contact), JSON.stringify({ otp, createdAt: Date.now() }));
-  return otp; // In production this would be sent via email/SMS
+export function getMemberCountsByStatus(members: InstitutionMember[]): { total: number; approved: number; pending: number; rejected: number; teachers: number; students: number } {
+  const approved = members.filter(m => m.status === 'approved');
+  return {
+    total: members.length,
+    approved: approved.length,
+    pending: members.filter(m => m.status === 'pending' || !m.status).length,
+    rejected: members.filter(m => m.status === 'rejected').length,
+    teachers: approved.filter(m => m.role === 'teacher').length,
+    students: approved.filter(m => m.role === 'student').length,
+  };
 }
 
-export function verifyOTP(contact: string, entered: string): boolean {
+// ─── OTP (Backend OTP Verification Integrations) ──────────────────────────────
+
+export async function generateOTP(contact: string): Promise<string> {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  const token = await getAuthToken();
+  // Call server to securely record OTP (and dispatch if email)
+  await fetch(`${BASE_URL}/send-otp`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token || publicAnonKey}` 
+    },
+    body: JSON.stringify({ email: contact, otp })
+  });
+
+  return otp;
+}
+
+export async function verifyOTP(contact: string, entered: string): Promise<boolean> {
   try {
-    const stored = JSON.parse(localStorage.getItem(OTP_KEY(contact)) ?? 'null');
-    if (!stored) return false;
-    const expired = Date.now() - stored.createdAt > 10 * 60 * 1000; // 10 min
-    if (expired) { localStorage.removeItem(OTP_KEY(contact)); return false; }
-    if (stored.otp === entered.trim()) { localStorage.removeItem(OTP_KEY(contact)); return true; }
+    const token = await getAuthToken();
+    const res = await fetch(`${BASE_URL}/verify-otp`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token || publicAnonKey}` 
+      },
+      body: JSON.stringify({ email: contact, otp: entered })
+    });
+    
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!data.verified;
+  } catch {
     return false;
-  } catch { return false; }
+  }
 }
 
 // ─── Registration ─────────────────────────────────────────────────────────────
 
-export function createInstitution(data: Omit<Institution, 'id' | 'code' | 'codeGeneratedAt' | 'isActive' | 'createdAt' | 'updatedAt'>): Institution {
-  const institution: Institution = {
-    ...data,
-    id: `inst_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    code: generateInstitutionCode(),
-    codeGeneratedAt: new Date().toISOString(),
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+export async function createInstitution(data: Omit<Institution, 'id' | 'code' | 'codeGeneratedAt' | 'isActive' | 'createdAt' | 'updatedAt'>): Promise<Institution> {
+  const code = generateInstitutionCode();
+  const timestamp = new Date().toISOString();
+  
+  const dbRecord = {
+    name: data.name,
+    type: data.type,
+    address: data.address,
+    region: data.region,
+    district: data.district,
+    email: data.email,
+    phone: data.phone,
+    website: data.website || null,
+    logo: data.logo || null,
+    tagline: data.tagline || null,
+    teacher_size: data.teacherSize || null,
+    student_size: data.studentSize || null,
+    admin_id: data.adminId,
+    admin_name: data.adminName,
+    admin_email: data.adminEmail,
+    admin_phone: data.adminPhone,
+    code,
+    code_generated_at: timestamp,
+    code_expiry_days: data.codeExpiryDays || null,
+    is_active: true,
+    email_verified: data.emailVerified || false,
+    phone_verified: data.phoneVerified || false
   };
-  saveInstitution(institution);
+
+  const { data: inst, error } = await supabase
+    .from('institutions')
+    .insert(dbRecord)
+    .select()
+    .single();
+
+  if (error || !inst) throw error;
+  
+  const result = mapDBInstitutionToLocal(inst);
+  
   // Add admin as first member
-  addMember(institution.id, { userId: data.adminId, userName: data.adminName, userEmail: data.adminEmail, userPhone: data.adminPhone, role: 'admin', joinedViaCode: institution.code });
-  return institution;
+  await addMember(result.id, {
+    userId: result.adminId,
+    userName: result.adminName,
+    userEmail: result.adminEmail,
+    userPhone: result.adminPhone,
+    role: 'admin',
+    joinedViaCode: result.code,
+    status: 'approved'
+  });
+  
+  return result;
 }
 
-export function activateInstitution(id: string): void {
-  const inst = getInstitutionById(id);
-  if (inst) saveInstitution({ ...inst, isActive: true });
+export async function activateInstitution(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('institutions')
+    .update({ is_active: true })
+    .eq('id', id);
+
+  if (error) throw error;
 }
 
-export function deactivateInstitution(id: string): void {
-  const inst = getInstitutionById(id);
-  if (inst) saveInstitution({ ...inst, isActive: false });
+export async function deactivateInstitution(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('institutions')
+    .update({ is_active: false })
+    .eq('id', id);
+
+  if (error) throw error;
 }
 
-export function assignAdmin(institutionId: string, adminId: string, adminName: string, adminEmail: string, adminPhone: string): void {
-  const inst = getInstitutionById(institutionId);
+export async function assignAdmin(institutionId: string, adminId: string, adminName: string, adminEmail: string, adminPhone: string): Promise<void> {
+  const inst = await getInstitutionById(institutionId);
   if (!inst) return;
-  saveInstitution({ ...inst, adminId, adminName, adminEmail, adminPhone });
-  addMember(institutionId, { userId: adminId, userName: adminName, userEmail: adminEmail, userPhone: adminPhone, role: 'admin', joinedViaCode: inst.code });
+  
+  const { error } = await supabase
+    .from('institutions')
+    .update({
+      admin_id: adminId,
+      admin_name: adminName,
+      admin_email: adminEmail,
+      admin_phone: adminPhone
+    })
+    .eq('id', institutionId);
+
+  if (error) throw error;
+  
+  await addMember(institutionId, {
+    userId: adminId,
+    userName: adminName,
+    userEmail: adminEmail,
+    userPhone: adminPhone,
+    role: 'admin',
+    joinedViaCode: inst.code
+  });
+}
+
+export async function getInstitutionForMember(userId: string): Promise<Institution | null> {
+  const { data: member, error: memberError } = await supabase
+    .from('institution_members')
+    .select('institution_id, status')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (memberError || !member || member.status !== 'approved') return null;
+
+  return getInstitutionById(member.institution_id);
 }
 
 export const GHANA_REGIONS = [
@@ -319,3 +719,4 @@ export const GHANA_REGIONS = [
   'Volta', 'Oti', 'Bono', 'Bono East', 'Ahafo', 'Northern', 'Savannah',
   'North East', 'Upper East', 'Upper West',
 ];
+

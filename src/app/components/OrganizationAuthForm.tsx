@@ -25,7 +25,7 @@ interface OrganizationAuthFormProps {
 
 export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuthFormProps) {
   const [isLogin, setIsLogin] = useState(true);
-  const [registrationStep, setRegistrationStep] = useState(1); // Step 1-4 for multi-step registration
+  const [registrationStep, setRegistrationStep] = useState(0); // Step 0-4 for multi-step registration
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -60,6 +60,14 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
   const [pendingSession, setPendingSession] = useState<any>(null);
 
   // Step validation functions
+  const validateStep0 = (): boolean => {
+    if (!organizationType) {
+      setError('Please select an organization type');
+      return false;
+    }
+    return true;
+  };
+
   const validateStep1 = (): boolean => {
     if (!email || !password || !confirmPassword) {
       setError('Please fill in all fields');
@@ -111,39 +119,30 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
 
   const sendEmailOTP = async () => {
     try {
-      const otp = generateOTP(email);
-      
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send OTP email');
-      }
-
+      await generateOTP(email);
       setEmailSent(true);
       setError('');
     } catch (err) {
       console.error('OTP Send Error:', err);
-      // Fallback for local testing without edge function deployed
-      const otp = generateOTP(email);
-      setSimulatedEmailOTP(otp);
       setEmailSent(true);
-      setError('Edge function not deployed. Check console or use simulated OTP.');
+      setError('Failed to send email verification code.');
     }
   };
 
-  const sendPhoneOTP = () => {
-    const otp = generateOTP(phone);
-    setSimulatedPhoneOTP(otp);
-    setPhoneSent(true);
-    setError('');
+  const sendPhoneOTP = async () => {
+    try {
+      const otp = await generateOTP(phone);
+      setSimulatedPhoneOTP(otp);
+      setPhoneSent(true);
+      setError('');
+    } catch (err) {
+      setPhoneSent(true);
+    }
   };
 
-  const verifyEmailOTP = () => {
-    if (verifyOTP(email, emailOTP)) {
+  const verifyEmailOTP = async () => {
+    const ok = await verifyOTP(email, emailOTP);
+    if (ok) {
       setEmailVerified(true);
       setError('');
     } else {
@@ -151,8 +150,9 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
     }
   };
 
-  const verifyPhoneOTP = () => {
-    if (verifyOTP(phone, phoneOTP)) {
+  const verifyPhoneOTP = async () => {
+    const ok = await verifyOTP(phone, phoneOTP);
+    if (ok) {
       setPhoneVerified(true);
       setError('');
     } else {
@@ -161,19 +161,22 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
   };
 
   // Handle step navigation
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     setError('');
     
-    if (registrationStep === 1 && !validateStep1()) {
-      return;
-    }
-    if (registrationStep === 2 && !validateStep2()) {
-      return;
-    }
-    if (registrationStep === 3 && !validateStep3()) {
-      return;
-    }
+    if (registrationStep === 0 && !validateStep0()) return;
+    if (registrationStep === 1 && !validateStep1()) return;
+    if (registrationStep === 2 && !validateStep2()) return;
+    if (registrationStep === 3 && !validateStep3()) return;
     
+    // Bypass Step 4 for Educational Institutions
+    if (registrationStep === 3 && organizationType === 'Educational Institution') {
+      // Auto-set some required fields that would normally be collected in Step 4
+      setHasConsented(true);
+      await processRegistration();
+      return;
+    }
+
     setRegistrationStep(registrationStep + 1);
   };
 
@@ -279,7 +282,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
       
       try {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/session`,
+          `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/session`,
           {
             headers: {
               'Authorization': `Bearer ${session.access_token}`
@@ -314,12 +317,12 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
         };
       }
       
-      // Verify the user is an organization/supervisor
+      // Verify the user is an organization/supervisor/school_admin
       const userRole = (userData.role || '').toLowerCase();
-      const isOrgAccount = userRole === 'organization' || userRole === 'supervisor';
+      const isOrgAccount = userRole === 'organization' || userRole === 'supervisor' || userRole === 'school_admin';
       
       if (!isOrgAccount) {
-        setError(`This account is not registered as an organization. Your role is: "${userData.role}". Please use the main application.`);
+        setError(`This account is not registered as an organization or institution admin. Your role is: "${userData.role}". Please use the main application.`);
         await supabase.auth.signOut();
         setLoading(false);
         return;
@@ -329,9 +332,10 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
         id: userData.id,
         email: userData.email,
         name: userData.name,
-        role: 'organization',
+        role: userRole === 'school_admin' ? 'school_admin' : 'organization',
         organizationName: userData.organizationName,
         organizationType: userData.organizationType,
+        industrySector: userData.industrySector,
         position: userData.position,
         phone: userData.phone || '',
         school: '',
@@ -356,11 +360,11 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
         email,
         password,
         name,
-        role: 'organization',
-        organizationName,
+        role: organizationType === 'Educational Institution' ? 'school_admin' : 'organization',
+        organizationName: organizationName || (organizationType === 'Educational Institution' ? 'Educational Institution' : ''),
         organizationType,
-        industrySector,
-        position,
+        industrySector: organizationType === 'Educational Institution' ? 'Educational Institutions' : industrySector,
+        position: position || 'Administrator',
         phone,
         secondaryEmail,
         secondaryPhone,
@@ -372,7 +376,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
       // Send organization code via email
       if (result.organizationCode) {
         try {
-          await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/send-org-code`, {
+          await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-org-code`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, organizationName, organizationCode: result.organizationCode })
@@ -397,7 +401,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
 
       // Fetch user profile
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/session`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/session`,
         {
           headers: {
             'Authorization': `Bearer ${data.session.access_token}`
@@ -468,21 +472,25 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
             {!isLogin && (
               <div className="pt-4">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  {[1, 2, 3, 4].map((step) => (
-                    <div
-                      key={step}
-                      className={`h-2 rounded-full transition-all ${
-                        step === registrationStep
-                          ? 'w-8 bg-gradient-to-r from-purple-600 to-indigo-600'
-                          : step < registrationStep
-                          ? 'w-2 bg-purple-600'
-                          : 'w-2 bg-gray-300 dark:bg-gray-600'
-                      }`}
-                    />
-                  ))}
+                  {[0, 1, 2, 3, 4].map((step) => {
+                    // Don't show step 4 for Educational Institutions
+                    if (step === 4 && organizationType === 'Educational Institution') return null;
+                    return (
+                      <div
+                        key={step}
+                        className={`h-2 rounded-full transition-all ${
+                          step === registrationStep
+                            ? 'w-8 bg-gradient-to-r from-purple-600 to-indigo-600'
+                            : step < registrationStep
+                            ? 'w-2 bg-purple-600'
+                            : 'w-2 bg-gray-300 dark:bg-gray-600'
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Step {registrationStep} of 4
+                  Step {registrationStep + 1} of {organizationType === 'Educational Institution' ? 4 : 5}
                 </p>
               </div>
             )}
@@ -590,6 +598,62 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                     )
                   )}
                 </>
+              )}
+
+              {/* REGISTRATION FORM - STEP 0: Organization Type */}
+              {!isLogin && registrationStep === 0 && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800/30">
+                    <h3 className="font-medium text-indigo-900 dark:text-indigo-200 mb-2">What type of organization are you setting up?</h3>
+                    <p className="text-sm text-indigo-800 dark:text-indigo-300">
+                      This helps us customize your portal and features.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setOrganizationType('Educational Institution')}
+                      className={`w-full flex items-center p-4 border rounded-xl transition-all ${
+                        organizationType === 'Educational Institution' 
+                          ? 'border-indigo-600 bg-indigo-50/50 shadow-sm ring-1 ring-indigo-600' 
+                          : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex-shrink-0 bg-white p-3 rounded-lg border border-slate-100 shadow-sm mr-4">
+                        <Building2 className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <div className="text-left flex-grow">
+                        <h4 className="font-semibold text-slate-900">Educational Institution</h4>
+                        <p className="text-sm text-slate-500">Schools, Universities, Training Centers</p>
+                      </div>
+                      {organizationType === 'Educational Institution' && (
+                        <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setOrganizationType('Corporate')}
+                      className={`w-full flex items-center p-4 border rounded-xl transition-all ${
+                        organizationType !== 'Educational Institution' && organizationType !== ''
+                          ? 'border-purple-600 bg-purple-50/50 shadow-sm ring-1 ring-purple-600' 
+                          : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex-shrink-0 bg-white p-3 rounded-lg border border-slate-100 shadow-sm mr-4">
+                        <Briefcase className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div className="text-left flex-grow">
+                        <h4 className="font-semibold text-slate-900">Corporate / Other</h4>
+                        <p className="text-sm text-slate-500">Companies, Teams, Startups, NGOs</p>
+                      </div>
+                      {organizationType !== 'Educational Institution' && organizationType !== '' && (
+                        <CheckCircle2 className="w-5 h-5 text-purple-600" />
+                      )}
+                    </button>
+                  </div>
+                </div>
               )}
 
               {/* REGISTRATION FORM - STEP 1: Email + Password */}
@@ -925,7 +989,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
               {/* Navigation Buttons - For registration steps 1-3 */}
               {!isLogin && registrationStep < 4 && (
                 <div className="flex gap-2">
-                  {registrationStep > 1 && (
+                  {registrationStep > 0 && (
                     <Button
                       type="button"
                       variant="outline"
@@ -965,7 +1029,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                   className="w-full"
                   onClick={() => {
                     setIsLogin(!isLogin);
-                    setRegistrationStep(1);
+                    setRegistrationStep(0);
                     setError('');
                   }}
                 >

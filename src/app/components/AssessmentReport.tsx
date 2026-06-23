@@ -1345,7 +1345,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     .map(([index, answer]) => `Q${parseInt(index) + 1}: ${answer}`)
                     .join('\n\n');
                   
-                  const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/reflection`, {
+                  const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/reflection`, {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',

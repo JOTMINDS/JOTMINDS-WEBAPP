@@ -34,9 +34,11 @@ interface TeacherDashboardNewProps {
   onViewSchoolAnalytics?: () => void;
   onViewPlatformEssentials?: () => void;
   onStartAssessment?: (type: 'learning' | 'thinking' | 'decision') => void;
+  onViewInstitutionDashboard?: () => void;
+  onViewSettings?: () => void;
 }
 
-export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPrivacy, onViewEngagement, onViewTeacherIntelligence, onViewSchoolAnalytics, onViewPlatformEssentials, onStartAssessment }: TeacherDashboardNewProps) {
+export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPrivacy, onViewEngagement, onViewTeacherIntelligence, onViewSchoolAnalytics, onViewPlatformEssentials, onStartAssessment, onViewInstitutionDashboard, onViewSettings }: TeacherDashboardNewProps) {
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
@@ -245,6 +247,8 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         onViewPrivacy={onViewPrivacy}
         onViewEngagement={onViewEngagement}
         onViewTeacherIntelligence={onViewTeacherIntelligence}
+        onViewInstitutionDashboard={onViewInstitutionDashboard}
+        onViewSettings={onViewSettings}
       />
       <TeacherTabBar activeTab={activeTab} onTabChange={setActiveTab} />
       
@@ -272,6 +276,29 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
       {activeTab === 'my-style' && (
         <div className="max-w-4xl mx-auto p-4 lg:p-6 space-y-8">
+          {/* Profile Management Card */}
+          <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-xl">👤</span> Account & Profile Settings
+              </CardTitle>
+              <CardDescription>
+                Manage your personal information, contact details, and account preferences.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                  <p className="text-sm text-gray-600">{user.email}</p>
+                </div>
+                <Button onClick={onViewSettings} variant="default" className="bg-[#6B4C9A] hover:bg-[#5B3A8A]">
+                  Edit Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Jots Code — school linkage info for teacher */}
           {(() => {
             const jc = getUserJotsCode(user);

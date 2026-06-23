@@ -22,6 +22,8 @@ import { CardV2, CardV2Grid, StatBadge } from './ui/card-v2';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { FeedbackTab } from './StudentDashboardTabs/FeedbackTab';
+import { ProfileTab } from './StudentDashboardTabs/ProfileTab';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { toast } from 'sonner';
 import { formatMonthYear, formatDate, formatChartDate } from '../utils/dateFormat';
@@ -1960,206 +1962,16 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
             />
           </TabsContent>
 
-          <TabsContent value="feedback" className="space-y-6">
-            <div className="max-w-3xl mx-auto">
-              <Card className="border-2 border-[#6B4C9A] bg-gradient-to-br from-cyan-50 to-blue-50">
-                <CardHeader className="text-center">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[#6B4C9A] to-[#5B7DB1] flex items-center justify-center">
-                      <MessageSquare className="h-8 w-8 text-white" />
-                    </div>
-                  </div>
-                  <CardTitle className="text-2xl">Share Your Experience with JotMinds</CardTitle>
-                  <CardDescription className="text-base mt-2">
-                    Your feedback helps us improve the platform for students, teachers, parents, and professionals across Ghana
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 space-y-4">
-                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-[#6B4C9A]" />
-                      We'd love to hear from you about:
-                    </h3>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      <div className="flex items-start gap-3 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
-                        <span className="text-[#6B4C9A] font-bold text-lg">•</span>
-                        <span className="text-sm">Your overall experience using JotMinds</span>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <span className="text-[#5B7DB1] font-bold text-lg">•</span>
-                        <span className="text-sm">How accurate your assessment results were</span>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
-                        <span className="text-[#6B4C9A] font-bold text-lg">•</span>
-                        <span className="text-sm">What features you found most helpful</span>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <span className="text-[#5B7DB1] font-bold text-lg">•</span>
-                        <span className="text-sm">Suggestions for improvement</span>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
-                        <span className="text-[#6B4C9A] font-bold text-lg">•</span>
-                        <span className="text-sm">How JotMinds has helped your learning</span>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <span className="text-[#5B7DB1] font-bold text-lg">•</span>
-                        <span className="text-sm">Any challenges you encountered</span>
-                      </div>
-                    </div>
-                  </div>
+          <FeedbackTab />
 
-                  <div className="bg-gradient-to-r from-[#6B4C9A]/10 to-[#5B7DB1]/10 rounded-lg p-4 border border-[#6B4C9A]/30">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-bold">✓</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 mb-1">Your Feedback is Valuable</p>
-                        <p className="text-sm text-gray-600">
-                          Every response helps us understand how to better serve and make JotMinds more effective for everyone.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-4 pt-4">
-                    <Button
-                      onClick={() => window.open('https://forms.gle/SXPFj29PxUbmYVQq7', '_blank')}
-                      size="lg"
-                      className="w-full max-w-md bg-gradient-to-r from-[#6B4C9A] to-[#5B7DB1] hover:from-[#1AB5CC] hover:to-[#252770] text-white shadow-lg hover:shadow-xl transition-all"
-                    >
-                      <MessageSquare className="mr-2 h-5 w-5" />
-                      Complete Feedback Form
-                      <Sparkles className="ml-2 h-5 w-5" />
-                    </Button>
-                    <p className="text-sm text-center text-muted-foreground">
-                      Takes 2-3 minutes • Your responses are confidential
-                    </p>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-3 pt-4">
-                    <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
-                      <p className="text-2xl font-bold text-[#6B4C9A]">2-3</p>
-                      <p className="text-xs text-gray-600">Minutes to complete</p>
-                    </div>
-                    <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
-                      <p className="text-2xl font-bold text-[#5B7DB1]">100%</p>
-                      <p className="text-xs text-gray-600">Confidential</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="profile" className="space-y-6">
-            {/* User Profile Header */}
-            <Card className="border-2 border-gradient-primary bg-gradient-to-br from-[#6B4C9A]/10 via-[#7B61FF]/10 to-[#5B7DB1]/10">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-full gradient-aqua-violet flex items-center justify-center text-white text-3xl font-bold">
-                    {user.name.charAt(0)}
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl">{user.name}</CardTitle>
-                    <div className="space-y-1 mt-2">
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
-                      {user.school && <p className="text-sm text-muted-foreground font-semibold">{user.school}</p>}
-                      {user.educationLevel && <Badge variant="secondary" className="mt-2">{user.educationLevel}</Badge>}
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-
-            {/* Profile Sections - Secondary Navigation using Card v2 */}
-            <CardV2Grid columns={2}>
-              <CardV2
-                icon={FileText}
-                iconColor="text-purple-600"
-                iconBgColor="bg-purple-100"
-                title="My Reflections"
-                subtitle="View and manage your assessment reflections"
-                stats={[
-                  { label: 'Saved', value: reflections.length }
-                ]}
-                cta={
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setActiveTab('reflections')}
-                  >
-                    View All →
-                  </Button>
-                }
-                onClick={() => setActiveTab('reflections')}
-                variant="gradient"
-              />
-
-              <CardV2
-                icon={MessageSquare}
-                iconColor="text-green-600"
-                iconBgColor="bg-green-100"
-                title="Give Feedback"
-                subtitle="Share your experience with JotMinds"
-                cta={
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open('https://forms.gle/SXPFj29PxUbmYVQq7', '_blank');
-                    }}
-                  >
-                    Open Form →
-                  </Button>
-                }
-                onClick={() => setActiveTab('feedback')}
-                variant="gradient"
-              />
-            </CardV2Grid>
-
-            {/* Account Settings */}
-            <Card className="border-2 border-gray-200 dark:border-gray-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Account Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid md:grid-cols-2 gap-4">
-                  {user.dateOfBirth && (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Age</p>
-                      <p className="font-semibold">{calculateAge(user.dateOfBirth)} years</p>
-                    </div>
-                  )}
-                  {user.createdAt && (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Member Since</p>
-                      <p className="font-semibold">
-                        {formatMonthYear(user.createdAt)}
-                      </p>
-                    </div>
-                  )}
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Assessments Completed</p>
-                    <p className="font-semibold">{assessments.length} total</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Brain Gym Streak</p>
-                    <p className="font-semibold flex items-center gap-1">
-                      <Flame className="h-4 w-4 text-orange-500" />
-                      {brainGymProgress.currentStreak} days
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <ProfileTab 
+            user={user}
+            reflections={reflections}
+            assessments={assessments}
+            brainGymProgress={brainGymProgress}
+            setActiveTab={setActiveTab}
+            calculateAge={calculateAge}
+          />
           
           {/* School Profile Tab */}
           <TabsContent value="school-profile" className="space-y-6">

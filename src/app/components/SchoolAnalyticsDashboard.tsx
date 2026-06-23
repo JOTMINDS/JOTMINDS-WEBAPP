@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { User } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { User, Assessment, AssessmentScore } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -17,14 +17,18 @@ import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId } from '../uti
 import { getEngagementMetrics } from '../utils/engagementTracking';
 import { getGamificationProfile } from '../utils/gamification';
 import { extractDimensionScores } from '../utils/cognitiveXP';
+import { getAllAssessmentResults } from '../utils/api';
+
+import { InstitutionMember } from '../utils/institution';
 
 interface SchoolAnalyticsDashboardProps {
   user: User;
   onBack: () => void;
   embedded?: boolean;
+  institutionMembers?: InstitutionMember[];
 }
 
-type Tab = 'overview' | 'students' | 'class' | 'leaders' | 'cognitive' | 'insights';
+type Tab = 'overview' | 'students' | 'class' | 'leaders' | 'cognitive' | 'insights' | 'comparison';
 
 interface StudentSummary {
   user: User;
@@ -36,7 +40,7 @@ interface StudentSummary {
   xp: number;
   risk: 'high' | 'medium' | 'low' | 'unassessed';
   gradeLevel: string;
-  assessments: any[];
+  assessments: Assessment[];
 }
 
 const RISK_COLORS = { high: '#DC2626', medium: '#E0A020', low: '#1E8A6E', unassessed: '#9ca3af' };
@@ -54,18 +58,18 @@ function getGradeLabel(u: User): string {
 }
 
 function buildSummary(u: User): StudentSummary {
-  const assessments = getAssessmentsByUserId(u.id).filter((a: any) => a.completedAt && a.score);
+  const assessments = getAssessmentsByUserId(u.id).filter((a: Assessment) => a.completedAt && a.score);
   const eng = getEngagementMetrics(u.id);
   const gam = getGamificationProfile(u.id);
 
-  const completedTypes = [...new Set(assessments.map((a: any) => {
+  const completedTypes = [...new Set(assessments.map((a: Assessment) => {
     if (['kolb', 'vark'].includes(a.type)) return 'learning';
     if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type)) return 'thinking';
     if (a.type === 'dual-process') return 'decision';
     return a.type;
   }))];
 
-  const allScores = assessments.flatMap((a: any) => extractDimensionScores(a).map((d: any) => d.score));
+  const allScores = assessments.flatMap((a: Assessment) => extractDimensionScores(a).map((d: { name: string; score: number }) => d.score));
   const avgScore = allScores.length ? Math.round(allScores.reduce((s: number, v: number) => s + v, 0) / allScores.length) : 0;
   const engScore = eng?.engagementScore ?? 0;
   const streak = gam?.currentStreak ?? 0;
@@ -81,21 +85,209 @@ function buildSummary(u: User): StudentSummary {
   return { user: u, assessmentCount: assessments.length, completedTypes, avgScore, engagementScore: engScore, streak, xp, risk, gradeLevel: getGradeLabel(u), assessments };
 }
 
-export function SchoolAnalyticsDashboard({ user, onBack, embedded }: SchoolAnalyticsDashboardProps) {
+export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMembers }: SchoolAnalyticsDashboardProps) {
   const [tab, setTab] = useState<Tab>('overview');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'score' | 'engagement' | 'risk'>('risk');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [riskFilter, setRiskFilter] = useState('all');
 
-  const students = useMemo(() => {
-    const raw: User[] = user.school
-      ? getStudentsBySchool(user.school)
-      : getAllUsers().filter((u: User) => u.role === 'student');
-    return raw.slice(0, 100);
-  }, [user.school]);
+  const [fetchedAssessmentsMap, setFetchedAssessmentsMap] = useState<Record<string, Assessment[]>>({});
+  const [loadingAssessments, setLoadingAssessments] = useState(false);
 
-  const summaries = useMemo(() => students.map(buildSummary), [students]);
+  const students = useMemo(() => {
+    // If Supabase institution members are available, use them as the source of truth
+    // (handles seeded/demo accounts that are not in localStorage)
+    if (institutionMembers && institutionMembers.length > 0) {
+      const studentMembers = institutionMembers.filter(m => m.role === 'student' && m.status === 'approved');
+      // Build minimal User objects from member records so the rest of the component works unchanged
+      return studentMembers.slice(0, 100).map(m => ({
+        id: m.userId,
+        name: m.userName,
+        email: m.userEmail,
+        phone: m.userPhone || '',
+        role: 'student' as const,
+      } as User));
+    }
+
+    // Fallback: read from localStorage (legacy path)
+    let raw: User[] = [];
+    if (user.role === 'teacher') {
+      raw = getAllUsers().filter((u: User) =>
+        u.role === 'student' &&
+        (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id)))
+      );
+    } else {
+      raw = user.school
+        ? getStudentsBySchool(user.school)
+        : getAllUsers().filter((u: User) => u.role === 'student');
+    }
+    return raw.slice(0, 100);
+  }, [user.school, user.role, user.id, institutionMembers]);
+
+  const teachers = useMemo(() => {
+    if (institutionMembers && institutionMembers.length > 0) {
+      const teacherMembers = institutionMembers.filter(m => m.role === 'teacher' && m.status === 'approved');
+      return teacherMembers.slice(0, 100).map(m => ({
+        id: m.userId,
+        name: m.userName,
+        email: m.userEmail,
+        phone: m.userPhone || '',
+        role: 'teacher' as const,
+      } as User));
+    }
+    let raw: User[] = [];
+    raw = user.school
+      ? getAllUsers().filter((u: User) => u.role === 'teacher' && u.school === user.school)
+      : getAllUsers().filter((u: User) => u.role === 'teacher');
+    return raw.slice(0, 100);
+  }, [user.school, institutionMembers]);
+
+  useEffect(() => {
+    const fetchAssessmentsData = async () => {
+      const userIds = [...students.map(s => s.id), ...teachers.map(t => t.id)];
+      if (userIds.length === 0) return;
+      
+      try {
+        setLoadingAssessments(true);
+        const response = await getAllAssessmentResults(userIds);
+        
+        let rawAssessments: Assessment[] = [];
+        if (response && Array.isArray(response.results)) {
+          rawAssessments = response.results;
+        } else if (Array.isArray(response)) {
+          rawAssessments = response;
+        }
+        
+        const determinePrimaryStyle = (scores: AssessmentScore, type: string) => {
+          if (type === 'kolb') {
+            const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores;
+            const acCE = AC - CE;
+            const aeRO = AE - RO;
+            
+            if (acCE > 0 && aeRO > 0) return 'Converging';
+            if (acCE > 0 && aeRO < 0) return 'Assimilating';
+            if (acCE < 0 && aeRO < 0) return 'Diverging';
+            return 'Accommodating';
+          } else if (type === 'sternberg') {
+            const { analytical = 0, creative = 0, practical = 0 } = scores;
+            if (analytical >= creative && analytical >= practical) return 'Analytical';
+            if (creative >= analytical && creative >= practical) return 'Creative';
+            return 'Practical';
+          } else if (type === 'dual-process') {
+            const { system1 = 0, system2 = 0 } = scores;
+            return system1 > system2 ? 'Intuitive' : 'Reflective';
+          }
+          return 'Unknown';
+        };
+
+        const grouped: Record<string, Assessment[]> = {};
+        
+        rawAssessments.forEach((assessment: Assessment) => {
+          const studentId = assessment.userId;
+          const assessmentType = assessment.assessmentType;
+          const results = assessment.results || {};
+          
+          let score: Record<string, unknown> = {};
+          if (assessmentType === 'kolb') {
+            const style = determinePrimaryStyle(results, 'kolb');
+            score.kolb = { style, scores: results };
+          } else if (assessmentType === 'sternberg') {
+            const style = determinePrimaryStyle(results, 'sternberg');
+            score.sternberg = { style, scores: results };
+          } else if (assessmentType === 'dual-process') {
+            const style = determinePrimaryStyle(results, 'dual-process');
+            score.dualProcess = { style, scores: results };
+          } else {
+            score[assessmentType] = results;
+          }
+          
+          const transformed = {
+            id: assessment.id || `result:${studentId}:${assessmentType}`,
+            userId: studentId,
+            type: assessmentType,
+            completed: true,
+            completedAt: assessment.completedAt,
+            responses: assessment.answers || [],
+            score: score
+          };
+          
+          if (!grouped[studentId]) {
+            grouped[studentId] = [];
+          }
+          grouped[studentId].push(transformed);
+        });
+        
+        setFetchedAssessmentsMap(grouped);
+      } catch (error) {
+        console.error('Failed to fetch student assessments for SchoolAnalyticsDashboard:', error);
+      } finally {
+        setLoadingAssessments(false);
+      }
+    };
+    
+    fetchAssessmentsData();
+  }, [students, teachers]);
+
+  const summaries = useMemo(() => {
+    return students.map(u => {
+      const localAssessments = getAssessmentsByUserId(u.id).filter((a: Assessment) => a.completedAt && a.score);
+      const dbAssessments = fetchedAssessmentsMap[u.id] || [];
+      
+      const assessmentsMap = new Map();
+      dbAssessments.forEach((a: Assessment) => assessmentsMap.set(a.type, a));
+      localAssessments.forEach((a: Assessment) => assessmentsMap.set(a.type, a));
+      const assessments = Array.from(assessmentsMap.values());
+      
+      const eng = getEngagementMetrics(u.id);
+      const gam = getGamificationProfile(u.id);
+
+      const completedTypes = [...new Set(assessments.map((a: Assessment) => {
+        if (['kolb', 'vark'].includes(a.type)) return 'learning';
+        if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type)) return 'thinking';
+        if (a.type === 'dual-process') return 'decision';
+        return a.type;
+      }))];
+
+      const allScores = assessments.flatMap((a: Assessment) => extractDimensionScores(a).map((d: { name: string; score: number }) => d.score));
+      const avgScore = allScores.length ? Math.round(allScores.reduce((s: number, v: number) => s + v, 0) / allScores.length) : 0;
+      const engScore = eng?.engagementScore ?? 0;
+      const streak = gam?.currentStreak ?? 0;
+      const xp = gam?.xp ?? 0;
+
+      let risk: StudentSummary['risk'] = 'unassessed';
+      if (assessments.length > 0) {
+        if (engScore < 25 || (avgScore > 0 && avgScore < 20)) risk = 'high';
+        else if (engScore < 50 || completedTypes.length < 2) risk = 'medium';
+        else risk = 'low';
+      }
+
+      return {
+        user: u,
+        assessmentCount: assessments.length,
+        completedTypes,
+        avgScore,
+        engagementScore: engScore,
+        streak,
+        xp,
+        risk,
+        gradeLevel: getGradeLabel(u),
+        assessments
+      };
+    });
+  }, [students, fetchedAssessmentsMap]);
+
+  const teacherSummaries = useMemo(() => {
+    return teachers.map(u => {
+      const localAssessments = getAssessmentsByUserId(u.id).filter((a: Assessment) => a.completedAt && a.score);
+      const dbAssessments = fetchedAssessmentsMap[u.id] || [];
+      const assessmentsMap = new Map();
+      dbAssessments.forEach((a: Assessment) => assessmentsMap.set(a.type, a));
+      localAssessments.forEach((a: Assessment) => assessmentsMap.set(a.type, a));
+      const assessments = Array.from(assessmentsMap.values());
+      return { user: u, assessments };
+    });
+  }, [teachers, fetchedAssessmentsMap]);
 
   const stats = useMemo(() => {
     const assessed = summaries.filter(s => s.assessmentCount > 0);
@@ -131,11 +323,12 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded }: SchoolAnaly
       s.assessments.forEach(a => {
         const dims = extractDimensionScores(a);
         dims.forEach(d => {
-          if (!dimensionAggregates[d.id]) {
-            dimensionAggregates[d.id] = { name: d.name, total: 0, count: 0, max: d.max };
+          const maxVal = ['CE', 'RO', 'AC', 'AE'].includes(d.name) ? 48 : 100;
+          if (!dimensionAggregates[d.name]) {
+            dimensionAggregates[d.name] = { name: d.name, total: 0, count: 0, max: maxVal };
           }
-          dimensionAggregates[d.id].total += d.value;
-          dimensionAggregates[d.id].count += 1;
+          dimensionAggregates[d.name].total += d.score;
+          dimensionAggregates[d.name].count += 1;
         });
       });
     });
@@ -145,11 +338,45 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded }: SchoolAnaly
       max: d.max
     })).sort((a, b) => (b.avg / b.max) - (a.avg / a.max)); // Sort by highest percentage
 
+    // Compile Teacher Cognitive Profile for comparison
+    const teacherDimensionAggregates: Record<string, { name: string, total: number, count: number, max: number }> = {};
+    teacherSummaries.forEach(s => {
+      s.assessments.forEach(a => {
+        const dims = extractDimensionScores(a);
+        dims.forEach(d => {
+          const maxVal = ['CE', 'RO', 'AC', 'AE'].includes(d.name) ? 48 : 100;
+          if (!teacherDimensionAggregates[d.name]) {
+            teacherDimensionAggregates[d.name] = { name: d.name, total: 0, count: 0, max: maxVal };
+          }
+          teacherDimensionAggregates[d.name].total += d.score;
+          teacherDimensionAggregates[d.name].count += 1;
+        });
+      });
+    });
+    const teacherCognitiveSummary = Object.values(teacherDimensionAggregates).map(d => ({
+      name: d.name,
+      avg: Math.round(d.total / d.count),
+      max: d.max
+    }));
+
+    // Comparative Data Array
+    const comparisonData = cognitiveSummary.map(studentDim => {
+      const teacherDim = teacherCognitiveSummary.find(t => t.name === studentDim.name);
+      return {
+        name: studentDim.name,
+        'Student Avg (%)': Math.round((studentDim.avg / studentDim.max) * 100),
+        'Teacher Avg (%)': teacherDim ? Math.round((teacherDim.avg / teacherDim.max) * 100) : 0,
+      };
+    });
+    const teacherAssessedList = teacherSummaries.filter((s: any) => s.assessments.length > 0);
+    const teacherAvgEng = teacherAssessedList.length ? Math.round(teacherAssessedList.reduce((s: any, v: any) => s + (v.engagementScore || 0), 0) / teacherAssessedList.length) : 0;
+
     return { 
       assessed: assessed.length, total: summaries.length, riskCounts, avgEng, totalXP, activeStreaks, 
-      typeCompletion, gradeData, engagementBands, topStreaks, topXP, topScores, cognitiveSummary 
+      typeCompletion, gradeData, engagementBands, topStreaks, topXP, topScores, cognitiveSummary, comparisonData,
+      teacherTotal: teacherSummaries.length, teacherAssessed: teacherAssessedList.length, teacherAvgEng
     };
-  }, [summaries]);
+  }, [summaries, teacherSummaries]);
 
   const filtered = useMemo(() => {
     let list = summaries;
@@ -223,6 +450,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded }: SchoolAnaly
             ['overview', BarChart3, 'Overview'], 
             ['students', Users, 'Students'], 
             ['class', BookOpen, 'By Class'], 
+            ['comparison', Users, 'Teachers vs Students'],
             ['leaders', Award, 'Gamification Leaders'],
             ['cognitive', Zap, 'Cognitive Profiles'],
             ['insights', Activity, 'Insights']
@@ -518,6 +746,107 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded }: SchoolAnaly
               )}
             </CardContent>
           </Card>
+        </>)}
+
+        {tab === 'comparison' && (<>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span>Student Engagement</span>
+                  <Users className="w-4 h-4 text-[#1E8A6E]" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-2 text-center mt-2">
+                  <div>
+                    <p className="text-2xl font-bold text-[#5B7DB1]">{stats.total}</p>
+                    <p className="text-xs text-gray-500">Total</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-[#1E8A6E]">{Math.round((stats.assessed / Math.max(stats.total, 1)) * 100)}%</p>
+                    <p className="text-xs text-gray-500">Assessed</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-[#6B4C9A]">{stats.avgEng}</p>
+                    <p className="text-xs text-gray-500">Avg Score</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span>Teacher Engagement</span>
+                  <BookOpen className="w-4 h-4 text-[#E0A020]" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-2 text-center mt-2">
+                  <div>
+                    <p className="text-2xl font-bold text-[#5B7DB1]">{stats.teacherTotal}</p>
+                    <p className="text-xs text-gray-500">Total</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-[#1E8A6E]">{Math.round((stats.teacherAssessed / Math.max(stats.teacherTotal, 1)) * 100)}%</p>
+                    <p className="text-xs text-gray-500">Assessed</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-[#6B4C9A]">{stats.teacherAvgEng}</p>
+                    <p className="text-xs text-gray-500">Avg Score</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-sm">Cognitive Profile Alignment: Teachers vs. Students</CardTitle>
+              <p className="text-xs text-gray-500 mt-1">Comparing the average dimension strengths (in percentage) of teachers and students.</p>
+            </CardHeader>
+            <CardContent className="h-[350px]">
+              {stats.comparisonData.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-gray-400 text-sm">Not enough data to compare. Ensure both teachers and students have completed assessments.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(val) => `${val}%`} />
+                    <RechartsTip cursor={{fill: 'transparent'}} />
+                    <Legend verticalAlign="top" height={36} />
+                    <Bar dataKey="Teacher Avg (%)" fill="#6B4C9A" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Student Avg (%)" fill="#1E8A6E" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Teaching Style vs. Student Needs</CardTitle>
+                <p className="text-xs text-gray-500 mt-1">If the student population skews towards 'Reflective' processing, do the teachers' styles accommodate that?</p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Use the Cognitive Profile Alignment chart above to identify gaps. 
+                  For example, if your students score highly in <b>Practical</b> and <b>Concrete Experience (CE)</b>, but your teachers' cognitive profiles lean heavily towards <b>Analytical</b> or <b>Abstract Conceptualization (AC)</b>, you may need to introduce more hands-on, experiential learning opportunities into the curriculum to bridge the alignment gap.
+                </p>
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                  <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2"><Zap className="w-4 h-4" /> Recommendation Engine</h4>
+                  <p className="text-xs text-blue-800 mt-2">
+                    {stats.comparisonData.some(d => d.name === 'Practical' && d['Student Avg (%)'] > d['Teacher Avg (%)'] + 15) 
+                      ? "High Practical gap detected: Encourage teachers to implement project-based learning." 
+                      : "Profiles are generally aligned. Maintain current differentiated instruction strategies."}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </>)}
 
         {tab === 'insights' && (<>

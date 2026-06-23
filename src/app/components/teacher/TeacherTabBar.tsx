@@ -41,7 +41,7 @@ export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
             }
           `}
         >
-          My Teaching Style
+          My Profile & Assessments
         </button>
         <button
           onClick={() => onTabChange('manage-class')}

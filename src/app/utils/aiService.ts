@@ -2,8 +2,8 @@ import { projectId, publicAnonKey } from './supabase/info';
 import { AssessmentScore } from '../types';
 
 // Use same BASE_URL strategy as api.ts
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847`;
-const LOCAL_URL = 'http://localhost:54321/functions/v1/make-server-fc8eb847';
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
+const LOCAL_URL = 'http://localhost:54321/functions/v1/server/make-server-fc8eb847';
 
 // Determine if we're running locally with Supabase CLI
 const isLocal = typeof window !== 'undefined' && 

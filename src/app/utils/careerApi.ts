@@ -1,7 +1,7 @@
 import { projectId, publicAnonKey } from './supabase/info';
 import { getAuthToken } from './api';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/career`;
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/career`;
 
 export interface CareerMatch {
   career: {

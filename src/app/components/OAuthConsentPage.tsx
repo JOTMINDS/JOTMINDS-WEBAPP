@@ -27,7 +27,7 @@ export const OAuthConsentPage: React.FC<OAuthConsentPageProps> = ({ state, onApp
       try {
         setLoading(true);
         const response = await fetch(
-          `https://femvnconxoefpctiptkj.supabase.co/functions/v1/make-server-fc8eb847/oauth/consent/${state}`,
+          `https://femvnconxoefpctiptkj.supabase.co/functions/v1/server/make-server-fc8eb847/oauth/consent/${state}`,
           {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`,
@@ -57,7 +57,7 @@ export const OAuthConsentPage: React.FC<OAuthConsentPageProps> = ({ state, onApp
     try {
       setProcessing(true);
       const response = await fetch(
-        'https://femvnconxoefpctiptkj.supabase.co/functions/v1/make-server-fc8eb847/oauth/consent/approve',
+        'https://femvnconxoefpctiptkj.supabase.co/functions/v1/server/make-server-fc8eb847/oauth/consent/approve',
         {
           method: 'POST',
           headers: {
@@ -90,7 +90,7 @@ export const OAuthConsentPage: React.FC<OAuthConsentPageProps> = ({ state, onApp
     try {
       setProcessing(true);
       const response = await fetch(
-        'https://femvnconxoefpctiptkj.supabase.co/functions/v1/make-server-fc8eb847/oauth/consent/deny',
+        'https://femvnconxoefpctiptkj.supabase.co/functions/v1/server/make-server-fc8eb847/oauth/consent/deny',
         {
           method: 'POST',
           headers: {

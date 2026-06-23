@@ -1,6 +1,6 @@
 import { projectId, publicAnonKey } from './supabase/info';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847`;
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
 
 let authToken: string | null = null;
 
@@ -170,6 +170,7 @@ export const signup = async (userData: {
   consentType?: string;
   consentDate?: string;
   dateOfBirth?: string;
+  inviteToken?: string;
 }) => {
   return makeRequest('/signup', {
     method: 'POST',
@@ -205,6 +206,7 @@ export const updateUserProfile = async (updates: Partial<{
   dateOfBirth: string;
   secondaryEmail: string;
   secondaryPhone: string;
+  classCode: string;
 }>) => {
   return makeRequest('/user/profile', {
     method: 'PATCH',
@@ -244,7 +246,11 @@ export const getAssessmentResults = async (assessmentType: string) => {
   return makeRequest(`/assessment/results/${assessmentType}`);
 };
 
-export const getAllAssessmentResults = async () => {
+export const getAllAssessmentResults = async (userIds?: string[] | string) => {
+  if (userIds) {
+    const ids = Array.isArray(userIds) ? userIds.join(',') : userIds;
+    return makeRequest(`/assessment/results?userIds=${encodeURIComponent(ids)}`);
+  }
   return makeRequest('/assessment/results');
 };
 

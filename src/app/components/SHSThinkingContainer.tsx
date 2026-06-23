@@ -35,7 +35,7 @@ export function SHSThinkingContainer({
       
       // Save results to backend
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/shs-thinking/submit`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/shs-thinking/submit`,
         {
           method: 'POST',
           headers: {

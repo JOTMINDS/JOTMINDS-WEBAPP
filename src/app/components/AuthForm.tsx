@@ -55,11 +55,15 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
   const [signupOTP, setSignupOTP] = useState('');
   const [simulatedSignupOTP, setSimulatedSignupOTP] = useState('');
 
-  // Parse URL parameters for magic links
+  const [inviteToken, setInviteToken] = useState('');
+  const [inviteEmailLocked, setInviteEmailLocked] = useState(false);
+
+  // Parse URL parameters for magic links and invite tokens
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const mode = searchParams.get('mode');
     const code = searchParams.get('code');
+    const inviteTokenParam = searchParams.get('inviteToken');
     const urlRole = searchParams.get('role');
 
     if (mode === 'signup') {
@@ -68,13 +72,29 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
     if (code) {
       setOrganizationCode(code);
       // Auto-validate if code is present
-      setTimeout(() => {
-        const result = validateInstitutionCode(code);
+      setTimeout(async () => {
+        const result = await validateInstitutionCode(code);
         if (result.valid && result.institution) {
           setVerifiedOrgName(result.institution.name);
           setOrganizationName(result.institution.name);
         }
       }, 500);
+    }
+    if (inviteTokenParam) {
+      setInviteToken(inviteTokenParam);
+      const processToken = async () => {
+        const result = await validateInviteToken(inviteTokenParam);
+        if (result.valid && result.institution) {
+          setEmail(result.email);
+          setInviteEmailLocked(true);
+          setRole(result.role);
+          setVerifiedOrgName(result.institution.name);
+          setOrganizationName(result.institution.name);
+        } else {
+          setError(result.error || 'Invalid or expired invitation link.');
+        }
+      };
+      processToken().catch(console.error);
     }
     if (urlRole && (urlRole === 'teacher' || urlRole === 'student')) {
       setRole(urlRole);
@@ -106,25 +126,51 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
     setVerifyingCode(true);
     setError('');
 
-    // First: check against local institution registry (School Jots Code)
-    const localResult = validateInstitutionCode(organizationCode);
+    // Route CLASS- codes directly to the edge function since they are Teacher Class Codes
+    if (organizationCode.toUpperCase().startsWith('CLASS-')) {
+      try {
+        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/validate-org-code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` },
+          body: JSON.stringify({ code: organizationCode.toUpperCase() })
+        });
+        
+        if (!response.ok) {
+          setError('Code not found. Please check the code and try again.');
+          setVerifiedOrgName('');
+          return;
+        }
+
+        const data = await response.json();
+        if (data.valid) {
+          // If it's a class code, the backend returns teacherName and organizationName
+          setVerifiedOrgName(data.teacherName ? `${data.teacherName}'s Class at ${data.organizationName}` : data.organizationName);
+          setOrganizationName(data.organizationName);
+        } else {
+          setError(data.error || 'Invalid code. Please check with your teacher.');
+          setVerifiedOrgName('');
+        }
+      } catch {
+        setError('Could not verify code. Please check your connection and try again.');
+        setVerifiedOrgName('');
+      } finally {
+        setVerifyingCode(false);
+      }
+      return;
+    }
+
+    // Standard Institution check (School Jots Code)
+    const localResult = await validateInstitutionCode(organizationCode);
     if (localResult.valid && localResult.institution) {
       setVerifiedOrgName(localResult.institution.name);
       setOrganizationName(localResult.institution.name);
       setVerifyingCode(false);
       return;
     }
-    if (!localResult.valid && localResult.error !== 'not_found') {
-      // Found but inactive or expired
-      setError(localResult.errorMessage ?? 'Invalid code');
-      setVerifiedOrgName('');
-      setVerifyingCode(false);
-      return;
-    }
-
-    // Fallback: check Supabase server-side org codes (professional/supervisor codes)
-    try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/validate-org-code`, {
+    if (!localResult.valid) {
+      // It's possible it's an Organization code for professionals, so we check fallback
+      try {
+        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/validate-org-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` },
         body: JSON.stringify({ code: organizationCode.toUpperCase() })
@@ -150,6 +196,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
       setVerifiedOrgName('');
     } finally {
       setVerifyingCode(false);
+    }
     }
   };
 
@@ -391,7 +438,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           try {
             setLoading(true);
             const otp = generateOTP(email);
-            const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/send-otp`, {
+            const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-otp`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email, otp })
@@ -431,14 +478,15 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           organizationName: (role === 'professional' || role === 'teacher') ? organizationName : undefined,
           organizationType: role === 'professional' ? organizationType : undefined,
           position: role === 'professional' ? position : undefined,
-          organizationCode: (role === 'professional' || role === 'teacher') && organizationCode ? organizationCode.toUpperCase() : undefined,
+          organizationCode: organizationCode ? organizationCode.toUpperCase() : undefined,
           phone,
           school: role === 'student' || role === 'teacher' ? school : undefined,
           educationLevel: role === 'student' ? educationLevel : undefined,
           dateOfBirth: role === 'student' && dateOfBirth ? dateOfBirth : undefined,
           hasConsented: true,
           consentType: isMinor ? 'parental' : 'individual',
-          consentDate: new Date().toISOString()
+          consentDate: new Date().toISOString(),
+          inviteToken: inviteToken || undefined
         };
         
         console.log('[AuthForm] Signup data:', { ...signupData, password: '[REDACTED]' });
@@ -671,6 +719,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
+                        disabled={inviteEmailLocked}
                         className="pl-10 shadow-sm"
                       />
                     </div>

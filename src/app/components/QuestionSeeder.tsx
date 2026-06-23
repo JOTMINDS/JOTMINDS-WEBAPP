@@ -40,7 +40,7 @@ interface SeedResult {
   error?: string;
 }
 
-const BASE_URL = `https://femvnconxoefpctiptkj.supabase.co/functions/v1/make-server-fc8eb847/admin`;
+const BASE_URL = `https://femvnconxoefpctiptkj.supabase.co/functions/v1/server/make-server-fc8eb847/admin`;
 const SUPABASE_URL = `https://femvnconxoefpctiptkj.supabase.co`;
 const SUPABASE_ANON_KEY = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbXZuY29ueG9lZnBjdGlwdGtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTY1ODMsImV4cCI6MjA3ODAzMjU4M30.kmYrjWIfgzXZuLda3D8LjqL6V20DBgo8fkHsnIdQLGA`;
 

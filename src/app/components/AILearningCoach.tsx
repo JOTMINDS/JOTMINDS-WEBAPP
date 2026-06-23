@@ -39,7 +39,12 @@ import {
   generateWeeklyPlan,
   type CognitiveArchetype,
   type WeeklyStudyPlan,
-  type ReminderConfig
+  type ReminderConfig,
+  UserProfile,
+  AIProfileInterpretation,
+  Recommendation,
+  StudySession,
+  SmartReminder
 } from '../utils/aiRecommendations';
 import { getAllAssessmentResults } from '../utils/api';
 
@@ -79,13 +84,13 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
   onStartActivity
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('profile');
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [profileInterpretation, setProfileInterpretation] = useState<any>(null);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [studyPlan, setStudyPlan] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileInterpretation, setProfileInterpretation] = useState<AIProfileInterpretation | null>(null);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [studyPlan, setStudyPlan] = useState<StudySession | null>(null);
   const [weeklyPlan, setWeeklyPlan] = useState<WeeklyStudyPlan | null>(null);
-  const [reminders, setReminders] = useState<any[]>([]);
-  const [coachInsights, setCoachInsights] = useState<any>(null);
+  const [reminders, setReminders] = useState<SmartReminder[]>([]);
+  const [coachInsights, setCoachInsights] = useState<ReturnType<typeof getCoachInsights> | null>(null);
   const [archetype, setArchetype] = useState<CognitiveArchetype | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPlanDuration, setSelectedPlanDuration] = useState(30);
@@ -116,8 +121,8 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
     try {
       const { results } = await getAllAssessmentResults();
 
-      const profile: any = { id: userId, assessmentScores: {} };
-      results.forEach((result: any) => {
+      const profile: UserProfile = { id: userId, assessmentScores: {} };
+      results.forEach((result: {assessmentType: string, scores: Record<string, number>, primaryStyle: string}) => {
         const type = result.assessmentType;
         profile.assessmentScores[type] = result.scores || {};
         if (type === 'learning') profile.learningStyle = result.primaryStyle;
@@ -275,7 +280,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
               { key: 'weekly-planner', label: 'Weekly Planner', icon: Calendar },
               { key: 'reminders', label: 'Reminders', icon: Bell },
               { key: 'coach', label: 'AI Coach', icon: Brain }
-            ] as { key: TabType; label: string; icon: React.FC<any> }[]).map(({ key, label, icon: Icon }) => (
+            ] as { key: TabType; label: string; icon: React.ElementType }[]).map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
@@ -454,7 +459,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {profileInterpretation.strengths.map((strength: any, index: number) => (
+                    {profileInterpretation.strengths.map((strength: {area: string; description: string}, index: number) => (
                       <div key={index} className="border rounded-lg p-4 bg-green-50">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="text-green-900">{strength.area}</h3>
@@ -482,7 +487,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {profileInterpretation.developmentAreas.map((area: any, index: number) => (
+                    {profileInterpretation.developmentAreas.map((area: {area: string; description: string; suggestion: string}, index: number) => (
                       <div key={index} className="border rounded-lg p-4 bg-orange-50">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="text-orange-900">{area.area}</h3>
@@ -866,7 +871,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                   </div>
 
                   <div className="space-y-3 mb-4">
-                    {studyPlan.activities.map((activity: any, index: number) => (
+                    {studyPlan.activities.map((activity: StudySession['activities'][0], index: number) => (
                       <div key={index} className="border rounded-lg p-4 bg-white">
                         <div className="flex items-center justify-between mb-2">
                           <h3>{activity.name}</h3>
@@ -1028,7 +1033,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                         { key: 'lesson', label: 'Optimal Study Time', desc: 'Alert me during my peak learning hours', icon: BookOpen },
                         { key: 'assessment', label: 'Assessment Progress', desc: 'Nudge me to complete assessments', icon: Target },
                         { key: 'break', label: 'Overlearning Breaks', desc: 'Remind me to rest after long sessions', icon: Clock }
-                      ] as { key: 'streak' | 'lesson' | 'assessment' | 'break'; label: string; desc: string; icon: React.FC<any> }[]).map(({ key, label, desc, icon: Icon }) => {
+                      ] as { key: 'streak' | 'lesson' | 'assessment' | 'break'; label: string; desc: string; icon: React.ElementType }[]).map(({ key, label, desc, icon: Icon }) => {
                         const isEnabled = reminderConfig.reminderTypes.includes(key);
                         return (
                           <div

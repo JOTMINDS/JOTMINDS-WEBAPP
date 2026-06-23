@@ -66,7 +66,7 @@ export function DiscoveryOfTheDay({ userId, userName, showAsWidget = false }: Di
   const loadProgress = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/get-discovery-progress?userId=${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/get-discovery-progress?userId=${userId}`,
         {
           headers: { 'Authorization': `Bearer ${publicAnonKey}` }
         }
@@ -102,7 +102,7 @@ export function DiscoveryOfTheDay({ userId, userName, showAsWidget = false }: Di
 
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/save-discovery-progress`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/save-discovery-progress`,
         {
           method: 'POST',
           headers: {

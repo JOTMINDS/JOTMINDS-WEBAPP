@@ -78,7 +78,7 @@ export function MindMoodMeter({ userId, userName, onMoodSelected, showAsWidget =
   const loadMoodHistory = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/get-mood-history?userId=${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/get-mood-history?userId=${userId}`,
         {
           headers: { 'Authorization': `Bearer ${publicAnonKey}` }
         }
@@ -112,7 +112,7 @@ export function MindMoodMeter({ userId, userName, onMoodSelected, showAsWidget =
     // Save mood
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/save-mood`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/save-mood`,
         {
           method: 'POST',
           headers: {

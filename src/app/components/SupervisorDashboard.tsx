@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, SupervisorReviewData } from '../types';
-import { getAllUsers, getAssessmentsByUserId, saveReview, getReviewsByProfessional, getReviewsBySupervisor } from '../utils/storage';
+import { getAllUsers, getAssessmentsByUserId, saveReview, getReviewsByProfessional, getReviewsBySupervisor, getAssessmentFrequency } from '../utils/storage';
 import { getAuthToken, getSupervisedEmployees } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { createClient } from '../utils/supabase/client';
@@ -510,7 +510,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                                     <p className="text-sm text-muted-foreground truncate">
                                       {prof.position}
                                     </p>
-                                    <div className="flex items-center gap-2 mt-2">
+                                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                                       {stats.completedAssessments > 0 ? (
                                         <Badge variant="outline" className="text-xs">
                                           {stats.completedAssessments}/3
@@ -520,6 +520,9 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                                           No assessments
                                         </Badge>
                                       )}
+                                      <Badge variant="outline" className="text-xs border-indigo-200 text-indigo-700 bg-indigo-50/30">
+                                        {getAssessmentFrequency(prof.id)}
+                                      </Badge>
                                       {stats.totalReviews > 0 && (
                                         <Badge variant="secondary" className="text-xs">
                                           <FileText className="h-3 w-3 mr-1" />

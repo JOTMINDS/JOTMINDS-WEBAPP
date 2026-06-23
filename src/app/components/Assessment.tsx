@@ -122,9 +122,9 @@ export const Assessment: React.FC<AssessmentProps> = ({
     }
   }, [currentIndex, autoScrollEnabled]);
 
-  // Check for section completion (every 5 questions)
+  // Check for section completion (disabled to keep flow continuous)
   const checkSectionComplete = (questionIndex: number) => {
-    return questionIndex > 0 && questionIndex % 5 === 0 && questionIndex < questions.length;
+    return false;
   };
 
   const getSectionMotivationalMessage = () => {
@@ -163,13 +163,7 @@ export const Assessment: React.FC<AssessmentProps> = ({
 
     setAnswers(newAnswers);
 
-    // Check if section is complete (every 5 questions)
     const nextIndex = currentIndex + 1;
-    if (checkSectionComplete(nextIndex)) {
-      setShowSectionSummary(true);
-      return;
-    }
-
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(nextIndex);
       setSelectedOption(newAnswers[nextIndex] ? 
@@ -291,42 +285,8 @@ export const Assessment: React.FC<AssessmentProps> = ({
     );
   }
 
-  // Show section summary
-  if (showSectionSummary) {
-    const sectionNumber = Math.floor(currentIndex / 5);
-    const totalSections = Math.ceil(questions.length / 5);
-    
-    return (
-      <>
-        <SectionSummary
-          sectionNumber={sectionNumber}
-          totalSections={totalSections}
-          questionsAnswered={currentIndex}
-          totalQuestions={questions.length}
-          sectionTitle={`Section ${sectionNumber}`}
-          motivationalMessage={getSectionMotivationalMessage()}
-          onContinue={() => {
-            setShowSectionSummary(false);
-            setCurrentIndex(currentIndex);
-            setSelectedOption(answers[currentIndex] ? 
-              questions[currentIndex].options.findIndex((opt: any) => 
-                opt.text === answers[currentIndex].selectedOption
-              ) : null
-            );
-          }}
-        />
-        <ConfettiCelebration show={showSectionSummary} />
-      </>
-    );
-  }
-
   return (
     <>
-      <ConfettiCelebration 
-        show={showConfetti} 
-        onComplete={() => setShowConfetti(false)} 
-      />
-      
       <div className="min-h-screen py-8 px-4" style={{ background: 'linear-gradient(to bottom, #F8F9FA 0%, #FFFFFF 100%)' }}>
         <div className="max-w-3xl mx-auto">
           {/* Header Section with strict spacing */}

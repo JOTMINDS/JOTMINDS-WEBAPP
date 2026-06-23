@@ -281,7 +281,7 @@ export function applyReminderConfig(
   return reminders.filter(r => config.reminderTypes.includes(r.type as any));
 }
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   learningStyle?: string;
   thinkingStyle?: string;
@@ -296,7 +296,7 @@ interface UserProfile {
   role?: string;
 }
 
-interface Recommendation {
+export interface Recommendation {
   id: string;
   type: 'activity' | 'lesson' | 'resource' | 'skill' | 'habit';
   title: string;
@@ -309,7 +309,7 @@ interface Recommendation {
   evidence: string[]; // Data points supporting this recommendation
 }
 
-interface AIProfileInterpretation {
+export interface AIProfileInterpretation {
   summary: string;
   strengths: {
     area: string;
@@ -332,7 +332,7 @@ interface AIProfileInterpretation {
   personalizedInsights: string[];
 }
 
-interface StudySession {
+export interface StudySession {
   id: string;
   title: string;
   description: string;
@@ -347,7 +347,7 @@ interface StudySession {
   expectedOutcomes: string[];
 }
 
-interface SmartReminder {
+export interface SmartReminder {
   id: string;
   type: 'streak' | 'lesson' | 'study_session' | 'assessment' | 'break';
   message: string;

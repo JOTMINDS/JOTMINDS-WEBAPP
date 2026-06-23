@@ -70,7 +70,7 @@ export function ChildrenDailyChallenges({ userId, userName }: ChildrenDailyChall
   const loadProgress = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/get-challenge-progress?userId=${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/get-challenge-progress?userId=${userId}`,
         {
           headers: { 'Authorization': `Bearer ${publicAnonKey}` }
         }
@@ -114,7 +114,7 @@ export function ChildrenDailyChallenges({ userId, userName }: ChildrenDailyChall
 
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/save-challenge-progress`,
+        `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/save-challenge-progress`,
         {
           method: 'POST',
           headers: {

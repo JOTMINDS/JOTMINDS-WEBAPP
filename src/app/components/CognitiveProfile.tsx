@@ -10,17 +10,37 @@ import { useAuth } from './AuthContext';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { FeedbackPrompt } from './FeedbackPrompt';
 
+export interface AssessmentResult {
+  id?: string;
+  userId?: string;
+  assessmentType: string;
+  scores: Record<string, number>;
+  primaryStyle?: string;
+  completedAt?: string;
+  results?: Record<string, number>;
+}
+
+export interface UserReflection {
+  id?: string;
+  userId?: string;
+  reflectionText?: string;
+  createdAt?: string;
+  content?: string;
+  type?: string;
+}
+
+
 interface CognitiveProfileProps {
   onBack: () => void;
 }
 
 export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) => {
   const { impersonatedUser } = useAuth();
-  const [assessmentResults, setAssessmentResults] = useState<any[]>([]);
+  const [assessmentResults, setAssessmentResults] = useState<AssessmentResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [reflection, setReflection] = useState('');
   const [reflectionSaved, setReflectionSaved] = useState(false);
-  const [userReflections, setUserReflections] = useState<any[]>([]);
+  const [userReflections, setUserReflections] = useState<UserReflection[]>([]);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -121,7 +141,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
 
   // Create radar data with proper structure - use "dimension" instead of "subject" or "style"
   const radarData = Array.from(allStyles).map(styleName => {
-    const dataPoint: any = {
+    const dataPoint: Record<string, string | number> = {
       dimension: styleName, // Use "dimension" as the key - safe word that won't conflict
     };
     
@@ -142,11 +162,11 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
   console.log('[CognitiveProfile] Radar Data:', radarData);
 
   // Get dominant style for each assessment type
-  const getDominantStyle = (results: any) => {
+  const getDominantStyle = (results: Record<string, number>) => {
     if (!results || Object.keys(results).length === 0) {
       return { styleName: 'N/A', percentage: 0 };
     }
-    const entries = Object.entries(results).sort((a: any, b: any) => b[1] - a[1]);
+    const entries = Object.entries(results).sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
     return {
       styleName: entries[0]?.[0] || 'N/A',
       percentage: Number(entries[0]?.[1] || 0)
@@ -973,8 +993,8 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   {Object.entries(learningResult.results)
-                    .sort((a: any, b: any) => b[1] - a[1])
-                    .map(([styleName, percentage]: any) => (
+                    .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
+                    .map(([styleName, percentage]: [string, number]) => (
                       <div key={styleName}>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm">{styleName}</span>
@@ -1005,8 +1025,8 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   {Object.entries(thinkingResult.results)
-                    .sort((a: any, b: any) => b[1] - a[1])
-                    .map(([styleName, percentage]: any) => (
+                    .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
+                    .map(([styleName, percentage]: [string, number]) => (
                       <div key={styleName}>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm">{styleName}</span>
@@ -1037,8 +1057,8 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   {Object.entries(decisionResult.results)
-                    .sort((a: any, b: any) => b[1] - a[1])
-                    .map(([styleName, percentage]: any) => (
+                    .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
+                    .map(([styleName, percentage]: [string, number]) => (
                       <div key={styleName}>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm">{styleName}</span>

@@ -1,4 +1,4 @@
-import { Menu, BarChart3, Shield, Activity, Brain, Settings } from 'lucide-react';
+import { Menu, BarChart3, Shield, Activity, Brain, Settings, Building2 } from 'lucide-react';
 import { User } from '../../types';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
@@ -12,9 +12,10 @@ interface TeacherAppHeaderProps {
   onViewEngagement?: () => void;
   onViewTeacherIntelligence?: () => void;
   onViewSettings?: () => void;
+  onViewInstitutionDashboard?: () => void;
 }
 
-export function TeacherAppHeader({ user, onLogout, onViewAnalytics, onViewPrivacy, onViewEngagement, onViewTeacherIntelligence, onViewSettings }: TeacherAppHeaderProps) {
+export function TeacherAppHeader({ user, onLogout, onViewAnalytics, onViewPrivacy, onViewEngagement, onViewTeacherIntelligence, onViewSettings, onViewInstitutionDashboard }: TeacherAppHeaderProps) {
   return (
     <header className="h-14 bg-white border-b border-border px-4 flex items-center justify-between sticky top-0 z-10">
       {/* Left: Logo + Avatar */}
@@ -46,6 +47,17 @@ export function TeacherAppHeader({ user, onLogout, onViewAnalytics, onViewPrivac
               )}
             </div>
             <div className="pt-4 border-t space-y-2">
+              {onViewInstitutionDashboard && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={onViewInstitutionDashboard}
+                  style={{ borderColor: '#5B7DB1', color: '#5B7DB1' }}
+                >
+                  <Building2 className="h-4 w-4 mr-2" />
+                  School Portal
+                </Button>
+              )}
               {onViewTeacherIntelligence && (
                 <Button
                   variant="outline"

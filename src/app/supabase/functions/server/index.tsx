@@ -109,6 +109,23 @@ app.post('/make-server-fc8eb847/validate-org-code', async (c) => {
     const organization = await kv.get(`organization:${code}`);
     
     if (!organization) {
+      // Try to find in the Postgres institutions table (for school codes)
+      const supabase = getSupabaseClient(true);
+      const { data: instData, error: instError } = await supabase
+        .from('institutions')
+        .select('*')
+        .eq('code', code.toUpperCase().trim())
+        .maybeSingle();
+
+      if (instData && !instError) {
+        console.log(`[validate-org-code] ✓ Institution found: ${instData.name}`);
+        return c.json({ 
+          valid: true, 
+          organizationName: instData.name,
+          organizationType: instData.type 
+        });
+      }
+
       console.log(`[validate-org-code] ✗ Organization not found for code: ${code}`);
       return c.json({ valid: false, error: 'Invalid organization code' }, 200);
     }
@@ -151,15 +168,31 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         createdAt: new Date().toISOString(),
         createdBy: email
       });
-    } else if ((role === 'professional' || role === 'teacher') && organizationCode) {
-      // Professional or Teacher can optionally provide an organization code
+    } else if ((role === 'professional' || role === 'teacher' || role === 'student' || role === 'educator') && organizationCode) {
+      // Professional, Teacher, Student, or Educator can optionally provide an organization code
+      let foundOrgName = null;
       const organization = await kv.get(`organization:${organizationCode}`);
-      if (!organization) {
-        return c.json({ error: 'Invalid organization code' }, 400);
+      
+      if (organization) {
+        foundOrgName = organization.name;
+      } else {
+        // Try Postgres institutions table
+        const supabase = getSupabaseClient(true);
+        const { data: instData } = await supabase
+          .from('institutions')
+          .select('*')
+          .eq('code', organizationCode.toUpperCase().trim())
+          .maybeSingle();
+          
+        if (instData) {
+          foundOrgName = instData.name;
+        } else {
+          return c.json({ error: 'Invalid organization code' }, 400);
+        }
       }
 
       finalOrgCode = organizationCode;
-      finalOrgName = organization.name;
+      finalOrgName = foundOrgName;
     }
 
     const supabase = getSupabaseClient(true);

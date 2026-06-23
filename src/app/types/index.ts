@@ -34,13 +34,16 @@ export interface User {
   age?: number; // Computed property - calculated from dateOfBirth
   parentId?: string;
   teacherId?: string;
+  linkedTeachers?: string[]; // Multiple linked teachers (for students joining via Class Code or Magic Link)
   students?: string[]; // For teachers and parents
+  classCode?: string; // For teachers: uniquely identifies their class
   organizationName?: string; // For professionals and supervisors
   organizationType?: OrganizationType; // For professionals and supervisors
   industrySector?: IndustrySector; // For organizations/supervisors only
   position?: string; // For professionals and supervisors
   parentPin?: string; // PIN for Kids Mode parental controls (hashed)
   jotsCode?: string; // legacy alias — use organizationCode instead
+  organizationCode?: string; // the actual code the user registered with
   createdAt: string;
   assessments?: Assessment[]; // Full assessment objects (legacy)
   assessmentsCompleted?: string[]; // Array of completed assessment types (backend standard)

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
 import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId } from '../utils/storage';
-import { getStudentsForTeacher } from '../utils/api';
+import { getStudentsForTeacher, updateUserProfile } from '../utils/api';
 import { projectId } from '../utils/supabase/info';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
-import { Plus, Upload, MoreVertical, Edit, Trash2, FileText, Loader2, Download } from 'lucide-react';
+import { Plus, Upload, MoreVertical, Edit, Trash2, FileText, Loader2, Download, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TeacherStudentManagementProps {
@@ -22,11 +22,30 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Join Institution State
+  const [joinCode, setJoinCode] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+
   // Form State
   const [formData, setFormData] = useState({ id: '', name: '', email: '', phone: '', dateOfBirth: '' });
 
   useEffect(() => {
     loadStudents();
+    
+    // Auto-generate class code if not exists
+    if (!teacher.classCode) {
+      const generateCode = async () => {
+        try {
+          const newCode = 'CLASS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+          teacher.classCode = newCode;
+          saveUser(teacher); // Save to local storage
+          await updateUserProfile({ classCode: newCode }); // Save to backend
+        } catch (err) {
+          console.error('Failed to generate class code:', err);
+        }
+      };
+      generateCode();
+    }
   }, [teacher.id]);
 
   const loadStudents = async () => {
@@ -74,7 +93,7 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
       saveUser(newStudent);
 
       // 2. Send Invite Email via Edge Function
-      await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-fc8eb847/send-student-invite`, {
+      await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-student-invite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -167,8 +186,87 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
     reader.readAsText(file);
   };
 
+  const handleJoinInstitution = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!joinCode.trim()) return;
+    
+    setIsJoining(true);
+    try {
+      const { joinInstitution } = await import('../utils/institution');
+      await joinInstitution(joinCode.toUpperCase(), {
+        userId: teacher.id,
+        userName: teacher.name,
+        userEmail: teacher.email,
+        userPhone: teacher.phone,
+        role: 'teacher'
+      });
+      
+      toast.success('Access requested! Waiting for administrator approval.');
+      
+      // Update local teacher object to reflect pending state
+      const updatedTeacher = { ...teacher, organizationCode: joinCode.toUpperCase() };
+      saveUser(updatedTeacher);
+      
+      // Reload to refresh the auth context and dashboard state
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to request access. Check the code and try again.');
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Join Institution Banner */}
+      {!teacher.organizationCode && (
+        <Card className="border-[#6B4C9A] bg-purple-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-[#6B4C9A]" />
+              <CardTitle className="text-lg text-[#6B4C9A]">Join an Institution</CardTitle>
+            </div>
+            <CardDescription>
+              Are you part of a school? Enter your Institution Code (Jots Code) to request access to your students.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleJoinInstitution} className="flex gap-3 max-w-md">
+              <Input 
+                placeholder="Enter code (e.g. JOTM-XXXX)" 
+                value={joinCode}
+                onChange={e => setJoinCode(e.target.value)}
+                className="bg-white uppercase"
+                maxLength={12}
+              />
+              <Button type="submit" disabled={isJoining || !joinCode.trim()} style={{ backgroundColor: '#6B4C9A' }} className="whitespace-nowrap">
+                {isJoining ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : 'Request Access'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Teacher Class Code Banner */}
+      <Card className="border-blue-200 bg-blue-50/50">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-600" />
+              <CardTitle className="text-lg text-blue-800">Your Class Code</CardTitle>
+            </div>
+            {teacher.classCode && (
+              <Badge variant="outline" className="text-lg px-3 py-1 font-mono bg-white text-blue-700 border-blue-200">
+                {teacher.classCode}
+              </Badge>
+            )}
+          </div>
+          <CardDescription className="text-blue-700/80">
+            Give this code to your students during signup. They will automatically be linked to your class{teacher.organizationName ? ` at ${teacher.organizationName}` : ''}.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold">My Students</h2>
