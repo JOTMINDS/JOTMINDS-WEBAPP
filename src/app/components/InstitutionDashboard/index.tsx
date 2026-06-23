@@ -20,6 +20,7 @@ import {
   getDaysUntilExpiry,
   getCodeExpiryDate,
   getInstitutionForMember,
+  createInstitution,
   promoteMember,
   demoteMember
 } from '../../utils/institution';
@@ -92,8 +93,25 @@ export function InstitutionDashboard({
           inst = await getInstitutionForMember(user.id);
         }
         if (!inst && user.organizationType === 'Educational Institution') {
-          // If no institution exists, redirect to registration form automatically
-          onRegisterNew();
+          // Auto-create a stub institution to avoid blocking the user
+          const newInst = await createInstitution({
+            name: user.organizationName || 'My School',
+            type: 'Other',
+            region: 'Not specified',
+            district: 'Not specified',
+            address: 'Not specified',
+            email: user.email,
+            phone: user.phone || '',
+            adminName: user.name,
+            adminEmail: user.email,
+            adminPhone: user.phone || '',
+            adminId: user.id,
+            codeExpiryDays: 30,
+            emailVerified: true,
+            phoneVerified: true,
+          });
+          setInstitution(newInst);
+          setLoading(false);
           return;
         }
         setInstitution(inst);
