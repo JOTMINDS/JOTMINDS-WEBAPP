@@ -571,7 +571,7 @@ export async function generateOTP(contact: string): Promise<string> {
   
   const token = await getAuthToken();
   // Call server to securely record OTP (and dispatch if email)
-  await fetch(`${BASE_URL}/send-otp`, {
+  const response = await fetch(`${BASE_URL}/send-otp`, {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
@@ -579,6 +579,10 @@ export async function generateOTP(contact: string): Promise<string> {
     },
     body: JSON.stringify({ email: contact, otp })
   });
+
+  if (!response.ok) {
+    throw new Error('Failed to send verification code');
+  }
 
   return otp;
 }

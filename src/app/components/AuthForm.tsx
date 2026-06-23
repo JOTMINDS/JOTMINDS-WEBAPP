@@ -446,24 +446,16 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         if (registrationStep === 4) {
           try {
             setLoading(true);
-            const otp = generateOTP(email);
-            const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-otp`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email, otp })
-            });
-            
-            if (!response.ok) throw new Error('Failed to send verification code');
-            
+            await generateOTP(email);
             setRegistrationStep(5);
             setError('');
-          } catch (err) {
+          } catch (err: any) {
             console.error('Signup OTP Send Error:', err);
             // Fallback for local testing
-            const otp = generateOTP(email);
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
             setSimulatedSignupOTP(otp);
             setRegistrationStep(5);
-            setError('Edge function not deployed. Using simulated OTP for dev mode.');
+            setError('Could not connect to verification server. Using simulated OTP for dev mode.');
           } finally {
             setLoading(false);
           }
@@ -472,7 +464,8 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
 
         // STEP 5: Verify OTP and finalize signup
         if (registrationStep === 5) {
-          if (!verifyOTP(email, signupOTP)) {
+          const isValid = await verifyOTP(email, signupOTP);
+          if (!isValid) {
             setError('Incorrect verification code. Please try again.');
             setLoading(false);
             return;

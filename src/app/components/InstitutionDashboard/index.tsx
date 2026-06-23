@@ -205,7 +205,7 @@ export function InstitutionDashboard({
             <Button style={{ backgroundColor: '#5B7DB1' }} onClick={onRegisterNew} className="w-full">
               <Building2 className="w-4 h-4 mr-2" /> Register Your Institution
             </Button>
-            <Button variant="ghost" onClick={onLogout} className="w-full mt-2">Back</Button>
+            <Button variant="ghost" onClick={onLogout} className="w-full mt-2">Logout</Button>
           </CardContent>
         </Card>
       </div>
