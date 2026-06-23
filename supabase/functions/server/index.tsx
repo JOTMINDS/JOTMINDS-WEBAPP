@@ -580,8 +580,21 @@ app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
       .eq('id', institutionId)
       .single();
       
-    if (!inst || inst.admin_id !== user.id) {
-      return c.json({ error: 'Forbidden: Only the head admin can promote members' }, 403);
+    // Check if caller is an admin in institution_members (backward compatibility)
+    const { data: callerMember } = await supabase
+      .from('institution_members')
+      .select('role')
+      .eq('institution_id', institutionId)
+      .eq('user_id', user.id)
+      .single();
+
+    const isHeadAdmin = inst?.admin_id === user.id;
+    const isCoAdmin = (inst?.co_admin_ids || []).includes(user.id);
+    const isMemberAdmin = callerMember?.role === 'admin';
+    const isPlatformAdmin = user.id === 'admin-001';
+    
+    if (!inst || (!isHeadAdmin && !isCoAdmin && !isMemberAdmin && !isPlatformAdmin)) {
+      return c.json({ error: `Forbidden: Only admins can promote members. (Debug - Admin: ${inst?.admin_id}, Caller: ${user.id})` }, 403);
     }
     
     // Update role to admin
@@ -592,7 +605,7 @@ app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
       .eq('user_id', targetUserId);
       
     // Add to co_admin_ids array
-    const newCoAdmins = Array.from(new Set([...(inst.co_admin_ids || []), targetUserId]));
+    const newCoAdmins = Array.from(new Set([...(inst?.co_admin_ids || []), targetUserId]));
     await supabase
       .from('institutions')
       .update({ co_admin_ids: newCoAdmins })
@@ -624,8 +637,25 @@ app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
       .eq('id', institutionId)
       .single();
       
-    if (!inst || inst.admin_id !== user.id) {
-      return c.json({ error: 'Forbidden: Only the head admin can demote members' }, 403);
+    // Check if caller is an admin in institution_members (backward compatibility)
+    const { data: callerMember } = await supabase
+      .from('institution_members')
+      .select('role')
+      .eq('institution_id', institutionId)
+      .eq('user_id', user.id)
+      .single();
+
+    const isHeadAdmin = inst?.admin_id === user.id;
+    const isCoAdmin = (inst?.co_admin_ids || []).includes(user.id);
+    const isMemberAdmin = callerMember?.role === 'admin';
+    const isPlatformAdmin = user.id === 'admin-001';
+    
+    if (!inst || (!isHeadAdmin && !isCoAdmin && !isMemberAdmin && !isPlatformAdmin)) {
+      return c.json({ error: `Forbidden: Only admins can demote members. (Debug - Admin: ${inst?.admin_id}, Caller: ${user.id})` }, 403);
+    }
+    
+    if (targetUserId === inst?.admin_id) {
+      return c.json({ error: 'Cannot demote the primary admin.' }, 400);
     }
     
     // Update role to teacher
@@ -636,7 +666,7 @@ app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
       .eq('user_id', targetUserId);
       
     // Remove from co_admin_ids array
-    const newCoAdmins = (inst.co_admin_ids || []).filter((id: string) => id !== targetUserId);
+    const newCoAdmins = (inst?.co_admin_ids || []).filter((id: string) => id !== targetUserId);
     await supabase
       .from('institutions')
       .update({ co_admin_ids: newCoAdmins })

@@ -185,6 +185,7 @@ export function InstitutionDashboard({
       await promoteMember(institution.id, userId);
       await loadData();
     } catch (err: any) {
+      alert(`Error promoting member: ${err.message}`);
       throw err;
     }
   };
@@ -195,6 +196,7 @@ export function InstitutionDashboard({
       await demoteMember(institution.id, userId);
       await loadData();
     } catch (err: any) {
+      alert(`Error demoting member: ${err.message}`);
       throw err;
     }
   };
@@ -374,14 +376,6 @@ export function InstitutionDashboard({
               setTransferTargetName(name);
             }}
             onOpenTeacherManagement={setPerformanceTargetId}
-            onPromoteMember={async (userId) => {
-              await promoteMember(institution.id, userId);
-              await loadData();
-            }}
-            onDemoteMember={async (userId) => {
-              await demoteMember(institution.id, userId);
-              await loadData();
-            }}
           />
         )}
 
