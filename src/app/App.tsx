@@ -118,7 +118,7 @@ function AppContent() {
       
       if (code) {
         const processCode = async () => {
-          const result = validateInstitutionCode(code);
+          const result = await validateInstitutionCode(code);
           if (result.valid && result.institution) {
              const userRole = roleParam === 'teacher' ? 'teacher' : 'student';
              addMember(result.institution.id, user.id, userRole);
