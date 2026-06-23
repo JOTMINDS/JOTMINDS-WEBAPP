@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '../utils/supabase/client';
 import { getAllUsers, getAdminStats } from '../utils/api';
+import { getAllUsers as getLocalUsers } from '../utils/storage';
 import { User } from '../types';
 
 export function useAdminData() {
@@ -33,7 +34,30 @@ export function useAdminData() {
       let finalUsers = usersData || [];
       
       try {
-        if (!usersData || usersData.length === 0) {
+        // Always try to merge in local storage users to ensure no legacy accounts are missing
+        const localUsers = getLocalUsers();
+        if (localUsers && localUsers.length > 0) {
+          // Merge based on ID to avoid duplicates
+          const userMap = new Map();
+          
+          // Add local users first
+          localUsers.forEach(u => {
+            if (u && u.id) userMap.set(u.id, u);
+          });
+          
+          // Add Supabase users (they take precedence if IDs match)
+          finalUsers.forEach(u => {
+            if (u && u.id) userMap.set(u.id, u);
+          });
+          
+          finalUsers = Array.from(userMap.values());
+        }
+      } catch (e) {
+        console.log('Failed to merge local users');
+      }
+
+      try {
+        if (!finalUsers || finalUsers.length === 0) {
           const apiUsers = await getAllUsers();
           if (apiUsers && apiUsers.users) {
             finalUsers = apiUsers.users;
