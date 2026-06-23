@@ -66,7 +66,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
     const inviteTokenParam = searchParams.get('inviteToken');
     const urlRole = searchParams.get('role');
 
-    if (mode === 'signup') {
+    if (mode === 'signup' || inviteTokenParam) {
       setIsLogin(false);
     }
     if (code) {
