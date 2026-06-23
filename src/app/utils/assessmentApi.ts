@@ -250,9 +250,21 @@ export const submitAssessmentWithServerScoring = async (
     const data = await response.json();
     console.log(`[AssessmentAPI] Assessment submitted successfully:`, data);
     
+    // Determine dominant and secondary style
+    const sorted = Object.entries(scoringResult.results).sort((a: any, b: any) => b[1] - a[1]);
+    const dominantStyle = sorted[0]?.[0] || '';
+    const secondaryStyle = sorted[1]?.[1] > 0 ? sorted[1]?.[0] : null;
+
     return {
       ...data,
-      results: scoringResult.results
+      results: scoringResult.results,
+      insights: {
+        strengths,
+        weaknesses,
+        recommendations,
+        dominantStyle,
+        secondaryStyle
+      }
     };
   } catch (error) {
     console.error('[AssessmentAPI] Error submitting assessment:', error);

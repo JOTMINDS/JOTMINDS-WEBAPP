@@ -223,7 +223,8 @@ export const Assessment: React.FC<AssessmentProps> = ({
       // Wait for confetti to finish before completing
       setTimeout(() => {
         onComplete({
-          results,
+          results: results.results,
+          insights: results.insights,
           completedAt: new Date().toISOString()
         });
       }, 4000);
