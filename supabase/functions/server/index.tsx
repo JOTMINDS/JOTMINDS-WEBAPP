@@ -351,7 +351,6 @@ app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days expiry
 
-    const supabase = getSupabaseClient(true);
     const { error: inviteError } = await supabase.from('institution_invitations').insert({
       email: email.toLowerCase().trim(),
       institution_id: institutionId,
@@ -566,7 +565,7 @@ app.post('/make-server-fc8eb847/institutions/validate-invite-token', async (c) =
 app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
   try {
     const { institutionId, targetUserId } = await c.req.json();
-    const user = await verifyAuth(c.req);
+    const user = await verifyAuth(c.req.raw);
     
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
@@ -602,7 +601,7 @@ app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
     return c.json({ success: true });
   } catch (error: any) {
     console.error('[promote-member] Error:', error);
-    return c.json({ error: 'Server error' }, 500);
+    return c.json({ error: `Server error: ${error.message || JSON.stringify(error)}` }, 500);
   }
 });
 
@@ -610,7 +609,7 @@ app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
 app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
   try {
     const { institutionId, targetUserId } = await c.req.json();
-    const user = await verifyAuth(c.req);
+    const user = await verifyAuth(c.req.raw);
     
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
@@ -646,7 +645,7 @@ app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
     return c.json({ success: true });
   } catch (error: any) {
     console.error('[demote-member] Error:', error);
-    return c.json({ error: 'Server error' }, 500);
+    return c.json({ error: `Server error: ${error.message || JSON.stringify(error)}` }, 500);
   }
 });
 

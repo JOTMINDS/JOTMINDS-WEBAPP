@@ -18,7 +18,8 @@ import {
 interface AssessmentProps {
   type: 'learning' | 'thinking' | 'decision';
   onComplete: (results: any) => void;
-  onBack: () => void;
+  onBack: () => void; // retained for backward compatibility if needed
+  onLogout: () => void;
   showPreview?: boolean;
 }
 
@@ -26,6 +27,7 @@ export const Assessment: React.FC<AssessmentProps> = ({
   type, 
   onComplete, 
   onBack,
+  onLogout,
   showPreview = true
 }) => {
   const { user } = useAuth();
@@ -191,7 +193,9 @@ export const Assessment: React.FC<AssessmentProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (answers.length !== questions.length) {
+    // Ensure all questions have been answered before submitting
+    const allAnswered = answers.length === questions.length && answers.every(a => a !== undefined);
+    if (!allAnswered) {
       alert('Please answer all questions before submitting.');
       return;
     }
@@ -294,11 +298,11 @@ export const Assessment: React.FC<AssessmentProps> = ({
           <div className="mb-6">
             <Button
               variant="ghost"
-              onClick={onBack}
+              onClick={onLogout}
               className="mb-4"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
+              Logout
             </Button>
             
             {/* Title: 16px margin bottom */}

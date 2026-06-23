@@ -179,6 +179,26 @@ export function InstitutionDashboard({
     }
   };
 
+  const handlePromoteMember = async (userId: string) => {
+    if (!institution) return;
+    try {
+      await promoteMember(institution.id, userId);
+      await loadData();
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const handleDemoteMember = async (userId: string) => {
+    if (!institution) return;
+    try {
+      await demoteMember(institution.id, userId);
+      await loadData();
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   useEffect(() => {
     if (!institution) return;
     loadData();
@@ -339,6 +359,8 @@ export function InstitutionDashboard({
             allPlatformUsers={allPlatformUsers}
             isPrimaryAdmin={isPrimaryAdmin}
             onRefresh={loadData}
+            onPromoteMember={handlePromoteMember}
+            onDemoteMember={handleDemoteMember}
             onViewTeacherStyles={() => setTab('teacher_styles')}
             onOpenInviteModal={(email, role) => {
               setInviteModalEmail(email || '');
