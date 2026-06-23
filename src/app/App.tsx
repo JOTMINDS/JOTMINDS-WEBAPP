@@ -184,6 +184,12 @@ function AppContent() {
       }
 
       const searchParams = new URLSearchParams(window.location.search);
+      const mode = searchParams.get('mode');
+      
+      if (mode === 'signup') {
+        console.log('[App] Signup mode detected');
+        setCurrentView('auth');
+      }
 
       // Check for /shared/:token route
       const sharedMatch = path.match(/^\/shared\/([a-f0-9-]+)$/);

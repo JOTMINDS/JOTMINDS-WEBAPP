@@ -188,7 +188,8 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         setVerifiedOrgName(data.organizationName);
         setOrganizationName(data.organizationName);
       } else {
-        setError(data.error || 'Invalid code. Please check with your institution administrator.');
+        const primaryError = localResult.errorMessage && localResult.error !== 'not_found' ? localResult.errorMessage : null;
+        setError(primaryError || data.error || 'Invalid code. Please check with your institution administrator.');
         setVerifiedOrgName('');
       }
     } catch {
