@@ -170,9 +170,8 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
   const [heatmapGroup, setHeatmapGroup] = useState<string>('Learning (Kolb)');
 
   const students = useMemo(() => {
-    let raw: User[] = [];
-    if (user.school) raw = getStudentsBySchool(user.school);
-    else raw = getAllUsers().filter((u: User) => u.role === 'student');
+    const allUsers = getAllUsers();
+    let raw = allUsers.filter((u: User) => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
     return raw.slice(0, 60); // cap for performance
   }, [user]);
 

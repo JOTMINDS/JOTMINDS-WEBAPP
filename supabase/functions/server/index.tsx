@@ -2228,6 +2228,13 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
         institutionStudents = await Promise.all(
           studentRows.map(async (m: any) => {
             const studentId = m.user_id;
+            const studentProfile = await kv.get(`user:${studentId}`);
+            
+            // Only include students assigned to THIS teacher
+            if (studentProfile?.teacherId !== user.id && !(studentProfile?.linkedTeachers || []).includes(user.id)) {
+              return null;
+            }
+
             const allAssessments = await kv.getByPrefix(`result:${studentId}:`);
             const completedAssessments = allAssessments.filter((a: any) => a.completedAt);
             
@@ -2271,6 +2278,7 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
             };
           })
         );
+        institutionStudents = institutionStudents.filter(Boolean); // Remove nulls
         console.log(`[Backend] Found ${institutionStudents.length} students via institution_members for teacher ${user.id}`);
         return c.json({ success: true, students: institutionStudents });
       }
@@ -2290,8 +2298,7 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
       u.role === 'student' && 
       (
         u.teacherId === user.id ||
-        (u.linkedTeachers && u.linkedTeachers.includes(user.id)) ||
-        (u.school && schoolName && u.school.toLowerCase().trim() === schoolName.toLowerCase().trim())
+        (u.linkedTeachers && u.linkedTeachers.includes(user.id))
       )
     );
 

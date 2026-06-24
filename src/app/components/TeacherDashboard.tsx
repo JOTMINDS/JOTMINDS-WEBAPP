@@ -79,12 +79,8 @@ export function TeacherDashboard({
         
         // For teachers viewed by admin, we'd need to fetch their students from API
         // For now, use localStorage fallback
-        if (user.school) {
-          studentUsers = getStudentsBySchool(user.school);
-        } else {
-          const allUsers = getAllUsers();
-          studentUsers = allUsers.filter(u => u.role === 'student');
-        }
+        const allUsers = getAllUsers();
+        studentUsers = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
       } else {
         // Regular teacher viewing their own data
         try {
@@ -110,12 +106,8 @@ export function TeacherDashboard({
           
           assessmentsForStats = getAllAssessments();
           
-          if (user.school) {
-            studentUsers = getStudentsBySchool(user.school);
-          } else {
-            const allUsers = getAllUsers();
-            studentUsers = allUsers.filter(u => u.role === 'student');
-          }
+          const allUsers = getAllUsers();
+          studentUsers = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
         }
       }
 

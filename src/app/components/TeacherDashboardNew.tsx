@@ -128,12 +128,8 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         const { results: assessmentResults } = await getUserAssessmentResults(user.id);
         assessmentsForStats = assessmentResults || [];
         
-        if (user.school) {
-          studentUsers = getStudentsBySchool(user.school);
-        } else {
-          const allUsers = getAllUsers();
-          studentUsers = allUsers.filter(u => u.role === 'student');
-        }
+        const allUsers = getAllUsers();
+        studentUsers = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
       } else {
         // Regular teacher viewing their own data
         
@@ -153,11 +149,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         // 2. Fetch from local storage
         let localStudents: User[] = [];
         const allUsers = getAllUsers();
-        if (user.school) {
-          localStudents = getStudentsBySchool(user.school);
-        } else {
-          localStudents = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
-        }
+        localStudents = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
         
         const localAssessments = getAllAssessments();
 
