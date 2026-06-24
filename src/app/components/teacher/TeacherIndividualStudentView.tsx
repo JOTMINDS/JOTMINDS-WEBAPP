@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Assessment } from '../../types';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -23,12 +23,20 @@ import { KidsCognitiveProfile } from '../kids/KidsCognitiveProfile';
 interface TeacherIndividualStudentViewProps {
   students: User[];
   assessments: Assessment[];
+  initialStudentId?: string | null;
 }
 
-export function TeacherIndividualStudentView({ students, assessments }: TeacherIndividualStudentViewProps) {
+export function TeacherIndividualStudentView({ students, assessments, initialStudentId }: TeacherIndividualStudentViewProps) {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
-    students.length > 0 ? students[0].id : null
+    initialStudentId || (students.length > 0 ? students[0].id : null)
   );
+
+  useEffect(() => {
+    if (initialStudentId) {
+      setSelectedStudentId(initialStudentId);
+      setViewFullProfile(true);
+    }
+  }, [initialStudentId]);
   const [isQuickInsightsOpen, setIsQuickInsightsOpen] = useState(true);
   const [isStrategiesOpen, setIsStrategiesOpen] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);

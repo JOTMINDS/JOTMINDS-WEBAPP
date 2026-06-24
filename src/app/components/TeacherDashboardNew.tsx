@@ -51,6 +51,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const [initialQuestions, setInitialQuestions] = useState<any[]>([]);
   const [initialPage, setInitialPage] = useState<number>(0);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+  const [targetStudentId, setTargetStudentId] = useState<string | null>(null);
   const [showingThinkingAssessment, setShowingThinkingAssessment] = useState(false);
   const [serverAssessments, setServerAssessments] = useState<any[]>([]);
 
@@ -320,7 +321,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       )}
       
       {activeTab === 'individual' && (
-        <TeacherIndividualStudentView students={students} assessments={allAssessments} />
+        <TeacherIndividualStudentView students={students} assessments={allAssessments} initialStudentId={targetStudentId} />
       )}
 
       {activeTab === 'my-style' && (
@@ -664,7 +665,13 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
       {activeTab === 'manage-class' && (
         <div className="max-w-4xl mx-auto p-4 lg:p-6 space-y-8">
-          <TeacherStudentManagement teacher={user} />
+          <TeacherStudentManagement 
+            teacher={user} 
+            onViewReport={(studentId) => {
+              setTargetStudentId(studentId);
+              setActiveTab('individual');
+            }}
+          />
         </div>
       )}
     </div>

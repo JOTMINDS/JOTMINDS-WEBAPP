@@ -14,9 +14,10 @@ import { toast } from 'sonner';
 
 interface TeacherStudentManagementProps {
   teacher: User;
+  onViewReport?: (studentId: string) => void;
 }
 
-export function TeacherStudentManagement({ teacher }: TeacherStudentManagementProps) {
+export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStudentManagementProps) {
   const [students, setStudents] = useState<User[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -339,7 +340,7 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
                 <Badge variant="outline">
                   {getAssessmentsByUserId(student.id).filter(a => a.completedAt).length} Assessments
                 </Badge>
-                <Button variant="link" className="text-[#6B4C9A] p-0 h-auto">
+                <Button variant="link" className="text-[#6B4C9A] p-0 h-auto" onClick={() => onViewReport?.(student.id)}>
                   View Reports
                 </Button>
               </div>
