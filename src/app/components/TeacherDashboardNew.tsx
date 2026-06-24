@@ -136,26 +136,44 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         }
       } else {
         // Regular teacher viewing their own data
+        
+        // 1. Fetch from server
+        let serverStudents: User[] = [];
+        let serverAssessments: any[] = [];
         try {
           const response = await getStudentsForTeacher();
           if (response.success && response.students) {
-            studentUsers = response.students;
-            assessmentsForStats = studentUsers.flatMap((s: any) => s.assessments || []);
-          } else {
-            throw new Error('API unsuccessful');
+            serverStudents = response.students;
+            serverAssessments = serverStudents.flatMap((s: any) => s.assessments || []);
           }
         } catch (err) {
-          console.log('Falling back to local storage for students', err);
-          
-          assessmentsForStats = getAllAssessments();
-          
-          if (user.school) {
-            studentUsers = getStudentsBySchool(user.school);
-          } else {
-            const allUsers = getAllUsers();
-            studentUsers = allUsers.filter(u => u.role === 'student');
-          }
+          console.log('[TeacherDashboardNew] Failed to fetch server students:', err);
         }
+
+        // 2. Fetch from local storage
+        let localStudents: User[] = [];
+        const allUsers = getAllUsers();
+        if (user.school) {
+          localStudents = getStudentsBySchool(user.school);
+        } else {
+          localStudents = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
+        }
+        
+        const localAssessments = getAllAssessments();
+
+        // 3. Merge avoiding duplicates (server takes precedence)
+        const mergedStudentsMap = new Map();
+        localStudents.forEach(stu => mergedStudentsMap.set(stu.email?.toLowerCase() || stu.id, stu));
+        serverStudents.forEach(stu => mergedStudentsMap.set(stu.email?.toLowerCase() || stu.id, stu));
+        
+        studentUsers = Array.from(mergedStudentsMap.values());
+        
+        // 4. Merge assessments
+        const mergedAssessmentsMap = new Map();
+        localAssessments.forEach((a: any) => mergedAssessmentsMap.set(a.id, a));
+        serverAssessments.forEach((a: any) => mergedAssessmentsMap.set(a.id, a));
+        
+        assessmentsForStats = Array.from(mergedAssessmentsMap.values());
       }
 
       setStudents(studentUsers);
