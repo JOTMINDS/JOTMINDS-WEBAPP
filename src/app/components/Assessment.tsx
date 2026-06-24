@@ -62,6 +62,10 @@ export const Assessment: React.FC<AssessmentProps> = ({
           userId: user.id
         });
         
+        if (!data || !data.questions || data.questions.length === 0) {
+          throw new Error('No questions returned from the server');
+        }
+        
         setQuestions(data.questions);
         setQuestionVersion(data.version);
         
@@ -217,12 +221,46 @@ export const Assessment: React.FC<AssessmentProps> = ({
         name: user.name
       };
       
-      const results = await submitAssessmentWithServerScoring(
-        type,
-        answers,
-        questionVersion,
-        userProfile
-      );
+      let results;
+      try {
+        results = await submitAssessmentWithServerScoring(
+          type,
+          answers,
+          questionVersion,
+          userProfile
+        );
+      } catch (srvError) {
+        console.warn('[Assessment] Server scoring/submission failed, falling back to client-side scoring:', srvError);
+        
+        // Fallback local scoring
+        const { calculateResults } = await import('../utils/assessmentData');
+        const { saveAssessment } = await import('../utils/storage');
+        
+        const calculatedScore = calculateResults(answers, type);
+        
+        const fallbackResults = {
+          results: calculatedScore,
+          insights: {
+            strengths: [
+              `Your dominant style is ${Object.keys(calculatedScore).sort((a, b) => calculatedScore[b] - calculatedScore[a])[0] || 'balanced'}`
+            ],
+            weaknesses: [],
+            recommendations: []
+          }
+        };
+        
+        const newAssessment = {
+          id: `local-${type}-${Date.now()}`,
+          userId: user.id,
+          type,
+          responses: answers.map(a => a.selectedValue),
+          score: calculatedScore,
+          completedAt: new Date().toISOString()
+        };
+        
+        saveAssessment(newAssessment);
+        results = fallbackResults;
+      }
 
       // Wait for confetti to finish before completing
       setTimeout(() => {
