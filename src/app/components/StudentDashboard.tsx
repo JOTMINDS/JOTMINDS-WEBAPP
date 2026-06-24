@@ -138,112 +138,90 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
       // Convert API results to Assessment format
       const convertedAssessments: Assessment[] = (results || []).map((result: any) => {
         try {
-          console.log('🔄 Converting result:', {
-            id: result.id,
-            type: result.assessmentType,
-            resultsKeys: Object.keys(result.results || {}),
-            results: result.results
-          });
-          
           let type: any = result.assessmentType;
-          if (result.assessmentType === 'learning') type = 'kolb';
-          else if (result.assessmentType === 'thinking') type = 'sternberg';
-          else if (result.assessmentType === 'decision') type = 'dual-process';
-          
-          // Extract scores - handle both new format (with scores sub-object) and old format
-          const extractedScores = result.results?.scores || result.results || {};
-          
-          // DETAILED DEBUG LOGGING
-          console.log('🔍 FULL RESULT OBJECT:', JSON.stringify(result, null, 2));
-          console.log('🔍 result.results:', result.results);
-          console.log('🔍 result.results.scores:', result.results?.scores);
-          console.log('🔍 extractedScores:', extractedScores);
-          console.log('🔍 extractedScores keys:', Object.keys(extractedScores));
-          
-          // For assessments where results are nested under framework name, extract the actual scores
-          let actualScores = extractedScores;
-          let dominantStyle;
-          
-          if (type === 'dual-process' && extractedScores.dualProcess?.scores) {
-            actualScores = extractedScores.dualProcess.scores;
-            dominantStyle = extractedScores.dualProcess.style;
-            console.log('🔧 Dual-Process: Extracted nested scores:', actualScores, 'style:', dominantStyle);
-          } else if (type === 'kolb' && extractedScores.kolb?.scores) {
-            actualScores = extractedScores.kolb.scores;
-            dominantStyle = extractedScores.kolb.style;
-          } else if (type === 'sternberg' && extractedScores.sternberg?.scores) {
-            actualScores = extractedScores.sternberg.scores;
-            dominantStyle = extractedScores.sternberg.style;
+          if (type === 'learning') type = 'kolb';
+          else if (type === 'thinking') type = 'sternberg';
+          else if (type === 'decision') type = 'dual-process';
+
+          const rawResults = result.results || {};
+          const rawScores = rawResults.scores || rawResults || {};
+          const scoreObj: any = {};
+
+          const capitalize = (str: string) => {
+            if (!str) return 'Unknown';
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+          };
+
+          if (type === 'kolb') {
+            const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+            
+            // Reconstruct CE, RO, AC, AE from style scores if needed
+            const totalQ = rawResults.totalQuestions || 12;
+            const maxPerStyle = (totalQ / 4) * 5; // e.g. 15 for 12 questions
+            
+            const diverging = rawScores.Diverging || rawScores.diverging || 0;
+            const accommodating = rawScores.Accommodating || rawScores.accommodating || 0;
+            const assimilating = rawScores.Assimilating || rawScores.assimilating || 0;
+            const converging = rawScores.Converging || rawScores.converging || 0;
+
+            const ce = rawScores.CE !== undefined ? rawScores.CE : Math.round(((diverging + accommodating) / (maxPerStyle * 2)) * 48);
+            const ro = rawScores.RO !== undefined ? rawScores.RO : Math.round(((diverging + assimilating) / (maxPerStyle * 2)) * 48);
+            const ac = rawScores.AC !== undefined ? rawScores.AC : Math.round(((assimilating + converging) / (maxPerStyle * 2)) * 48);
+            const ae = rawScores.AE !== undefined ? rawScores.AE : Math.round(((accommodating + converging) / (maxPerStyle * 2)) * 48);
+
+            scoreObj.kolb = {
+              style,
+              scores: {
+                CE: ce,
+                RO: ro,
+                AC: ac,
+                AE: ae,
+                Diverging: diverging,
+                Accommodating: accommodating,
+                Assimilating: assimilating,
+                Converging: converging
+              }
+            };
+          } else if (type === 'sternberg') {
+            const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+            scoreObj.sternberg = {
+              style,
+              scores: {
+                analytical: rawScores.analytical !== undefined ? rawScores.analytical : (rawScores.Analytical || 0),
+                creative: rawScores.creative !== undefined ? rawScores.creative : (rawScores.Creative || 0),
+                practical: rawScores.practical !== undefined ? rawScores.practical : (rawScores.Practical || 0)
+              }
+            };
+          } else if (type === 'dual-process') {
+            const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+            scoreObj.dualProcess = {
+              style,
+              scores: {
+                system1: rawScores.system1 !== undefined ? rawScores.system1 : (rawScores.System1 || rawScores.intuitive || rawScores.Intuitive || 0),
+                system2: rawScores.system2 !== undefined ? rawScores.system2 : (rawScores.System2 || rawScores.reflective || rawScores.Reflective || 0)
+              }
+            };
+          } else if (type === 'jhs-thinking' || type === 'shs-thinking' || type === 'adult-thinking' || type === 'children-thinking') {
+            const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+            scoreObj[type] = {
+              personalityType: rawResults.personalityType || style,
+              dominantStyle: style,
+              scores: rawScores
+            };
           } else {
-            // Fallback: try to calculate dominant style
-            try {
-              dominantStyle = result.results?.dominantStyle || calculateDominantStyle(actualScores);
-            } catch (styleError) {
-              console.warn('⚠️ Could not calculate dominant style:', styleError);
-              const scoreKeys = Object.keys(actualScores);
-              dominantStyle = scoreKeys.length > 0 ? scoreKeys[0] : 'Unknown';
-            }
+            scoreObj[type] = rawResults;
           }
-          
-          console.log('🎯 Extracted data:', {
-            type,
-            extractedScores,
-            actualScores,
-            dominantStyle,
-            hasScoresSubObject: !!result.results?.scores,
-            scoreKeys: Object.keys(actualScores)
-          });
-          
-          // Ensure we have valid scores before creating assessment
-          if (!actualScores || Object.keys(actualScores).length === 0) {
-            console.warn('⚠️ No scores found for assessment:', result.id);
-            throw new Error('No scores data available');
-          }
-          
+
           return {
-            id: result.id,
+            id: result.id || 'unknown',
             userId: user.id,
             type,
-            score: {
-              kolb: type === 'kolb' ? {
-                style: dominantStyle as any,
-                scores: actualScores
-              } : undefined,
-              sternberg: type === 'sternberg' ? {
-                style: dominantStyle as any,
-                scores: actualScores
-              } : undefined,
-              dualProcess: type === 'dual-process' ? {
-                style: dominantStyle as any,
-                scores: actualScores
-              } : undefined,
-              'jhs-thinking': type === 'jhs-thinking' ? {
-                 personalityType: result.results?.personalityType || dominantStyle || 'Unknown',
-                 scores: extractedScores
-              } : undefined,
-              'shs-thinking': type === 'shs-thinking' ? {
-                 personalityType: result.results?.personalityType || dominantStyle || 'Unknown',
-                 scores: extractedScores
-              } : undefined,
-              'adult-thinking': type === 'adult-thinking' ? {
-                 dominantStyle: dominantStyle || 'Unknown',
-                 scores: extractedScores
-              } : undefined,
-              'children-thinking': type === 'children-thinking' ? {
-                 personalityType: result.results?.personalityType || dominantStyle || 'Unknown',
-                 scores: extractedScores
-              } : undefined,
-            },
+            score: scoreObj,
             completedAt: result.completedAt || new Date().toISOString(),
             responses: []
           };
         } catch (conversionError) {
-          console.error('❌ Error converting assessment result:', {
-            error: conversionError,
-            result,
-            message: conversionError instanceof Error ? conversionError.message : 'Unknown error'
-          });
-          // Return a minimal valid assessment object to prevent complete failure
+          console.error('❌ Error converting assessment result:', conversionError);
           return {
             id: result.id || 'unknown',
             userId: user.id,

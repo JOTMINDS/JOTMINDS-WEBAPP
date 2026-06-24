@@ -293,3 +293,36 @@ export const fetchMyAssessmentResults = async (): Promise<any[]> => {
     return [];
   }
 };
+
+/**
+ * Submit Teaching Style assessment results to KV server
+ */
+export const submitTeachingStyleAssessment = async (
+  responses: number[],
+  score: any
+): Promise<any> => {
+  try {
+    const response = await fetch(`${BASE_URL}/assessment/submit`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        assessmentType: 'teaching-style',
+        answers: responses.map((val, idx) => ({ questionId: idx + 1, value: val })),
+        results: score,
+        strengths: [],
+        weaknesses: [],
+        recommendations: []
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to submit teaching style assessment');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[AssessmentAPI] Error submitting teaching style assessment:', error);
+    throw error;
+  }
+};

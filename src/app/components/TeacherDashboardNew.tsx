@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { User, Assessment } from '../types';
 import { useAuth } from './AuthContext';
 import { getUserAssessmentResults, getStudentsForTeacher } from '../utils/api';
-import { fetchMyAssessmentResults } from '../utils/assessmentApi';
+import { fetchMyAssessmentResults, submitTeachingStyleAssessment } from '../utils/assessmentApi';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress } from '../utils/storage';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
@@ -70,18 +70,85 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     try {
       const results = await fetchMyAssessmentResults();
       // Normalize server results into the same shape used locally
-      const normalized = results.map((r: any) => ({
-        id: r.id || r.resultKey || `server-${r.assessmentType}-${r.completedAt}`,
-        userId: r.userId,
-        type: r.assessmentType,
-        responses: [],
-        score: {
-          [r.assessmentType]: r.results
-        },
-        completedAt: r.completedAt,
-        completed: true,
-        fromServer: true
-      }));
+      const normalized = results.map((r: any) => {
+        let type = r.assessmentType;
+        if (type === 'learning') type = 'kolb';
+        else if (type === 'thinking') type = 'sternberg';
+        else if (type === 'decision') type = 'dual-process';
+
+        const rawResults = r.results || {};
+        const rawScores = rawResults.scores || rawResults || {};
+        const scoreObj: any = {};
+
+        const capitalize = (str: string) => {
+          if (!str) return 'Unknown';
+          return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        };
+
+        if (type === 'kolb') {
+          const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+          
+          // Reconstruct CE, RO, AC, AE from style scores
+          const totalQ = rawResults.totalQuestions || 12;
+          const maxPerStyle = (totalQ / 4) * 5; // e.g. 15 for 12 questions
+          
+          const diverging = rawScores.Diverging || rawScores.diverging || 0;
+          const accommodating = rawScores.Accommodating || rawScores.accommodating || 0;
+          const assimilating = rawScores.Assimilating || rawScores.assimilating || 0;
+          const converging = rawScores.Converging || rawScores.converging || 0;
+
+          const ce = rawScores.CE !== undefined ? rawScores.CE : Math.round(((diverging + accommodating) / (maxPerStyle * 2)) * 48);
+          const ro = rawScores.RO !== undefined ? rawScores.RO : Math.round(((diverging + assimilating) / (maxPerStyle * 2)) * 48);
+          const ac = rawScores.AC !== undefined ? rawScores.AC : Math.round(((assimilating + converging) / (maxPerStyle * 2)) * 48);
+          const ae = rawScores.AE !== undefined ? rawScores.AE : Math.round(((accommodating + converging) / (maxPerStyle * 2)) * 48);
+
+          scoreObj.kolb = {
+            style,
+            scores: {
+              CE: ce,
+              RO: ro,
+              AC: ac,
+              AE: ae,
+              Diverging: diverging,
+              Accommodating: accommodating,
+              Assimilating: assimilating,
+              Converging: converging
+            }
+          };
+        } else if (type === 'sternberg') {
+          const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+          scoreObj.sternberg = {
+            style,
+            scores: {
+              analytical: rawScores.analytical !== undefined ? rawScores.analytical : (rawScores.Analytical || 0),
+              creative: rawScores.creative !== undefined ? rawScores.creative : (rawScores.Creative || 0),
+              practical: rawScores.practical !== undefined ? rawScores.practical : (rawScores.Practical || 0)
+            }
+          };
+        } else if (type === 'dual-process') {
+          const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+          scoreObj.dualProcess = {
+            style,
+            scores: {
+              system1: rawScores.system1 !== undefined ? rawScores.system1 : (rawScores.System1 || rawScores.intuitive || rawScores.Intuitive || 0),
+              system2: rawScores.system2 !== undefined ? rawScores.system2 : (rawScores.System2 || rawScores.reflective || rawScores.Reflective || 0)
+            }
+          };
+        } else {
+          scoreObj[type] = rawResults;
+        }
+
+        return {
+          id: r.id || r.resultKey || `server-${r.assessmentType}-${r.completedAt}`,
+          userId: r.userId,
+          type,
+          responses: [],
+          score: scoreObj,
+          completedAt: r.completedAt,
+          completed: true,
+          fromServer: true
+        };
+      });
       setServerAssessments(normalized);
     } catch (e) {
       console.error('[TeacherDashboard] Failed to load server assessments:', e);
@@ -180,7 +247,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     }
   };
 
-  const handleAssessmentComplete = (responses: number[]) => {
+  const handleAssessmentComplete = async (responses: number[]) => {
     const score = calculateTeachingStyleScore(responses);
     
     const newAssessment: Assessment = {
@@ -197,6 +264,15 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
     saveAssessment(newAssessment);
     clearAssessmentProgress(user.id, 'teaching-style', !!user.organizationName);
+
+    // Sync Teaching Style to the server KV store
+    try {
+      await submitTeachingStyleAssessment(responses, score);
+      console.log('[TeacherDashboardNew] Successfully synced teaching-style to server KV');
+    } catch (err) {
+      console.error('[TeacherDashboardNew] Failed to sync teaching-style to server KV:', err);
+    }
+
     setMyAssessments([...myAssessments, newAssessment]);
     setIsTakingAssessment(false);
     toast.success('Assessment completed successfully!');
@@ -447,12 +523,13 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                     </div>
                     {thinkStyle && (
                       <div className="grid grid-cols-2 gap-2">
-                        {Object.entries(thinkScores).filter(([k]) => ['analytical','creative','practical','reflective'].includes(k)).map(([dim, val]) => {
+                        {Object.entries(thinkScores).filter(([k]) => ['analytical','creative','practical','reflective'].includes(k.toLowerCase())).map(([dim, val]) => {
                           const v = Number(val); const max = v > 1 ? 30 : 100;
+                          const capitalizedDim = dim.charAt(0).toUpperCase() + dim.slice(1).toLowerCase();
                           return (
                             <div key={dim}>
                               <div className="flex justify-between text-[10px] text-gray-500 mb-0.5"><span className="capitalize">{dim}</span><span>{v}</span></div>
-                              <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round((v / max) * 100))}%`, backgroundColor: THINK_COLORS[dim.charAt(0).toUpperCase() + dim.slice(1)] || '#9ca3af' }} /></div>
+                              <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round((v / max) * 100))}%`, backgroundColor: THINK_COLORS[capitalizedDim] || '#9ca3af' }} /></div>
                             </div>
                           );
                         })}
@@ -473,7 +550,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                     </div>
                     {dual?.scores && (
                       <div className="grid grid-cols-2 gap-2">
-                        {[['Intuitive', dual.scores.intuitive ?? dual.scores.System1 ?? 0], ['Reflective', dual.scores.reflective ?? dual.scores.System2 ?? 0]].map(([k, v]) => (
+                        {[['Intuitive', dual.scores.intuitive ?? dual.scores.system1 ?? dual.scores.System1 ?? 0], ['Reflective', dual.scores.reflective ?? dual.scores.system2 ?? dual.scores.System2 ?? 0]].map(([k, v]) => (
                           <div key={String(k)}>
                             <div className="flex justify-between text-[10px] text-gray-500 mb-0.5"><span>{String(k)}</span><span>{Number(v)}</span></div>
                             <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round((Number(v) / 100) * 100))}%`, backgroundColor: DUAL_COLORS[dual.style] }} /></div>
