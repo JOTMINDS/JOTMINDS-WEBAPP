@@ -103,6 +103,8 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
         dateOfBirth: formData.dateOfBirth,
         teacherId: teacher.id,
         school: teacher.organizationName,
+        organizationName: teacher.organizationName,
+        organizationCode: teacher.organizationCode,
         createdAt: new Date().toISOString()
       };
       saveUser(newStudent);

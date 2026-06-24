@@ -134,9 +134,17 @@ export function InstitutionDashboard({
       const currentMembers = await getInstitutionMembers(institution.id);
       let changed = false;
 
-      // Auto-sync users who registered with this institution's code or name
+      // Get current teachers/admins to match their students
+      const institutionTeacherIds = currentMembers
+        .filter(m => m.role === 'teacher' || m.role === 'admin')
+        .map(m => m.userId);
+
+      // Auto-sync users who registered with this institution's code, name, or were added by an institution teacher
       for (const u of allUsers) {
-        if (u.organizationName === institution.name && (u.role === 'teacher' || u.role === 'student')) {
+        const matchesName = u.organizationName === institution.name || u.school === institution.name;
+        const matchesTeacher = u.role === 'student' && u.teacherId && institutionTeacherIds.includes(u.teacherId);
+        
+        if ((matchesName || matchesTeacher) && (u.role === 'teacher' || u.role === 'student')) {
           if (!currentMembers.some(m => m.userId === u.id)) {
             await addMember(institution.id, {
               userId: u.id,
