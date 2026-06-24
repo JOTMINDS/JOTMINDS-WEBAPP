@@ -63,9 +63,9 @@ function buildSummary(u: User): StudentSummary {
   const gam = getGamificationProfile(u.id);
 
   const completedTypes = [...new Set(assessments.map((a: Assessment) => {
-    if (['kolb', 'vark'].includes(a.type)) return 'learning';
-    if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type)) return 'thinking';
-    if (a.type === 'dual-process') return 'decision';
+    if (['kolb', 'vark', 'learning'].includes(a.type)) return 'learning';
+    if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(a.type)) return 'thinking';
+    if (a.type === 'dual-process' || a.type === 'decision') return 'decision';
     return a.type;
   }))];
 
@@ -160,7 +160,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         }
         
         const determinePrimaryStyle = (scores: AssessmentScore, type: string) => {
-          if (type === 'kolb') {
+          if (type === 'kolb' || type === 'learning') {
             const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores;
             const acCE = AC - CE;
             const aeRO = AE - RO;
@@ -189,9 +189,10 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
           const results = assessment.results || {};
           
           let score: Record<string, unknown> = {};
-          if (assessmentType === 'kolb') {
+          if (assessmentType === 'kolb' || assessmentType === 'learning') {
             const style = determinePrimaryStyle(results, 'kolb');
             score.kolb = { style, scores: results };
+            score.learning = { style, scores: results };
           } else if (assessmentType === 'sternberg') {
             const style = determinePrimaryStyle(results, 'sternberg');
             score.sternberg = { style, scores: results };
@@ -243,9 +244,9 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       const gam = getGamificationProfile(u.id);
 
       const completedTypes = [...new Set(assessments.map((a: Assessment) => {
-        if (['kolb', 'vark'].includes(a.type)) return 'learning';
-        if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type)) return 'thinking';
-        if (a.type === 'dual-process') return 'decision';
+        if (['kolb', 'vark', 'learning'].includes(a.type)) return 'learning';
+        if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(a.type)) return 'thinking';
+        if (a.type === 'dual-process' || a.type === 'decision') return 'decision';
         return a.type;
       }))];
 

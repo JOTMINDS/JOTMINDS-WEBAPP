@@ -84,7 +84,7 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
   const thinkingCount = assessments.filter(a => 
     ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && a.completed
   ).length;
-  const decisionCount = assessments.filter(a => a.type === 'dual-process' && a.completed).length;
+  const decisionCount = assessments.filter(a => (a.type === 'dual-process' || a.type === 'decision') && a.completed).length;
 
   const completionData = [
     { name: 'Learning Style', completed: kolbCount, total: totalStudents },

@@ -86,7 +86,7 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   
   const latestDecision = studentAssessments
-    .filter(a => a.type === 'dual-process')
+    .filter(a => a.type === 'dual-process' || a.type === 'decision')
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
 
   const completedCount = [latestLearning, latestThinking, latestDecision].filter(Boolean).length;
@@ -264,7 +264,7 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
             const studentCompletedCount = [
               assessments.find(a => a.userId === student.id && (a.type === 'kolb' || a.type === 'learning') && a.completed),
               assessments.find(a => a.userId === student.id && ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && a.completed),
-              assessments.find(a => a.userId === student.id && a.type === 'dual-process' && a.completed)
+              assessments.find(a => a.userId === student.id && (a.type === 'dual-process' || a.type === 'decision') && a.completed)
             ].filter(Boolean).length;
             
             const isSelected = student.id === selectedStudentId;
@@ -412,7 +412,7 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
                           <span className="text-[15px] font-semibold">Decision Style</span>
                         </div>
                         <Badge className="rounded-full px-3 py-1 text-[13px] font-semibold bg-[#F97316] text-white">
-                          {latestDecision.score.dualProcess?.style}
+                          {(latestDecision.score.dualProcess || latestDecision.score.decision || latestDecision.score['dual-process'])?.style}
                         </Badge>
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2">
