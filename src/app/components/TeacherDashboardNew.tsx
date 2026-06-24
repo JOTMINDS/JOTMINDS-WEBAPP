@@ -434,7 +434,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 <div className="text-white">
                   <p className="text-xs text-white/70 mb-0.5">Your School Jots Code (Organisation Code)</p>
                   <div className="text-xl tracking-widest">{jc}</div>
-                  <p className="text-xs text-white/60 mt-0.5">Your head teacher uses this code to view your teaching style alongside other staff.</p>
+                  <p className="text-xs text-white/60 mt-0.5">Your School administrator uses this code to view your teaching methods.</p>
                 </div>
                 <button
                   onClick={() => navigator.clipboard.writeText(jc)}
