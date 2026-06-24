@@ -460,6 +460,29 @@ async function autoGenerateSkillPlan(userId: string, assessmentType: string, res
   }
 }
 
+// Helper function to determine primary style from scores
+const determinePrimaryStyle = (scores: any, type: string) => {
+  if (type === 'kolb' || type === 'learning') {
+    const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores;
+    const acCE = AC - CE;
+    const aeRO = AE - RO;
+    
+    if (acCE > 0 && aeRO > 0) return 'Converging';
+    if (acCE > 0 && aeRO < 0) return 'Assimilating';
+    if (acCE < 0 && aeRO < 0) return 'Diverging';
+    return 'Accommodating';
+  } else if (type === 'sternberg') {
+    const { analytical = 0, creative = 0, practical = 0 } = scores;
+    if (analytical >= creative && analytical >= practical) return 'Analytical';
+    if (creative >= analytical && creative >= practical) return 'Creative';
+    return 'Practical';
+  } else if (type === 'dual-process' || type === 'decision') {
+    const { system1 = 0, system2 = 0 } = scores;
+    return system1 > system2 ? 'Intuitive' : 'Reflective';
+  }
+  return 'Unknown';
+};
+
 // Submit assessment results
 app.post('/assessment/submit', async (c) => {
   try {
@@ -527,6 +550,71 @@ app.post('/assessment/submit', async (c) => {
     // Auto-generate Skill Builder plan if user scored low in any dimension
     const autoPlan = await autoGenerateSkillPlan(user.id, assessmentType, results, resultKey);
 
+    // [SEND NOTIFICATION TO TEACHER]
+    if (userProfile.role === 'student' && userProfile.teacherId) {
+      try {
+        const teacherProfile = await kv.get(`user:${userProfile.teacherId}`);
+        if (teacherProfile && teacherProfile.email) {
+          const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+          
+          const assessmentNames: Record<string, string> = {
+            learning: 'Learning Style Assessment',
+            kolb: 'Learning Style Assessment',
+            decision: 'Decision Style Assessment',
+            'dual-process': 'Decision Style Assessment',
+            'adult-thinking': 'Thinking Style Assessment',
+            'shs-thinking': 'Thinking Style Assessment',
+            'jhs-thinking': 'Thinking Style Assessment',
+            'child-thinking': 'Thinking Style Assessment',
+            sternberg: 'Thinking Style Assessment'
+          };
+          
+          const niceAssessmentName = assessmentNames[assessmentType] || 'Assessment';
+          
+          // Determine the primary style or use the one provided by frontend
+          let primaryStyle = 'N/A';
+          if (results) {
+            primaryStyle = results.primaryStyle || results.dominantStyle || determinePrimaryStyle(results, assessmentType);
+          }
+          
+          const studentName = userProfile.name || 'Your student';
+          
+          fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${resendApiKey}`
+            },
+            body: JSON.stringify({
+              from: 'JotMinds Notifications <service@jotminds.com>',
+              to: teacherProfile.email,
+              subject: `${studentName} completed the ${niceAssessmentName}`,
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+                  </div>
+                  <h2>Assessment Completed!</h2>
+                  <p>Great news! <strong>${studentName}</strong> has just completed the <strong>${niceAssessmentName}</strong>.</p>
+                  <div style="padding: 15px; background: #f4f4f5; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 16px;"><strong>Primary Style Detected:</strong> <span style="color: #4F46E5;">${primaryStyle}</span></p>
+                  </div>
+                  <p style="margin-top: 20px; font-size: 14px; color: #333;">
+                    Log into your JotMinds Teacher Portal to view detailed insights, strengths, weaknesses, and tailored recommendations.
+                  </p>
+                  <div style="text-align: center; margin-top: 30px;">
+                    <a href="https://www.jotminds.com/teacher" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Student Results</a>
+                  </div>
+                </div>
+              `
+            })
+          }).catch(err => console.error('[Submit] Failed to send email to teacher:', err));
+        }
+      } catch (e) {
+        console.error('[Submit] Failed to notify teacher:', e);
+      }
+    }
+
     return c.json({
       success: true,
       resultId: resultKey,
@@ -584,28 +672,7 @@ app.get('/assessment/results/:assessmentType', async (c) => {
   }
 });
 
-// Helper function to determine primary style from scores
-const determinePrimaryStyle = (scores: any, type: string) => {
-  if (type === 'kolb') {
-    const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores;
-    const acCE = AC - CE;
-    const aeRO = AE - RO;
-    
-    if (acCE > 0 && aeRO > 0) return 'Converging';
-    if (acCE > 0 && aeRO < 0) return 'Assimilating';
-    if (acCE < 0 && aeRO < 0) return 'Diverging';
-    return 'Accommodating';
-  } else if (type === 'sternberg') {
-    const { analytical = 0, creative = 0, practical = 0 } = scores;
-    if (analytical >= creative && analytical >= practical) return 'Analytical';
-    if (creative >= analytical && creative >= practical) return 'Creative';
-    return 'Practical';
-  } else if (type === 'dual-process') {
-    const { system1 = 0, system2 = 0 } = scores;
-    return system1 > system2 ? 'Intuitive' : 'Reflective';
-  }
-  return 'Unknown';
-};
+// Helper function to determine primary style from scores (MOVED UP)
 
 // Get all assessment results for user
 app.get('/assessment/results', async (c) => {

@@ -422,9 +422,12 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                   <div className="p-3 rounded-lg border" style={{ borderColor: kolb ? KOLB_COLORS[kolb.style] + '40' : '#e5e7eb', backgroundColor: kolb ? KOLB_COLORS[kolb.style] + '06' : '#f9fafb' }}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-gray-800">📚 Learning Style (Kolb)</p>
-                      {kolb
-                        ? <Badge style={{ backgroundColor: KOLB_COLORS[kolb.style] + '20', color: KOLB_COLORS[kolb.style] }} className="text-[10px]">{kolb.style}</Badge>
-                        : <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onStartAssessment?.('learning')}>Take Assessment</Button>}
+                      <div className="flex items-center gap-2">
+                        {kolb && <Badge style={{ backgroundColor: KOLB_COLORS[kolb.style] + '20', color: KOLB_COLORS[kolb.style] }} className="text-[10px]">{kolb.style}</Badge>}
+                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onStartAssessment?.('learning')}>
+                          {kolb ? 'Retake' : 'Take'}
+                        </Button>
+                      </div>
                     </div>
                     {kolb && (
                       <div className="grid grid-cols-2 gap-2">
@@ -442,9 +445,12 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                   <div className="p-3 rounded-lg border" style={{ borderColor: thinkStyle ? THINK_COLORS[thinkStyle] + '40' : '#e5e7eb', backgroundColor: thinkStyle ? THINK_COLORS[thinkStyle] + '06' : '#f9fafb' }}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-gray-800">🧠 Thinking Style</p>
-                      {thinkStyle
-                        ? <Badge style={{ backgroundColor: THINK_COLORS[thinkStyle] + '20', color: THINK_COLORS[thinkStyle] }} className="text-[10px]">{thinkStyle}</Badge>
-                        : <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => setShowingThinkingAssessment(true)}>Take Assessment</Button>}
+                      <div className="flex items-center gap-2">
+                        {thinkStyle && <Badge style={{ backgroundColor: THINK_COLORS[thinkStyle] + '20', color: THINK_COLORS[thinkStyle] }} className="text-[10px]">{thinkStyle}</Badge>}
+                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setShowingThinkingAssessment(true)}>
+                          {thinkStyle ? 'Retake' : 'Take'}
+                        </Button>
+                      </div>
                     </div>
                     {thinkStyle && (
                       <div className="grid grid-cols-2 gap-2">
@@ -465,9 +471,12 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                   <div className="p-3 rounded-lg border" style={{ borderColor: dual ? DUAL_COLORS[dual.style] + '40' : '#e5e7eb', backgroundColor: dual ? DUAL_COLORS[dual.style] + '06' : '#f9fafb' }}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-gray-800">⚡ Decision Style</p>
-                      {dual
-                        ? <Badge style={{ backgroundColor: DUAL_COLORS[dual.style] + '20', color: DUAL_COLORS[dual.style] }} className="text-[10px]">{dual.style}</Badge>
-                        : <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onStartAssessment?.('decision')}>Take Assessment</Button>}
+                      <div className="flex items-center gap-2">
+                        {dual && <Badge style={{ backgroundColor: DUAL_COLORS[dual.style] + '20', color: DUAL_COLORS[dual.style] }} className="text-[10px]">{dual.style}</Badge>}
+                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onStartAssessment?.('decision')}>
+                          {dual ? 'Retake' : 'Take'}
+                        </Button>
+                      </div>
                     </div>
                     {dual?.scores && (
                       <div className="grid grid-cols-2 gap-2">
