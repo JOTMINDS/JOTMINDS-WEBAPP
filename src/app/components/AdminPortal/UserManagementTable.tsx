@@ -141,6 +141,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Name</TableHead>
                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Email</TableHead>
                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Role</TableHead>
+                <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Teacher</TableHead>
                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Status</TableHead>
                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Subscription</TableHead>
                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Actions</TableHead>
@@ -149,7 +150,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-slate-500 py-12">
+                  <TableCell colSpan={7} className="text-center text-slate-500 py-12">
                     <div className="flex flex-col items-center justify-center gap-2">
                        <Filter className="w-8 h-8 text-slate-300" />
                        <p>No users found matching your criteria</p>
@@ -172,6 +173,20 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                       >
                         {user.role}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.role?.toLowerCase() === 'student' ? (
+                        (() => {
+                          const assignedTeacher = user.teacherId ? users.find(u => u.id === user.teacherId) : null;
+                          return assignedTeacher ? (
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{assignedTeacher.name}</span>
+                          ) : (
+                            <span className="text-xs text-slate-400 dark:text-slate-500 italic">Unassigned</span>
+                          );
+                        })()
+                      ) : (
+                        <span className="text-slate-300 dark:text-slate-700">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge 

@@ -487,6 +487,19 @@ export function InstitutionMembers({
                             {getStudentsForTeacherCount(m.userId)} Assigned Students
                           </p>
                         )}
+                        {m.role === 'student' && (
+                          <p className="text-xs text-[#1E8A6E] mt-0.5 font-medium">
+                            {(() => {
+                              const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
+                              const teacherProfile = studentProfile?.teacherId 
+                                ? allPlatformUsers.find(u => u.id === studentProfile.teacherId) 
+                                : null;
+                              return teacherProfile 
+                                ? `Assigned Teacher: ${teacherProfile.name}` 
+                                : 'Assigned Teacher: Unassigned';
+                            })()}
+                          </p>
+                        )}
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           Joined{' '}
                           {new Date(m.joinedAt).toLocaleDateString('en-GB', {
