@@ -382,18 +382,18 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             const completed = allMyAssessments.filter(a => a.completedAt && a.score);
 
             // Learning Style (Kolb)
-            const kolbA = completed.filter(a => a.type === 'kolb').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
-            const kolb = kolbA?.score?.kolb;
+            const kolbA = completed.filter(a => a.type === 'kolb' || a.type === 'learning').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+            const kolb = kolbA?.score?.kolb || kolbA?.score?.learning;
 
             // Thinking Style
-            const thinkA = completed.filter(a => ['sternberg','adult-thinking','shs-thinking','jhs-thinking'].includes(a.type)).sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
-            const thinkRaw = thinkA?.score?.sternberg || thinkA?.score?.['adult-thinking'] || thinkA?.score?.['shs-thinking'] || thinkA?.score?.['jhs-thinking'];
+            const thinkA = completed.filter(a => ['sternberg','adult-thinking','shs-thinking','jhs-thinking','thinking'].includes(a.type)).sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+            const thinkRaw = thinkA?.score?.sternberg || thinkA?.score?.['adult-thinking'] || thinkA?.score?.['shs-thinking'] || thinkA?.score?.['jhs-thinking'] || thinkA?.score?.thinking;
             const thinkStyle = thinkRaw?.style || thinkRaw?.primaryStyle || thinkRaw?.dominantStyle || null;
             const thinkScores: Record<string, number> = thinkRaw?.scores || {};
 
             // Decision Style
-            const dualA = completed.filter(a => a.type === 'dual-process').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
-            const dual = dualA?.score?.dualProcess;
+            const dualA = completed.filter(a => a.type === 'dual-process' || a.type === 'decision').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+            const dual = dualA?.score?.dualProcess || dualA?.score?.decision || dualA?.score?.['dual-process'];
 
             const THINK_COLORS: Record<string, string> = { Analytical: '#5B7DB1', Creative: '#6B4C9A', Practical: '#1E8A6E', Reflective: '#E0A020' };
             const KOLB_COLORS: Record<string, string> = { Diverging: '#EC4899', Assimilating: '#5B7DB1', Converging: '#1E8A6E', Accommodating: '#E0A020' };

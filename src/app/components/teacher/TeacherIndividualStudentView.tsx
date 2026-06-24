@@ -78,7 +78,7 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
   );
   
   const latestLearning = studentAssessments
-    .filter(a => a.type === 'kolb')
+    .filter(a => a.type === 'kolb' || a.type === 'learning')
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   
   const latestThinking = studentAssessments
@@ -104,8 +104,8 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
   const getQuickInsights = () => {
     const insights: Array<{ icon: string; text: string }> = [];
     
-    if (latestLearning) {
-      const style = latestLearning.score.kolb?.style;
+    if (latestLearning?.score) {
+      const style = (latestLearning.score.kolb || latestLearning.score.learning)?.style;
       switch (style) {
         case 'Diverging':
           insights.push({ icon: '🎯', text: 'Excels in group work and creative brainstorming' });
@@ -156,8 +156,8 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
   const getTeachingStrategies = () => {
     const strategies: string[] = [];
     
-    if (latestLearning) {
-      const style = latestLearning.score.kolb?.style;
+    if (latestLearning?.score) {
+      const style = (latestLearning.score.kolb || latestLearning.score.learning)?.style;
       switch (style) {
         case 'Diverging':
           strategies.push(
@@ -204,7 +204,7 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
     }> = [];
 
     if (latestLearning) {
-      const style = latestLearning.score.kolb?.style || '';
+      const style = (latestLearning.score.kolb || latestLearning.score.learning)?.style || '';
       resources.push({
         type: 'Guide',
         title: `Teaching ${style} Learners: A Practical Guide`,
@@ -261,11 +261,8 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
         {/* Student Selector Chips */}
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
           {students.map((student) => {
-            const studentAssessmentsCount = assessments.filter(
-              a => a.userId === student.id && a.completed
-            ).length;
             const studentCompletedCount = [
-              assessments.find(a => a.userId === student.id && a.type === 'kolb' && a.completed),
+              assessments.find(a => a.userId === student.id && (a.type === 'kolb' || a.type === 'learning') && a.completed),
               assessments.find(a => a.userId === student.id && ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && a.completed),
               assessments.find(a => a.userId === student.id && a.type === 'dual-process' && a.completed)
             ].filter(Boolean).length;
@@ -362,7 +359,7 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
                           <span className="text-[15px] font-semibold">Learning Style</span>
                         </div>
                         <Badge className="rounded-full px-3 py-1 text-[13px] font-semibold bg-[#16A34A] text-white">
-                          {latestLearning.score.kolb?.style}
+                          {(latestLearning.score.kolb || latestLearning.score.learning)?.style}
                         </Badge>
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2">
