@@ -72,6 +72,8 @@ export function TransferMemberModal({
     const userToUpdate = allPlatformUsers.find(u => u.id === memberId);
     if (userToUpdate) {
       userToUpdate.teacherId = selectedTeacherId;
+      const teacher = allPlatformUsers.find(u => u.id === selectedTeacherId);
+      userToUpdate.teacherName = teacher ? teacher.name : undefined;
       saveUser(userToUpdate);
       toast.success('Student successfully transferred to new class.');
       onTransferSuccess();

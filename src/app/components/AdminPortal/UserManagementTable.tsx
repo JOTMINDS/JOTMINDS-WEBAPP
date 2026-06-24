@@ -177,9 +177,9 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                     <TableCell>
                       {user.role?.toLowerCase() === 'student' ? (
                         (() => {
-                          const assignedTeacher = user.teacherId ? users.find(u => u.id === user.teacherId) : null;
-                          return assignedTeacher ? (
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{assignedTeacher.name}</span>
+                          const assignedTeacherName = user.teacherName || (user.teacherId ? users.find(u => u.id === user.teacherId)?.name : null);
+                          return assignedTeacherName ? (
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{assignedTeacherName}</span>
                           ) : (
                             <span className="text-xs text-slate-400 dark:text-slate-500 italic">Unassigned</span>
                           );

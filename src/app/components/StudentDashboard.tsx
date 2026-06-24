@@ -1980,6 +1980,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                       <p className="font-semibold text-lg flex items-center gap-2">
                         <UserIcon className="h-5 w-5 text-muted-foreground" />
                         {(() => {
+                          if (user.teacherName) return user.teacherName;
                           if (!user.teacherId) return 'No Teacher Assigned';
                           const allUsers = getAllUsers();
                           const teacher = allUsers.find(u => u.id === user.teacherId);
@@ -1987,6 +1988,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                         })()}
                       </p>
                     </div>
+
                   </div>
                   
                   <div className="p-6 bg-gradient-to-br from-[#6B4C9A]/10 to-[#7B61FF]/10 rounded-lg border flex flex-col items-center justify-center text-center">

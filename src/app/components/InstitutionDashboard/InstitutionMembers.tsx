@@ -494,8 +494,9 @@ export function InstitutionMembers({
                               const teacherProfile = studentProfile?.teacherId 
                                 ? allPlatformUsers.find(u => u.id === studentProfile.teacherId) 
                                 : null;
-                              return teacherProfile 
-                                ? `Assigned Teacher: ${teacherProfile.name}` 
+                              const teacherName = studentProfile?.teacherName || teacherProfile?.name;
+                              return teacherName 
+                                ? `Assigned Teacher: ${teacherName}` 
                                 : 'Assigned Teacher: Unassigned';
                             })()}
                           </p>

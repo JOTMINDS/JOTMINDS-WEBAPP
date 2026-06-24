@@ -167,6 +167,7 @@ export const signup = async (userData: {
   age?: number;
   organizationCode?: string;
   teacherId?: string;
+  teacherName?: string;
   hasConsented?: boolean;
   consentType?: string;
   consentDate?: string;

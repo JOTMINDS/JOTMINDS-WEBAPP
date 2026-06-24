@@ -145,7 +145,7 @@ app.post('/make-server-fc8eb847/validate-org-code', async (c) => {
 // Sign up
 app.post('/make-server-fc8eb847/signup', async (c) => {
   try {
-    const { email, password, name, role, organizationName, organizationType, industrySector, position, phone, school, educationLevel, dateOfBirth, organizationCode, hasConsented, consentType, consentDate } = await c.req.json();
+    const { email, password, name, role, organizationName, organizationType, industrySector, position, phone, school, educationLevel, dateOfBirth, organizationCode, hasConsented, consentType, consentDate, teacherId, teacherName } = await c.req.json();
     
     if (!email || !password || !name || !role) {
       return c.json({ error: 'Missing required fields' }, 400);
@@ -202,7 +202,24 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       email,
       password,
       email_confirm: false, // User must verify email before logging in
-      user_metadata: { name, role, organizationName: finalOrgName, organizationType, industrySector, position, phone, school, educationLevel, dateOfBirth, organizationCode: finalOrgCode, hasConsented, consentType, consentDate }
+      user_metadata: { 
+        name, 
+        role, 
+        organizationName: finalOrgName, 
+        organizationType, 
+        industrySector, 
+        position, 
+        phone, 
+        school, 
+        educationLevel, 
+        dateOfBirth, 
+        organizationCode: finalOrgCode, 
+        hasConsented, 
+        consentType, 
+        consentDate,
+        teacherId: teacherId || null,
+        teacherName: teacherName || null
+      }
     });
 
     if (error) {
@@ -225,6 +242,8 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       school: school || null,
       educationLevel: educationLevel || null,
       dateOfBirth: dateOfBirth || null,
+      teacherId: teacherId || null,
+      teacherName: teacherName || null,
       hasConsented: hasConsented || false,
       consentType: consentType || null,
       consentDate: consentDate || null,

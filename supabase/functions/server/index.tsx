@@ -976,7 +976,7 @@ function generateWelcomeEmailHtml(name: string, role: string, email: string, org
 // Sign up
 app.post('/make-server-fc8eb847/signup', async (c) => {
   try {
-    const { email, password, name, role, organizationName, organizationType, industrySector, position, phone, secondaryEmail, secondaryPhone, school, educationLevel, dateOfBirth, organizationCode, hasConsented, consentType, consentDate, inviteToken } = await c.req.json();
+    const { email, password, name, role, organizationName, organizationType, industrySector, position, phone, secondaryEmail, secondaryPhone, school, educationLevel, dateOfBirth, organizationCode, hasConsented, consentType, consentDate, inviteToken, teacherName } = await c.req.json();
     
     if (!email || !password || !name || !role) {
       return c.json({ error: 'Missing required fields' }, 400);
@@ -1056,19 +1056,6 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       }
     }
     
-    // Create user in Supabase Auth
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirm email since email server isn't configured
-      user_metadata: { name, role, organizationName: finalOrgName, organizationType, industrySector, position, phone, secondaryEmail, secondaryPhone, school: finalOrgName || school, educationLevel, dateOfBirth, organizationCode: finalOrgCode, hasConsented, consentType, consentDate }
-    });
-
-    if (error) {
-      console.log(`Error creating user during signup: ${error.message}`);
-      return c.json({ error: error.message }, 400);
-    }
-
     let finalTeacherId = null;
     let finalLinkedTeachers: string[] = [];
 
@@ -1098,6 +1085,40 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         // Clean up the invite record
         await kv.del(`student_invite:${email.toLowerCase()}`);
       }
+    }
+
+    const resolvedTeacherName = matchedTeacher?.name || (inviteRecord && inviteRecord.role === 'student' ? inviteRecord.user_name : null) || teacherName || null;
+
+    // Create user in Supabase Auth
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // Auto-confirm email since email server isn't configured
+      user_metadata: { 
+        name, 
+        role, 
+        organizationName: finalOrgName, 
+        organizationType, 
+        industrySector, 
+        position, 
+        phone, 
+        secondaryEmail, 
+        secondaryPhone, 
+        school: finalOrgName || school, 
+        educationLevel, 
+        dateOfBirth, 
+        organizationCode: finalOrgCode, 
+        hasConsented, 
+        consentType, 
+        consentDate,
+        teacherId: finalTeacherId,
+        teacherName: resolvedTeacherName
+      }
+    });
+
+    if (error) {
+      console.log(`Error creating user during signup: ${error.message}`);
+      return c.json({ error: error.message }, 400);
     }
 
     // Auto-link to PostgreSQL institution_members if joining via Class Code or JOTM Org Code
@@ -1163,6 +1184,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       educationLevel: educationLevel || null,
       dateOfBirth: dateOfBirth || null,
       teacherId: finalTeacherId,
+      teacherName: resolvedTeacherName,
       linkedTeachers: finalLinkedTeachers,
       hasConsented: hasConsented || false,
       consentType: consentType || null,

@@ -275,14 +275,14 @@ export function InstitutionReporting({ institutionId, institutionName, members =
                 <tbody className="divide-y bg-white">
                   {filteredData.assessments.slice(0, 50).map(a => {
                     const student = filteredData.users.find(u => u.id === a.userId);
-                    const teacher = student?.teacherId ? teachers.find(t => t.id === student.teacherId) : null;
+                    const teacherName = student?.teacherName || (student?.teacherId ? teachers.find(t => t.id === student.teacherId)?.name : null);
                     return (
                       <tr key={a.id} className="hover:bg-gray-50 transition-colors">
                         <td className="p-3 text-gray-500 whitespace-nowrap">
                           {a.completedAt ? new Date(a.completedAt).toLocaleDateString() : 'Unknown'}
                         </td>
                         <td className="p-3 font-medium text-gray-900">{student?.name || 'Unknown Student'}</td>
-                        <td className="p-3 text-gray-600">{teacher?.name || 'Unassigned'}</td>
+                        <td className="p-3 text-gray-600">{teacherName || 'Unassigned'}</td>
                         <td className="p-3 text-gray-600 capitalize">{a.type.replace(/-/g, ' ')}</td>
                       </tr>
                     );

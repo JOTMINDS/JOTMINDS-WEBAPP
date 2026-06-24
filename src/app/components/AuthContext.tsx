@@ -13,6 +13,8 @@ interface User {
   cognitiveProfile?: any;
   dateOfBirth?: string;
   age?: number;
+  teacherId?: string;
+  teacherName?: string;
 }
 
 interface AuthContextType {

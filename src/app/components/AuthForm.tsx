@@ -58,6 +58,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
   const [inviteToken, setInviteToken] = useState('');
   const [inviteEmailLocked, setInviteEmailLocked] = useState(false);
   const [teacherId, setTeacherId] = useState('');
+  const [teacherName, setTeacherName] = useState('');
 
   // Parse URL parameters for magic links and invite tokens
   useEffect(() => {
@@ -88,6 +89,9 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                 setOrganizationName(data.organizationName);
                 if (data.teacherId) {
                   setTeacherId(data.teacherId);
+                }
+                if (data.teacherName) {
+                  setTeacherName(data.teacherName);
                 }
               }
             }
@@ -171,6 +175,9 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           setOrganizationName(data.organizationName);
           if (data.teacherId) {
             setTeacherId(data.teacherId);
+          }
+          if (data.teacherName) {
+            setTeacherName(data.teacherName);
           }
         } else {
           setError(data.error || 'Invalid code. Please check with your teacher.');
@@ -508,6 +515,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           position: role === 'professional' ? position : undefined,
           organizationCode: organizationCode ? organizationCode.toUpperCase() : undefined,
           teacherId: role === 'student' && teacherId ? teacherId : undefined,
+          teacherName: role === 'student' && teacherName ? teacherName : undefined,
           phone,
           school: role === 'student' || role === 'teacher' ? school : undefined,
           educationLevel: role === 'student' ? educationLevel : undefined,

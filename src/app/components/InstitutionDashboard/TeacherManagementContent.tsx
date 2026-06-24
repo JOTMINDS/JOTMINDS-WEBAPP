@@ -91,12 +91,13 @@ export function TeacherManagementContent({
         const wasAssigned = student.teacherId === teacher.id;
         
         if (isSelected && !wasAssigned) {
-          saveUser({ ...student, teacherId: teacher.id });
+          saveUser({ ...student, teacherId: teacher.id, teacherName: teacher.name });
           changes++;
         } else if (!isSelected && wasAssigned) {
-          // Unassign them by removing teacherId
+          // Unassign them by removing teacherId and teacherName
           const updatedStudent = { ...student };
           delete updatedStudent.teacherId;
+          delete updatedStudent.teacherName;
           saveUser(updatedStudent);
           changes++;
         }

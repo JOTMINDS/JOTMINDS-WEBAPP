@@ -34,6 +34,7 @@ export interface User {
   age?: number; // Computed property - calculated from dateOfBirth
   parentId?: string;
   teacherId?: string;
+  teacherName?: string; // Stored name of their assigned teacher for immediate rendering
   linkedTeachers?: string[]; // Multiple linked teachers (for students joining via Class Code or Magic Link)
   students?: string[]; // For teachers and parents
   classCode?: string; // For teachers: uniquely identifies their class
