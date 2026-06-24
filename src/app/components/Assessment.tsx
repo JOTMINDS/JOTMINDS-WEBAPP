@@ -19,7 +19,7 @@ interface AssessmentProps {
   type: 'learning' | 'thinking' | 'decision';
   onComplete: (results: any) => void;
   onBack: () => void; // retained for backward compatibility if needed
-  onLogout: () => void;
+  onLogout?: () => void;
   showPreview?: boolean;
 }
 
@@ -298,7 +298,7 @@ export const Assessment: React.FC<AssessmentProps> = ({
           <div className="mb-6">
             <Button
               variant="ghost"
-              onClick={onLogout}
+            onClick={onLogout || onBack}
               className="mb-4"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />

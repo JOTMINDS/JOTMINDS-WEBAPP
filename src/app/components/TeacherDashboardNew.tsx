@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { User, Assessment } from '../types';
 import { useAuth } from './AuthContext';
 import { getUserAssessmentResults, getStudentsForTeacher } from '../utils/api';
+import { fetchMyAssessmentResults } from '../utils/assessmentApi';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress } from '../utils/storage';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
@@ -51,15 +52,39 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const [initialPage, setInitialPage] = useState<number>(0);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [showingThinkingAssessment, setShowingThinkingAssessment] = useState(false);
+  const [serverAssessments, setServerAssessments] = useState<any[]>([]);
 
   useEffect(() => {
     loadClassData();
     loadMyAssessments();
+    loadServerAssessments();
   }, [user.id, impersonatedUser]);
 
   const loadMyAssessments = () => {
     const assessments = getAssessmentsByUserId(user.id);
     setMyAssessments(assessments);
+  };
+
+  const loadServerAssessments = async () => {
+    try {
+      const results = await fetchMyAssessmentResults();
+      // Normalize server results into the same shape used locally
+      const normalized = results.map((r: any) => ({
+        id: r.id || r.resultKey || `server-${r.assessmentType}-${r.completedAt}`,
+        userId: r.userId,
+        type: r.assessmentType,
+        responses: [],
+        score: {
+          [r.assessmentType]: r.results
+        },
+        completedAt: r.completedAt,
+        completed: true,
+        fromServer: true
+      }));
+      setServerAssessments(normalized);
+    } catch (e) {
+      console.error('[TeacherDashboard] Failed to load server assessments:', e);
+    }
   };
 
   const startAssessment = () => {
@@ -167,11 +192,25 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   };
 
   const teachingStyleAssessments = useMemo(() => 
-    myAssessments
+    [...myAssessments, ...serverAssessments]
       .filter(a => a.type === 'teaching-style')
       .sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0)),
-    [myAssessments]
+    [myAssessments, serverAssessments]
   );
+
+  // Merge server + local assessments for cognitive profile
+  const allMyAssessments = useMemo(() => {
+    const merged = [...myAssessments, ...serverAssessments];
+    // De-duplicate: server results override local by type
+    const seen = new Map<string, any>();
+    merged.forEach(a => {
+      const key = a.type;
+      if (!seen.has(key) || (a.fromServer && !seen.get(key).fromServer)) {
+        seen.set(key, a);
+      }
+    });
+    return Array.from(seen.values());
+  }, [myAssessments, serverAssessments]);
 
   const displayedAssessment = useMemo(() => {
     if (selectedHistoryId) {
@@ -322,7 +361,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
           {/* Cognitive Profile — all 3 core assessments */}
           {(() => {
-            const completed = myAssessments.filter(a => a.completedAt && a.score);
+            const completed = allMyAssessments.filter(a => a.completedAt && a.score);
 
             // Learning Style (Kolb)
             const kolbA = completed.filter(a => a.type === 'kolb').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
@@ -551,7 +590,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             </CardHeader>
             <CardContent>
               {(() => {
-                const completed = allAssessments
+                const completed = [...allMyAssessments, ...allAssessments]
                   .filter(a => a.userId === user.id && a.completedAt && a.score)
                   .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
 

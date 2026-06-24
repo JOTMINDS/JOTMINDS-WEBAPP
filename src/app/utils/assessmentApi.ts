@@ -271,3 +271,25 @@ export const submitAssessmentWithServerScoring = async (
     throw error;
   }
 };
+
+/**
+ * Fetch all assessment results for the currently logged-in user from the server
+ */
+export const fetchMyAssessmentResults = async (): Promise<any[]> => {
+  try {
+    const response = await fetch(`${BASE_URL}/assessment/results`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch assessment results');
+    }
+
+    const data = await response.json();
+    return data.results || [];
+  } catch (error) {
+    console.error('[AssessmentAPI] Error fetching my assessment results:', error);
+    return [];
+  }
+};
