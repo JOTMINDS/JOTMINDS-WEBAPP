@@ -23,9 +23,9 @@ export function KidsCognitiveProfile({ user, onClose, isParentView = false }: Ki
 
   // Assessment completion status
   const assessmentStatus = {
-    learning: hasAssessment('kolb'),
-    thinking: hasAssessment('sternberg'),
-    decision: hasAssessment('dual-process'),
+    learning: hasAssessment('kolb') || hasAssessment('learning'),
+    thinking: hasAssessment('sternberg') || hasAssessment('child-thinking'),
+    decision: hasAssessment('dual-process') || hasAssessment('decision'),
     problemSolving: hasAssessment('problem-solving'),
     socialThinking: hasAssessment('social-thinking')
   };
@@ -33,58 +33,70 @@ export function KidsCognitiveProfile({ user, onClose, isParentView = false }: Ki
   const totalCompleted = Object.values(assessmentStatus).filter(Boolean).length;
   const totalStars = totalCompleted * 5;
 
+  // Helper to extract assessment data safely
+  const getScoreData = (types: string[]) => {
+    for (const type of types) {
+      const score = getAssessmentScore(type);
+      if (score) return { score, type };
+    }
+    return null;
+  };
+
   // Get Learning Style Results
-  const learningScore = getAssessmentScore('kolb');
-  const learningStyle = learningScore?.kolb?.dominantStyle || null;
-  const learningData = learningScore?.kolb?.scores ? [
-    { style: 'Active', score: learningScore.kolb.scores.active || 0 },
-    { style: 'Reflective', score: learningScore.kolb.scores.reflective || 0 },
-    { style: 'Sensing', score: learningScore.kolb.scores.sensing || 0 },
-    { style: 'Intuitive', score: learningScore.kolb.scores.intuitive || 0 }
+  const learningResult = getScoreData(['kolb', 'learning']);
+  const learningStyle = learningResult?.score?.[learningResult.type]?.dominantStyle || learningResult?.score?.[learningResult.type]?.style || null;
+  const learningScores = learningResult?.score?.[learningResult.type]?.scores || {};
+  const learningData = Object.keys(learningScores).length ? [
+    { style: 'Active', score: learningScores.active || learningScores.AE || 0 },
+    { style: 'Reflective', score: learningScores.reflective || learningScores.RO || 0 },
+    { style: 'Sensing/Concrete', score: learningScores.sensing || learningScores.CE || 0 },
+    { style: 'Intuitive/Abstract', score: learningScores.intuitive || learningScores.AC || 0 }
   ] : null;
 
   // Get Thinking Style Results
-  const thinkingScore = getAssessmentScore('sternberg');
-  const thinkingStyle = thinkingScore?.sternberg?.dominantStyle || null;
-  const thinkingData = thinkingScore?.sternberg?.scores ? [
-    { style: 'Creative', score: thinkingScore.sternberg.scores.creative || 0 },
-    { style: 'Analytical', score: thinkingScore.sternberg.scores.analytical || 0 },
-    { style: 'Practical', score: thinkingScore.sternberg.scores.practical || 0 }
+  const thinkingResult = getScoreData(['sternberg', 'child-thinking']);
+  const thinkingStyle = thinkingResult?.score?.[thinkingResult.type]?.dominantStyle || thinkingResult?.score?.[thinkingResult.type]?.primaryStyle || null;
+  const thinkingScores = thinkingResult?.score?.[thinkingResult.type]?.scores || {};
+  const thinkingData = Object.keys(thinkingScores).length ? [
+    { style: 'Creative', score: thinkingScores.creative || thinkingScores.Creative || 0 },
+    { style: 'Analytical', score: thinkingScores.analytical || thinkingScores.Analytical || 0 },
+    { style: 'Practical', score: thinkingScores.practical || thinkingScores.Practical || 0 }
   ] : null;
 
   // Get Decision Style Results
-  const decisionScore = getAssessmentScore('dual-process');
-  const decisionStyle = decisionScore?.['dual-process']?.dominantStyle || null;
-  const decisionData = decisionScore?.['dual-process']?.scores ? [
-    { style: 'Intuitive', score: decisionScore['dual-process'].scores.intuitive || 0 },
-    { style: 'Analytical', score: decisionScore['dual-process'].scores.analytical || 0 }
+  const decisionResult = getScoreData(['dual-process', 'decision']);
+  const decisionStyle = decisionResult?.score?.[decisionResult.type]?.dominantStyle || decisionResult?.score?.[decisionResult.type]?.style || null;
+  const decisionScores = decisionResult?.score?.[decisionResult.type]?.scores || {};
+  const decisionData = Object.keys(decisionScores).length ? [
+    { style: 'Intuitive', score: decisionScores.intuitive || decisionScores.Intuitive || 0 },
+    { style: 'Analytical', score: decisionScores.analytical || decisionScores.Analytical || 0 }
   ] : null;
 
   // Create combined radar chart data
   const radarData = [
     {
       category: 'Creative',
-      score: thinkingScore?.sternberg?.scores?.creative || 0,
+      score: thinkingScores.creative || thinkingScores.Creative || 0,
       fullMark: 100
     },
     {
       category: 'Analytical',
-      score: thinkingScore?.sternberg?.scores?.analytical || 0,
+      score: thinkingScores.analytical || thinkingScores.Analytical || 0,
       fullMark: 100
     },
     {
       category: 'Practical',
-      score: thinkingScore?.sternberg?.scores?.practical || 0,
+      score: thinkingScores.practical || thinkingScores.Practical || 0,
       fullMark: 100
     },
     {
       category: 'Active Learning',
-      score: learningScore?.kolb?.scores?.active || 0,
+      score: learningScores.active || learningScores.AE || 0,
       fullMark: 100
     },
     {
       category: 'Reflective',
-      score: learningScore?.kolb?.scores?.reflective || 0,
+      score: learningScores.reflective || learningScores.RO || 0,
       fullMark: 100
     }
   ];

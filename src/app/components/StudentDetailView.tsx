@@ -23,7 +23,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
   const studentAssessments = assessments.filter(a => a.userId === student.id && a.completed);
   
   const latestLearning = studentAssessments
-    .filter(a => a.type === 'kolb')
+    .filter(a => a.type === 'kolb' || a.type === 'learning')
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   
   const latestThinking = studentAssessments
@@ -31,31 +31,21 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   
   const latestDecision = studentAssessments
-    .filter(a => a.type === 'dual-process')
+    .filter(a => a.type === 'dual-process' || a.type === 'decision')
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+
+  const learningScore = latestLearning?.score?.kolb?.scores || latestLearning?.score?.learning?.scores || latestLearning?.score?.kolb || latestLearning?.score?.learning || {};
+  const ce = Number(learningScore.CE ?? learningScore.concreteExperience ?? learningScore.ConcreteExperience ?? 0);
+  const ro = Number(learningScore.RO ?? learningScore.reflectiveObservation ?? learningScore.ReflectiveObservation ?? 0);
+  const ac = Number(learningScore.AC ?? learningScore.abstractConceptualization ?? learningScore.AbstractConceptualization ?? 0);
+  const ae = Number(learningScore.AE ?? learningScore.activeExperimentation ?? learningScore.ActiveExperimentation ?? 0);
 
   // Prepare radar chart data for cognitive profile
   const cognitiveProfile = [
-    {
-      dimension: 'Concrete Experience',
-      score: latestLearning?.score.kolb?.concreteExperience || 0,
-      fullMark: 48
-    },
-    {
-      dimension: 'Reflective Observation',
-      score: latestLearning?.score.kolb?.reflectiveObservation || 0,
-      fullMark: 48
-    },
-    {
-      dimension: 'Abstract Concept',
-      score: latestLearning?.score.kolb?.abstractConceptualization || 0,
-      fullMark: 48
-    },
-    {
-      dimension: 'Active Experiment',
-      score: latestLearning?.score.kolb?.activeExperimentation || 0,
-      fullMark: 48
-    }
+    { dimension: 'Concrete Experience', score: ce, fullMark: 48 },
+    { dimension: 'Reflective Observation', score: ro, fullMark: 48 },
+    { dimension: 'Abstract Concept', score: ac, fullMark: 48 },
+    { dimension: 'Active Experiment', score: ae, fullMark: 48 }
   ];
 
   // Get personalized teaching recommendations
@@ -63,7 +53,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
     const strategies: string[] = [];
     
     if (latestLearning) {
-      const style = latestLearning.score.kolb?.style;
+      const style = latestLearning.score?.kolb?.style || latestLearning.score?.learning?.style;
       switch (style) {
         case 'Diverging':
           strategies.push(
@@ -163,12 +153,11 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
     const areas: string[] = [];
     
     if (latestLearning) {
-      const scores = latestLearning.score.kolb;
       const dimensions = [
-        { name: 'Concrete Experience', score: scores?.concreteExperience || 0 },
-        { name: 'Reflective Observation', score: scores?.reflectiveObservation || 0 },
-        { name: 'Abstract Conceptualization', score: scores?.abstractConceptualization || 0 },
-        { name: 'Active Experimentation', score: scores?.activeExperimentation || 0 }
+        { name: 'Concrete Experience', score: ce },
+        { name: 'Reflective Observation', score: ro },
+        { name: 'Abstract Conceptualization', score: ac },
+        { name: 'Active Experimentation', score: ae }
       ];
       
       const weakest = dimensions.sort((a, b) => a.score - b.score)[0];
@@ -192,7 +181,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
     }
 
     if (latestDecision) {
-      const style = latestDecision.score.dualProcess?.style;
+      const style = latestDecision.score?.dualProcess?.style || latestDecision.score?.decision?.style || latestDecision.score?.['dual-process']?.style;
       if (style === 'Intuitive Dominant') {
         areas.push('Encourage more analytical reasoning and evidence-based decision-making');
       } else if (style === 'Reflective Dominant') {
@@ -262,7 +251,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
                 {latestLearning ? (
                   <div className="space-y-2">
                     <Badge className="text-base px-3 py-1">
-                      {latestLearning.score.kolb?.style}
+                      {latestLearning.score.kolb?.style || latestLearning.score.learning?.style}
                     </Badge>
                     <p className="text-sm text-muted-foreground">
                       Assessed on {formatDate(latestLearning.completedAt!)}
@@ -321,7 +310,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
                 {latestDecision ? (
                   <div className="space-y-2">
                     <Badge className="text-base px-3 py-1">
-                      {latestDecision.score.dualProcess?.style}
+                      {latestDecision.score.dualProcess?.style || latestDecision.score.decision?.style || latestDecision.score['dual-process']?.style}
                     </Badge>
                     <p className="text-sm text-muted-foreground">
                       Assessed on {formatDate(latestDecision.completedAt!)}
