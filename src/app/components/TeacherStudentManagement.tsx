@@ -81,8 +81,8 @@ export function TeacherStudentManagement({ teacher }: TeacherStudentManagementPr
 
     // 3. Merge avoiding duplicates (server takes precedence)
     const mergedMap = new Map();
-    localStudents.forEach(stu => mergedMap.set(stu.email.toLowerCase(), stu));
-    serverStudents.forEach(stu => mergedMap.set(stu.email.toLowerCase(), stu));
+    localStudents.forEach(stu => mergedMap.set(stu.email?.toLowerCase() || stu.id, stu));
+    serverStudents.forEach(stu => mergedMap.set(stu.email?.toLowerCase() || stu.id, stu));
 
     setStudents(Array.from(mergedMap.values()));
   };

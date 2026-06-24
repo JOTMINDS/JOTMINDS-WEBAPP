@@ -129,7 +129,7 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
     if (latestThinking) {
       let style = '';
       if (latestThinking.type === 'sternberg') {
-        style = latestThinking.score.sternberg?.style;
+        style = latestThinking.score.sternberg?.style || '';
       } else if (latestThinking.type === 'jhs-thinking') {
         style = latestThinking.score['jhs-thinking']?.primaryStyle || '';
       } else if (latestThinking.type === 'shs-thinking') {
@@ -204,7 +204,7 @@ export function TeacherIndividualStudentView({ students, assessments }: TeacherI
     }> = [];
 
     if (latestLearning) {
-      const style = latestLearning.score.kolb?.style;
+      const style = latestLearning.score.kolb?.style || '';
       resources.push({
         type: 'Guide',
         title: `Teaching ${style} Learners: A Practical Guide`,
