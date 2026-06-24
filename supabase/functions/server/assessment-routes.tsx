@@ -908,7 +908,7 @@ const calculateDualProcessScores = (answers: any[]) => {
   const percentages: Record<string, number> = {};
 
   Object.keys(scores).forEach(style => {
-    percentages[style] = total > 0 ? Math.round((scores[style] / total) * 100) : 0;
+    percentages[style] = total > 0 ? Math.round(((scores as any)[style] / total) * 100) : 0;
   });
 
   const dominantStyle = scores.system1 > scores.system2 ? 'Intuitive' : 'Reflective';

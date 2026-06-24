@@ -9,7 +9,9 @@
     "npm:@supabase/storage-js@2.108.2": "2.108.2",
     "npm:@supabase/supabase-js@*": "2.108.2",
     "npm:hono-rate-limiter@*": "0.5.3_hono@4.12.27",
+    "npm:hono-rate-limiter@~0.5.3": "0.5.3_hono@4.12.27",
     "npm:hono@*": "4.12.27",
+    "npm:hono@^4.7.8": "4.12.27",
     "npm:nodemailer@6.9.10": "6.9.10"
   },
   "jsr": {
@@ -91,6 +93,7 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:hono-rate-limiter@~0.5.3",
       "npm:hono@^4.7.8"
     ]
   }

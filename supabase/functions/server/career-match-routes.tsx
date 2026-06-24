@@ -53,7 +53,7 @@ function calculateMatchScore(userProfile: any, careerProfile: CareerProfile): nu
 
   dimensions.forEach(dim => {
     const userValue = userProfile[dim] || 0;
-    const careerValue = careerProfile.requiredProfile[dim];
+    const careerValue = (careerProfile.requiredProfile as any)[dim];
 
     // Weight dimensions based on importance
     // Higher career requirements = higher weight
@@ -93,8 +93,8 @@ function identifyGaps(userProfile: any, careerProfile: CareerProfile) {
 
   const gaps = dimensions
     .map(({ key, label }) => {
-      const userValue = userProfile[key] || 0;
-      const careerValue = careerProfile.requiredProfile[key];
+      const userValue = (userProfile as any)[key] || 0;
+      const careerValue = (careerProfile.requiredProfile as any)[key];
       const gap = careerValue - userValue;
 
       return {

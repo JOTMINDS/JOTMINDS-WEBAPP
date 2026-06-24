@@ -574,12 +574,25 @@ app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
     const supabase = getSupabaseClient(true);
     
     // Verify caller is the primary admin
-    const { data: inst } = await supabase
+    // Removing co_admin_ids from select because the column does not exist in production yet
+    const { data: inst, error: instError } = await supabase
       .from('institutions')
-      .select('admin_id, co_admin_ids')
+      .select('admin_id')
       .eq('id', institutionId)
       .single();
       
+    // Fallback: if admin_id is null/undefined, find the admin via institution_members table
+    let adminId = inst?.admin_id;
+    if (!adminId) {
+      const { data: adminMember } = await supabase
+        .from('institution_members')
+        .select('user_id')
+        .eq('institution_id', institutionId)
+        .eq('role', 'admin')
+        .single();
+      adminId = adminMember?.user_id;
+    }
+
     // Check if caller is an admin in institution_members (backward compatibility)
     const { data: callerMember } = await supabase
       .from('institution_members')
@@ -588,13 +601,13 @@ app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
       .eq('user_id', user.id)
       .single();
 
-    const isHeadAdmin = inst?.admin_id === user.id;
-    const isCoAdmin = (inst?.co_admin_ids || []).includes(user.id);
+    const isHeadAdmin = adminId === user.id;
+    const isCoAdmin = false; // Disabled until db migration is run
     const isMemberAdmin = callerMember?.role === 'admin';
     const isPlatformAdmin = user.id === 'admin-001';
     
     if (!inst || (!isHeadAdmin && !isCoAdmin && !isMemberAdmin && !isPlatformAdmin)) {
-      return c.json({ error: `Forbidden: Only admins can promote members. (Debug - Admin: ${inst?.admin_id}, Caller: ${user.id})` }, 403);
+      return c.json({ error: `Forbidden: Only admins can promote members. (Debug - Admin: ${adminId}, Caller: ${user.id}, InstErr: ${instError?.message || 'none'}, InstId: ${institutionId})` }, 403);
     }
     
     // Update role to admin
@@ -604,12 +617,14 @@ app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
       .eq('institution_id', institutionId)
       .eq('user_id', targetUserId);
       
-    // Add to co_admin_ids array
+    // Add to co_admin_ids array (skipped because column does not exist in production db)
+    /*
     const newCoAdmins = Array.from(new Set([...(inst?.co_admin_ids || []), targetUserId]));
     await supabase
       .from('institutions')
       .update({ co_admin_ids: newCoAdmins })
       .eq('id', institutionId);
+    */
       
     return c.json({ success: true });
   } catch (error: any) {
@@ -631,12 +646,25 @@ app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
     const supabase = getSupabaseClient(true);
     
     // Verify caller is the primary admin
+    // Removing co_admin_ids from select because the column does not exist in production yet
     const { data: inst } = await supabase
       .from('institutions')
-      .select('admin_id, co_admin_ids')
+      .select('admin_id')
       .eq('id', institutionId)
       .single();
-      
+    
+    // Fallback: if admin_id is null/undefined, find the admin via institution_members table
+    let adminId = inst?.admin_id;
+    if (!adminId) {
+      const { data: adminMember } = await supabase
+        .from('institution_members')
+        .select('user_id')
+        .eq('institution_id', institutionId)
+        .eq('role', 'admin')
+        .single();
+      adminId = adminMember?.user_id;
+    }
+    
     // Check if caller is an admin in institution_members (backward compatibility)
     const { data: callerMember } = await supabase
       .from('institution_members')
@@ -644,14 +672,14 @@ app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
       .eq('institution_id', institutionId)
       .eq('user_id', user.id)
       .single();
-
-    const isHeadAdmin = inst?.admin_id === user.id;
-    const isCoAdmin = (inst?.co_admin_ids || []).includes(user.id);
+    
+    const isHeadAdmin = adminId === user.id;
+    const isCoAdmin = ((inst as any)?.co_admin_ids || []).includes(user.id);
     const isMemberAdmin = callerMember?.role === 'admin';
     const isPlatformAdmin = user.id === 'admin-001';
     
     if (!inst || (!isHeadAdmin && !isCoAdmin && !isMemberAdmin && !isPlatformAdmin)) {
-      return c.json({ error: `Forbidden: Only admins can demote members. (Debug - Admin: ${inst?.admin_id}, Caller: ${user.id})` }, 403);
+      return c.json({ error: `Forbidden: Only admins can demote members. (Debug - Admin: ${adminId}, Caller: ${user.id})` }, 403);
     }
     
     if (targetUserId === inst?.admin_id) {
@@ -665,12 +693,14 @@ app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
       .eq('institution_id', institutionId)
       .eq('user_id', targetUserId);
       
-    // Remove from co_admin_ids array
+    // Remove from co_admin_ids array (skipped because column does not exist in production db)
+    /*
     const newCoAdmins = (inst?.co_admin_ids || []).filter((id: string) => id !== targetUserId);
     await supabase
       .from('institutions')
       .update({ co_admin_ids: newCoAdmins })
       .eq('id', institutionId);
+    */
       
     return c.json({ success: true });
   } catch (error: any) {
@@ -1040,7 +1070,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     }
 
     let finalTeacherId = null;
-    let finalLinkedTeachers = [];
+    let finalLinkedTeachers: string[] = [];
 
     // Magic Email Linking & Class Code Linking for students
     if (role === 'student') {
@@ -1066,7 +1096,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         }
 
         // Clean up the invite record
-        await kv.delete(`student_invite:${email.toLowerCase()}`);
+        await kv.del(`student_invite:${email.toLowerCase()}`);
       }
     }
 
@@ -1667,7 +1697,7 @@ app.get('/make-server-fc8eb847/admin/stats', async (c) => {
     const users = await kv.getByPrefix('user:');
     const results = await kv.getByPrefix('result:');
     
-    const stats = {
+    const stats: any = {
       totalUsers: users.length,
       usersByRole: {},
       totalAssessments: results.length,
@@ -3712,15 +3742,47 @@ app.patch('/make-server-fc8eb847/organization/profile', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    if (user.role !== 'organization' && user.role !== 'supervisor' && user.role !== 'Supervisor') {
+    // Look up user role from KV store (verifyAuth returns raw Supabase user with no .role)
+    const userProfile = await kv.get(`user:${user.id}`);
+    const userRole = userProfile?.role;
+    
+    // Also check if user is an institution admin (from the institutions table)
+    const supabase = getSupabaseClient(true);
+    const { data: inst } = await supabase
+      .from('institutions')
+      .select('id, name, logo, admin_id')
+      .eq('admin_id', user.id)
+      .single();
+    
+    const isInstitutionAdmin = !!inst;
+    
+    if (userRole !== 'organization' && userRole !== 'supervisor' && userRole !== 'Supervisor' && !isInstitutionAdmin) {
       return c.json({ error: 'Forbidden - Organization access required' }, 403);
     }
 
     const { name, type, industrySector, logoUrl, isActive } = await c.req.json();
     
-    // An organization user's ID is their email, and their KV should hold their organizationCode
-    // Let's fetch the user to get their organizationCode
-    const userProfile = await kv.get(`user:${user.id}`);
+    // If this is an institution admin, update the institutions table directly
+    if (isInstitutionAdmin && inst) {
+      const updateData: any = {};
+      if (name) updateData.name = name;
+      if (logoUrl !== undefined) updateData.logo = logoUrl;
+      if (isActive !== undefined) updateData.is_active = isActive;
+      
+      const { error: updateError } = await supabase
+        .from('institutions')
+        .update(updateData)
+        .eq('id', inst.id);
+        
+      if (updateError) {
+        console.error('[organization/profile] Institution update error:', updateError);
+        return c.json({ error: 'Failed to update institution profile' }, 500);
+      }
+      
+      return c.json({ success: true, organization: { ...inst, ...updateData } });
+    }
+    
+    // Otherwise, update via KV store (organization flow)
     if (!userProfile || !userProfile.organizationCode) {
       return c.json({ error: 'User does not belong to an organization' }, 400);
     }
@@ -3806,7 +3868,21 @@ app.post('/make-server-fc8eb847/organization/assign-admin', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    if (user.role !== 'organization' && user.role !== 'supervisor' && user.role !== 'Supervisor') {
+    // Look up user role from KV store (verifyAuth returns raw Supabase user with no .role)
+    const userProfile = await kv.get(`user:${user.id}`);
+    const userRole = userProfile?.role;
+    
+    // Also check if user is an institution admin (from the institutions table)
+    const supabase = getSupabaseClient(true);
+    const { data: inst } = await supabase
+      .from('institutions')
+      .select('id, admin_id')
+      .eq('admin_id', user.id)
+      .single();
+    
+    const isInstitutionAdmin = !!inst;
+    
+    if (userRole !== 'organization' && userRole !== 'supervisor' && userRole !== 'Supervisor' && !isInstitutionAdmin) {
       return c.json({ error: 'Forbidden - Organization access required' }, 403);
     }
 
@@ -3815,7 +3891,6 @@ app.post('/make-server-fc8eb847/organization/assign-admin', async (c) => {
       return c.json({ error: 'Email is required' }, 400);
     }
 
-    const userProfile = await kv.get(`user:${user.id}`);
     if (!userProfile || !userProfile.organizationCode) {
       return c.json({ error: 'User does not belong to an organization' }, 400);
     }
@@ -4214,7 +4289,7 @@ app.get('/make-server-fc8eb847/gamification/:userId', async (c) => {
     
     const targetUserId = c.req.param('userId');
     // Basic auth check
-    if (user.id !== targetUserId && user.id !== 'admin-001' && user.role !== 'admin') {
+    if (user.id !== targetUserId && user.id !== 'admin-001' && (user as any).user_metadata?.role !== 'admin') {
       const userProfile = await kv.get(`user:${user.id}`);
       let isAuthorized = false;
       if (userProfile?.role === 'parent' && userProfile.linkedChildren?.includes(targetUserId)) {
