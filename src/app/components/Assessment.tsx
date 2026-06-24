@@ -233,20 +233,15 @@ export const Assessment: React.FC<AssessmentProps> = ({
         console.warn('[Assessment] Server scoring/submission failed, falling back to client-side scoring:', srvError);
         
         // Fallback local scoring
-        const { calculateResults } = await import('../utils/assessmentData');
+        const { calculateResults, generateInsights } = await import('../utils/assessmentData');
         const { saveAssessment } = await import('../utils/storage');
         
         const calculatedScore = calculateResults(answers, type);
+        const localInsights = generateInsights(calculatedScore, type);
         
         const fallbackResults = {
           results: calculatedScore,
-          insights: {
-            strengths: [
-              `Your dominant style is ${Object.keys(calculatedScore).sort((a, b) => calculatedScore[b] - calculatedScore[a])[0] || 'balanced'}`
-            ],
-            weaknesses: [],
-            recommendations: []
-          }
+          insights: localInsights
         };
         
         const newAssessment = {

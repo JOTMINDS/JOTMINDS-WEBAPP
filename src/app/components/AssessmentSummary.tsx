@@ -8,7 +8,7 @@ import { FeedbackPrompt } from './FeedbackPrompt';
 
 interface AssessmentSummaryProps {
   type: 'learning' | 'thinking' | 'decision';
-  results: { [key: string]: number };
+  results: any;
   insights: {
     strengths: string[];
     weaknesses: string[];
@@ -88,7 +88,46 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
   const nextAssessment = getNextAssessment();
   console.log('[AssessmentSummary] Final nextAssessment:', nextAssessment);
 
-  const sortedResults = Object.entries(results).sort((a, b) => b[1] - a[1]);
+  // Format/Normalize style names to be consistent and beautiful
+  const formatStyleName = (style: string): string => {
+    const mapping: { [key: string]: string } = {
+      'system1': 'Intuitive',
+      'system2': 'Reflective',
+      'intuitive': 'Intuitive',
+      'reflective': 'Reflective',
+      'analytical': 'Analytical',
+      'creative': 'Creative',
+      'practical': 'Practical',
+      'holistic': 'Holistic',
+      'visual': 'Visual',
+      'auditory': 'Auditory',
+      'kinesthetic': 'Kinesthetic',
+      'reading/writing': 'Reading/Writing'
+    };
+    return mapping[style.toLowerCase()] || style;
+  };
+
+  // 1. Extract percentages flat map safely
+  const rawPercentages = results?.percentages || (results?.scores ? results.percentages : results) || {};
+  
+  // 2. Map keys to user-friendly capitalized names
+  const flatResults: { [key: string]: number } = {};
+  Object.entries(rawPercentages).forEach(([key, val]) => {
+    const formattedKey = formatStyleName(key);
+    flatResults[formattedKey] = Number(val);
+  });
+
+  const sortedResults = Object.entries(flatResults).sort((a: any, b: any) => b[1] - a[1]);
+
+  // 3. Normalize dominant and secondary styles
+  const dominantStyle = formatStyleName(insights?.dominantStyle || sortedResults[0]?.[0] || 'balanced');
+  const secondaryStyle = insights?.secondaryStyle 
+    ? formatStyleName(insights.secondaryStyle) 
+    : (sortedResults[1]?.[1] > 0 ? sortedResults[1]?.[0] : null);
+
+  const strengths = insights?.strengths || [];
+  const weaknesses = insights?.weaknesses || [];
+  const recommendations = insights?.recommendations || [];
 
   return (
     <div className="min-h-screen py-8 px-4" style={{ background: 'linear-gradient(to bottom, #F8F9FA 0%, #FFFFFF 100%)' }}>
@@ -107,10 +146,10 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" style={{ color: '#5B7DB1' }} />
-              Your Primary Style: {insights.dominantStyle}
+              Your Primary Style: {dominantStyle}
             </CardTitle>
             <CardDescription>
-              {insights.secondaryStyle && `Secondary: ${insights.secondaryStyle}`}
+              {secondaryStyle && `Secondary: ${secondaryStyle}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -123,14 +162,14 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
                       className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${percentage}%`,
-                        background: style === insights.dominantStyle 
+                        background: style === dominantStyle 
                           ? 'linear-gradient(90deg, #5B7DB1 0%, #6B4C9A 100%)'
                           : '#E5E7EB'
                       }}
                     />
                   </div>
                   <div className="w-12 text-right">
-                    <Badge variant={style === insights.dominantStyle ? 'default' : 'secondary'}>
+                    <Badge variant={style === dominantStyle ? 'default' : 'secondary'}>
                       {percentage}%
                     </Badge>
                   </div>
@@ -147,11 +186,11 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
               <CheckCircle2 className="w-5 h-5" />
               Your Strengths
             </CardTitle>
-            <CardDescription>Based on your {insights.dominantStyle} style</CardDescription>
+            <CardDescription>Based on your {dominantStyle} style</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {insights.strengths.map((strength, index) => (
+              {strengths.map((strength, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#D1FAE5' }}>
                     <CheckCircle2 className="w-4 h-4" style={{ color: '#10B981' }} />
@@ -174,7 +213,7 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {insights.weaknesses.map((weakness, index) => (
+              {weaknesses.map((weakness, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#FEE2E2' }}>
                     <AlertCircle className="w-4 h-4" style={{ color: '#FF715B' }} />
@@ -197,7 +236,7 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {insights.recommendations.map((recommendation, index) => (
+              {recommendations.map((recommendation, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#E0F2FE' }}>
                     <Lightbulb className="w-4 h-4" style={{ color: '#6B4C9A' }} />
@@ -217,7 +256,7 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
           </CardHeader>
           <CardContent className="space-y-3">
             <p>
-              <strong>Best Fit Roles:</strong> This {insights.dominantStyle} profile excels in environments that value their natural 
+              <strong>Best Fit Roles:</strong> This {dominantStyle} profile excels in environments that value their natural 
               {type === 'learning' && ' preferred learning modality'}
               {type === 'thinking' && ' cognitive approach'}
               {type === 'decision' && ' decision-making process'}.
