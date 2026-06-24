@@ -57,6 +57,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
 
   const [inviteToken, setInviteToken] = useState('');
   const [inviteEmailLocked, setInviteEmailLocked] = useState(false);
+  const [teacherId, setTeacherId] = useState('');
 
   // Parse URL parameters for magic links and invite tokens
   useEffect(() => {
@@ -73,10 +74,32 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
       setOrganizationCode(code);
       // Auto-validate if code is present
       setTimeout(async () => {
-        const result = await validateInstitutionCode(code);
-        if (result.valid && result.institution) {
-          setVerifiedOrgName(result.institution.name);
-          setOrganizationName(result.institution.name);
+        if (code.toUpperCase().startsWith('CLASS-')) {
+          try {
+            const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/validate-org-code`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` },
+              body: JSON.stringify({ code: code.toUpperCase() })
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data.valid) {
+                setVerifiedOrgName(data.teacherName ? `${data.teacherName}'s Class at ${data.organizationName}` : data.organizationName);
+                setOrganizationName(data.organizationName);
+                if (data.teacherId) {
+                  setTeacherId(data.teacherId);
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Error auto-validating class code:', e);
+          }
+        } else {
+          const result = await validateInstitutionCode(code);
+          if (result.valid && result.institution) {
+            setVerifiedOrgName(result.institution.name);
+            setOrganizationName(result.institution.name);
+          }
         }
       }, 500);
     }
@@ -146,6 +169,9 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           // If it's a class code, the backend returns teacherName and organizationName
           setVerifiedOrgName(data.teacherName ? `${data.teacherName}'s Class at ${data.organizationName}` : data.organizationName);
           setOrganizationName(data.organizationName);
+          if (data.teacherId) {
+            setTeacherId(data.teacherId);
+          }
         } else {
           setError(data.error || 'Invalid code. Please check with your teacher.');
           setVerifiedOrgName('');
@@ -481,6 +507,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           organizationType: role === 'professional' ? organizationType : undefined,
           position: role === 'professional' ? position : undefined,
           organizationCode: organizationCode ? organizationCode.toUpperCase() : undefined,
+          teacherId: role === 'student' && teacherId ? teacherId : undefined,
           phone,
           school: role === 'student' || role === 'teacher' ? school : undefined,
           educationLevel: role === 'student' ? educationLevel : undefined,
