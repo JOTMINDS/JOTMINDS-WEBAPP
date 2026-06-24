@@ -1135,7 +1135,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         role: inviteRecord.role,
         institution_id: inviteRecord.institution_id,
         joined_via_code: inviteRecord.institutions.code,
-        status: 'pending' // Admin approval required
+        status: 'approved' // Pre-approved: teacher explicitly invited them
       });
 
       // Mark invite as accepted
@@ -2221,8 +2221,8 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
         .from('institution_members')
         .select('user_id, user_name, user_email, user_phone, status')
         .eq('institution_id', institutionId)
-        .eq('role', 'student')
-        .eq('status', 'approved');
+        .eq('role', 'student');
+        // Note: show all statuses (pending + approved) so teacher sees all invited students
 
       if (studentRows && studentRows.length > 0) {
         institutionStudents = await Promise.all(
