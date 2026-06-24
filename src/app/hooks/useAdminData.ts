@@ -24,48 +24,57 @@ export function useAdminData() {
         throw new Error('Admin session expired. Please log in again.');
       }
 
-      // Fetch users from Supabase directly
+      // 1. Fetch from Supabase
       const { data: usersData, error: usersError } = await supabase.from('users').select('*');
-      
       if (usersError) {
         console.error('[useAdminData] Supabase fetch error:', usersError);
       }
-      
-      let finalUsers = usersData || [];
-      
+      const supabaseUsers = usersData || [];
+
+      // 2. Fetch from Deno KV via API (contains legacy/old accounts)
+      let apiUsersList: any[] = [];
       try {
-        // Always try to merge in local storage users to ensure no legacy accounts are missing
-        const localUsers = getLocalUsers();
-        if (localUsers && localUsers.length > 0) {
-          // Merge based on ID to avoid duplicates
-          const userMap = new Map();
-          
-          // Add local users first
-          localUsers.forEach(u => {
-            if (u && u.id) userMap.set(u.id, u);
-          });
-          
-          // Add Supabase users (they take precedence if IDs match)
-          finalUsers.forEach(u => {
-            if (u && u.id) userMap.set(u.id, u);
-          });
-          
-          finalUsers = Array.from(userMap.values());
+        const apiUsers = await getAllUsers();
+        if (apiUsers && apiUsers.users) {
+          apiUsersList = apiUsers.users;
         }
       } catch (e) {
-        console.log('Failed to merge local users');
+        console.error('[useAdminData] Deno KV fetch error:', e);
       }
 
+      // 3. Fetch from local storage
+      let localUsersList: any[] = [];
       try {
-        if (!finalUsers || finalUsers.length === 0) {
-          const apiUsers = await getAllUsers();
-          if (apiUsers && apiUsers.users) {
-            finalUsers = apiUsers.users;
-          }
-        }
+        localUsersList = getLocalUsers() || [];
       } catch (e) {
-        console.log('API fallback failed, using Supabase data or empty array');
+        console.error('[useAdminData] Local storage fetch error:', e);
       }
+
+      // 4. Merge all sources by ID to ensure completeness
+      const userMap = new Map();
+
+      // Add local storage users first (lowest precedence)
+      localUsersList.forEach(u => {
+        if (u && u.id) userMap.set(u.id, u);
+      });
+
+      // Add Deno KV users (medium precedence, overrides local storage)
+      apiUsersList.forEach(u => {
+        if (u && u.id) {
+          const existing = userMap.get(u.id) || {};
+          userMap.set(u.id, { ...existing, ...u });
+        }
+      });
+
+      // Add Supabase users (highest precedence, overrides KV and local storage)
+      supabaseUsers.forEach(u => {
+        if (u && u.id) {
+          const existing = userMap.get(u.id) || {};
+          userMap.set(u.id, { ...existing, ...u });
+        }
+      });
+
+      const finalUsers = Array.from(userMap.values());
 
       let localStats: any = {};
       try {
