@@ -7,13 +7,14 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip 
 } from 'recharts';
 import { Download, ArrowLeft, CheckCircle2, Target, TrendingUp, Briefcase, MessageSquare, ExternalLink, Brain, Lightbulb, Scale } from 'lucide-react';
-import { generatePDF } from '../utils/pdfGenerator';
+import { exportReportToPDF } from '../utils/pdfGenerator';
 
 interface ProfessionalCognitiveResultsProps {
   profile: ProfessionalCognitiveProfile;
   userName: string;
   userPosition?: string;
   userLocation?: string;
+  supervisorId?: string;
   onBack: () => void;
 }
 
@@ -22,10 +23,21 @@ export function ProfessionalCognitiveResults({
   userName, 
   userPosition = 'Professional',
   userLocation = '',
+  supervisorId,
   onBack 
 }: ProfessionalCognitiveResultsProps) {
   
   const insights = getProfessionalInsights(profile);
+  const [roleProfiles, setRoleProfiles] = React.useState<any[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = React.useState<string>('none');
+
+  React.useEffect(() => {
+    if (supervisorId) {
+      import('../utils/storage').then(({ getRoleProfiles }) => {
+        setRoleProfiles(getRoleProfiles(supervisorId));
+      });
+    }
+  }, [supervisorId]);
   
   // Prepare radar chart data for learning
   const learningRadarData = [
@@ -100,35 +112,23 @@ export function ProfessionalCognitiveResults({
     </Badge>;
   };
 
-  const handleDownload = () => {
-    // Create a mock assessment object for PDF generation
-    const mockAssessment = {
-      id: `prof-cog-${Date.now()}`,
-      type: 'professional-cognitive' as const,
-      userId: '',
-      completedAt: new Date().toISOString(),
-      responses: [],
-      score: {
-        total: profile.matchScore,
-        professionalCognitive: profile
-      }
-    };
-    
-    generatePDF(mockAssessment, userName, null, true);
+  const handleDownload = async () => {
+    // Add loading state if needed, but for simplicity just fire it
+    await exportReportToPDF('pdf-report-container', `Executive_Summary_${userName.replace(/\s+/g, '_')}.pdf`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-violet-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6">
+    <div id="pdf-report-container" className="min-h-screen bg-gradient-to-br from-cyan-50 via-violet-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header Controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between no-print">
           <Button variant="outline" onClick={onBack} className="shadow-soft">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
           <Button onClick={handleDownload} className="shadow-soft bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:opacity-90">
             <Download className="mr-2 h-4 w-4" />
-            Download Report
+            Download Executive Summary
           </Button>
         </div>
 
@@ -430,6 +430,75 @@ export function ProfessionalCognitiveResults({
                       </Badge>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Job Role Fit Analysis */}
+            {roleProfiles.length > 0 && (
+              <Card className="border-2 border-indigo-200 dark:border-indigo-700 bg-gradient-to-br from-indigo-50/30 to-white dark:from-indigo-900/10 dark:to-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                      Job Role Fit Analysis
+                    </div>
+                    <select 
+                      value={selectedRoleId} 
+                      onChange={(e) => setSelectedRoleId(e.target.value)}
+                      className="px-3 py-1 bg-white border rounded-md text-sm font-normal"
+                    >
+                      <option value="none">Select Role to Compare...</option>
+                      {roleProfiles.map(rp => (
+                        <option key={rp.id} value={rp.id}>{rp.name}</option>
+                      ))}
+                    </select>
+                  </CardTitle>
+                  <CardDescription>Compare {userName}'s cognitive profile against an ideal Job Role.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {selectedRoleId !== 'none' ? (() => {
+                    const selectedRole = roleProfiles.find(rp => rp.id === selectedRoleId);
+                    
+                    // Normalize the employee's current scores for comparison
+                    // We assume learning score 12-48 maps to ~25-100, thinking gauge 0-100, etc.
+                    // For simplicity in this visualization, we use heuristic mapping based on their dominant styles
+                    const actualScores = {
+                      analytical: profile.thinking.style.includes('Analytical') ? 85 : 40,
+                      creative: profile.thinking.style.includes('Creative') ? 85 : 40,
+                      practical: profile.learning.style === 'Accommodator' ? 90 : profile.learning.style === 'Converger' ? 70 : 40,
+                      intuitive: profile.decisionMaking.style.includes('Intuitive') ? 85 : 50,
+                      reflective: profile.decisionMaking.style.includes('Reflective') ? 85 : 50,
+                    };
+
+                    const radarData = [
+                      { subject: 'Analytical', Employee: actualScores.analytical, Ideal: selectedRole.idealScores.analytical },
+                      { subject: 'Creative', Employee: actualScores.creative, Ideal: selectedRole.idealScores.creative },
+                      { subject: 'Practical', Employee: actualScores.practical, Ideal: selectedRole.idealScores.practical },
+                      { subject: 'Intuitive', Employee: actualScores.intuitive, Ideal: selectedRole.idealScores.intuitive },
+                      { subject: 'Reflective', Employee: actualScores.reflective, Ideal: selectedRole.idealScores.reflective },
+                    ];
+
+                    return (
+                      <div className="h-[350px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                            <PolarGrid />
+                            <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12 }} />
+                            <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                            <Radar name={userName} dataKey="Employee" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                            <Radar name={selectedRole.name} dataKey="Ideal" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.4} />
+                            <Legend />
+                            <Tooltip />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    );
+                  })() : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Please select a job role from the dropdown above to view the fit analysis.
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

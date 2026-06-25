@@ -42,6 +42,7 @@ export interface User {
   organizationType?: OrganizationType; // For professionals and supervisors
   industrySector?: IndustrySector; // For organizations/supervisors only
   position?: string; // For professionals and supervisors
+  department?: string; // For professionals within organizations
   parentPin?: string; // PIN for Kids Mode parental controls (hashed)
   jotsCode?: string; // legacy alias — use organizationCode instead
   organizationCode?: string; // the actual code the user registered with

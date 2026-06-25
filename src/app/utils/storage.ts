@@ -15,6 +15,7 @@ const STORAGE_KEYS = {
   JHS_RESULTS: 'ts_jhs_results',
   SHS_RESULTS: 'ts_shs_results',
   ADULT_RESULTS: 'ts_adult_results',
+  ROLE_PROFILES: 'ts_role_profiles',
 };
 
 // Helper for safe JSON parsing
@@ -422,7 +423,7 @@ export function hasChildGrantedAccess(childId: string, parentId: string): boolea
   if (age !== undefined && age <= 10) {
     return true;
   }
-  
+
   // For children 11 and older, check explicit consent
   const consent = getSharingConsentForChild(childId, parentId);
   return consent?.consentGiven === true;
@@ -431,6 +432,44 @@ export function hasChildGrantedAccess(childId: string, parentId: string): boolea
 // Helper to generate unique IDs
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// --- Role Profiles Management ---
+export interface RoleProfile {
+  id: string;
+  orgId: string;
+  name: string;
+  idealScores: {
+    analytical: number; // 0-100
+    creative: number;   // 0-100
+    practical: number;  // 0-100
+    intuitive: number;  // 0-100
+    reflective: number; // 0-100
+  };
+}
+
+export function getRoleProfiles(orgId: string): RoleProfile[] {
+  const profiles = safeParse<RoleProfile[]>(STORAGE_KEYS.ROLE_PROFILES, []);
+  return profiles.filter(p => p.orgId === orgId);
+}
+
+export function saveRoleProfile(profile: RoleProfile) {
+  const profiles = safeParse<RoleProfile[]>(STORAGE_KEYS.ROLE_PROFILES, []);
+  const existingIndex = profiles.findIndex(p => p.id === profile.id);
+  
+  if (existingIndex >= 0) {
+    profiles[existingIndex] = profile;
+  } else {
+    profiles.push(profile);
+  }
+  
+  localStorage.setItem(STORAGE_KEYS.ROLE_PROFILES, JSON.stringify(profiles));
+}
+
+export function deleteRoleProfile(id: string) {
+  let profiles = safeParse<RoleProfile[]>(STORAGE_KEYS.ROLE_PROFILES, []);
+  profiles = profiles.filter(p => p.id !== id);
+  localStorage.setItem(STORAGE_KEYS.ROLE_PROFILES, JSON.stringify(profiles));
 }
 
 // JHS/SHS/Adult Result Management

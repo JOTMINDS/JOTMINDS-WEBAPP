@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { getAssessmentsByUserId } from '../utils/storage';
 import { ScrollArea } from './ui/scroll-area';
+import { TeamSynergy } from './TeamSynergy';
 
 interface OrganizationInsightsProps {
   professionals: User[];
@@ -23,6 +24,9 @@ const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'
 export function OrganizationInsights({ professionals, organizationName }: OrganizationInsightsProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterProfile, setFilterProfile] = useState("All");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
+
+  const departments = Array.from(new Set(professionals.map(p => p.department).filter(Boolean))) as string[];
 
   const stats = useMemo(() => {
     const kolbDistribution: Record<string, number> = {};
@@ -34,7 +38,9 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
     let totalDual = 0;
 
     // Processed list of professionals with their assessment data
-    const processedProfessionals = professionals.map(prof => {
+    const processedProfessionals = professionals
+      .filter(prof => selectedDepartment === 'all' || prof.department === selectedDepartment)
+      .map(prof => {
         const assessments = prof.assessments || getAssessmentsByUserId(prof.id);
         const sternbergAssessment = assessments.find(a => a.type === 'sternberg' && a.completedAt);
         const kolbAssessment = assessments.find(a => a.type === 'kolb' && a.completedAt);
@@ -106,11 +112,12 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
       processedProfessionals,
       totals: { kolb: totalKolb, sternberg: totalSternberg, dual: totalDual }
     };
-  }, [professionals]);
+  }, [professionals, selectedDepartment]);
 
   // Filtering for the Member List
-  const filteredProfessionals = stats.processedProfessionals.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredList = stats.processedProfessionals.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.position?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesProfile = filterProfile === "All" || p.sternbergData?.style === filterProfile;
     return matchesSearch && matchesProfile;
   });
@@ -129,6 +136,21 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
 
   return (
     <div className="space-y-6">
+      {departments.length > 0 && (
+        <div className="flex justify-end">
+          <select
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+            className="px-3 py-2 bg-white border rounded-md text-sm dark:bg-gray-900 shadow-sm"
+          >
+            <option value="all">All Departments</option>
+            {departments.map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* High Level Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -198,7 +220,12 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
           <TabsTrigger value="thinking" className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Cognitive Styles</TabsTrigger>
           <TabsTrigger value="learning" className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Learning Approaches</TabsTrigger>
           <TabsTrigger value="decision" className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Decision Making</TabsTrigger>
+          <TabsTrigger value="synergy" className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Team Synergy</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="synergy" className="mt-6">
+          <TeamSynergy professionals={stats.processedProfessionals} />
+        </TabsContent>
 
         <TabsContent value="thinking" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">

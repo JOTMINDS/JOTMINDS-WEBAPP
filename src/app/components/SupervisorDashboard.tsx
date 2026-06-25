@@ -11,6 +11,8 @@ import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Alert, AlertDescription } from './ui/alert';
 import { OrganizationInsights } from './OrganizationInsights';
+import { OrganizationBulkUploadModal } from './OrganizationBulkUploadModal';
+import { RoleProfilesManager } from './RoleProfilesManager';
 import { 
   Building2, 
   LogOut, 
@@ -33,7 +35,9 @@ import {
   Plus,
   Send,
   UserMinus,
-  Mail
+  Mail,
+  Upload,
+  Target
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
@@ -43,7 +47,7 @@ import { MobileHeaderMenu } from './MobileHeaderMenu';
 import { TeacherStudentManagement } from './TeacherStudentManagement';
 import { SupervisorReview } from './SupervisorReview';
 import { ProfessionalCognitiveResults } from './ProfessionalCognitiveResults';
-import { calculateProfessionalCognitiveProfile } from '../utils/professionalCognitiveScoring';
+import { calculateProfessionalCognitiveProfile, getProfessionalInsights } from '../utils/professionalCognitiveScoring';
 
 interface SupervisorDashboardProps {
   user: User;
@@ -181,6 +185,12 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
   const [inviteName, setInviteName] = useState('');
   const [isInviting, setIsInviting] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+  const [showRoleProfilesModal, setShowRoleProfilesModal] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
+
+  // Extract unique departments from professionals
+  const departments = Array.from(new Set(professionals.map(p => p.department).filter(Boolean))) as string[];
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,10 +244,50 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
         })
       });
       if (!response.ok) throw new Error('Failed to send reminder');
-      toast.success('Reminder sent successfully!');
+      toast.success(`Reminder sent to ${professionalName}`);
     } catch (error: any) {
-      toast.error('Failed to send reminder');
+      toast.error(`Failed to send reminder to ${professionalName}`);
     }
+  };
+
+  const [isNudgingAll, setIsNudgingAll] = useState(false);
+  
+  const handleNudgeAllPending = async () => {
+    const pendingProfessionals = professionals.filter(prof => {
+      const stats = getProfessionalStats(prof);
+      return !stats.hasAllThreeAssessments;
+    });
+
+    if (pendingProfessionals.length === 0) {
+      toast.info('All team members have completed their assessments!');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to send reminder emails to ${pendingProfessionals.length} pending team members?`)) return;
+
+    setIsNudgingAll(true);
+    let successCount = 0;
+    
+    // We run them sequentially to avoid hammering the endpoint, or Promise.all if it's safe.
+    for (const prof of pendingProfessionals) {
+      try {
+        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-reminder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: prof.email,
+            professionalName: prof.name,
+            organizationName: user.organizationName
+          })
+        });
+        if (response.ok) successCount++;
+      } catch (e) {
+        console.error("Failed to nudge", prof.email);
+      }
+    }
+    
+    setIsNudgingAll(false);
+    toast.success(`Sent reminders to ${successCount} out of ${pendingProfessionals.length} pending members.`);
   };
 
   const getProfessionalStats = (professional: User) => {
@@ -261,11 +311,16 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
     };
   };
 
-  const filteredProfessionals = professionals.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.position?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProfessionals = professionals.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.department?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDepartment = selectedDepartment === 'all' || p.department === selectedDepartment;
+    
+    return matchesSearch && matchesDepartment;
+  });
 
   const organizationStats = {
     totalProfessionals: professionals.length,
@@ -546,9 +601,14 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                   <p className="mb-6 max-w-md mx-auto">
                     Invite your team members to join {user.organizationName} and complete their cognitive assessments.
                   </p>
-                  <Button onClick={() => setShowInviteModal(true)}>
-                    <Plus className="h-4 w-4 mr-2" /> Invite Team Member
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setShowInviteModal(true)}>
+                      <Plus className="h-4 w-4 mr-2" /> Invite Team Member
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowBulkUploadModal(true)}>
+                      <Upload className="h-4 w-4 mr-2" /> Bulk Invite
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ) : (
@@ -562,19 +622,44 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                           <Users className="h-5 w-5" />
                           Team Members
                         </div>
-                        <Button size="sm" onClick={() => setShowInviteModal(true)}>
-                          <Plus className="h-4 w-4 mr-2" /> Invite
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={handleNudgeAllPending} disabled={isNudgingAll}>
+                            <Send className="h-4 w-4 mr-2" /> {isNudgingAll ? 'Sending...' : 'Nudge Pending'}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setShowRoleProfilesModal(true)}>
+                            <Target className="h-4 w-4 mr-2" /> Roles
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setShowBulkUploadModal(true)}>
+                            <Upload className="h-4 w-4 mr-2" /> Bulk
+                          </Button>
+                          <Button size="sm" onClick={() => setShowInviteModal(true)}>
+                            <Plus className="h-4 w-4 mr-2" /> Invite
+                          </Button>
+                        </div>
                       </CardTitle>
                       <div className="pt-2">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder={`Search ${professionalsTerm.toLowerCase()}...`}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-9"
-                          />
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder={`Search ${professionalsTerm.toLowerCase()}...`}
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="pl-9"
+                            />
+                          </div>
+                          {departments.length > 0 && (
+                            <select
+                              value={selectedDepartment}
+                              onChange={(e) => setSelectedDepartment(e.target.value)}
+                              className="px-3 py-2 bg-white border rounded-md text-sm dark:bg-gray-900"
+                            >
+                              <option value="all">All Departments</option>
+                              {departments.map(dept => (
+                                <option key={dept} value={dept}>{dept}</option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
@@ -598,9 +683,17 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
                                     <p className="font-medium truncate">{prof.name}</p>
-                                    <p className="text-sm text-muted-foreground truncate">
-                                      {prof.position}
-                                    </p>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground truncate">
+                                      <span>{prof.position}</span>
+                                      {prof.department && (
+                                        <>
+                                          <span className="w-1 h-1 rounded-full bg-muted-foreground"></span>
+                                          <span className="font-medium text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">
+                                            {prof.department}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
                                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                                       {stats.completedAssessments > 0 ? (
                                         <Badge variant="outline" className="text-xs">
@@ -711,6 +804,26 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
             </Card>
           </div>
         )}
+
+        <OrganizationBulkUploadModal
+          isOpen={showBulkUploadModal}
+          onClose={() => setShowBulkUploadModal(false)}
+          organizationName={user.organizationName || ''}
+          organizationCode={organizationCode}
+          supervisorName={user.name}
+          onSuccess={() => {
+            getSupervisedEmployees(user.id).then(res => {
+              if (res.success) setProfessionals(res.employees || []);
+            });
+          }}
+        />
+
+        {showRoleProfilesModal && (
+          <RoleProfilesManager 
+            orgId={user.id} 
+            onClose={() => setShowRoleProfilesModal(false)} 
+          />
+        )}
       </div>
     </div>
   );
@@ -772,6 +885,7 @@ function ProfessionalReviewSection({
         userName={professional.name}
         userPosition={professional.position}
         userLocation={professional.country || ''}
+        supervisorId={supervisor.id}
         onBack={() => setIsViewingProfile(false)}
       />
     );

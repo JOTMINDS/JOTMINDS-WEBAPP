@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Assessment, GhanaMapping } from '../types';
 import { getStyleDescription } from './scoring';
 import { getAssessmentInsights } from './insights';
@@ -297,4 +298,91 @@ export function generatePDF(assessment: Assessment, userName: string, ghanaMappi
     ? `organizational-assessment-${userName.replace(/\s+/g, '-')}.pdf`
     : `thinking-styles-report-${userName.replace(/\s+/g, '-')}.pdf`;
   doc.save(filename);
+}
+
+export async function exportReportToPDF(elementId: string, filename: string = 'Jotminds_Report.pdf') {
+  const element = document.getElementById(elementId);
+  if (!element) return false;
+
+  try {
+    // Hide buttons or elements not meant for PDF (using a specific class if necessary)
+    const noPrintElements = element.querySelectorAll('.no-print');
+    noPrintElements.forEach(el => (el as HTMLElement).style.display = 'none');
+
+    const canvas = await html2canvas(element, {
+      scale: 2, // Higher quality
+      useCORS: true,
+      logging: false,
+    });
+
+    noPrintElements.forEach(el => (el as HTMLElement).style.display = '');
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    // Load watermark image
+    const addWatermark = async () => {
+      return new Promise<void>((resolve) => {
+        const img = new Image();
+        img.src = '/logo.png'; // Assuming logo is in public folder
+        img.onload = () => {
+          // Add watermark to center of each page
+          // Opacity is handled by setting global alpha if supported, or just drawing it normally.
+          // jsPDF supports setGState for opacity.
+          const totalPages = Math.ceil(imgHeight / pdfHeight);
+          for (let i = 1; i <= totalPages; i++) {
+            pdf.setPage(i);
+            
+            // Try to set opacity
+            pdf.saveGraphicsState();
+            pdf.setGState(new (pdf as any).GState({opacity: 0.1}));
+            
+            // Draw logo in center (approx 100x100 mm)
+            const watermarkSize = 100;
+            pdf.addImage(img, 'PNG', (pdfWidth - watermarkSize) / 2, (pdfHeight - watermarkSize) / 2, watermarkSize, watermarkSize);
+            
+            pdf.restoreGraphicsState();
+          }
+          resolve();
+        };
+        img.onerror = () => {
+          console.warn("Watermark image not found, proceeding without it.");
+          resolve();
+        };
+      });
+    };
+
+    // First page
+    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    // Add new pages if the content is long
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+    }
+
+    // Add watermarks
+    await addWatermark();
+
+    pdf.save(filename);
+    return true;
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    return false;
+  }
 }

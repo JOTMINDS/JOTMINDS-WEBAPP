@@ -42,6 +42,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
   const [organizationName, setOrganizationName] = useState('');
   const [organizationType, setOrganizationType] = useState('Corporate');
   const [position, setPosition] = useState('');
+  const [department, setDepartment] = useState('');
   const [organizationCode, setOrganizationCode] = useState('');
   const [verifiedOrgName, setVerifiedOrgName] = useState('');
   const [error, setError] = useState('');
@@ -272,8 +273,8 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
       }
     }
     if (role === 'professional') {
-      if (!organizationName || !position) {
-        setError('Please fill in all organization fields');
+      if (!organizationName || !position || !department) {
+        setError('Please fill in all organization fields (including department)');
         return false;
       }
     }
@@ -513,6 +514,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           organizationName: (role === 'professional' || role === 'teacher') ? organizationName : undefined,
           organizationType: role === 'professional' ? organizationType : undefined,
           position: role === 'professional' ? position : undefined,
+          department: role === 'professional' ? department : undefined,
           organizationCode: organizationCode ? organizationCode.toUpperCase() : undefined,
           teacherId: role === 'student' && teacherId ? teacherId : undefined,
           teacherName: role === 'student' && teacherName ? teacherName : undefined,
@@ -1133,6 +1135,20 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                           />
                         )}
                       </div>
+
+                      {role === 'professional' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="department">Department</Label>
+                          <Input
+                            id="department"
+                            type="text"
+                            placeholder="e.g. Marketing, Engineering, HR"
+                            value={department}
+                            onChange={(e) => setDepartment(e.target.value)}
+                            required
+                          />
+                        </div>
+                      )}
                     </>
                   )}
                 </>

@@ -1072,7 +1072,7 @@ function generateWelcomeEmailHtml(name: string, role: string, email: string, org
 // Sign up
 app.post('/make-server-fc8eb847/signup', async (c) => {
   try {
-    const { email, password, name, role, organizationName, organizationType, industrySector, position, phone, secondaryEmail, secondaryPhone, school, educationLevel, dateOfBirth, organizationCode, hasConsented, consentType, consentDate, inviteToken, teacherName } = await c.req.json();
+    const { email, password, name, role, organizationName, organizationType, industrySector, position, department, phone, secondaryEmail, secondaryPhone, school, educationLevel, dateOfBirth, organizationCode, hasConsented, consentType, consentDate, inviteToken, teacherName } = await c.req.json();
     
     if (!email || !password || !name || !role) {
       return c.json({ error: 'Missing required fields' }, 400);
@@ -1197,6 +1197,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         organizationType, 
         industrySector, 
         position, 
+        department,
         phone, 
         secondaryEmail, 
         secondaryPhone, 
