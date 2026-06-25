@@ -461,7 +461,7 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
                       <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
                     </Badge>
                   ) : (
-                    <Button type="button" variant="outline" size="sm" onClick={sendEmailOTP} disabled={emailSent || sendingEmail}>
+                    <Button type="button" variant="outline" size="sm" onClick={sendEmailOTP} disabled={sendingEmail}>
                       {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : emailSent ? 'Resend Code' : 'Send Code'}
                     </Button>
                   )}

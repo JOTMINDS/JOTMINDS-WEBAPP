@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Eye, EyeOff, AlertCircle, Building2, Mail, Lock, User, Phone, Briefcase } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, AlertCircle, Building2, Mail, Lock, User, Phone, Briefcase, Loader2 } from 'lucide-react';
 import { PhoneInput } from './PhoneInput';
 import { useState } from 'react';
 import { Button } from './ui/button';
@@ -822,7 +822,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                           <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
                         </Badge>
                       ) : (
-                        <Button type="button" variant="outline" size="sm" onClick={sendEmailOTP} disabled={emailSent || sendingEmail}>
+                        <Button type="button" variant="outline" size="sm" onClick={sendEmailOTP} disabled={sendingEmail}>
                           {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : emailSent ? 'Resend Code' : 'Send Code'}
                         </Button>
                       )}
