@@ -511,10 +511,12 @@ export function SchoolInsights({ professionals, organizationName, isSchool = tru
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-yellow-600" />
-                Learning & Teaching Styles (Kolb)
+                {isSchool ? "Learning & Teaching Styles (Kolb)" : "Learning Styles (Kolb)"}
               </CardTitle>
               <CardDescription>
-                How your teachers process information (Learning Style) often influences how they teach.
+                {isSchool 
+                  ? "How your teachers process information (Learning Style) often influences how they teach."
+                  : "How your team members process information and learn new skills."}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -527,7 +529,7 @@ export function SchoolInsights({ professionals, organizationName, isSchool = tru
                       <YAxis allowDecimals={false} />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="value" fill="#82ca9d" name="Number of Teachers">
+                      <Bar dataKey="value" fill="#82ca9d" name={isSchool ? "Number of Teachers" : "Number of Team Members"}>
                         {stats.kolb.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
