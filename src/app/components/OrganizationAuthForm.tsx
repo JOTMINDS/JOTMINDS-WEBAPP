@@ -117,8 +117,13 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
     return true;
   };
 
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+
   const sendEmailOTP = async () => {
+    if (sendingEmail) return;
     try {
+      setSendingEmail(true);
       await generateOTP(email);
       setEmailSent(true);
       setError('');
@@ -126,37 +131,58 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
       console.error('OTP Send Error:', err);
       setEmailSent(true);
       setError('Failed to send email verification code.');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
+  const [sendingPhone, setSendingPhone] = useState(false);
+  const [verifyingPhone, setVerifyingPhone] = useState(false);
+
   const sendPhoneOTP = async () => {
+    if (sendingPhone) return;
     try {
+      setSendingPhone(true);
       const otp = await generateOTP(phone);
       setSimulatedPhoneOTP(otp);
       setPhoneSent(true);
       setError('');
     } catch (err) {
       setPhoneSent(true);
+    } finally {
+      setSendingPhone(false);
     }
   };
 
   const verifyEmailOTP = async () => {
-    const ok = await verifyOTP(email, emailOTP);
-    if (ok) {
-      setEmailVerified(true);
-      setError('');
-    } else {
-      setError('Incorrect email verification code. Please try again.');
+    if (verifyingEmail) return;
+    try {
+      setVerifyingEmail(true);
+      const ok = await verifyOTP(email, emailOTP);
+      if (ok) {
+        setEmailVerified(true);
+        setError('');
+      } else {
+        setError('Incorrect email verification code. Please try again.');
+      }
+    } finally {
+      setVerifyingEmail(false);
     }
   };
 
   const verifyPhoneOTP = async () => {
-    const ok = await verifyOTP(phone, phoneOTP);
-    if (ok) {
-      setPhoneVerified(true);
-      setError('');
-    } else {
-      setError('Incorrect phone verification code. Please try again.');
+    if (verifyingPhone) return;
+    try {
+      setVerifyingPhone(true);
+      const ok = await verifyOTP(phone, phoneOTP);
+      if (ok) {
+        setPhoneVerified(true);
+        setError('');
+      } else {
+        setError('Incorrect phone verification code. Please try again.');
+      }
+    } finally {
+      setVerifyingPhone(false);
     }
   };
 
@@ -796,12 +822,11 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                           <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
                         </Badge>
                       ) : (
-                        <Button type="button" variant="outline" size="sm" onClick={sendEmailOTP} disabled={emailSent}>
-                          {emailSent ? 'Resend Code' : 'Send Code'}
+                        <Button type="button" variant="outline" size="sm" onClick={sendEmailOTP} disabled={emailSent || sendingEmail}>
+                          {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : emailSent ? 'Resend Code' : 'Send Code'}
                         </Button>
                       )}
                     </div>
-
                     {emailSent && !emailVerified && (
                       <div className="flex gap-2 pt-2">
                         <Input 
@@ -809,8 +834,11 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                           value={emailOTP} 
                           onChange={(e) => setEmailOTP(e.target.value)}
                           maxLength={6}
+                          disabled={verifyingEmail}
                         />
-                        <Button type="button" onClick={verifyEmailOTP}>Verify</Button>
+                        <Button type="button" onClick={verifyEmailOTP} disabled={verifyingEmail || !emailOTP}>
+                          {verifyingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
+                        </Button>
                       </div>
                     )}
                   </div>

@@ -10,8 +10,7 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Alert, AlertDescription } from './ui/alert';
-import { SchoolInsights } from './SchoolInsights';
-import { InstitutionReporting } from './InstitutionReporting';
+import { OrganizationInsights } from './OrganizationInsights';
 import { 
   Building2, 
   LogOut, 
@@ -60,13 +59,9 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
   const [organizationCode, setOrganizationCode] = useState<string>('');
   const [copiedCode, setCopiedCode] = useState(false);
 
-  const isSchool = user.organizationType === 'Educational Institution' || 
-                   user.industrySector === 'Educational Institutions';
-
-  const isTeacher = user.role === 'teacher';
-  const dashboardTitle = isTeacher ? 'Teacher Dashboard' : (isSchool ? 'School Dashboard' : (user.role === 'organization' ? 'Organization Portal' : 'Supervisor Portal'));
-  const professionalTerm = isSchool ? 'Teacher' : 'Professional';
-  const professionalsTerm = isSchool ? 'Teachers' : 'Professionals';
+  const dashboardTitle = user.role === 'organization' ? 'Organization Portal' : 'Supervisor Portal';
+  const professionalTerm = 'Professional';
+  const professionalsTerm = 'Professionals';
 
   useEffect(() => {
     loadProfessionals();
@@ -296,7 +291,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
-                {isSchool ? <School className="h-6 w-6 text-white" /> : <ShieldCheck className="h-6 w-6 text-white" />}
+                <ShieldCheck className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
@@ -348,27 +343,14 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
               <BarChart3 className="h-4 w-4 mr-2" />
               Overview
             </TabsTrigger>
-            {isTeacher ? (
-              <TabsTrigger value="students">
-                <Users className="h-4 w-4 mr-2" />
-                Students
-              </TabsTrigger>
-            ) : (
-              <TabsTrigger value="professionals">
-                {isSchool ? <GraduationCap className="h-4 w-4 mr-2" /> : <Users className="h-4 w-4 mr-2" />}
-                {professionalsTerm}
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="professionals">
+              <Users className="h-4 w-4 mr-2" />
+              Professionals
+            </TabsTrigger>
             <TabsTrigger value="insights">
               <PieChart className="h-4 w-4 mr-2" />
               Insights
             </TabsTrigger>
-            {isTeacher && (
-              <TabsTrigger value="reports">
-                <Download className="h-4 w-4 mr-2" />
-                Reports
-              </TabsTrigger>
-            )}
           </TabsList>
 
           {/* Overview Tab */}
@@ -412,7 +394,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                   </div>
                   <Alert className="bg-white/50 border-indigo-200">
                     <AlertDescription className="text-sm">
-                      💡 Team members need to select "{isSchool ? 'Teacher' : 'Professional/Organization'}" during signup and enter this code to join your {isSchool ? 'school' : 'organization'}
+                      💡 Team members need to select "Professional/Organization" during signup and enter this code to join your organization
                     </AlertDescription>
                   </Alert>
                 </CardContent>
@@ -483,17 +465,17 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-purple-600" />
-                  Welcome to Your {isSchool ? 'School' : 'Organization'} Dashboard
+                  Welcome to Your Organization Dashboard
                 </CardTitle>
                 <CardDescription>
-                  Review and manage cognitive assessments for {professionalsTerm.toLowerCase()} in {user.organizationName}
+                  Review and manage cognitive assessments for professionals in {user.organizationName}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <p className="flex items-start gap-2">
                     <span>•</span>
-                    <span>View all {professionalsTerm.toLowerCase()} from your {isSchool ? 'school' : 'organization'} who have completed assessments</span>
+                    <span>View all professionals from your organization who have completed assessments</span>
                   </p>
                   <p className="flex items-start gap-2">
                     <span>•</span>
@@ -554,16 +536,8 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
             )}
           </TabsContent>
 
-          {/* Students Tab (For Teachers) */}
-          {isTeacher && (
-            <TabsContent value="students" className="space-y-6">
-              <TeacherStudentManagement teacher={user} />
-            </TabsContent>
-          )}
-
-          {/* Professionals Tab (For Admins/Supervisors) */}
-          {!isTeacher && (
-            <TabsContent value="professionals" className="space-y-6">
+          {/* Professionals Tab */}
+          <TabsContent value="professionals" className="space-y-6">
             {professionals.length === 0 ? (
               <Card className="p-12">
                 <div className="text-center text-muted-foreground flex flex-col items-center justify-center">
@@ -682,23 +656,13 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                 </div>
               </div>
             )}
-            </TabsContent>
-          )}
+          </TabsContent>
 
           {/* Insights Tab */}
           <TabsContent value="insights" className="space-y-6">
-            <SchoolInsights 
+            <OrganizationInsights 
               professionals={professionals} 
               organizationName={user.organizationName || 'your organization'} 
-              isSchool={isSchool}
-            />
-          </TabsContent>
-
-          <TabsContent value="reports" className="space-y-6">
-            <InstitutionReporting 
-              institutionId={user.organizationCode || ''} 
-              institutionName={user.organizationName || ''} 
-              currentTeacherId={user.id} 
             />
           </TabsContent>
         </Tabs>

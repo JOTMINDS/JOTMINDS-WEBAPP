@@ -143,9 +143,14 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
     setError(''); next();
   };
 
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+
   // ── Step 3 — OTP ──
   const sendEmailOTP = async () => {
+    if (sendingEmail) return;
     try {
+      setSendingEmail(true);
       await generateOTP(email);
       setEmailSent(true);
       setError('');
@@ -153,37 +158,58 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
       console.error('OTP Send Error:', err);
       setEmailSent(true);
       setError('Failed to send OTP code.');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
+  const [sendingPhone, setSendingPhone] = useState(false);
+  const [verifyingPhone, setVerifyingPhone] = useState(false);
+
   const sendPhoneOTP = async () => {
+    if (sendingPhone) return;
     try {
+      setSendingPhone(true);
       const otp = await generateOTP(phone);
       setSimulatedPhoneOTP(otp); // In production, send via SMS
       setPhoneSent(true);
       setError('');
     } catch (err) {
       setPhoneSent(true);
+    } finally {
+      setSendingPhone(false);
     }
   };
 
   const verifyEmailOTP = async () => {
-    const ok = await verifyOTP(email, emailOTP);
-    if (ok) {
-      setEmailVerified(true);
-      setError('');
-    } else {
-      setError('Incorrect email verification code. Please try again.');
+    if (verifyingEmail) return;
+    try {
+      setVerifyingEmail(true);
+      const ok = await verifyOTP(email, emailOTP);
+      if (ok) {
+        setEmailVerified(true);
+        setError('');
+      } else {
+        setError('Incorrect email verification code. Please try again.');
+      }
+    } finally {
+      setVerifyingEmail(false);
     }
   };
 
   const verifyPhoneOTP = async () => {
-    const ok = await verifyOTP(phone, phoneOTP);
-    if (ok) {
-      setPhoneVerified(true);
-      setError('');
-    } else {
-      setError('Incorrect phone verification code. Please try again.');
+    if (verifyingPhone) return;
+    try {
+      setVerifyingPhone(true);
+      const ok = await verifyOTP(phone, phoneOTP);
+      if (ok) {
+        setPhoneVerified(true);
+        setError('');
+      } else {
+        setError('Incorrect phone verification code. Please try again.');
+      }
+    } finally {
+      setVerifyingPhone(false);
     }
   };
 
@@ -430,22 +456,30 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
                     <Mail className="w-4 h-4 text-gray-500" />
                     <span className="text-sm font-medium text-gray-800">Email: {email}</span>
                   </div>
-                  {emailVerified && <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Verified</Badge>}
-                </div>
-
-                {!emailVerified && (<>
-                  {!emailSent ? (
-                    <Button size="sm" variant="outline" onClick={sendEmailOTP} className="w-full">Send Verification Code</Button>
+                  {emailVerified ? (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
+                    </Badge>
                   ) : (
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Input placeholder="Enter 6-digit code" value={emailOTP} onChange={e => setEmailOTP(e.target.value)} maxLength={6} className="font-mono" />
-                        <Button size="sm" onClick={verifyEmailOTP} style={{ backgroundColor: '#5B7DB1' }}>Verify</Button>
-                      </div>
-                      <button onClick={sendEmailOTP} className="text-xs text-[#5B7DB1] hover:underline">Resend code</button>
-                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={sendEmailOTP} disabled={emailSent || sendingEmail}>
+                      {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : emailSent ? 'Resend Code' : 'Send Code'}
+                    </Button>
                   )}
-                </>)}
+                </div>
+                {emailSent && !emailVerified && (
+                  <div className="flex gap-2 pt-2">
+                    <Input 
+                      placeholder="Enter 6-digit code" 
+                      value={emailOTP} 
+                      onChange={(e) => setEmailOTP(e.target.value)}
+                      maxLength={6}
+                      disabled={verifyingEmail}
+                    />
+                    <Button type="button" onClick={verifyEmailOTP} disabled={verifyingEmail || !emailOTP}>
+                      {verifyingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Phone verification */}
