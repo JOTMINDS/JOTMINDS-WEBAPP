@@ -83,5 +83,17 @@ export const getByPrefix = async (prefix: string): Promise<any[]> => {
   if (error) {
     throw new Error(error.message);
   }
-  return data?.map((d) => d.value) ?? [];
+  return data?.map((d) => {
+    const val = d.value;
+    if (val && typeof val === 'object') {
+      if (!val.id) {
+        // Extract ID from key (e.g., "user:123-456" -> "123-456")
+        const parts = d.key.split(':');
+        if (parts.length > 1) {
+          val.id = parts.slice(1).join(':');
+        }
+      }
+    }
+    return val;
+  }) ?? [];
 };

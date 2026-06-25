@@ -2910,12 +2910,14 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
     
     // Filter users by organization code who are professionals
     const employees = allUsers.filter((u: any) => {
-      const matches = u.organizationCode === orgCode && 
-        (u.role === 'Professional/Organization' || u.role === 'professional') && 
-        u.id !== supervisorId;
+      const normalizedRole = (u.role || '').toLowerCase();
+      const isProfessional = normalizedRole === 'professional' || 
+        normalizedRole === 'professional/organization' ||
+        u.role === 'Professional/Organization';
+      const matches = u.organizationCode === orgCode && isProfessional && u.id !== supervisorId;
       
       if (u.organizationCode === orgCode) {
-        console.log(`[supervisor/employees] User ${u.email} - orgCode match: ${u.organizationCode}, role: ${u.role}, matches: ${matches}`);
+        console.log(`[supervisor/employees] User ${u.email} - orgCode match: ${u.organizationCode}, role: ${u.role} (normalized: ${normalizedRole}), isProfessional: ${isProfessional}, matches: ${matches}`);
       }
       
       return matches;

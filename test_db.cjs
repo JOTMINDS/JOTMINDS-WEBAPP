@@ -6,9 +6,11 @@ const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const supabase = createClient(`https://${PROJECT_ID}.supabase.co`, ANON_KEY);
 
 async function test() {
-  const { data, error } = await supabase.from('institutions').select('*');
-  console.log(data);
-  const mems = await supabase.from('institution_members').select('*');
-  console.log(mems);
+  const { data, error } = await supabase.from('kv_store_fc8eb847').select('*').eq('key', 'admin:user').maybeSingle();
+  if (error) {
+    console.error('Error fetching admin:user from KV:', error);
+  } else {
+    console.log('admin:user in KV store:', data);
+  }
 }
 test();

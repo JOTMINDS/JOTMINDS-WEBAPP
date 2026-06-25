@@ -684,11 +684,13 @@ app.get('/assessment/results', async (c) => {
 
     const userIdsParam = c.req.query('userIds');
     if (userIdsParam) {
-      // Role validation: Only admins, school admins, or teachers can query others' assessments
+      // Role validation: Only admins, school admins, teachers, or organization/supervisors can query others' assessments
       const profile = await kv.get(`user:${user.id}`);
-      const role = profile?.role || user.user_metadata?.role || '';
+      const role = (profile?.role || user.user_metadata?.role || '').toLowerCase();
       
-      if (role !== 'school_admin' && role !== 'admin' && role !== 'teacher' && user.id !== 'admin-001') {
+      const allowedRoles = ['school_admin', 'admin', 'teacher', 'organization', 'supervisor'];
+      if (!allowedRoles.includes(role) && user.id !== 'admin-001') {
+        console.log(`[Results] Access denied for role '${role}' trying to query batch results`);
         return c.json({ error: 'Forbidden' }, 403);
       }
       

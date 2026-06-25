@@ -39,6 +39,8 @@ import { toast } from 'sonner';
 import { MobileHeaderMenu } from './MobileHeaderMenu';
 import { TeacherStudentManagement } from './TeacherStudentManagement';
 import { SupervisorReview } from './SupervisorReview';
+import { ProfessionalCognitiveResults } from './ProfessionalCognitiveResults';
+import { calculateProfessionalCognitiveProfile } from '../utils/professionalCognitiveScoring';
 
 interface SupervisorDashboardProps {
   user: User;
@@ -571,6 +573,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
             <SchoolInsights 
               professionals={professionals} 
               organizationName={user.organizationName || 'your organization'} 
+              isSchool={isSchool}
             />
           </TabsContent>
 
@@ -598,6 +601,7 @@ function ProfessionalReviewSection({
   term?: string;
 }) {
   const [showNewReview, setShowNewReview] = useState(false);
+  const [isViewingProfile, setIsViewingProfile] = useState(false);
   const assessments = professional.assessments || getAssessmentsByUserId(professional.id);
   const completedAssessments = assessments.filter(a => a.completedAt);
   const reviews = professional.reviews || getReviewsByProfessional(professional.id);
@@ -614,6 +618,19 @@ function ProfessionalReviewSection({
     );
   }
 
+  if (isViewingProfile) {
+    const profile = calculateProfessionalCognitiveProfile(completedAssessments);
+    return (
+      <ProfessionalCognitiveResults 
+        profile={profile}
+        userName={professional.name}
+        userPosition={professional.position}
+        userLocation={professional.country || ''}
+        onBack={() => setIsViewingProfile(false)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Professional Info */}
@@ -626,12 +643,20 @@ function ProfessionalReviewSection({
                 {professional.position} • {professional.email}
               </CardDescription>
             </div>
-            <Button
-              onClick={() => setShowNewReview(!showNewReview)}
-              variant={showNewReview ? "outline" : "default"}
-            >
-              {showNewReview ? 'Cancel Review' : 'New Review'}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setIsViewingProfile(true)}
+                variant="outline"
+              >
+                View Profile
+              </Button>
+              <Button
+                onClick={() => setShowNewReview(!showNewReview)}
+                variant={showNewReview ? "outline" : "default"}
+              >
+                {showNewReview ? 'Cancel Review' : 'New Review'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

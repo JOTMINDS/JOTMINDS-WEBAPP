@@ -19,11 +19,12 @@ import { ScrollArea } from './ui/scroll-area';
 interface SchoolInsightsProps {
   professionals: User[];
   organizationName: string;
+  isSchool?: boolean;
 }
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
 
-export function SchoolInsights({ professionals, organizationName }: SchoolInsightsProps) {
+export function SchoolInsights({ professionals, organizationName, isSchool = true }: SchoolInsightsProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterProfile, setFilterProfile] = useState("All");
 
@@ -45,15 +46,22 @@ export function SchoolInsights({ professionals, organizationName }: SchoolInsigh
     const processedProfessionals = professionals.map(prof => {
         const assessments = prof.assessments || getAssessmentsByUserId(prof.id);
         const teachingAssessment = assessments.find(a => a.type === 'teaching-style' && a.completedAt);
+        const sternbergAssessment = assessments.find(a => a.type === 'sternberg' && a.completedAt);
         
         let teachingData = null;
         if (teachingAssessment?.score?.['teaching-style']) {
             teachingData = teachingAssessment.score['teaching-style'];
         }
 
+        let sternbergData = null;
+        if (sternbergAssessment?.score?.sternberg) {
+            sternbergData = sternbergAssessment.score.sternberg;
+        }
+
         return {
             ...prof,
             teachingData,
+            sternbergData,
             assessments
         };
     });
@@ -103,36 +111,59 @@ export function SchoolInsights({ professionals, organizationName }: SchoolInsigh
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value);
 
+    const sortedSternbergStyles = Object.entries(sternbergDistribution)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value);
+
     // Insights Generator
     const generateInsights = () => {
-        if (teachingAxesTotals.count === 0) return [];
-        
-        const dominantProfile = sortedTeachingStyles[0]?.name;
-        const lowestAxis = [...averageAxes].sort((a, b) => a.A - b.A)[0];
-        const highestAxis = [...averageAxes].sort((a, b) => b.A - a.A)[0];
+        if (isSchool) {
+            if (teachingAxesTotals.count === 0) return [];
+            
+            const dominantProfile = sortedTeachingStyles[0]?.name;
+            const lowestAxis = [...averageAxes].sort((a, b) => a.A - b.A)[0];
+            const highestAxis = [...averageAxes].sort((a, b) => b.A - a.A)[0];
 
-        return [
-            {
-                title: "Dominant Style",
-                desc: `Your faculty leans towards "${dominantProfile}", indicating a strong culture of ${dominantProfile === 'Structured Educator' ? 'organization and clarity' : 'student engagement'}.`,
-                icon: <Users className="h-5 w-5 text-blue-500" />
-            },
-            {
-                title: "Key Strength",
-                desc: `The school excels in "${highestAxis.subject}" (${highestAxis.A}%), showing high capability in ${axisDescriptions[`axis${highestAxis.subject}` as keyof typeof axisDescriptions]?.title || 'this area'}.`,
-                icon: <TrendingUp className="h-5 w-5 text-green-500" />
-            },
-            {
-                title: "Growth Area",
-                desc: `Scores for "${lowestAxis.subject}" are lower (${lowestAxis.A}%). Consider professional development focused on ${lowestAxis.subject === 'Adaptability' ? 'flexible teaching strategies' : 'student autonomy'}.`,
-                icon: <AlertCircle className="h-5 w-5 text-amber-500" />
-            }
-        ];
+            return [
+                {
+                    title: "Dominant Style",
+                    desc: `Your faculty leans towards "${dominantProfile}", indicating a strong culture of ${dominantProfile === 'Structured Educator' ? 'organization and clarity' : 'student engagement'}.`,
+                    icon: <Users className="h-5 w-5 text-blue-500" />
+                },
+                {
+                    title: "Key Strength",
+                    desc: `The school excels in "${highestAxis.subject}" (${highestAxis.A}%), showing high capability in ${axisDescriptions[`axis${highestAxis.subject}` as keyof typeof axisDescriptions]?.title || 'this area'}.`,
+                    icon: <TrendingUp className="h-5 w-5 text-green-500" />
+                },
+                {
+                    title: "Growth Area",
+                    desc: `Scores for "${lowestAxis.subject}" are lower (${lowestAxis.A}%). Consider professional development focused on ${lowestAxis.subject === 'Adaptability' ? 'flexible teaching strategies' : 'student autonomy'}.`,
+                    icon: <AlertCircle className="h-5 w-5 text-amber-500" />
+                }
+            ];
+        } else {
+            if (totalSternberg === 0) return [];
+            
+            const dominantProfile = sortedSternbergStyles[0]?.name;
+            
+            return [
+                {
+                    title: "Dominant Thinking Style",
+                    desc: `Your team leans towards "${dominantProfile}" thinking, which is excellent for ${dominantProfile === 'Analytical' ? 'problem-solving and evaluation' : dominantProfile === 'Creative' ? 'innovation and ideation' : 'execution and real-world application'}.`,
+                    icon: <Users className="h-5 w-5 text-blue-500" />
+                },
+                {
+                    title: "Cognitive Diversity",
+                    desc: `Having a mix of analytical, creative, and practical thinkers ensures robust problem-solving from multiple angles.`,
+                    icon: <TrendingUp className="h-5 w-5 text-green-500" />
+                }
+            ];
+        }
     };
 
     return {
       kolb: Object.entries(kolbDistribution).map(([name, value]) => ({ name, value })),
-      sternberg: Object.entries(sternbergDistribution).map(([name, value]) => ({ name, value })),
+      sternberg: sortedSternbergStyles,
       dualProcess: Object.entries(dualProcessDistribution).map(([name, value]) => ({ name, value })),
       teachingStyle: sortedTeachingStyles,
       averageAxes,
@@ -157,7 +188,7 @@ export function SchoolInsights({ professionals, organizationName }: SchoolInsigh
         <Info className="h-4 w-4" />
         <AlertTitle>No Data Available</AlertTitle>
         <AlertDescription>
-          Invite teachers to your organization to see aggregated insights here.
+          Invite {isSchool ? 'teachers' : 'members'} to your organization to see aggregated insights here.
         </AlertDescription>
       </Alert>
     );
@@ -170,7 +201,7 @@ export function SchoolInsights({ professionals, organizationName }: SchoolInsigh
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Faculty
+              {isSchool ? "Total Faculty" : "Total Team Members"}
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -190,28 +221,30 @@ export function SchoolInsights({ professionals, organizationName }: SchoolInsigh
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-                {stats.totals.teaching > 0 ? Math.round((stats.totals.teaching / professionals.length) * 100) : 0}%
+                {isSchool 
+                  ? (stats.totals.teaching > 0 ? Math.round((stats.totals.teaching / professionals.length) * 100) : 0)
+                  : (stats.totals.sternberg > 0 ? Math.round((stats.totals.sternberg / professionals.length) * 100) : 0)}%
             </div>
             <p className="text-xs text-muted-foreground">
-              {professionals.length - stats.totals.teaching} pending completion
+              {professionals.length - (isSchool ? stats.totals.teaching : stats.totals.sternberg)} pending completion
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Dominant Style
+              {isSchool ? "Dominant Style" : "Dominant Thinking Style"}
             </CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold truncate">
-                {stats.teachingStyle[0]?.name || "N/A"}
+                {isSchool ? (stats.teachingStyle[0]?.name || "N/A") : (stats.sternberg[0]?.name || "N/A")}
             </div>
             <p className="text-xs text-muted-foreground">
-                {stats.totals.teaching > 0 
-                 ? Math.round((stats.teachingStyle[0]?.value / stats.totals.teaching) * 100) 
-                 : 0}% of staff
+                {isSchool 
+                  ? (stats.totals.teaching > 0 ? Math.round((stats.teachingStyle[0]?.value / stats.totals.teaching) * 100) : 0)
+                  : (stats.totals.sternberg > 0 ? Math.round((stats.sternberg[0]?.value / stats.totals.sternberg) * 100) : 0)}% of {isSchool ? 'staff' : 'team'}
             </p>
           </CardContent>
         </Card>
@@ -222,23 +255,26 @@ export function SchoolInsights({ professionals, organizationName }: SchoolInsigh
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-                {stats.teachingStyle.length > 3 ? "High" : "Moderate"}
+                {isSchool 
+                  ? (stats.teachingStyle.length > 3 ? "High" : "Moderate")
+                  : (stats.sternberg.length > 3 ? "High" : "Moderate")}
             </div>
             <p className="text-xs text-muted-foreground">
-                Balanced across 6 axes
+                {isSchool ? "Balanced across 6 axes" : "Balanced across thinking styles"}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="teaching" className="space-y-4">
+      <Tabs defaultValue={isSchool ? "teaching" : "thinking"} className="space-y-4">
         <TabsList className="bg-white/50 p-1 border shadow-sm w-full md:w-auto grid grid-cols-2 md:flex h-auto">
-          <TabsTrigger value="teaching" className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Teaching Styles</TabsTrigger>
+          {isSchool && <TabsTrigger value="teaching" className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Teaching Styles</TabsTrigger>}
           <TabsTrigger value="thinking" className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Cognitive Styles</TabsTrigger>
           <TabsTrigger value="learning" className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Learning Approaches</TabsTrigger>
           <TabsTrigger value="decision" className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Decision Making</TabsTrigger>
         </TabsList>
 
+        {isSchool && (
         <TabsContent value="teaching" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             {/* Main Chart: Aggregate Radar */}
@@ -423,6 +459,7 @@ export function SchoolInsights({ professionals, organizationName }: SchoolInsigh
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
         {/* Keeping existing tabs (thinking, learning, decision) with their original content */}
         <TabsContent value="thinking" className="space-y-4">
