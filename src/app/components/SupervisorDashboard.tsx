@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, SupervisorReviewData } from '../types';
 import { getAllUsers, getAssessmentsByUserId, saveReview, getReviewsByProfessional, getReviewsBySupervisor, getAssessmentFrequency } from '../utils/storage';
-import { getAuthToken, getSupervisedEmployees } from '../utils/api';
+import { getAuthToken, getSupervisedEmployees, removeSupervisedEmployee } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { createClient } from '../utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -30,7 +30,11 @@ import {
   GraduationCap,
   PieChart,
   Settings,
-  Download
+  Download,
+  Plus,
+  Send,
+  UserMinus,
+  Mail
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
@@ -144,6 +148,103 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
     }
   };
 
+  const handleExportCSV = () => {
+    const headers = ['Name', 'Email', 'Role', 'Assessments Completed', 'Dominant Thinking Style', 'Last Review Date'];
+    
+    const rows = professionals.map(prof => {
+      const assessments = prof.assessments || getAssessmentsByUserId(prof.id);
+      const completedAssessments = assessments.filter((a: any) => a.completedAt);
+      const profile = calculateProfessionalCognitiveProfile(completedAssessments);
+      const reviews = prof.reviews || getReviewsByProfessional(prof.id);
+      const lastReview = reviews.length > 0 ? formatDate(reviews[0].createdAt) : 'Never';
+      
+      return [
+        `"${prof.name}"`,
+        `"${prof.email}"`,
+        `"${prof.position || prof.role || 'Member'}"`,
+        completedAssessments.length,
+        `"${profile.thinking.style}"`,
+        `"${lastReview}"`
+      ].join(',');
+    });
+    
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Team_Analytics_${formatDate(new Date().toISOString())}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsInviting(true);
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-professional-invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail,
+          professionalName: inviteName,
+          organizationName: user.organizationName,
+          organizationCode: organizationCode,
+          supervisorName: user.name
+        })
+      });
+      if (!response.ok) throw new Error('Failed to send invite');
+      toast.success('Invitation sent successfully!');
+      setShowInviteModal(false);
+      setInviteEmail('');
+      setInviteName('');
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleRemove = async (professionalId: string) => {
+    if (!confirm('Are you sure you want to remove this employee from your organization?')) return;
+    try {
+      await removeSupervisedEmployee(professionalId);
+      toast.success('Employee removed successfully');
+      if (selectedProfessional?.id === professionalId) setSelectedProfessional(null);
+      const res = await getSupervisedEmployees();
+      if (res.success) setProfessionals(res.employees || []);
+    } catch (error: any) {
+      toast.error('Failed to remove employee');
+    }
+  };
+
+  const handleNudge = async (professionalEmail: string, professionalName: string) => {
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-reminder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: professionalEmail,
+          professionalName: professionalName,
+          organizationName: user.organizationName
+        })
+      });
+      if (!response.ok) throw new Error('Failed to send reminder');
+      toast.success('Reminder sent successfully!');
+    } catch (error: any) {
+      toast.error('Failed to send reminder');
+    }
+  };
+
   const getProfessionalStats = (professional: User) => {
     // Use assessments from API if available, otherwise fallback to local storage
     const assessments = professional.assessments || getAssessmentsByUserId(professional.id);
@@ -221,6 +322,10 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                 <p className="text-sm font-medium text-gray-900">{user.name}</p>
                 <p className="text-xs text-muted-foreground">{user.position}</p>
               </div>
+              <Button variant="outline" onClick={handleExportCSV} size="sm" className="sm:size-default">
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Export CSV</span>
+              </Button>
               {onViewSettings && (
                 <Button variant="outline" onClick={onViewSettings} size="sm" className="sm:size-default">
                   <Settings className="h-4 w-4 sm:mr-2" />
@@ -460,22 +565,32 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
           {!isTeacher && (
             <TabsContent value="professionals" className="space-y-6">
             {professionals.length === 0 ? (
-              <Alert>
-                <Users className="h-4 w-4" />
-                <AlertDescription>
-                  No {professionalsTerm.toLowerCase()} from {user.organizationName} have registered yet. 
-                  Invite your team members to complete their cognitive assessments.
-                </AlertDescription>
-              </Alert>
+              <Card className="p-12">
+                <div className="text-center text-muted-foreground flex flex-col items-center justify-center">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium text-gray-900 mb-2">No {professionalsTerm.toLowerCase()} have registered yet</p>
+                  <p className="mb-6 max-w-md mx-auto">
+                    Invite your team members to join {user.organizationName} and complete their cognitive assessments.
+                  </p>
+                  <Button onClick={() => setShowInviteModal(true)}>
+                    <Plus className="h-4 w-4 mr-2" /> Invite Team Member
+                  </Button>
+                </div>
+              </Card>
             ) : (
               <div className="grid lg:grid-cols-3 gap-6">
                 {/* Professional List */}
                 <div className="lg:col-span-1">
                   <Card className="sticky top-24">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        Team Members
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-5 w-5" />
+                          Team Members
+                        </div>
+                        <Button size="sm" onClick={() => setShowInviteModal(true)}>
+                          <Plus className="h-4 w-4 mr-2" /> Invite
+                        </Button>
                       </CardTitle>
                       <div className="pt-2">
                         <div className="relative">
@@ -553,6 +668,8 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                       professional={selectedProfessional}
                       supervisor={user}
                       term={professionalTerm}
+                      onRemove={handleRemove}
+                      onNudge={handleNudge}
                     />
                   ) : (
                     <Card className="h-full flex items-center justify-center p-12">
@@ -585,6 +702,51 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
             />
           </TabsContent>
         </Tabs>
+
+        {showInviteModal && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <Card className="w-full max-w-md shadow-xl">
+              <CardHeader>
+                <CardTitle>Invite Team Member</CardTitle>
+                <CardDescription>
+                  Send an email invitation to join your organization.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleInvite} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Name</label>
+                    <Input 
+                      placeholder="Jane Doe" 
+                      value={inviteName}
+                      onChange={(e) => setInviteName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Email</label>
+                    <Input 
+                      type="email"
+                      placeholder="jane@example.com" 
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setShowInviteModal(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isInviting}>
+                      {isInviting ? 'Sending...' : 'Send Invitation'}
+                      {!isInviting && <Mail className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -594,11 +756,15 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
 function ProfessionalReviewSection({ 
   professional, 
   supervisor,
-  term = 'Employee'
+  term = 'Employee',
+  onRemove,
+  onNudge
 }: { 
   professional: User; 
   supervisor: User;
   term?: string;
+  onRemove?: (id: string) => void;
+  onNudge?: (email: string, name: string) => void;
 }) {
   const [showNewReview, setShowNewReview] = useState(false);
   const [isViewingProfile, setIsViewingProfile] = useState(false);
@@ -608,13 +774,29 @@ function ProfessionalReviewSection({
 
   if (completedAssessments.length === 0) {
     return (
-      <Alert>
-        <Clock className="h-4 w-4" />
-        <AlertDescription>
-          {professional.name} hasn't completed any assessments yet. 
-          Reviews can be added once they complete at least one cognitive assessment.
-        </AlertDescription>
-      </Alert>
+      <Card className="h-full">
+        <CardContent className="flex flex-col items-center justify-center h-full p-12 text-center space-y-4">
+          <Clock className="h-12 w-12 text-muted-foreground opacity-50" />
+          <div>
+            <h3 className="font-semibold text-lg">{professional.name} hasn't completed any assessments</h3>
+            <p className="text-muted-foreground mt-1">
+              Reviews can be added once they complete at least one cognitive assessment.
+            </p>
+          </div>
+          <div className="flex gap-2 mt-4">
+            {onNudge && (
+              <Button onClick={() => onNudge(professional.email, professional.name)}>
+                <Send className="h-4 w-4 mr-2" /> Send Reminder
+              </Button>
+            )}
+            {onRemove && (
+              <Button variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" onClick={() => onRemove(professional.id)}>
+                <UserMinus className="h-4 w-4 mr-2" /> Remove {term}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -644,6 +826,15 @@ function ProfessionalReviewSection({
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              {onRemove && (
+                <Button
+                  onClick={() => onRemove(professional.id)}
+                  variant="outline"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                >
+                  Remove
+                </Button>
+              )}
               <Button
                 onClick={() => setIsViewingProfile(true)}
                 variant="outline"

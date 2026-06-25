@@ -323,6 +323,13 @@ export const getSupervisedEmployees = async (supervisorId?: string) => {
   return makeRequest(`/supervisor/employees${query}`);
 };
 
+export const removeSupervisedEmployee = async (employeeId: string) => {
+  return makeRequest('/supervisor/employees/remove', {
+    method: 'POST',
+    body: JSON.stringify({ employeeId }),
+  });
+};
+
 // Parent APIs
 export const getLinkedChildren = async () => {
   return makeRequest('/parent/children');

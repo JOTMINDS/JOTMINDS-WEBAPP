@@ -418,6 +418,102 @@ app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
   }
 });
 
+app.post('/make-server-fc8eb847/send-professional-invite', async (c) => {
+  try {
+    const { email, professionalName, organizationName, organizationCode, supervisorName } = await c.req.json();
+    
+    if (!email || !organizationCode || !organizationName) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+
+    const signupLink = `https://jotminds.com/auth?code=${organizationCode}&role=professional`;
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${resendApiKey}`
+      },
+      body: JSON.stringify({
+        from: 'JotMinds <service@jotminds.com>',
+        to: email,
+        subject: `You've been invited to join ${organizationName} on JotMinds!`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+            </div>
+            <h2>Welcome to JotMinds!</h2>
+            <p>Hi ${professionalName || 'Professional'},</p>
+            <p>You have been invited by <strong>${supervisorName || 'your organization'}</strong> to join <strong>${organizationName}</strong> on JotMinds.</p>
+            <p>To get started and take your cognitive assessment, please click the link below to sign up for a Professional account:</p>
+            <div style="margin-top: 30px; text-align: center;">
+              <a href="${signupLink}" style="background-color: #6B4C9A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Join Organization</a>
+            </div>
+            <p style="margin-top: 20px; font-size: 12px; color: #666;">If the button doesn't work, paste this link in your browser: <br/> ${signupLink}</p>
+          </div>
+        `
+      })
+    });
+    
+    if (response.ok) {
+      return c.json({ success: true });
+    } else {
+      const err = await response.json();
+      return c.json({ error: 'Failed to send invite via Resend', details: err }, 500);
+    }
+  } catch (error: any) {
+    return c.json({ error: 'Failed to send professional invite email', message: error.message }, 500);
+  }
+});
+
+app.post('/make-server-fc8eb847/send-reminder', async (c) => {
+  try {
+    const { email, professionalName, organizationName } = await c.req.json();
+    
+    if (!email || !organizationName) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${resendApiKey}`
+      },
+      body: JSON.stringify({
+        from: 'JotMinds <service@jotminds.com>',
+        to: email,
+        subject: `Reminder: Complete your JotMinds assessment for ${organizationName}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+            </div>
+            <h2>Assessment Reminder</h2>
+            <p>Hi ${professionalName || 'Professional'},</p>
+            <p>This is a friendly reminder from <strong>${organizationName}</strong> to complete your cognitive assessment on JotMinds.</p>
+            <p>Completing your assessment helps your organization better understand your cognitive strengths and working style.</p>
+            <div style="margin-top: 30px; text-align: center;">
+              <a href="https://jotminds.com/auth" style="background-color: #6B4C9A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Log In to JotMinds</a>
+            </div>
+          </div>
+        `
+      })
+    });
+    
+    if (response.ok) {
+      return c.json({ success: true });
+    } else {
+      const err = await response.json();
+      return c.json({ error: 'Failed to send reminder via Resend', details: err }, 500);
+    }
+  } catch (error: any) {
+    return c.json({ error: 'Failed to send reminder email', message: error.message }, 500);
+  }
+});
+
 // Validate Institution Code Endpoint (Secure validation on the server)
 app.post('/make-server-fc8eb847/institutions/validate-code', async (c) => {
   try {
@@ -2998,6 +3094,50 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
   } catch (error) {
     console.log(`Error fetching supervised employees: ${error}`);
     return c.json({ error: 'Failed to fetch employees' }, 500);
+  }
+});
+
+// Remove an employee from an organization
+app.post('/make-server-fc8eb847/supervisor/employees/remove', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { employeeId } = await c.req.json();
+    if (!employeeId) {
+      return c.json({ error: 'Missing employee ID' }, 400);
+    }
+
+    const supervisorProfile = await kv.get(`user:${user.id}`);
+    if (!supervisorProfile || !supervisorProfile.organizationCode) {
+      return c.json({ error: 'Supervisor profile or organization code not found' }, 404);
+    }
+
+    const employeeProfile = await kv.get(`user:${employeeId}`);
+    if (!employeeProfile) {
+      return c.json({ error: 'Employee not found' }, 404);
+    }
+
+    // Verify employee belongs to supervisor's org
+    if (employeeProfile.organizationCode !== supervisorProfile.organizationCode) {
+      return c.json({ error: 'Unauthorized to remove this employee' }, 403);
+    }
+
+    // Remove the organization link
+    const updatedProfile = {
+      ...employeeProfile,
+      organizationCode: null,
+      supervisorId: null
+    };
+    
+    await kv.set(`user:${employeeId}`, updatedProfile);
+
+    return c.json({ success: true, message: 'Employee removed from organization' });
+  } catch (error) {
+    console.log(`Error removing employee: ${error}`);
+    return c.json({ error: 'Failed to remove employee' }, 500);
   }
 });
 
