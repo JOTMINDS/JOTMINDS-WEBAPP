@@ -57,6 +57,10 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
       setPhone(user.phone || '');
       setSecondaryEmail(user.secondaryEmail || '');
       setSecondaryPhone(user.secondaryPhone || '');
+      setOrgName(user.institutionName || user.organizationName || '');
+      setOrgType(user.institutionType || user.organizationType || '');
+      setOrgSector(user.industrySector || '');
+      setLogoUrl(user.logoUrl || '');
       setError('');
       setSuccess('');
       if (isOrg) {
@@ -64,6 +68,12 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
       }
     }
   }, [isOpen, user]);
+
+  const roleTitleText = isOrg ? "Assign Supervisors" : "Assign Administrators";
+  const rolePlaceholderText = isOrg ? "manager@yourcompany.com" : "teacher@yourschool.edu";
+  const roleDescriptionText = isOrg 
+    ? "This user will be elevated to an Organization Supervisor and granted full dashboard access."
+    : "This user will be elevated to an Institution Administrator and granted full dashboard access.";
 
   if (!isOpen) return null;
 
@@ -268,19 +278,19 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
 
                 <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
                   <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4" /> Assign Administrators
+                    <ShieldCheck className="h-4 w-4" /> {roleTitleText}
                   </h3>
                   <form onSubmit={handleAssignAdmin} className="flex items-end gap-3">
                     <div className="flex-1 space-y-2">
                       <Label htmlFor="adminEmail">User Email Address</Label>
-                      <Input id="adminEmail" type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="teacher@yourschool.edu" required />
+                      <Input id="adminEmail" type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder={rolePlaceholderText} required />
                     </div>
                     <Button type="submit" variant="secondary" disabled={isAssigning || !adminEmail}>
                       {isAssigning ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Assign Role'}
                     </Button>
                   </form>
                   <p className="text-xs text-muted-foreground mt-2">
-                    This user will be elevated to an Institution Administrator and granted full dashboard access.
+                    {roleDescriptionText}
                   </p>
                 </div>
               </TabsContent>
