@@ -69,7 +69,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
     const inviteTokenParam = searchParams.get('inviteToken');
     const urlRole = searchParams.get('role');
 
-    if (mode === 'signup' || inviteTokenParam) {
+    if (mode === 'signup' || inviteTokenParam || code) {
       setIsLogin(false);
     }
     if (code) {
@@ -124,7 +124,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
       };
       processToken().catch(console.error);
     }
-    if (urlRole && (urlRole === 'teacher' || urlRole === 'student')) {
+    if (urlRole && (urlRole === 'teacher' || urlRole === 'student' || urlRole === 'professional')) {
       setRole(urlRole);
     }
   }, []);
