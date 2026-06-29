@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
@@ -15,6 +15,8 @@ import {
 } from 'recharts';
 import { getSchoolTeachers, getUserJotsCode } from '../utils/jotsCode';
 import { getAssessmentsByUserId } from '../utils/storage';
+import { getAllAssessmentResults } from '../utils/api';
+import { normalizeServerResults } from '../utils/assessmentApi';
 
 interface SchoolTeacherStylesViewProps {
   admin: User;
@@ -68,24 +70,24 @@ interface TeacherData {
   completedCount: number; // 0-4 (teaching + 3 core)
 }
 
-function extractTeaching(user: User): TeachingStyleData | null {
-  const a = getAssessmentsByUserId(user.id).filter((x: any) => x.type === 'teaching-style' && x.completedAt && x.score?.['teaching-style'])
+function extractTeaching(assessments: any[]): TeachingStyleData | null {
+  const a = assessments.filter((x: any) => x.type === 'teaching-style' && x.completedAt && x.score?.['teaching-style'])
     .sort((a: any, b: any) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   if (!a) return null;
   const ts = a.score['teaching-style'];
   return { primaryStyle: ts.primaryStyle ?? '—', secondaryStyle: ts.secondaryStyle ?? '—', axes: ts.scores ?? {} };
 }
 
-function extractLearning(user: User): LearningStyleData | null {
-  const a = getAssessmentsByUserId(user.id).filter((x: any) => x.type === 'kolb' && x.completedAt && x.score?.kolb)
+function extractLearning(assessments: any[]): LearningStyleData | null {
+  const a = assessments.filter((x: any) => x.type === 'kolb' && x.completedAt && x.score?.kolb)
     .sort((a: any, b: any) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   if (!a) return null;
   const k = a.score.kolb;
   return { style: k.style, scores: { CE: k.scores.CE ?? 0, RO: k.scores.RO ?? 0, AC: k.scores.AC ?? 0, AE: k.scores.AE ?? 0 } };
 }
 
-function extractThinking(user: User): ThinkingStyleData | null {
-  const all = getAssessmentsByUserId(user.id).filter((x: any) => x.completedAt && x.score);
+function extractThinking(assessments: any[]): ThinkingStyleData | null {
+  const all = assessments.filter((x: any) => x.completedAt && x.score);
   for (const type of ['sternberg', 'adult-thinking', 'shs-thinking', 'jhs-thinking']) {
     const a = all.filter((x: any) => x.type === type).sort((a: any, b: any) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
     if (!a) continue;
@@ -100,8 +102,8 @@ function extractThinking(user: User): ThinkingStyleData | null {
   return null;
 }
 
-function extractDecision(user: User): DecisionStyleData | null {
-  const a = getAssessmentsByUserId(user.id).filter((x: any) => x.type === 'dual-process' && x.completedAt && x.score?.dualProcess)
+function extractDecision(assessments: any[]): DecisionStyleData | null {
+  const a = assessments.filter((x: any) => x.type === 'dual-process' && x.completedAt && x.score?.dualProcess)
     .sort((a: any, b: any) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   if (!a) return null;
   const d = a.score.dualProcess;
@@ -111,11 +113,11 @@ function extractDecision(user: User): DecisionStyleData | null {
   };
 }
 
-function buildTeacherData(user: User): TeacherData {
-  const teaching = extractTeaching(user);
-  const learning = extractLearning(user);
-  const thinking = extractThinking(user);
-  const decision = extractDecision(user);
+function buildTeacherData(user: User, assessments: any[]): TeacherData {
+  const teaching = extractTeaching(assessments);
+  const learning = extractLearning(assessments);
+  const thinking = extractThinking(assessments);
+  const decision = extractDecision(assessments);
   const completedCount = [teaching, learning, thinking, decision].filter(Boolean).length;
   return { user, teaching, learning, thinking, decision, completedCount };
 }
@@ -251,7 +253,46 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
 
   const jotsCode = useMemo(() => getUserJotsCode(admin), [admin]);
   const allTeachers = useMemo(() => providedTeachers || getSchoolTeachers(admin), [admin, providedTeachers]);
-  const allData = useMemo(() => allTeachers.map(buildTeacherData), [allTeachers]);
+
+  // Teacher assessments live in the server KV, not the admin's local storage.
+  // Fetch them in one batch and group by teacher id.
+  const [serverByUser, setServerByUser] = useState<Record<string, any[]>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const ids = allTeachers.map(t => t.id).filter(Boolean);
+    if (ids.length === 0) { setServerByUser({}); setLoading(false); return; }
+    setLoading(true);
+    (async () => {
+      try {
+        const res = await getAllAssessmentResults(ids);
+        const normalized = res?.success ? normalizeServerResults(res.results || []) : [];
+        const grouped: Record<string, any[]> = {};
+        for (const a of normalized) {
+          if (!a.userId) continue;
+          (grouped[a.userId] ??= []).push(a);
+        }
+        if (!cancelled) setServerByUser(grouped);
+      } catch (e) {
+        console.error('[SchoolTeacherStyles] Failed to load teacher results:', e);
+        if (!cancelled) setServerByUser({});
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [allTeachers]);
+
+  // Merge server results with any local assessments (server takes precedence by type).
+  const allData = useMemo(() => allTeachers.map(t => {
+    const server = serverByUser[t.id] || [];
+    const local = getAssessmentsByUserId(t.id) || [];
+    const byType = new Map<string, any>();
+    for (const a of local) if (a?.type) byType.set(a.type, a);
+    for (const a of server) if (a?.type) byType.set(a.type, a); // server overrides
+    return buildTeacherData(t, Array.from(byType.values()));
+  }), [allTeachers, serverByUser]);
 
   const teachers = useMemo(() => {
     if (!search) return allData;
@@ -340,6 +381,13 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+        {loading && (
+          <div className="flex items-center justify-center gap-3 py-4 text-gray-500">
+            <div className="w-4 h-4 border-2 border-gray-300 border-t-[#5B7DB1] rounded-full animate-spin" />
+            <span className="text-sm">Loading teacher assessments…</span>
+          </div>
+        )}
 
         {/* Jots Code */}
         <div className="rounded-2xl p-5 text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>

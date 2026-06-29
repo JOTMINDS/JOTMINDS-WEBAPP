@@ -275,6 +275,96 @@ export const submitAssessmentWithServerScoring = async (
 /**
  * Fetch all assessment results for the currently logged-in user from the server
  */
+/**
+ * Normalize raw server assessment-result records (`result:{userId}:{type}`, as
+ * returned by `/assessment/results`) into the local `Assessment` shape used
+ * across the dashboards:
+ *   { id, userId, type, responses, score: { kolb|sternberg|dualProcess|'teaching-style': {...} }, completedAt, completed, fromServer }
+ *
+ * Handles the learning|thinking|decision -> kolb|sternberg|dual-process remap,
+ * reconstructs kolb CE/RO/AC/AE when only style buckets are present, and passes
+ * teaching-style (and any other type) through under its own key. Tolerant of a
+ * missing/stringified `results` payload and of the legacy `type` field name.
+ */
+export const normalizeServerResults = (rawResults: any[]): any[] => {
+  if (!Array.isArray(rawResults)) return [];
+
+  const capitalize = (str: string) => {
+    if (!str) return 'Unknown';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  return rawResults.map((r: any) => {
+    let type = r.assessmentType || r.type;
+    if (type === 'learning') type = 'kolb';
+    else if (type === 'thinking') type = 'sternberg';
+    else if (type === 'decision') type = 'dual-process';
+
+    let res = r.results || {};
+    if (typeof res === 'string') {
+      try { res = JSON.parse(res); } catch { res = {}; }
+    }
+    const rawScores = res.scores || res || {};
+    const scoreObj: any = {};
+
+    if (type === 'kolb') {
+      const style = capitalize(res.dominantStyle || res.style || 'Unknown');
+
+      // Reconstruct CE, RO, AC, AE from style scores when not stored directly
+      const totalQ = res.totalQuestions || 12;
+      const maxPerStyle = (totalQ / 4) * 5; // e.g. 15 for 12 questions
+
+      const diverging = rawScores.Diverging || rawScores.diverging || 0;
+      const accommodating = rawScores.Accommodating || rawScores.accommodating || 0;
+      const assimilating = rawScores.Assimilating || rawScores.assimilating || 0;
+      const converging = rawScores.Converging || rawScores.converging || 0;
+
+      const ce = rawScores.CE !== undefined ? rawScores.CE : Math.round(((diverging + accommodating) / (maxPerStyle * 2)) * 48);
+      const ro = rawScores.RO !== undefined ? rawScores.RO : Math.round(((diverging + assimilating) / (maxPerStyle * 2)) * 48);
+      const ac = rawScores.AC !== undefined ? rawScores.AC : Math.round(((assimilating + converging) / (maxPerStyle * 2)) * 48);
+      const ae = rawScores.AE !== undefined ? rawScores.AE : Math.round(((accommodating + converging) / (maxPerStyle * 2)) * 48);
+
+      scoreObj.kolb = {
+        style,
+        scores: { CE: ce, RO: ro, AC: ac, AE: ae, Diverging: diverging, Accommodating: accommodating, Assimilating: assimilating, Converging: converging },
+      };
+    } else if (type === 'sternberg') {
+      const style = capitalize(res.dominantStyle || res.style || 'Unknown');
+      scoreObj.sternberg = {
+        style,
+        scores: {
+          analytical: rawScores.analytical !== undefined ? rawScores.analytical : (rawScores.Analytical || 0),
+          creative: rawScores.creative !== undefined ? rawScores.creative : (rawScores.Creative || 0),
+          practical: rawScores.practical !== undefined ? rawScores.practical : (rawScores.Practical || 0),
+        },
+      };
+    } else if (type === 'dual-process') {
+      const style = capitalize(res.dominantStyle || res.style || 'Unknown');
+      scoreObj.dualProcess = {
+        style,
+        scores: {
+          system1: rawScores.system1 !== undefined ? rawScores.system1 : (rawScores.System1 || rawScores.intuitive || rawScores.Intuitive || 0),
+          system2: rawScores.system2 !== undefined ? rawScores.system2 : (rawScores.System2 || rawScores.reflective || rawScores.Reflective || 0),
+        },
+      };
+    } else {
+      // teaching-style and any other type: pass results through under its own key
+      scoreObj[type] = res;
+    }
+
+    return {
+      id: r.id || r.resultKey || `server-${type}-${r.completedAt}`,
+      userId: r.userId,
+      type,
+      responses: [],
+      score: scoreObj,
+      completedAt: r.completedAt,
+      completed: true,
+      fromServer: true,
+    };
+  });
+};
+
 export const fetchMyAssessmentResults = async (): Promise<any[]> => {
   try {
     const response = await fetch(`${BASE_URL}/assessment/results`, {
