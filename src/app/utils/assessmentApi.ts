@@ -307,6 +307,24 @@ export const normalizeServerResults = (rawResults: any[]): any[] => {
     const rawScores = res.scores || res || {};
     const scoreObj: any = {};
 
+    // Some submissions store the full score object already keyed by framework
+    // (e.g. results = { dualProcess: { style, scores } } or { kolb: {...} }).
+    // In that case use it directly instead of reconstructing from flat scores.
+    const canonicalKey = type === 'dual-process' ? 'dualProcess' : type;
+    if (res && typeof res === 'object' && res[canonicalKey]) {
+      scoreObj[canonicalKey] = res[canonicalKey];
+      return {
+        id: r.id || r.resultKey || `server-${type}-${r.completedAt}`,
+        userId: r.userId,
+        type,
+        responses: [],
+        score: scoreObj,
+        completedAt: r.completedAt,
+        completed: true,
+        fromServer: true,
+      };
+    }
+
     if (type === 'kolb') {
       const style = capitalize(res.dominantStyle || res.style || 'Unknown');
 
