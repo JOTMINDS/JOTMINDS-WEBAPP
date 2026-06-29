@@ -1,7 +1,11 @@
 -- Create role_profiles table for Cognitive Role Fit System
+-- Note: org_id is a free-form text identifier (not a FK to institutions) so the
+-- same table can back both educational institutions and corporate organizations.
+-- Access is enforced at the edge-function layer (service role), so RLS is permissive.
 create table if not exists public.role_profiles (
   id uuid primary key default gen_random_uuid(),
-  institution_id uuid references public.institutions(id) on delete cascade,
+  org_id text,
+  created_by uuid references auth.users(id),
   title text not null,
   description text,
   cognitive_demands jsonb not null default '{}'::jsonb,
@@ -12,21 +16,9 @@ create table if not exists public.role_profiles (
 -- Enable RLS
 alter table public.role_profiles enable row level security;
 
--- Policies
-create policy "role_profiles_read_all" on public.role_profiles for select
-  using (
-    exists (
-      select 1 from public.institution_members
-      where institution_id = role_profiles.institution_id and user_id = auth.uid()
-    )
-    or
-    public.is_institution_admin(role_profiles.institution_id)
-  );
-
-create policy "role_profiles_admin_all" on public.role_profiles for all
-  using (
-    public.is_institution_admin(institution_id)
-  );
+-- Permissive policy: authorization handled by the edge function (service role)
+create policy "role_profiles_all" on public.role_profiles for all
+  using (true);
 
 -- Create cognitive_role_fit_scores table to cache candidate match scores
 create table if not exists public.cognitive_role_fit_scores (
@@ -44,22 +36,6 @@ create table if not exists public.cognitive_role_fit_scores (
 -- Enable RLS
 alter table public.cognitive_role_fit_scores enable row level security;
 
--- Policies for fit scores
-create policy "fit_scores_read_admin" on public.cognitive_role_fit_scores for select
-  using (
-    exists (
-      select 1 from public.role_profiles rp
-      where rp.id = role_id and public.is_institution_admin(rp.institution_id)
-    )
-  );
-
-create policy "fit_scores_read_candidate" on public.cognitive_role_fit_scores for select
-  using (candidate_id = auth.uid());
-
-create policy "fit_scores_write_admin" on public.cognitive_role_fit_scores for all
-  using (
-    exists (
-      select 1 from public.role_profiles rp
-      where rp.id = role_id and public.is_institution_admin(rp.institution_id)
-    )
-  );
+-- Permissive policy: authorization handled by the edge function (service role)
+create policy "fit_scores_all" on public.cognitive_role_fit_scores for all
+  using (true);
