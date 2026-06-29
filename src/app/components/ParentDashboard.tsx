@@ -519,8 +519,12 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                           <CardHeader>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#6B4C9A] to-[#5B7DB1] flex items-center justify-center text-white text-lg font-bold">
-                                  {child.name.charAt(0)}
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#6B4C9A] to-[#5B7DB1] flex items-center justify-center text-white text-lg font-bold overflow-hidden">
+                                  {child.avatarUrl ? (
+                                    <img src={child.avatarUrl} alt={`${child.name}'s photo`} className="w-full h-full object-cover" />
+                                  ) : (
+                                    child.name.charAt(0)
+                                  )}
                                 </div>
                                 <div>
                                   <CardTitle className="text-lg">{child.name}</CardTitle>
