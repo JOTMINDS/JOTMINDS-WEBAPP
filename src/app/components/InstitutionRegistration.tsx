@@ -8,7 +8,7 @@ import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Building2, Mail, Phone,
-  Globe, MapPin, Upload, Copy, Share2, Loader2, AlertCircle,
+  Globe, MapPin, Upload, Copy, Share2, Loader, AlertCircle,
   QrCode, Users, Shield
 } from 'lucide-react';
 import {
@@ -462,7 +462,7 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
                     </Badge>
                   ) : (
                     <Button type="button" variant="outline" size="sm" onClick={sendEmailOTP} disabled={sendingEmail}>
-                      {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : emailSent ? 'Resend Code' : 'Send Code'}
+                      {sendingEmail ? <Loader className="h-4 w-4 animate-spin" /> : emailSent ? 'Resend Code' : 'Send Code'}
                     </Button>
                   )}
                 </div>
@@ -476,7 +476,7 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
                       disabled={verifyingEmail}
                     />
                     <Button type="button" onClick={verifyEmailOTP} disabled={verifyingEmail || !emailOTP}>
-                      {verifyingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
+                      {verifyingEmail ? <Loader className="h-4 w-4 animate-spin" /> : 'Verify'}
                     </Button>
                   </div>
                 )}
@@ -547,7 +547,7 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
                     <p className="text-xs text-gray-400 mb-3">Supported: JPG, PNG, SVG · Max display: 200×200px</p>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => logoRef.current?.click()} disabled={loading}>
-                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+                        {loading ? <Loader className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
                         {logo ? 'Change Logo' : 'Upload Logo'}
                       </Button>
                       {logo && <Button size="sm" variant="ghost" onClick={() => setLogo('')} className="text-red-500">Remove</Button>}
@@ -585,7 +585,7 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
               <div className="flex gap-3">
                 <Button variant="outline" onClick={prev} className="flex-1">Back</Button>
                 <Button className="flex-1" style={{ backgroundColor: '#5B7DB1' }} onClick={createAndFinish} disabled={loading}>
-                  {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : <>Complete Registration <ArrowRight className="w-4 h-4 ml-2" /></>}
+                  {loading ? <><Loader className="w-4 h-4 mr-2 animate-spin" />Creating...</> : <>Complete Registration <ArrowRight className="w-4 h-4 ml-2" /></>}
                 </Button>
               </div>
             </CardContent>

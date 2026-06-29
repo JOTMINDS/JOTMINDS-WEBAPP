@@ -5,7 +5,7 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Upload, Loader2, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, Loader, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
 import {
   Institution,
   InstitutionType,
@@ -199,7 +199,7 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
           <div>
             <div className="flex gap-2 mt-1">
               <Button size="sm" variant="outline" onClick={() => logoRef.current?.click()} disabled={logoLoading}>
-                {logoLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+                {logoLoading ? <Loader className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
                 {institution.logo ? 'Change' : 'Upload'} Logo
               </Button>
               {institution.logo && (
@@ -365,7 +365,7 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
                   Cancel
                 </Button>
                 <Button style={{ backgroundColor: '#5B7DB1' }} onClick={handleVerifyOtp} disabled={verifyingOtp}>
-                  {verifyingOtp ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  {verifyingOtp ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Verify & Save
                 </Button>
               </div>

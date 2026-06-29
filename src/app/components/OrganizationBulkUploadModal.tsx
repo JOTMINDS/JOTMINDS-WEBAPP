@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Download, Upload, Loader2 } from 'lucide-react';
+import { Download, Upload, Loader } from 'lucide-react';
 import { projectId } from '../utils/supabase/info';
 
 interface OrganizationBulkUploadModalProps {
@@ -127,7 +127,7 @@ export function OrganizationBulkUploadModal({
 
         {isUploading ? (
           <div className="border-2 border-gray-200 rounded-lg p-6 text-center space-y-3">
-            <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto" />
+            <Loader className="w-8 h-8 text-purple-600 animate-spin mx-auto" />
             <p className="text-sm font-medium text-gray-600">
               Sending Invitations... {progress} / {total}
             </p>

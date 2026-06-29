@@ -340,7 +340,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
             <CardContent className="p-0">
                 <ScrollArea className="h-[400px]">
                     <div className="divide-y">
-                        {filteredProfessionals.map((member) => (
+                        {filteredList.map((member) => (
                             <div key={member.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                                 <div className="flex items-center gap-4">
                                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
@@ -366,7 +366,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
                                 </div>
                             </div>
                         ))}
-                        {filteredProfessionals.length === 0 && (
+                        {filteredList.length === 0 && (
                             <div className="text-center py-8 text-muted-foreground">
                                 No members found matching your criteria.
                             </div>

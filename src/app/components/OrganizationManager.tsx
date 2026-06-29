@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Alert, AlertDescription } from './ui/alert';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getAuthToken } from '../utils/api';
-import { Loader2, Plus, Trash2, Copy, CheckCircle2, AlertCircle, Building2 } from 'lucide-react';
+import { Loader, Plus, Trash2, Copy, CheckCircle2, AlertCircle, Building2 } from 'lucide-react';
 
 interface Organization {
   code: string;
@@ -222,7 +222,7 @@ export function OrganizationManager() {
             <Button type="submit" disabled={creating || !newOrgName.trim()}>
               {creating ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
                   Creating...
                 </>
               ) : (
@@ -260,7 +260,7 @@ export function OrganizationManager() {
                 disabled={loading}
               >
                 {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader className="h-4 w-4 animate-spin" />
                 ) : (
                   'Refresh'
                 )}
@@ -269,7 +269,7 @@ export function OrganizationManager() {
 
             {loading && organizations.length === 0 ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : organizations.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

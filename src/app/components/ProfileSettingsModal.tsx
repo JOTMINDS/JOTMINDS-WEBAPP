@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, User, Phone, Mail, Save, Loader2, Building2, Upload, Link as LinkIcon, Power, PowerOff, ShieldCheck } from 'lucide-react';
+import { X, User, Phone, Mail, Save, Loader, Building2, Upload, Link as LinkIcon, Power, PowerOff, ShieldCheck } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -216,7 +216,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                 )}
                 <div className="flex justify-end pt-4">
                   <Button type="submit" disabled={isLoading}>
-                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Personal Info</>}
+                    {isLoading ? <><Loader className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Personal Info</>}
                   </Button>
                 </div>
               </form>
@@ -271,7 +271,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
 
                   <div className="flex justify-end pt-2">
                     <Button type="submit" disabled={isLoading || isUploading}>
-                      {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Institution Profile</>}
+                      {isLoading ? <><Loader className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Institution Profile</>}
                     </Button>
                   </div>
                 </form>
@@ -286,7 +286,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                       <Input id="adminEmail" type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder={rolePlaceholderText} required />
                     </div>
                     <Button type="submit" variant="secondary" disabled={isAssigning || !adminEmail}>
-                      {isAssigning ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Assign Role'}
+                      {isAssigning ? <Loader className="h-4 w-4 animate-spin" /> : 'Assign Role'}
                     </Button>
                   </form>
                   <p className="text-xs text-muted-foreground mt-2">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Mail, Loader2, AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
+import { ArrowLeft, Mail, Loader, AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from './ui/card';
 import { Input } from './ui/input';
@@ -160,7 +160,7 @@ export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormPro
                   <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader className="mr-2 h-4 w-4 animate-spin" />
                         Verifying...
                       </>
                     ) : (
@@ -217,7 +217,7 @@ export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormPro
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader className="mr-2 h-4 w-4 animate-spin" />
                       Sending code...
                     </>
                   ) : (

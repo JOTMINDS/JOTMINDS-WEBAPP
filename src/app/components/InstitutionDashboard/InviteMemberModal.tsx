@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { inviteMember } from '../../utils/institution';
 import { sendEmail } from '../../utils/api';
 
@@ -84,7 +84,7 @@ export function InviteMemberModal({
           <div className="flex gap-3 justify-end mt-6">
             <Button variant="ghost" onClick={onClose} disabled={isInviting}>Cancel</Button>
             <Button style={{ backgroundColor: '#6B4C9A' }} onClick={handleInvite} disabled={isInviting}>
-              {isInviting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {isInviting ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
               Send Invite
             </Button>
           </div>
