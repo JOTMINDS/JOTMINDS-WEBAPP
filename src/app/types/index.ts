@@ -57,6 +57,7 @@ export interface User {
   assessments?: Assessment[]; // Full assessment objects (legacy)
   assessmentsCompleted?: string[]; // Array of completed assessment types (backend standard)
   reviews?: SupervisorReviewData[];
+  avatarUrl?: string; // Profile photo (data URL) — shown to the user and their linked parent
 }
 
 export interface Assessment {

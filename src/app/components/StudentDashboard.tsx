@@ -91,6 +91,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
   const [showingBrainGym, setShowingBrainGym] = useState(false);
   const [brainGymResults, setBrainGymResults] = useState<DailyChallengeResults | null>(null);
   const [brainGymProgress, setBrainGymProgress] = useState(() => getBrainGymProgress(user.id));
+  const [avatarUrl, setAvatarUrl] = useState<string>(user.avatarUrl || '');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showingSkillBuilder, setShowingSkillBuilder] = useState(false);
@@ -591,8 +592,12 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
           <div className="flex items-center gap-3">
             {/* Avatar with Hover Tooltip */}
             <div className="relative group">
-              <div className="w-12 h-12 rounded-full gradient-aqua-violet flex items-center justify-center text-white text-xl font-bold cursor-pointer transition-transform group-hover:scale-105">
-                {user.name.charAt(0)}
+              <div className="w-12 h-12 rounded-full gradient-aqua-violet flex items-center justify-center text-white text-xl font-bold cursor-pointer transition-transform group-hover:scale-105 overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={`${user.name}'s photo`} className="w-full h-full object-cover" />
+                ) : (
+                  user.name.charAt(0)
+                )}
               </div>
               
               {/* Tooltip */}
@@ -1947,13 +1952,14 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
 
           <FeedbackTab />
 
-          <ProfileTab 
+          <ProfileTab
             user={user}
             reflections={reflections}
             assessments={assessments}
             brainGymProgress={brainGymProgress}
             setActiveTab={setActiveTab}
             calculateAge={calculateAge}
+            onAvatarChange={setAvatarUrl}
           />
           
           {/* School Profile Tab */}
