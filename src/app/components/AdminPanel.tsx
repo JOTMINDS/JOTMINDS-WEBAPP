@@ -8,7 +8,7 @@ import { QuestionBankAudit } from './QuestionBankAudit';
 import { QuestionSeeder } from './QuestionSeeder';
 import { AdminDiagnostic } from './AdminDiagnostic';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader, AlertCircle } from 'lucide-react';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -28,7 +28,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+          <Loader className="w-12 h-12 text-indigo-600 animate-spin" />
           <h3 className="text-xl font-medium text-slate-700">Loading Admin Portal...</h3>
         </div>
       </div>

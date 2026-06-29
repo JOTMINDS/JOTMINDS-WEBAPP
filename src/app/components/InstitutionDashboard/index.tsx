@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import {
-  ArrowLeft, Building2, QrCode, Users, BarChart3, Download, Settings, Shield, Loader2, LogOut
+  ArrowLeft, Building2, QrCode, Users, BarChart3, Download, Settings, Shield, Loader, LogOut
 } from 'lucide-react';
 import { User } from '../../types';
 import {
@@ -131,35 +131,6 @@ export function InstitutionDashboard({
       const allUsers = getAllUsers();
       setAllPlatformUsers(allUsers);
 
-      const currentMembers = await getInstitutionMembers(institution.id);
-      let changed = false;
-
-      // Get current teachers/admins to match their students
-      const institutionTeacherIds = currentMembers
-        .filter(m => m.role === 'teacher' || m.role === 'admin')
-        .map(m => m.userId);
-
-      // Auto-sync users who registered with this institution's code, name, or were added by an institution teacher
-      for (const u of allUsers) {
-        const matchesName = u.organizationName === institution.name || u.school === institution.name;
-        const matchesTeacher = u.role === 'student' && u.teacherId && institutionTeacherIds.includes(u.teacherId);
-        
-        if ((matchesName || matchesTeacher) && (u.role === 'teacher' || u.role === 'student')) {
-          if (!currentMembers.some(m => m.userId === u.id)) {
-            await addMember(institution.id, {
-              userId: u.id,
-              userName: u.name,
-              userEmail: u.email,
-              userPhone: u.phone,
-              role: u.role,
-              joinedViaCode: u.organizationCode || institution.code,
-              status: 'pending'
-            });
-            changed = true;
-          }
-        }
-      }
-
       const updatedMembers = await getInstitutionMembers(institution.id);
       if (user.role === 'teacher') {
         const teacherStudents = updatedMembers.filter(m => {
@@ -217,7 +188,7 @@ export function InstitutionDashboard({
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#5B7DB1]" />
+        <Loader className="w-8 h-8 animate-spin text-[#5B7DB1]" />
       </div>
     );
   }

@@ -34,21 +34,26 @@ export function calculateProfessionalCognitiveProfile(
   responses: ProfessionalAssessmentResponses
 ): ProfessionalCognitiveProfile {
   
+  // Provide fallbacks to empty arrays to prevent reduce errors on corrupted data
+  const learningResponses = Array.isArray(responses?.learning) ? responses.learning : [];
+  const thinkingResponses = Array.isArray(responses?.thinking) ? responses.thinking : [];
+  const decisionMakingResponses = Array.isArray(responses?.decisionMaking) ? responses.decisionMaking : [];
+  
   // Calculate Learning Style
-  const learningScore = responses.learning.reduce((sum, val) => sum + val, 0);
+  const learningScore = learningResponses.reduce((sum, val) => sum + val, 0);
   const learningStyle = getLearningStyle(learningScore);
   
   // Calculate Thinking Style
-  const thinkingScore = responses.thinking.reduce((sum, val) => sum + val, 0);
+  const thinkingScore = thinkingResponses.reduce((sum, val) => sum + val, 0);
   const thinkingStyle = getThinkingStyle(thinkingScore);
   
   // Calculate Decision-Making Style
-  const decisionScore = responses.decisionMaking.reduce((sum, val) => sum + val, 0);
+  const decisionScore = decisionMakingResponses.reduce((sum, val) => sum + val, 0);
   const decisionStyle = getDecisionMakingStyle(decisionScore);
   
   // Calculate Motivation Style (if available)
   let motivationStyle = null;
-  if (responses.motivation && responses.motivation.length > 0) {
+  if (Array.isArray(responses?.motivation) && responses.motivation.length > 0) {
     const motivationScore = responses.motivation.reduce((sum, val) => sum + val, 0);
     motivationStyle = getMotivationStyle(motivationScore);
   }

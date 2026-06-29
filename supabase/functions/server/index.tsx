@@ -11,6 +11,10 @@ import cognitiveProfileRoutes from './cognitive-profile-routes.tsx';
 import careerMatchRoutes from './career-match-routes.tsx';
 import seedQuestionsRoutes from './seed-questions-routes.tsx';
 import aiRoutes from './ai-routes.tsx';
+import roleProfileRoutes from './role-profile-routes.tsx';
+import checkinRoutes from './checkin-routes.tsx';
+import roleFitRoutes from './role-fit-routes.tsx';
+import brainGymRoutes from './brain-gym-routes.tsx';
 
 import { rateLimiter } from 'npm:hono-rate-limiter';
 
@@ -37,6 +41,10 @@ app.route('/make-server-fc8eb847/cognitive-profile', cognitiveProfileRoutes);
 app.route('/make-server-fc8eb847/career', careerMatchRoutes);
 app.route('/make-server-fc8eb847/admin', seedQuestionsRoutes);
 app.route('/make-server-fc8eb847/ai', aiRoutes);
+app.route('/make-server-fc8eb847/role-profiles', roleProfileRoutes);
+app.route('/make-server-fc8eb847/checkin', checkinRoutes);
+app.route('/make-server-fc8eb847/role-fit', roleFitRoutes);
+app.route('/make-server-fc8eb847/brain-gym', brainGymRoutes);
 
 // Health check and diagnostics endpoint
 app.get('/make-server-fc8eb847/health', async (c) => {
@@ -72,17 +80,38 @@ app.get('/make-server-fc8eb847/health', async (c) => {
 // Send OTP Endpoint
 app.post('/make-server-fc8eb847/send-otp', async (c) => {
   try {
-    const { email, otp } = await c.req.json();
-    if (!email || !otp) {
-      return c.json({ error: 'Email and OTP required' }, 400);
+    const { email } = await c.req.json();
+    if (!email) {
+      return c.json({ error: 'Email required' }, 400);
     }
-    
-    // Store OTP in KV for secure verification
-    await kv.set(`otp:${email.toLowerCase()}`, {
-      otp: otp.trim(),
-      createdAt: Date.now()
+    const key = `otp:${email.toLowerCase()}`;
+
+    // Rate limit: 30s cooldown between sends, max 5 per hour per email.
+    const existing = await kv.get(key);
+    const now = Date.now();
+    if (existing) {
+      if (now - existing.createdAt < 30 * 1000) {
+        return c.json({ error: 'Please wait a moment before requesting another code.' }, 429);
+      }
+      const windowStart = existing.windowStart ?? existing.createdAt;
+      const sends = (now - windowStart < 60 * 60 * 1000) ? (existing.sends ?? 1) : 0;
+      if (sends >= 5) {
+        return c.json({ error: 'Too many codes requested. Try again later.' }, 429);
+      }
+    }
+
+    // Generate the OTP server-side so the client can never pre-set a known code.
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const windowStart = existing && (now - (existing.windowStart ?? existing.createdAt) < 60 * 60 * 1000)
+      ? (existing.windowStart ?? existing.createdAt)
+      : now;
+    await kv.set(key, {
+      otp,
+      createdAt: now,
+      windowStart,
+      sends: (existing && now - windowStart < 60 * 60 * 1000 ? (existing.sends ?? 0) : 0) + 1,
     });
-    
+
     const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -552,6 +581,142 @@ app.post('/make-server-fc8eb847/institutions/validate-code', async (c) => {
   }
 });
 
+// Get Institution Members Endpoint (Secure fetching bypassing RLS)
+app.get('/make-server-fc8eb847/institutions/members', async (c) => {
+  try {
+    const institutionId = c.req.query('id');
+    if (!institutionId) {
+      return c.json({ success: false, error: 'Missing institution id' }, 400);
+    }
+
+    // Verify auth
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401);
+    }
+
+    const supabase = getSupabaseClient(true);
+
+    // --- Auto-sync logic from KV ---
+    try {
+      const { data: institution } = await supabase.from('institutions').select('*').eq('id', institutionId).maybeSingle();
+      if (institution) {
+        const allUsers = await kv.getByPrefix('user:');
+        const { data: currentMembersList } = await supabase.from('institution_members').select('user_id').eq('institution_id', institutionId);
+        const currentMemberIds = new Set((currentMembersList || []).map(m => m.user_id));
+        
+        const { data: currentTeachers } = await supabase.from('institution_members').select('user_id').eq('institution_id', institutionId).in('role', ['teacher', 'admin']);
+        const institutionTeacherIds = new Set((currentTeachers || []).map(m => m.user_id));
+
+        const ops = [];
+        for (const u of allUsers) {
+          if (!u) continue;
+          const matchesName = u.organizationName === institution.name || u.school === institution.name;
+          const matchesTeacher = u.role === 'student' && u.teacherId && institutionTeacherIds.has(u.teacherId);
+          
+          if ((matchesName || matchesTeacher) && (u.role === 'teacher' || u.role === 'student')) {
+            if (!currentMemberIds.has(u.id)) {
+              console.log(`[Auto-sync] Adding ${u.email} to institution ${institution.name}`);
+              ops.push(supabase.from('institution_members').upsert({
+                user_id: u.id,
+                user_name: u.name || u.email,
+                user_email: u.email,
+                user_phone: u.phone || null,
+                role: u.role,
+                institution_id: institution.id,
+                joined_via_code: u.organizationCode || institution.code,
+                status: 'pending'
+              }, { onConflict: 'user_id, institution_id' }));
+              currentMemberIds.add(u.id);
+            }
+          }
+        }
+        if (ops.length > 0) {
+          await Promise.all(ops);
+        }
+      }
+    } catch (syncError) {
+      console.error('[Auto-sync] Error:', syncError);
+    }
+    // --- End Auto-sync ---
+
+    const { data: members, error } = await supabase
+      .from('institution_members')
+      .select('*')
+      .eq('institution_id', institutionId);
+
+    if (error) {
+      console.error('[institutions/members] DB Error:', error);
+      return c.json({ success: false, error: 'Failed to fetch members' }, 500);
+    }
+
+    const { data: invitations } = await supabase
+      .from('institution_invitations')
+      .select('*')
+      .eq('institution_id', institutionId);
+
+    return c.json({ success: true, members, invitations: invitations || [] });
+  } catch (error: any) {
+    console.error('[institutions/members] Error:', error);
+    return c.json({ success: false, error: 'Internal server error', message: error.message }, 500);
+  }
+});
+
+// Temporary debug route to diagnose school visibility issues
+app.get('/make-server-fc8eb847/test-debug-school', async (c) => {
+  const supabase = getSupabaseClient(true);
+  
+  // Find Mav School
+  const { data: schools } = await supabase.from('institutions').select('*').ilike('name', '%Mav%');
+  const mavSchool = schools && schools.length > 0 ? schools[0] : null;
+  
+  if (!mavSchool) {
+    return c.json({ error: 'Mav School not found' });
+  }
+
+  // Get members
+  const { data: members } = await supabase.from('institution_members').select('*').eq('institution_id', mavSchool.id);
+  
+  // Get invitations
+  const { data: invitations } = await supabase.from('institution_invitations').select('*').eq('institution_id', mavSchool.id);
+  
+  // Find the user in KV store to see their status
+  const allUsers = await kv.getByPrefix('user:');
+  const targetUsers = allUsers.filter((u: any) => 
+    u.email === 'edsmayne@gmail.com' || u.email === 'maynefingy@gmail.com'
+  );
+
+  const testUpserts = [];
+  const authStatus = [];
+  for (const u of targetUsers) {
+    if (u.role === 'teacher') {
+      const authUser = await supabase.auth.admin.getUserById(u.id);
+      authStatus.push({ email: u.email, authFound: !!authUser.data?.user, error: authUser.error?.message });
+      
+      const res = await supabase.from('institution_members').upsert({
+        user_id: u.id,
+        user_name: u.name || u.email,
+        user_email: u.email,
+        user_phone: u.phone || null,
+        role: u.role,
+        institution_id: mavSchool.id,
+        joined_via_code: u.organizationCode || mavSchool.code,
+        status: 'pending'
+      }, { onConflict: 'user_id, institution_id' });
+      testUpserts.push({ email: u.email, error: res.error });
+    }
+  }
+
+  return c.json({
+    school: mavSchool,
+    members: members || [],
+    invitations: invitations || [],
+    targetUsersInKV: targetUsers,
+    testUpsertErrors: testUpserts,
+    authStatus: authStatus
+  });
+});
+
 // Join Institution Endpoint (Secure joining bypassing RLS)
 app.post('/make-server-fc8eb847/institutions/join', async (c) => {
   try {
@@ -802,6 +967,48 @@ app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
   } catch (error: any) {
     console.error('[demote-member] Error:', error);
     return c.json({ error: `Server error: ${error.message || JSON.stringify(error)}` }, 500);
+  }
+});
+
+// Transfer a student to a different teacher
+app.post('/make-server-fc8eb847/institutions/transfer-student', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const { studentId, newTeacherId, newTeacherName, institutionId } = await c.req.json();
+    
+    const supabase = getSupabaseClient(true);
+
+    // Verify caller is an admin or the new teacher (simplifying authorization for now)
+    const { data: callerMember } = await supabase
+      .from('institution_members')
+      .select('role')
+      .eq('institution_id', institutionId)
+      .eq('user_id', user.id)
+      .single();
+    
+    if (callerMember?.role !== 'admin' && user.id !== 'admin-001' && user.id !== newTeacherId) {
+      return c.json({ error: 'Forbidden: Only admins can transfer students.' }, 403);
+    }
+    
+    // Get student profile from KV
+    const student = await kv.get(`user:${studentId}`);
+    if (!student || student.role !== 'student') {
+      return c.json({ error: 'Student not found' }, 404);
+    }
+    
+    // Update student's teacher reference in KV
+    student.teacherId = newTeacherId;
+    student.teacherName = newTeacherName;
+    
+    await kv.set(`user:${studentId}`, student);
+    
+    return c.json({ success: true, student });
+  } catch (error) {
+    console.error('Error transferring student:', error);
+    return c.json({ error: 'Failed to transfer student' }, 500);
   }
 });
 
@@ -1116,7 +1323,10 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         type: organizationType,
         industrySector: industrySector || null,
         createdAt: new Date().toISOString(),
-        createdBy: email
+        createdBy: email,
+        codeGeneratedAt: new Date().toISOString(),
+        codeExpiryDays: null,
+        isActive: true
       });
     } else if (organizationCode && !inviteToken) {
       if (organizationCode.toUpperCase().startsWith('CLASS-')) {
@@ -1132,6 +1342,17 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         // Professional, Teacher, or Student with Organization code
         const organization = await kv.get(`organization:${organizationCode}`);
         if (organization) {
+          if (organization.isActive === false) {
+            return c.json({ error: 'This organization code is currently inactive.' }, 400);
+          }
+          if (organization.codeExpiryDays && organization.codeGeneratedAt) {
+            const generatedAt = new Date(organization.codeGeneratedAt);
+            const expiryDate = new Date(generatedAt.getTime() + organization.codeExpiryDays * 24 * 60 * 60 * 1000);
+            if (new Date() > expiryDate) {
+              return c.json({ error: 'This organization code has expired.' }, 400);
+            }
+          }
+          
           finalOrgCode = organizationCode;
           finalOrgName = organization.name;
         } else {
@@ -1290,6 +1511,11 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       assessmentsCompleted: [],
       cognitiveProfile: null
     });
+
+    // Create fast lookup index for parent-student linking
+    if (email) {
+      await kv.set(`email:${email.toLowerCase()}`, data.user.id);
+    }
 
     // If admin, add to admin list
     if (email === 'Alex.Attachey@gmail.com') {
@@ -1944,15 +2170,39 @@ app.post('/make-server-fc8eb847/parent/link-child', async (c) => {
       }, 400);
     }
 
-    // Find child by email
-    const allUsers = await kv.getByPrefix('user:');
-    const child = allUsers.find((u: any) => 
-      u.email.toLowerCase() === childEmail.toLowerCase()
-    );
+    // RATE LIMITING
+    const rlKey = `rate_limit:${user.id}:link_child`;
+    const rlData = (await kv.get(rlKey)) || { count: 0 };
+    if (rlData.count >= 5) {
+      return c.json({ error: 'Too many link attempts. Please try again in an hour.' }, 429);
+    }
+
+    // FAST INDEX LOOKUP & SAFE FALLBACK
+    const searchEmail = childEmail.toLowerCase();
+    let childId = await kv.get(`email:${searchEmail}`);
+    let child = null;
+
+    if (childId) {
+      // Fast path
+      child = await kv.get(`user:${childId}`);
+    } else {
+      // Safe Fallback: O(N) scan
+      const allUsers = await kv.getByPrefix('user:');
+      child = allUsers.find((u: any) => u.email.toLowerCase() === searchEmail);
+      if (child) {
+        // Self-healing: create the index for future fast lookups
+        await kv.set(`email:${searchEmail}`, child.id);
+      }
+    }
 
     if (!child) {
+      // Increment rate limit on failure
+      await kv.set(rlKey, { count: rlData.count + 1 }, { expireIn: 3600000 }); // 1 hour TTL
       return c.json({ error: 'Student not found. Please check the email address.' }, 404);
     }
+
+    // Reset rate limit on success
+    await kv.del(rlKey);
 
     // FIX #1: Case-insensitive role check (fixes capitalized "Student" issue)
     if (child.role.toLowerCase() !== 'student') {
@@ -1993,11 +2243,11 @@ app.post('/make-server-fc8eb847/parent/link-child', async (c) => {
           pendingAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           reason: 'Explicit consent required - child is 11 years or older'
-        });
+        }, { expireIn: 604800000 }); // 7 days TTL
         console.log(`Pending consent created for child (age ${childAge}): ${consentKey}`);
       }
     } else {
-      // Age unknown - create pending consent to be safe
+        // Age unknown - create pending consent to be safe
       await kv.set(consentKey, {
         childId: child.id,
         parentId: user.id,
@@ -2006,7 +2256,7 @@ app.post('/make-server-fc8eb847/parent/link-child', async (c) => {
         pendingAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         reason: 'Age unknown - explicit consent required'
-      });
+      }, { expireIn: 604800000 }); // 7 days TTL
       console.log(`Pending consent created (age unknown): ${consentKey}`);
     }
 
@@ -2547,11 +2797,25 @@ app.post('/make-server-fc8eb847/access-request/create', async (c) => {
       return c.json({ error: 'Forbidden - Parent access required' }, 403);
     }
 
-    // Find child by email
-    const allUsers = await kv.getByPrefix('user:');
-    const child = allUsers.find((u: any) => 
-      u.email.toLowerCase() === childEmail.toLowerCase()
-    );
+    // Find child by email (using fast index if available)
+    let child = null;
+    const childId = await kv.get(`email:${childEmail.toLowerCase()}`);
+    if (childId) {
+      child = await kv.get(`user:${childId}`);
+    }
+    
+    // Fallback if index misses
+    if (!child) {
+      console.log(`[Access Request] Cache miss for ${childEmail}, falling back to full scan`);
+      const allUsers = await kv.getByPrefix('user:');
+      child = allUsers.find((u: any) => 
+        u.email && u.email.toLowerCase() === childEmail.toLowerCase()
+      );
+      if (child) {
+        // Auto-heal the index
+        await kv.set(`email:${childEmail.toLowerCase()}`, child.id);
+      }
+    }
 
     if (!child) {
       return c.json({ error: 'Student not found. Please check the email address.' }, 404);
@@ -2929,6 +3193,147 @@ app.post('/make-server-fc8eb847/access-request/revoke', async (c) => {
 // ============= SUPERVISOR ROUTES =============
 
 // Get supervised employees (for Supervisor role)
+// ==========================================
+// ORGANIZATION CODE MANAGEMENT ENDPOINTS
+// ==========================================
+
+app.get('/make-server-fc8eb847/supervisor/organization-code', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+    const userProfile = await kv.get(`user:${user.id}`);
+    if (!userProfile || !userProfile.organizationCode) {
+      return c.json({ error: 'Organization code not found' }, 404);
+    }
+
+    const orgCode = userProfile.organizationCode;
+    const organization = await kv.get(`organization:${orgCode}`);
+    
+    if (!organization) {
+      return c.json({ error: 'Organization details not found' }, 404);
+    }
+
+    // Default values if missing
+    if (organization.isActive === undefined) organization.isActive = true;
+    if (organization.codeExpiryDays === undefined) organization.codeExpiryDays = null;
+    if (!organization.codeGeneratedAt) organization.codeGeneratedAt = organization.createdAt || new Date().toISOString();
+
+    return c.json({
+      success: true,
+      organizationCode: orgCode,
+      codeGeneratedAt: organization.codeGeneratedAt,
+      codeExpiryDays: organization.codeExpiryDays,
+      isActive: organization.isActive
+    });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+app.post('/make-server-fc8eb847/supervisor/organization-code/regenerate', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+    const userProfile = await kv.get(`user:${user.id}`);
+    if (!userProfile || !userProfile.organizationCode) {
+      return c.json({ error: 'Organization not found' }, 404);
+    }
+
+    const oldOrgCode = userProfile.organizationCode;
+    const oldOrganization = await kv.get(`organization:${oldOrgCode}`);
+    if (!oldOrganization) {
+      return c.json({ error: 'Organization details not found' }, 404);
+    }
+
+    const newOrgCode = generateOrgCode();
+    
+    // Create new organization entry
+    const newOrganization = {
+      ...oldOrganization,
+      code: newOrgCode,
+      codeGeneratedAt: new Date().toISOString()
+    };
+    
+    await kv.set(`organization:${newOrgCode}`, newOrganization);
+    
+    // Delete old organization entry
+    await kv.del(`organization:${oldOrgCode}`);
+
+    // Update supervisor profile
+    userProfile.organizationCode = newOrgCode;
+    userProfile.jotsCode = newOrgCode;
+    await kv.set(`user:${user.id}`, userProfile);
+
+    // Update all existing professionals to new code
+    const allUsers = await kv.getByPrefix('user:');
+    for (const u of allUsers) {
+      if (u.organizationCode === oldOrgCode) {
+        u.organizationCode = newOrgCode;
+        if (u.jotsCode === oldOrgCode) u.jotsCode = newOrgCode;
+        await kv.set(`user:${u.id}`, u);
+      }
+    }
+
+    return c.json({
+      success: true,
+      organizationCode: newOrgCode,
+      codeGeneratedAt: newOrganization.codeGeneratedAt,
+      codeExpiryDays: newOrganization.codeExpiryDays,
+      isActive: newOrganization.isActive
+    });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+app.post('/make-server-fc8eb847/supervisor/organization-code/status', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+    const { isActive } = await c.req.json();
+    const userProfile = await kv.get(`user:${user.id}`);
+    const orgCode = userProfile?.organizationCode;
+    
+    if (!orgCode) return c.json({ error: 'Organization not found' }, 404);
+
+    const organization = await kv.get(`organization:${orgCode}`);
+    if (!organization) return c.json({ error: 'Organization details not found' }, 404);
+
+    organization.isActive = isActive;
+    await kv.set(`organization:${orgCode}`, organization);
+
+    return c.json({ success: true, isActive });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+app.post('/make-server-fc8eb847/supervisor/organization-code/expiry', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+    const { days } = await c.req.json();
+    const userProfile = await kv.get(`user:${user.id}`);
+    const orgCode = userProfile?.organizationCode;
+    
+    if (!orgCode) return c.json({ error: 'Organization not found' }, 404);
+
+    const organization = await kv.get(`organization:${orgCode}`);
+    if (!organization) return c.json({ error: 'Organization details not found' }, 404);
+
+    organization.codeExpiryDays = days;
+    await kv.set(`organization:${orgCode}`, organization);
+
+    return c.json({ success: true, codeExpiryDays: days });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
 app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
   try {
     const user = await verifyAuth(c.req.raw);
@@ -3005,16 +3410,18 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
     const allUsers = await kv.getByPrefix('user:');
     console.log('[supervisor/employees] Total users in KV:', allUsers.length);
     
-    // Filter users by organization code who are professionals
+    // Filter users by organization code who are professionals, supervisors, or organizations
     const employees = allUsers.filter((u: any) => {
       const normalizedRole = (u.role || '').toLowerCase();
-      const isProfessional = normalizedRole === 'professional' || 
+      const isValidMember = normalizedRole === 'professional' || 
         normalizedRole === 'professional/organization' ||
-        u.role === 'Professional/Organization';
-      const matches = u.organizationCode === orgCode && isProfessional && u.id !== supervisorId;
+        u.role === 'Professional/Organization' ||
+        normalizedRole === 'supervisor' ||
+        normalizedRole === 'organization';
+      const matches = u.organizationCode === orgCode && isValidMember;
       
       if (u.organizationCode === orgCode) {
-        console.log(`[supervisor/employees] User ${u.email} - orgCode match: ${u.organizationCode}, role: ${u.role} (normalized: ${normalizedRole}), isProfessional: ${isProfessional}, matches: ${matches}`);
+        console.log(`[supervisor/employees] User ${u.email} - orgCode match: ${u.organizationCode}, role: ${u.role} (normalized: ${normalizedRole}), isValidMember: ${isValidMember}, matches: ${matches}`);
       }
       
       return matches;

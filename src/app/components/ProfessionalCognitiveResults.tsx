@@ -1,3 +1,4 @@
+import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -174,156 +175,174 @@ export function ProfessionalCognitiveResults({
 
           <CardContent className="pt-8 space-y-8">
             {/* Three Core Dimensions */}
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-8">
               {/* Learning Style - Radar Chart */}
-              <Card className="border-2 border-cyan-200 dark:border-cyan-700 bg-gradient-to-br from-cyan-50/50 to-white dark:from-cyan-900/10 dark:to-gray-800">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Brain className="h-5 w-5 text-[#6B4C9A]" />
-                    <CardTitle className="text-lg text-[#6B4C9A] dark:text-cyan-300">Learning Preferences</CardTitle>
-                  </div>
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">{profile.learning.style}</div>
-                  <Badge variant="outline" className="text-xs w-fit">{profile.learning.anchors}</Badge>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {profile.learning.description}
-                  </p>
-                  
-                  {/* Radar Chart */}
-                  <div className="h-48 -mx-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={learningRadarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
-                        <PolarGrid stroke="hsl(var(--border))" />
-                        <PolarAngleAxis 
-                          dataKey="dimension" 
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                        />
-                        <PolarRadiusAxis 
-                          angle={90} 
-                          domain={[0, 100]}
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
-                        />
-                        <Radar 
-                          dataKey="value" 
-                          stroke="#6B4C9A" 
-                          fill="#6B4C9A"
-                          fillOpacity={0.4}
-                          strokeWidth={2}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#374151',
-                            color: '#ffffff',
-                            border: '1px solid #4B5563',
-                            borderRadius: '8px'
-                          }}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
+              <Card className="border-2 border-cyan-200 dark:border-cyan-700 bg-gradient-to-br from-cyan-50/50 to-white dark:from-cyan-900/10 dark:to-gray-800 overflow-hidden">
+                <div className="flex flex-col md:flex-row">
+                  <div className="flex-1">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Brain className="h-5 w-5 text-[#6B4C9A]" />
+                        <CardTitle className="text-lg text-[#6B4C9A] dark:text-cyan-300">Learning Preferences</CardTitle>
+                      </div>
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">{profile.learning.style}</div>
+                      <Badge variant="outline" className="text-xs w-fit">{profile.learning.anchors}</Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {profile.learning.description}
+                      </p>
+                    </CardContent>
                   </div>
                   
-                  <div className="text-center pt-2">
-                    <div className="text-2xl font-bold text-[#6B4C9A] dark:text-cyan-300">{profile.learning.score}/30</div>
-                    <div className="text-xs text-muted-foreground">Learning Score</div>
+                  <div className="flex-1 p-6 bg-white/40 dark:bg-black/20 border-t md:border-t-0 md:border-l border-cyan-100 dark:border-cyan-800 flex flex-col justify-center">
+                    {/* Radar Chart */}
+                    <div className="h-64 sm:h-72 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={learningRadarData} margin={{ top: 20, right: 35, bottom: 20, left: 35 }}>
+                          <PolarGrid stroke="hsl(var(--border))" />
+                          <PolarAngleAxis 
+                            dataKey="dimension" 
+                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                          />
+                          <PolarRadiusAxis 
+                            angle={90} 
+                            domain={[0, 100]}
+                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                          />
+                          <Radar 
+                            dataKey="value" 
+                            stroke="#6B4C9A" 
+                            fill="#6B4C9A"
+                            fillOpacity={0.4}
+                            strokeWidth={2}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: '#374151',
+                              color: '#ffffff',
+                              border: '1px solid #4B5563',
+                              borderRadius: '8px'
+                            }}
+                          />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="text-center pt-2">
+                      <div className="text-2xl font-bold text-[#6B4C9A] dark:text-cyan-300">{profile.learning.score}/30</div>
+                      <div className="text-xs text-muted-foreground">Learning Score</div>
+                    </div>
                   </div>
-                </CardContent>
+                </div>
               </Card>
 
               {/* Thinking Style - Gauge/Spectrum */}
-              <Card className="border-2 border-violet-200 dark:border-violet-700 bg-gradient-to-br from-violet-50/50 to-white dark:from-violet-900/10 dark:to-gray-800">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb className="h-5 w-5 text-[#7B61FF]" />
-                    <CardTitle className="text-lg text-[#7B61FF] dark:text-violet-300">Thinking Orientation</CardTitle>
+              <Card className="border-2 border-violet-200 dark:border-violet-700 bg-gradient-to-br from-violet-50/50 to-white dark:from-violet-900/10 dark:to-gray-800 overflow-hidden">
+                <div className="flex flex-col md:flex-row">
+                  <div className="flex-1">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Lightbulb className="h-5 w-5 text-[#7B61FF]" />
+                        <CardTitle className="text-lg text-[#7B61FF] dark:text-violet-300">Thinking Orientation</CardTitle>
+                      </div>
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">{profile.thinking.style}</div>
+                      <Badge variant="outline" className="text-xs w-fit">{profile.thinking.anchors}</Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {profile.thinking.description}
+                      </p>
+                    </CardContent>
                   </div>
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">{profile.thinking.style}</div>
-                  <Badge variant="outline" className="text-xs w-fit">{profile.thinking.anchors}</Badge>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {profile.thinking.description}
-                  </p>
                   
-                  {/* Gauge visualization */}
-                  <div className="py-6">
-                    <div className="relative h-32">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-3xl font-bold text-[#7B61FF] dark:text-violet-300">
-                            {profile.thinking.style.includes('Creative–Analytical') ? '⚖️' : 
-                             profile.thinking.style.includes('Analytical') ? '🔬' : '💡'}
+                  <div className="flex-1 p-6 bg-white/40 dark:bg-black/20 border-t md:border-t-0 md:border-l border-violet-100 dark:border-violet-800 flex flex-col justify-center">
+                    {/* Gauge visualization */}
+                    <div className="py-6">
+                      <div className="relative h-32">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="text-3xl font-bold text-[#7B61FF] dark:text-violet-300">
+                              {profile.thinking.style.includes('Creative–Analytical') ? '⚖️' : 
+                               profile.thinking.style.includes('Analytical') ? '🔬' : '💡'}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Spectrum bar */}
+                        <div className="absolute bottom-0 left-0 right-0">
+                          <div className="text-xs flex justify-between mb-1 text-muted-foreground">
+                            <span>Creative</span>
+                            <span>Analytical</span>
+                          </div>
+                          <div className="h-3 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full relative">
+                            <div 
+                              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-gray-800 border-2 border-[#7B61FF] rounded-full shadow-lg"
+                              style={{ left: `${thinkingGaugeValue}%`, marginLeft: '-8px' }}
+                            />
                           </div>
                         </div>
                       </div>
-                      {/* Spectrum bar */}
-                      <div className="absolute bottom-0 left-0 right-0">
-                        <div className="text-xs flex justify-between mb-1 text-muted-foreground">
-                          <span>Creative</span>
-                          <span>Analytical</span>
-                        </div>
-                        <div className="h-3 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full relative">
-                          <div 
-                            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-gray-800 border-2 border-[#7B61FF] rounded-full shadow-lg"
-                            style={{ left: `${thinkingGaugeValue}%`, marginLeft: '-8px' }}
-                          />
-                        </div>
-                      </div>
+                    </div>
+                    
+                    <div className="text-center pt-2">
+                      <div className="text-2xl font-bold text-[#7B61FF] dark:text-violet-300">{profile.thinking.score}/30</div>
+                      <div className="text-xs text-muted-foreground">Thinking Score</div>
                     </div>
                   </div>
-                  
-                  <div className="text-center pt-2">
-                    <div className="text-2xl font-bold text-[#7B61FF] dark:text-violet-300">{profile.thinking.score}/30</div>
-                    <div className="text-xs text-muted-foreground">Thinking Score</div>
-                  </div>
-                </CardContent>
+                </div>
               </Card>
 
               {/* Decision-Making Style - Bar Chart */}
-              <Card className="border-2 border-indigo-200 dark:border-indigo-700 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-900/10 dark:to-gray-800">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Scale className="h-5 w-5 text-[#5B7DB1]" />
-                    <CardTitle className="text-lg text-[#5B7DB1] dark:text-indigo-300">Decision-Making Behavior</CardTitle>
-                  </div>
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">{profile.decisionMaking.style}</div>
-                  <Badge variant="outline" className="text-xs w-fit">{profile.decisionMaking.anchors}</Badge>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {profile.decisionMaking.description}
-                  </p>
-                  
-                  {/* Bar Chart */}
-                  <div className="h-48 -mx-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={decisionBarData} layout="horizontal">
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
-                        <YAxis 
-                          dataKey="factor" 
-                          type="category" 
-                          width={80} 
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#374151',
-                            color: '#ffffff',
-                            border: '1px solid #4B5563',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Bar dataKey="value" fill="#5B7DB1" radius={[0, 8, 8, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+              <Card className="border-2 border-indigo-200 dark:border-indigo-700 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-900/10 dark:to-gray-800 overflow-hidden">
+                <div className="flex flex-col md:flex-row">
+                  <div className="flex-1">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Scale className="h-5 w-5 text-[#5B7DB1]" />
+                        <CardTitle className="text-lg text-[#5B7DB1] dark:text-indigo-300">Decision-Making Behavior</CardTitle>
+                      </div>
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">{profile.decisionMaking.style}</div>
+                      <Badge variant="outline" className="text-xs w-fit">{profile.decisionMaking.anchors}</Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {profile.decisionMaking.description}
+                      </p>
+                    </CardContent>
                   </div>
                   
-                  <div className="text-center pt-2">
-                    <div className="text-2xl font-bold text-[#5B7DB1] dark:text-indigo-300">{profile.decisionMaking.score}/30</div>
-                    <div className="text-xs text-muted-foreground">Decision Score</div>
+                  <div className="flex-1 p-6 bg-white/40 dark:bg-black/20 border-t md:border-t-0 md:border-l border-indigo-100 dark:border-indigo-800 flex flex-col justify-center">
+                    {/* Bar Chart */}
+                    <div className="h-64 sm:h-72 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={decisionBarData} layout="horizontal" margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                          <YAxis 
+                            dataKey="factor" 
+                            type="category" 
+                            width={110} 
+                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: '#374151',
+                              color: '#ffffff',
+                              border: '1px solid #4B5563',
+                              borderRadius: '8px'
+                            }}
+                          />
+                          <Bar dataKey="value" fill="#5B7DB1" radius={[0, 8, 8, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="text-center pt-2">
+                      <div className="text-2xl font-bold text-[#5B7DB1] dark:text-indigo-300">{profile.decisionMaking.score}/30</div>
+                      <div className="text-xs text-muted-foreground">Decision Score</div>
+                    </div>
                   </div>
-                </CardContent>
+                </div>
               </Card>
             </div>
 

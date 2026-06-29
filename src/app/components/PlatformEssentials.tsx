@@ -11,6 +11,7 @@ import { getAssessmentsByUserId } from '../utils/storage';
 import { getEngagementMetrics, trackActivity } from '../utils/engagementTracking';
 import { getGamificationProfile } from '../utils/gamification';
 import { getCognitiveXPProfile, getCognitiveLevel } from '../utils/cognitiveXP';
+import { getChildConsents } from '../utils/api';
 
 interface PlatformEssentialsProps {
   user: User;
@@ -128,6 +129,38 @@ export function PlatformEssentials({ user, onBack, onNavigate }: PlatformEssenti
     const fresh = generateNotifs(user);
     const storedIds = new Set(stored.map(n => n.id));
     setNotifications([...stored, ...fresh.filter(n => !storedIds.has(n.id))]);
+
+    // Fetch pending consents for student
+    if (user.role === 'student') {
+      getChildConsents(user.id).then(data => {
+        if (data.success && data.consents) {
+          const pending = data.consents.filter((c: any) => c.consentGiven === false && !c.automatic);
+          if (pending.length > 0) {
+            setNotifications(prev => {
+              const updated = [...prev];
+              let changed = false;
+              pending.forEach((c: any) => {
+                const id = `consent_${c.parentId}`;
+                if (!updated.some(n => n.id === id)) {
+                  updated.push({
+                    id,
+                    type: 'reminder',
+                    title: 'Parent Link Request',
+                    body: 'Your parent/guardian has requested to link to your account. Please review in Privacy Settings.',
+                    timestamp: new Date().toISOString(),
+                    read: false,
+                    icon: '👪'
+                  });
+                  changed = true;
+                }
+              });
+              if (changed) saveNotifs(user.id, updated);
+              return updated;
+            });
+          }
+        }
+      }).catch(err => console.error('Failed to load pending consents', err));
+    }
 
     const gam = getGamificationProfile(user.id);
     const eng = getEngagementMetrics(user.id);

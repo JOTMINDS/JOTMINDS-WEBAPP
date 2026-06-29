@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { User, SupervisorReviewData } from '../types';
+import { User, SupervisorReviewData, OrganizationCodeDetails } from '../types';
 import { getAllUsers, getAssessmentsByUserId, saveReview, getReviewsByProfessional, getReviewsBySupervisor, getAssessmentFrequency } from '../utils/storage';
-import { getAuthToken, getSupervisedEmployees, removeSupervisedEmployee } from '../utils/api';
+import { getAuthToken, getSupervisedEmployees, removeSupervisedEmployee, getOrganizationCodeDetails } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { createClient } from '../utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -13,6 +13,8 @@ import { Alert, AlertDescription } from './ui/alert';
 import { OrganizationInsights } from './OrganizationInsights';
 import { OrganizationBulkUploadModal } from './OrganizationBulkUploadModal';
 import { RoleProfilesManager } from './RoleProfilesManager';
+import { RoleFitDashboard } from './RoleFitDashboard';
+import { OrganizationCodeManager } from './OrganizationCodeManager';
 import { 
   Building2, 
   LogOut, 
@@ -37,7 +39,8 @@ import {
   UserMinus,
   Mail,
   Upload,
-  Target
+  Target,
+  ArrowLeft
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
@@ -55,6 +58,40 @@ interface SupervisorDashboardProps {
   onViewSettings?: () => void;
 }
 
+// Helper to map generic assessments to the format expected by calculateProfessionalCognitiveProfile
+export function mapAssessmentsToResponses(assessments: any[]) {
+  const profCognitive = assessments.find(a => a.type === 'professional-cognitive');
+  if (profCognitive && profCognitive.responses && Array.isArray(profCognitive.responses.learning)) {
+    return profCognitive.responses;
+  }
+  
+  const kolb = assessments.find(a => a.type === 'kolb');
+  const sternberg = assessments.find(a => a.type === 'sternberg');
+  const dual = assessments.find(a => a.type === 'dual-process');
+  
+  let learningScore = 15;
+  if (kolb && kolb.scores) {
+     learningScore = Math.min(30, Math.round(((kolb.scores.ae || 0) + (kolb.scores.ce || 0)) * 1.5));
+  }
+  
+  let thinkingScore = 15;
+  if (sternberg && sternberg.scores) {
+     thinkingScore = Math.min(30, Math.round(((sternberg.scores.creative || 0) + (sternberg.scores.analytical || 0)) * 1.5));
+  }
+  
+  let decisionScore = 15;
+  if (dual && dual.scores) {
+     decisionScore = Math.min(30, Math.round((dual.scores.system2 || 0) * 1.5));
+  }
+  
+  return {
+    learning: [learningScore],
+    thinking: [thinkingScore],
+    decisionMaking: [decisionScore],
+    motivation: [15]
+  };
+}
+
 export function SupervisorDashboard({ user, onLogout, onViewSettings }: SupervisorDashboardProps) {
   const [professionals, setProfessionals] = useState<User[]>([]);
   const [selectedProfessional, setSelectedProfessional] = useState<User | null>(null);
@@ -62,6 +99,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
   const [activeTab, setActiveTab] = useState('overview');
   const [organizationCode, setOrganizationCode] = useState<string>('');
   const [copiedCode, setCopiedCode] = useState(false);
+  const [codeDetails, setCodeDetails] = useState<OrganizationCodeDetails | null>(null);
 
   const dashboardTitle = user.role === 'organization' ? 'Organization Portal' : 'Supervisor Portal';
   const professionalTerm = 'Professional';
@@ -86,7 +124,19 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
         console.log('[SupervisorDashboard] Organization code:', data.organizationCode);
         
         if (data.organizationCode) {
-          toast.success('Organization code loaded successfully!');
+          try {
+            const detailsData = await getOrganizationCodeDetails();
+            if (detailsData && detailsData.success) {
+              setCodeDetails({
+                organizationCode: detailsData.organizationCode,
+                codeGeneratedAt: detailsData.codeGeneratedAt,
+                codeExpiryDays: detailsData.codeExpiryDays,
+                isActive: detailsData.isActive
+              });
+            }
+          } catch (err) {
+            console.error('[SupervisorDashboard] Error loading code details:', err);
+          }
         }
       } else {
         // This might happen if makeRequest doesn't throw but returns error object
@@ -153,7 +203,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
     const rows = professionals.map(prof => {
       const assessments = prof.assessments || getAssessmentsByUserId(prof.id);
       const completedAssessments = assessments.filter((a: any) => a.completedAt);
-      const profile = calculateProfessionalCognitiveProfile(completedAssessments);
+      const profile = calculateProfessionalCognitiveProfile(mapAssessmentsToResponses(completedAssessments));
       const reviews = prof.reviews || getReviewsByProfessional(prof.id);
       const lastReview = reviews.length > 0 ? formatDate(reviews[0].createdAt) : 'Never';
       
@@ -339,80 +389,462 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-violet-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b shadow-sm sticky top-0 z-10 dark:bg-gray-950/90 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
-                <ShieldCheck className="h-6 w-6 text-white" />
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] text-slate-900 dark:text-slate-100 font-sans selection:bg-purple-200 dark:selection:bg-purple-900">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* Premium Header & Navigation */}
+        <header className="sticky top-0 z-40 w-full bg-white/70 dark:bg-black/70 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 transition-all duration-300">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              {/* Logo / Title Area */}
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
+                    <Building2 className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                      {user.organizationName}
+                    </h1>
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {dashboardTitle} {user.industrySector ? `• ${user.industrySector}` : ''}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Horizontal Navigation */}
+                <TabsList className="hidden md:flex h-full bg-transparent p-0 space-x-1 border-0">
+                  <TabsTrigger 
+                    value="overview" 
+                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none"
+                  >
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="professionals" 
+                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none"
+                  >
+                    Professionals
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="insights" 
+                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none"
+                  >
+                    Insights
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="role-fit" 
+                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none flex items-center gap-2"
+                  >
+                    <Target className="w-4 h-4" /> Role Matcher
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="codes" 
+                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none flex items-center gap-2"
+                  >
+                    Codes
+                  </TabsTrigger>
+                </TabsList>
               </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
-                  {dashboardTitle}
-                </h1>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm text-muted-foreground">
-                    {user.organizationName}
-                  </p>
-                  {user.industrySector && (
-                    <>
-                      <span className="text-muted-foreground">•</span>
-                      <Badge variant="outline" className="text-xs">
-                        {user.industrySector}
-                      </Badge>
-                    </>
-                  )}
+
+              {/* Actions Area */}
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col items-end mr-2">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-none">{user.name}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{user.position}</p>
+                </div>
+                
+                <Button variant="ghost" size="icon" onClick={handleExportCSV} className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full" title="Export CSV">
+                  <Download className="h-4 w-4" />
+                </Button>
+                
+                {onViewSettings && (
+                  <Button variant="ghost" size="icon" onClick={onViewSettings} className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full" title="Settings">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                )}
+                
+                <Button variant="ghost" size="icon" onClick={onLogout} className="text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full" title="Logout">
+                  <LogOut className="h-4 w-4" />
+                </Button>
+                
+                {/* Mobile Menu Trigger Placeholder (if needed) */}
+                <div className="md:hidden">
+                  <MobileHeaderMenu user={user} onLogout={onLogout} onSettings={onViewSettings} />
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.position}</p>
-              </div>
-              <Button variant="outline" onClick={handleExportCSV} size="sm" className="sm:size-default">
-                <Download className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Export CSV</span>
-              </Button>
-              {onViewSettings && (
-                <Button variant="outline" onClick={onViewSettings} size="sm" className="sm:size-default">
-                  <Settings className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Settings</span>
-                </Button>
-              )}
-              <Button variant="outline" onClick={onLogout} size="sm" className="sm:size-default">
-                <LogOut className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
-            </div>
           </div>
-        </div>
-      </header>
+          
+          {/* Mobile Navigation (shows below header on small screens) */}
+          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-black/50 backdrop-blur-md px-2 py-2 overflow-x-auto">
+            <TabsList className="flex w-full justify-start bg-transparent p-0 border-0 gap-1 h-auto">
+              <TabsTrigger value="overview" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Overview</TabsTrigger>
+              <TabsTrigger value="professionals" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Professionals</TabsTrigger>
+              <TabsTrigger value="insights" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Insights</TabsTrigger>
+              <TabsTrigger value="role-fit" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Roles</TabsTrigger>
+              <TabsTrigger value="codes" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Codes</TabsTrigger>
+            </TabsList>
+          </div>
+        </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="overview">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="professionals">
-              <Users className="h-4 w-4 mr-2" />
-              Professionals
-            </TabsTrigger>
-            <TabsTrigger value="insights">
-              <PieChart className="h-4 w-4 mr-2" />
-              Insights
-            </TabsTrigger>
-          </TabsList>
-
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-500">
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            {/* Organization Code Card - PROMINENT */}
-            {organizationCode && (
-              <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-lg">
+          <TabsContent value="overview" className="space-y-8 mt-0 border-0 p-0">
+            {/* Premium Hero Section */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 text-white shadow-2xl">
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+              <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
+              <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+              
+              <div className="relative px-8 py-12 sm:px-12 sm:py-16 flex flex-col md:flex-row items-center justify-between z-10">
+                <div className="max-w-2xl">
+                  <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
+                    Shape your dynamic workforce.
+                  </h2>
+                  <p className="text-indigo-100 text-lg mb-8 max-w-xl leading-relaxed">
+                    Gain unparalleled insights into your team's cognitive diversity. Review profiles, map synergies, and build stronger teams aligned with their natural thinking styles.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-4">
+                    <Button onClick={() => setShowInviteModal(true)} className="bg-white text-indigo-900 hover:bg-indigo-50 rounded-xl px-6 py-6 font-semibold shadow-lg transition-transform hover:-translate-y-1">
+                      <Plus className="mr-2 h-5 w-5" /> Invite Member
+                    </Button>
+                    <Button onClick={() => setShowBulkUploadModal(true)} variant="outline" className="bg-transparent border-indigo-300 text-white hover:bg-indigo-800/50 rounded-xl px-6 py-6 font-medium backdrop-blur-sm transition-all">
+                      <Upload className="mr-2 h-5 w-5" /> Bulk Upload
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="hidden md:block">
+                  <div className="w-48 h-48 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6 shadow-2xl flex flex-col justify-between transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        <Users className="text-white h-5 w-5" />
+                      </div>
+                      <Badge className="bg-green-400/20 text-green-300 hover:bg-green-400/30 border-0">+{organizationStats.assessedProfessionals}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-indigo-200 text-sm font-medium">Assessed Team</p>
+                      <p className="text-4xl font-bold tracking-tight">{organizationStats.assessedProfessionals}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Premium Stats Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="group bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:bg-white dark:hover:bg-slate-900 hover:-translate-y-1 transition-all duration-300 cursor-default">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total {professionalsTerm}</h3>
+                  <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                    <Users className="h-4 w-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">{organizationStats.totalProfessionals}</span>
+                </div>
+              </div>
+
+              <div className="group bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:bg-white dark:hover:bg-slate-900 hover:-translate-y-1 transition-all duration-300 cursor-default">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Assessed</h3>
+                  <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">{organizationStats.assessedProfessionals}</span>
+                </div>
+                <div className="mt-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="bg-purple-500 h-full rounded-full" 
+                    style={{ width: `${organizationStats.totalProfessionals > 0 ? (organizationStats.assessedProfessionals / organizationStats.totalProfessionals) * 100 : 0}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="group bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:bg-white dark:hover:bg-slate-900 hover:-translate-y-1 transition-all duration-300 cursor-default">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Fully Assessed</h3>
+                  <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                    <TrendingUp className="h-4 w-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">{organizationStats.fullyAssessed}</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-2 font-medium">All 3 assessments complete</p>
+              </div>
+
+              <div className="group bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:bg-white dark:hover:bg-slate-900 hover:-translate-y-1 transition-all duration-300 cursor-default">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Reviews</h3>
+                  <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">{organizationStats.totalReviews}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Access */}
+            {professionals.length > 0 && (
+              <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Recent Activity</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Recently active team members</p>
+                  </div>
+                  <Button variant="ghost" onClick={() => setActiveTab('professionals')} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30">
+                    View All
+                  </Button>
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {professionals.slice(0, 5).map(prof => {
+                    const stats = getProfessionalStats(prof);
+                    return (
+                      <div
+                        key={prof.id}
+                        className="flex items-center justify-between p-4 sm:p-6 hover:bg-white/80 dark:hover:bg-slate-800/80 cursor-pointer transition-colors group"
+                        onClick={() => {
+                          setSelectedProfessional(prof);
+                          setActiveTab('professionals');
+                        }}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold group-hover:scale-110 transition-transform">
+                            {prof.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{prof.name}</p>
+                            <p className="text-sm text-slate-500">{prof.position || 'Professional'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                            {stats.completedAssessments}/3 
+                            <span className="hidden sm:inline ml-1">assessments</span>
+                          </Badge>
+                          {stats.totalReviews > 0 && (
+                            <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-0 dark:bg-indigo-900/50 dark:text-indigo-300">
+                              {stats.totalReviews} <span className="hidden sm:inline ml-1">review{stats.totalReviews > 1 ? 's' : ''}</span>
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Professionals Tab */}
+          <TabsContent value="professionals" className="space-y-6">
+            {professionals.length === 0 ? (
+              <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-12 shadow-sm text-center">
+                <div className="text-center text-slate-500 dark:text-slate-400 flex flex-col items-center justify-center">
+                  <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-6">
+                    <Users className="h-10 w-10 text-indigo-300 dark:text-indigo-700" />
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white mb-2">No {professionalsTerm.toLowerCase()} have registered yet</p>
+                  <p className="mb-8 max-w-md mx-auto text-slate-500">
+                    Invite your team members to join {user.organizationName} and complete their cognitive assessments.
+                  </p>
+                  <div className="flex gap-4">
+                    <Button onClick={() => setShowInviteModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:-translate-y-1 transition-transform">
+                      <Plus className="h-5 w-5 mr-2" /> Invite Team Member
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowBulkUploadModal(true)} className="rounded-xl border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <Upload className="h-5 w-5 mr-2" /> Bulk Invite
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid lg:grid-cols-3 gap-6">
+                {/* Professional List (Master) */}
+                <div className={`lg:col-span-1 min-w-0 overflow-hidden ${selectedProfessional ? 'hidden lg:block' : ''}`}>
+                  <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-sm lg:sticky lg:top-24">
+                    <div className="p-4 sm:p-6 border-b border-slate-200/60 dark:border-slate-800/60 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-5 w-5 text-indigo-600 flex-shrink-0" />
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white truncate">Team Members</h3>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Button size="sm" variant="ghost" className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2" onClick={handleNudgeAllPending} disabled={isNudgingAll} title="Nudge Pending">
+                            <Send className="h-4 w-4 xl:mr-1" />
+                            <span className="hidden xl:inline">Nudge</span>
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2" onClick={() => setShowRoleProfilesModal(true)} title="Roles">
+                            <Target className="h-4 w-4 xl:mr-1" />
+                            <span className="hidden xl:inline">Roles</span>
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2" onClick={() => setShowBulkUploadModal(true)} title="Bulk Upload">
+                            <Upload className="h-4 w-4 xl:mr-1" />
+                            <span className="hidden xl:inline">Bulk</span>
+                          </Button>
+                          <Button size="sm" variant="default" className="bg-indigo-600 hover:bg-indigo-700 px-2" onClick={() => setShowInviteModal(true)} title="Invite">
+                            <Plus className="h-4 w-4 xl:mr-1" />
+                            <span className="hidden xl:inline">Invite</span>
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="relative flex-1 min-w-0">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <Input
+                            placeholder={`Search ${professionalsTerm.toLowerCase()}...`}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 rounded-xl focus-visible:ring-indigo-500 w-full"
+                          />
+                        </div>
+                        {departments.length > 0 && (
+                          <select
+                            value={selectedDepartment}
+                            onChange={(e) => setSelectedDepartment(e.target.value)}
+                            className="px-3 py-2 bg-white/80 border-slate-200 rounded-xl text-sm dark:bg-slate-800/80 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="all">All Depts</option>
+                            {departments.map(dept => (
+                              <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-0">
+                    <ScrollArea className="h-[600px]">
+                      <div className="space-y-1 p-4">
+                        {filteredProfessionals.map((prof) => {
+                          const stats = getProfessionalStats(prof);
+                          const isSelected = selectedProfessional?.id === prof.id;
+                          
+                          return (
+                            <button
+                              key={prof.id}
+                              onClick={() => setSelectedProfessional(prof)}
+                              className={`w-full text-left p-4 rounded-2xl border transition-all duration-200 ${
+                                isSelected
+                                  ? 'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800 shadow-sm'
+                                  : 'hover:bg-white/80 dark:hover:bg-slate-800/80 border-transparent hover:shadow-sm'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                                  <span className="font-bold text-slate-500 dark:text-slate-400">{prof.name.charAt(0)}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{prof.name}</p>
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground truncate">
+                                    <span>{prof.position}</span>
+                                    {prof.department && (
+                                      <>
+                                        <span className="w-1 h-1 rounded-full bg-muted-foreground"></span>
+                                        <span className="font-medium text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">
+                                          {prof.department}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                    {stats.completedAssessments > 0 ? (
+                                      <Badge variant="outline" className="text-xs">
+                                        {stats.completedAssessments}/3
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="secondary" className="text-xs">
+                                        No assessments
+                                      </Badge>
+                                    )}
+                                    <Badge variant="outline" className="text-xs border-indigo-200 text-indigo-700 bg-indigo-50/30">
+                                      {getAssessmentFrequency(prof.id)}
+                                    </Badge>
+                                    {stats.totalReviews > 0 && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        <FileText className="h-3 w-3 mr-1" />
+                                        {stats.totalReviews}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                {stats.hasAllThreeAssessments && (
+                                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Details View (Detail) */}
+                <div className={`lg:col-span-2 min-w-0 ${!selectedProfessional ? 'hidden lg:block' : ''}`}>
+                  {selectedProfessional ? (
+                    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-sm">
+                      <div className="p-6">
+                        <ProfessionalReviewSection
+                          professional={selectedProfessional}
+                          supervisor={user}
+                          term={professionalTerm}
+                          onRemove={handleRemove}
+                          onNudge={handleNudge}
+                          onClearSelection={() => setSelectedProfessional(null)}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 rounded-3xl h-full min-h-[400px] flex items-center justify-center p-12 text-center shadow-sm">
+                      <div className="max-w-sm">
+                        <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <UserCheck className="h-10 w-10 text-slate-300 dark:text-slate-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Select a Team Member</h3>
+                        <p className="text-slate-500 dark:text-slate-400">
+                          Choose a {professionalTerm.toLowerCase()} from the list to view their assessments and add reviews.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Insights Tab */}
+          <TabsContent value="insights" className="space-y-6">
+            <OrganizationInsights 
+              professionals={professionals} 
+              organizationName={user.organizationName || 'your organization'} 
+            />
+          </TabsContent>
+
+          {/* Role Matcher Tab */}
+          <TabsContent value="role-fit" className="space-y-6">
+            <RoleFitDashboard
+              orgId={user.organizationName || user.id}
+              professionals={professionals}
+            />
+          </TabsContent>
+
+          {/* Codes Tab */}
+          <TabsContent value="codes" className="space-y-6">
+            {codeDetails ? (
+              <OrganizationCodeManager
+                details={codeDetails}
+                totalMembersCount={professionals.length}
+                onUpdate={setCodeDetails}
+              />
+            ) : organizationCode ? (
+              <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-lg max-w-3xl mx-auto">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-indigo-600" />
@@ -454,311 +886,14 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                   </Alert>
                 </CardContent>
               </Card>
-            )}
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Total {professionalsTerm}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl">{organizationStats.totalProfessionals}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Assessed
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl">{organizationStats.assessedProfessionals}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {organizationStats.totalProfessionals > 0 
-                      ? Math.round((organizationStats.assessedProfessionals / organizationStats.totalProfessionals) * 100)
-                      : 0}% completion
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Fully Assessed
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl">{organizationStats.fullyAssessed}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    All 3 assessments complete
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Total Reviews
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl">{organizationStats.totalReviews}</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Welcome Card */}
-            <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-purple-600" />
-                  Welcome to Your Organization Dashboard
-                </CardTitle>
-                <CardDescription>
-                  Review and manage cognitive assessments for professionals in {user.organizationName}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  <p className="flex items-start gap-2">
-                    <span>•</span>
-                    <span>View all professionals from your organization who have completed assessments</span>
-                  </p>
-                  <p className="flex items-start gap-2">
-                    <span>•</span>
-                    <span>Review their cognitive profiles to understand strengths and development areas</span>
-                  </p>
-                  <p className="flex items-start gap-2">
-                    <span>•</span>
-                    <span>Provide structured feedback to align roles with cognitive capabilities</span>
-                  </p>
-                  <p className="flex items-start gap-2">
-                    <span>•</span>
-                    <span>Track performance reviews and development plans over time</span>
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Access */}
-            {professionals.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Access</CardTitle>
-                  <CardDescription>Recently active {professionalsTerm.toLowerCase()}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {professionals.slice(0, 5).map(prof => {
-                      const stats = getProfessionalStats(prof);
-                      return (
-                        <div
-                          key={prof.id}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                          onClick={() => {
-                            setSelectedProfessional(prof);
-                            setActiveTab('professionals');
-                          }}
-                        >
-                          <div>
-                            <p>{prof.name}</p>
-                            <p className="text-sm text-muted-foreground">{prof.position}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">
-                              {stats.completedAssessments}/3 assessments
-                            </Badge>
-                            {stats.totalReviews > 0 && (
-                              <Badge variant="secondary">
-                                {stats.totalReviews} review{stats.totalReviews > 1 ? 's' : ''}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* Professionals Tab */}
-          <TabsContent value="professionals" className="space-y-6">
-            {professionals.length === 0 ? (
-              <Card className="p-12">
-                <div className="text-center text-muted-foreground flex flex-col items-center justify-center">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium text-gray-900 mb-2">No {professionalsTerm.toLowerCase()} have registered yet</p>
-                  <p className="mb-6 max-w-md mx-auto">
-                    Invite your team members to join {user.organizationName} and complete their cognitive assessments.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button onClick={() => setShowInviteModal(true)}>
-                      <Plus className="h-4 w-4 mr-2" /> Invite Team Member
-                    </Button>
-                    <Button variant="outline" onClick={() => setShowBulkUploadModal(true)}>
-                      <Upload className="h-4 w-4 mr-2" /> Bulk Invite
-                    </Button>
-                  </div>
-                </div>
-              </Card>
             ) : (
-              <div className="grid lg:grid-cols-3 gap-6">
-                {/* Professional List */}
-                <div className="lg:col-span-1">
-                  <Card className="sticky top-24">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-5 w-5" />
-                          Team Members
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={handleNudgeAllPending} disabled={isNudgingAll}>
-                            <Send className="h-4 w-4 mr-2" /> {isNudgingAll ? 'Sending...' : 'Nudge Pending'}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => setShowRoleProfilesModal(true)}>
-                            <Target className="h-4 w-4 mr-2" /> Roles
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => setShowBulkUploadModal(true)}>
-                            <Upload className="h-4 w-4 mr-2" /> Bulk
-                          </Button>
-                          <Button size="sm" onClick={() => setShowInviteModal(true)}>
-                            <Plus className="h-4 w-4 mr-2" /> Invite
-                          </Button>
-                        </div>
-                      </CardTitle>
-                      <div className="pt-2">
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              placeholder={`Search ${professionalsTerm.toLowerCase()}...`}
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="pl-9"
-                            />
-                          </div>
-                          {departments.length > 0 && (
-                            <select
-                              value={selectedDepartment}
-                              onChange={(e) => setSelectedDepartment(e.target.value)}
-                              className="px-3 py-2 bg-white border rounded-md text-sm dark:bg-gray-900"
-                            >
-                              <option value="all">All Departments</option>
-                              {departments.map(dept => (
-                                <option key={dept} value={dept}>{dept}</option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <ScrollArea className="h-[600px]">
-                        <div className="space-y-1 p-4 pt-0">
-                          {filteredProfessionals.map((prof) => {
-                            const stats = getProfessionalStats(prof);
-                            const isSelected = selectedProfessional?.id === prof.id;
-                            
-                            return (
-                              <button
-                                key={prof.id}
-                                onClick={() => setSelectedProfessional(prof)}
-                                className={`w-full text-left p-3 rounded-lg border transition-all ${
-                                  isSelected
-                                    ? 'bg-purple-50 border-purple-300 shadow-sm'
-                                    : 'hover:bg-accent border-transparent'
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium truncate">{prof.name}</p>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground truncate">
-                                      <span>{prof.position}</span>
-                                      {prof.department && (
-                                        <>
-                                          <span className="w-1 h-1 rounded-full bg-muted-foreground"></span>
-                                          <span className="font-medium text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">
-                                            {prof.department}
-                                          </span>
-                                        </>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                      {stats.completedAssessments > 0 ? (
-                                        <Badge variant="outline" className="text-xs">
-                                          {stats.completedAssessments}/3
-                                        </Badge>
-                                      ) : (
-                                        <Badge variant="secondary" className="text-xs">
-                                          No assessments
-                                        </Badge>
-                                      )}
-                                      <Badge variant="outline" className="text-xs border-indigo-200 text-indigo-700 bg-indigo-50/30">
-                                        {getAssessmentFrequency(prof.id)}
-                                      </Badge>
-                                      {stats.totalReviews > 0 && (
-                                        <Badge variant="secondary" className="text-xs">
-                                          <FileText className="h-3 w-3 mr-1" />
-                                          {stats.totalReviews}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {stats.hasAllThreeAssessments && (
-                                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Professional Details & Review */}
-                <div className="lg:col-span-2">
-                  {selectedProfessional ? (
-                    <ProfessionalReviewSection
-                      professional={selectedProfessional}
-                      supervisor={user}
-                      term={professionalTerm}
-                      onRemove={handleRemove}
-                      onNudge={handleNudge}
-                    />
-                  ) : (
-                    <Card className="h-full flex items-center justify-center p-12">
-                      <div className="text-center text-muted-foreground">
-                        <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Select a {professionalTerm.toLowerCase()} to view their assessments and add reviews</p>
-                      </div>
-                    </Card>
-                  )}
-                </div>
+              <div className="text-center py-10">
+                <p className="text-gray-500">No organization code available.</p>
               </div>
             )}
           </TabsContent>
-
-          {/* Insights Tab */}
-          <TabsContent value="insights" className="space-y-6">
-            <OrganizationInsights 
-              professionals={professionals} 
-              organizationName={user.organizationName || 'your organization'} 
-            />
-          </TabsContent>
-        </Tabs>
+        </main>
+      </Tabs>
 
         {showInviteModal && (
           <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -825,7 +960,6 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
           />
         )}
       </div>
-    </div>
   );
 }
 
@@ -835,13 +969,15 @@ function ProfessionalReviewSection({
   supervisor,
   term = 'Employee',
   onRemove,
-  onNudge
+  onNudge,
+  onClearSelection
 }: { 
   professional: User; 
   supervisor: User;
   term?: string;
   onRemove?: (id: string) => void;
   onNudge?: (email: string, name: string) => void;
+  onClearSelection?: () => void;
 }) {
   const [showNewReview, setShowNewReview] = useState(false);
   const [isViewingProfile, setIsViewingProfile] = useState(false);
@@ -878,7 +1014,7 @@ function ProfessionalReviewSection({
   }
 
   if (isViewingProfile) {
-    const profile = calculateProfessionalCognitiveProfile(completedAssessments);
+    const profile = calculateProfessionalCognitiveProfile(mapAssessmentsToResponses(completedAssessments));
     return (
       <ProfessionalCognitiveResults 
         profile={profile}
@@ -893,6 +1029,12 @@ function ProfessionalReviewSection({
 
   return (
     <div className="space-y-6">
+      {onClearSelection && (
+        <Button variant="ghost" onClick={onClearSelection} className="lg:hidden mb-4 -ml-2 text-slate-500">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Back to List
+        </Button>
+      )}
+      
       {/* Professional Info */}
       <Card>
         <CardHeader>

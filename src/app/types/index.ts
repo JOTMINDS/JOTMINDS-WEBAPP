@@ -22,6 +22,13 @@ export type KolbStyle = 'Diverging' | 'Assimilating' | 'Converging' | 'Accommoda
 export type SternbergStyle = 'Analytical' | 'Creative' | 'Practical';
 export type DualProcessStyle = 'Intuitive' | 'Reflective' | 'Balanced';
 
+export interface OrganizationCodeDetails {
+  organizationCode: string;
+  codeGeneratedAt: string;
+  codeExpiryDays: number | null;
+  isActive: boolean;
+}
+
 export interface User {
   id: string;
   email: string;

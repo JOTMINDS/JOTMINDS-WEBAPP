@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { validateInstitutionCode, transferMember } from '../../utils/institution';
+import { validateInstitutionCode, transferMember, transferStudent } from '../../utils/institution';
 import { saveUser } from '../../utils/storage';
 
 interface TransferMemberModalProps {
@@ -66,18 +66,26 @@ export function TransferMemberModal({
     }
   };
 
-  const handleStudentTransfer = () => {
+  const handleStudentTransfer = async () => {
     if (!selectedTeacherId) return;
 
-    const userToUpdate = allPlatformUsers.find(u => u.id === memberId);
-    if (userToUpdate) {
-      userToUpdate.teacherId = selectedTeacherId;
-      const teacher = allPlatformUsers.find(u => u.id === selectedTeacherId);
-      userToUpdate.teacherName = teacher ? teacher.name : undefined;
-      saveUser(userToUpdate);
+    const teacher = allPlatformUsers.find(u => u.id === selectedTeacherId);
+    if (!teacher) return;
+    
+    const success = await transferStudent(memberId, institutionId, selectedTeacherId, teacher.name);
+    
+    if (success) {
+      const userToUpdate = allPlatformUsers.find(u => u.id === memberId);
+      if (userToUpdate) {
+        userToUpdate.teacherId = selectedTeacherId;
+        userToUpdate.teacherName = teacher.name;
+        saveUser(userToUpdate);
+      }
       toast.success('Student successfully transferred to new class.');
       onTransferSuccess();
       onClose();
+    } else {
+      toast.error('Failed to transfer student.');
     }
   };
 

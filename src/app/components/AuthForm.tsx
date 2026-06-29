@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, GraduationCap, Users, School, Briefcase, Mail, Lock, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader, AlertCircle, CheckCircle2, GraduationCap, Users, School, Briefcase, Mail, Lock, User } from 'lucide-react';
 import { PhoneInput } from './PhoneInput';
 import { useState, useEffect } from 'react';
 import { createClient } from '../utils/supabase/client';
@@ -952,7 +952,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                             aria-label="Verify Jots Code"
                           >
                             {verifyingCode ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Loader className="h-4 w-4 animate-spin" />
                             ) : verifiedOrgName ? (
                               <CheckCircle2 className="h-4 w-4" />
                             ) : (
@@ -1021,7 +1021,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                           disabled={!!verifiedOrgName}
                         />
                         <Button type="button" onClick={validateOrgCode} disabled={verifyingCode || !!verifiedOrgName || !organizationCode} className="whitespace-nowrap">
-                          {verifyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : verifiedOrgName ? <CheckCircle2 className="h-4 w-4" /> : 'Verify'}
+                          {verifyingCode ? <Loader className="h-4 w-4 animate-spin" /> : verifiedOrgName ? <CheckCircle2 className="h-4 w-4" /> : 'Verify'}
                         </Button>
                       </div>
                       {verifiedOrgName && (
@@ -1060,7 +1060,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                             aria-label="Verify organization code"
                           >
                             {verifyingCode ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Loader className="h-4 w-4 animate-spin" />
                             ) : verifiedOrgName ? (
                               <CheckCircle2 className="h-4 w-4" />
                             ) : (
@@ -1281,7 +1281,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                       className="flex-1"
                       disabled={loading || !hasConsented}
                     >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continue'}
+                      {loading ? <Loader className="h-4 w-4 animate-spin" /> : 'Continue'}
                     </Button>
                   )}
                 </div>
@@ -1304,7 +1304,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                   <Button type="submit" className="w-full py-6" disabled={loading || (!isLogin && signupOTP.length !== 6) || (isLogin && loginMethod === 'otp' && otpSent && otpToken.length !== 6)}>
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader className="mr-2 h-4 w-4 animate-spin" />
                         {isLogin ? 'Processing...' : 'Creating account...'}
                       </>
                     ) : (

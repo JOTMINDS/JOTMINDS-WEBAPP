@@ -11,7 +11,7 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Loader2,
+  Loader,
   BarChart2,
   Trash2
 } from 'lucide-react';
@@ -157,7 +157,7 @@ export const QuestionSeeder: React.FC<QuestionSeederProps> = ({ onBack }) => {
           <p className="text-gray-600">Upload all {TOTAL_QUESTIONS} assessment questions to Supabase</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchStatus} disabled={loadingStatus}>
-          {loadingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          {loadingStatus ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           <span className="ml-1.5">Refresh Status</span>
         </Button>
       </div>
@@ -173,7 +173,7 @@ export const QuestionSeeder: React.FC<QuestionSeederProps> = ({ onBack }) => {
         <CardContent>
           {loadingStatus && !status ? (
             <div className="flex items-center gap-2 text-gray-500 text-sm">
-              <Loader2 className="w-4 h-4 animate-spin" /> Checking...
+              <Loader className="w-4 h-4 animate-spin" /> Checking...
             </div>
           ) : status?.error && !status.exists ? (
             <div className="flex items-start gap-2 text-red-600 text-sm">
@@ -341,7 +341,7 @@ export const QuestionSeeder: React.FC<QuestionSeederProps> = ({ onBack }) => {
             style={{ backgroundColor: mode === 'replace' && !confirmReplace ? '#DC2626' : '#5B7DB1' }}
           >
             {seeding ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Uploading {TOTAL_QUESTIONS} questions...</>
+              <><Loader className="w-4 h-4 mr-2 animate-spin" />Uploading {TOTAL_QUESTIONS} questions...</>
             ) : (
               <><Upload className="w-4 h-4 mr-2" />Upload to Supabase{confirmReplace ? ' (CONFIRM REPLACE)' : ''}</>
             )}

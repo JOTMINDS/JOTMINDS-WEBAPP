@@ -65,6 +65,7 @@ import { CognitiveGrowthDashboard } from './CognitiveGrowthDashboard';
 import { SkillBuilder } from './SkillBuilder';
 import { CognitiveProfileView } from './CognitiveProfileView';
 import { CareerRecommendations } from './CareerRecommendations';
+import { StudentCareerFit } from './StudentCareerFit';
 import { getCognitiveProfile, CognitiveProfile } from '../utils/cognitiveProfileApi';
 
 interface StudentDashboardProps {
@@ -473,14 +474,18 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
           </div>
         </header>
         <main className="max-w-6xl mx-auto p-4">
-          <CareerRecommendations
-            cognitiveStyle={cognitiveStyle}
-            assessmentType="cognitive-profile"
-            onNavigateToSkillBuilder={(dimensionId) => {
-              setShowingCareerRecommendations(false);
-              setShowingSkillBuilder(true);
-            }}
-          />
+          {cognitiveProfile ? (
+            <StudentCareerFit cognitiveProfile={cognitiveProfile} userName={user.name} />
+          ) : (
+            <CareerRecommendations
+              cognitiveStyle={cognitiveStyle}
+              assessmentType="cognitive-profile"
+              onNavigateToSkillBuilder={(dimensionId) => {
+                setShowingCareerRecommendations(false);
+                setShowingSkillBuilder(true);
+              }}
+            />
+          )}
         </main>
       </div>
     );

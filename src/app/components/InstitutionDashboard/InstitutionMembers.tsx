@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
-  Users, Upload, UserPlus, AlertCircle, CheckCircle2, Trash2, Mail, Clock, RefreshCw, Loader2, BarChart3, Crown, ShieldMinus, Brain
+  Users, Upload, UserPlus, AlertCircle, CheckCircle2, Trash2, Mail, Clock, RefreshCw, Loader, BarChart3, Crown, ShieldMinus, Brain
 } from 'lucide-react';
 import {
   Institution,
@@ -364,7 +364,7 @@ export function InstitutionMembers({
                         onClick={() => handleApprove(m.userId)}
                         disabled={processingMemberId === m.userId}
                       >
-                        {processingMemberId === m.userId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Approve'}
+                        {processingMemberId === m.userId ? <Loader className="w-3.5 h-3.5 animate-spin" /> : 'Approve'}
                       </Button>
                       <Button
                         size="sm"
@@ -373,7 +373,7 @@ export function InstitutionMembers({
                         onClick={() => handleReject(m.userId)}
                         disabled={processingMemberId === m.userId}
                       >
-                        {processingMemberId === m.userId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Reject'}
+                        {processingMemberId === m.userId ? <Loader className="w-3.5 h-3.5 animate-spin" /> : 'Reject'}
                       </Button>
                     </div>
                   </div>
@@ -616,7 +616,7 @@ export function InstitutionMembers({
                             disabled={processingMemberId === m.userId}
                           >
                             {processingMemberId === m.userId ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <Loader className="w-3.5 h-3.5 animate-spin" />
                             ) : (
                               <Trash2 className="w-3.5 h-3.5" />
                             )}

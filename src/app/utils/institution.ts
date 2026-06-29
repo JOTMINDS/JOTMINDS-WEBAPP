@@ -362,13 +362,28 @@ export async function validateInviteToken(token: string): Promise<any> {
 // ─── Member Management ────────────────────────────────────────────────────────
 
 export async function getInstitutionMembers(institutionId: string): Promise<InstitutionMember[]> {
-  const { data, error } = await supabase
-    .from('institution_members')
-    .select('*')
-    .eq('institution_id', institutionId);
+  try {
+    const token = await getAuthToken();
+    const response = await fetch(`${BASE_URL}/institutions/members?id=${institutionId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-  if (error || !data) return [];
-  return data.map(mapDBMemberToLocal);
+    if (!response.ok) {
+      console.error('Failed to fetch institution members', await response.text());
+      return [];
+    }
+
+    const result = await response.json();
+    if (result.success && result.members) {
+      return result.members.map(mapDBMemberToLocal);
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching institution members:', error);
+    return [];
+  }
 }
 
 export async function addMember(institutionId: string, member: Omit<InstitutionMember, 'institutionId' | 'joinedAt'>): Promise<void> {
@@ -475,6 +490,19 @@ export async function transferMember(userId: string, currentInstitutionId: strin
   return true;
 }
 
+export async function transferStudent(studentId: string, institutionId: string, newTeacherId: string, newTeacherName: string): Promise<boolean> {
+  try {
+    const res = await makeRequest('/institutions/transfer-student', {
+      method: 'POST',
+      body: JSON.stringify({ studentId, institutionId, newTeacherId, newTeacherName }),
+    });
+    return res.success === true;
+  } catch (error) {
+    console.error('Failed to transfer student:', error);
+    return false;
+  }
+}
+
 export async function updateMemberDetails(institutionId: string, userId: string, details: { userName: string; userPhone: string; role?: 'teacher' | 'student' | 'admin' }): Promise<void> {
   const { error } = await supabase
     .from('institution_members')
@@ -490,13 +518,28 @@ export async function updateMemberDetails(institutionId: string, userId: string,
 }
 
 export async function getAllInvitations(institutionId: string): Promise<InstitutionInvitation[]> {
-  const { data, error } = await supabase
-    .from('institution_invitations')
-    .select('*')
-    .eq('institution_id', institutionId);
+  try {
+    const token = await getAuthToken();
+    const response = await fetch(`${BASE_URL}/institutions/members?id=${institutionId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-  if (error || !data) return [];
-  return data.map(mapDBInvitationToLocal);
+    if (!response.ok) {
+      console.error('Failed to fetch institution invitations', await response.text());
+      return [];
+    }
+
+    const result = await response.json();
+    if (result.success && result.invitations) {
+      return result.invitations.map(mapDBInvitationToLocal);
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching institution invitations:', error);
+    return [];
+  }
 }
 
 export async function inviteMember(email: string, role: 'teacher' | 'student', institutionId: string): Promise<InstitutionInvitation> {

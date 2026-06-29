@@ -9,7 +9,11 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
-import { Plus, Upload, MoreVertical, Edit, Trash2, FileText, Loader2, Download, Building2 } from 'lucide-react';
+import { 
+  Users, UserPlus, Search, MoreVertical, Edit2, Trash2, 
+  Mail, Phone, BookOpen, Star, AlertCircle, Loader, Shield, Lock,
+  Plus, Upload, FileText, Download, Building2, Edit
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TeacherStudentManagementProps {
@@ -264,7 +268,7 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
                 maxLength={12}
               />
               <Button type="submit" disabled={isJoining || !joinCode.trim()} style={{ backgroundColor: '#6B4C9A' }} className="whitespace-nowrap">
-                {isJoining ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : 'Request Access'}
+                {isJoining ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : 'Request Access'}
               </Button>
             </form>
           </CardContent>
@@ -379,7 +383,7 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
                 <Button type="submit" disabled={isLoading} style={{ backgroundColor: '#6B4C9A' }}>
-                  {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : 'Add & Send Invite'}
+                  {isLoading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : 'Add & Send Invite'}
                 </Button>
               </div>
             </form>
@@ -406,8 +410,11 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
                 <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
               </div>
               <div>
-                <label className="text-sm font-medium">Date of Birth</label>
-                <Input type="date" required value={formData.dateOfBirth} onChange={e => setFormData({...formData, dateOfBirth: e.target.value})} />
+                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                  Date of Birth <Lock className="w-3 h-3" />
+                </label>
+                <Input type="date" disabled value={formData.dateOfBirth} className="bg-slate-50 text-slate-500 cursor-not-allowed" />
+                <p className="text-xs text-gray-400 mt-1">Locked to ensure COPPA compliance.</p>
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>

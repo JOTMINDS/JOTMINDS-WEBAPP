@@ -330,6 +330,30 @@ export const removeSupervisedEmployee = async (employeeId: string) => {
   });
 };
 
+export const getOrganizationCodeDetails = async () => {
+  return makeRequest('/supervisor/organization-code');
+};
+
+export const regenerateOrganizationCode = async () => {
+  return makeRequest('/supervisor/organization-code/regenerate', {
+    method: 'POST'
+  });
+};
+
+export const updateOrganizationCodeStatus = async (isActive: boolean) => {
+  return makeRequest('/supervisor/organization-code/status', {
+    method: 'POST',
+    body: JSON.stringify({ isActive })
+  });
+};
+
+export const updateOrganizationCodeExpiry = async (days: number | null) => {
+  return makeRequest('/supervisor/organization-code/expiry', {
+    method: 'POST',
+    body: JSON.stringify({ days })
+  });
+};
+
 // Parent APIs
 export const getLinkedChildren = async () => {
   return makeRequest('/parent/children');
@@ -468,4 +492,34 @@ export const sendEmail = async (recipientEmail: string, subject: string, htmlCon
     method: 'POST',
     body: JSON.stringify({ recipientEmail, subject, htmlContent }),
   });
+};
+
+// Role Profiles APIs (Cognitive Role Fit)
+export const getRoleProfiles = async (institutionId?: string) => {
+  const query = institutionId ? `?institutionId=${institutionId}` : '';
+  return makeRequest(`/role-profiles${query}`);
+};
+
+export const createRoleProfile = async (profileData: any) => {
+  return makeRequest('/role-profiles', {
+    method: 'POST',
+    body: JSON.stringify(profileData),
+  });
+};
+
+export const updateRoleProfile = async (profileId: string, profileData: any) => {
+  return makeRequest(`/role-profiles/${profileId}`, {
+    method: 'PUT',
+    body: JSON.stringify(profileData),
+  });
+};
+
+export const deleteRoleProfile = async (profileId: string) => {
+  return makeRequest(`/role-profiles/${profileId}`, {
+    method: 'DELETE',
+  });
+};
+
+export const getRoleFitScores = async (roleId: string) => {
+  return makeRequest(`/role-profiles/${roleId}/fit-scores`);
 };

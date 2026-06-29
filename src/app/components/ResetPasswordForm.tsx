@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Lock, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Lock, Eye, EyeOff, Loader, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from './ui/card';
 import { Input } from './ui/input';
@@ -112,7 +112,7 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
         <Card className="w-full max-w-md border-2 shadow-large">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center justify-center space-y-4 py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-[#7B61FF]" />
+              <Loader className="h-8 w-8 animate-spin text-[#7B61FF]" />
               <p className="text-muted-foreground">Loading...</p>
             </div>
           </CardContent>
@@ -166,7 +166,7 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
                   <p className="text-sm text-muted-foreground mb-4">
                     Redirecting to login page...
                   </p>
-                  <Loader2 className="h-6 w-6 animate-spin text-[#7B61FF] mx-auto" />
+                  <Loader className="h-6 w-6 animate-spin text-[#7B61FF] mx-auto" />
                 </div>
 
                 <Button
@@ -288,7 +288,7 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader className="mr-2 h-4 w-4 animate-spin" />
                       Resetting password...
                     </>
                   ) : (
