@@ -1375,6 +1375,8 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     
     let finalTeacherId = null;
     let finalLinkedTeachers: string[] = [];
+    // Institution the student should be linked to when joining via a teacher's class code
+    let classCodeInstitutionId: string | null = null;
 
     // Magic Email Linking & Class Code Linking for students
     if (role === 'student') {
@@ -1382,6 +1384,27 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         console.log(`[signup] Class Code Match! Linking student ${email} to teacher ${matchedTeacher.id}`);
         finalTeacherId = matchedTeacher.id;
         finalLinkedTeachers = [matchedTeacher.id];
+
+        // Link the student to the SAME school the teacher belongs to. Resolve the
+        // teacher's institution from institution_members (most reliable), and use
+        // the institution's real name as the student's school so they show up on
+        // the school portal roster (which matches on school name).
+        try {
+          const { data: teacherMembership } = await supabase
+            .from('institution_members')
+            .select('institution_id, institutions(name)')
+            .eq('user_id', matchedTeacher.id)
+            .in('role', ['teacher', 'admin'])
+            .limit(1)
+            .maybeSingle();
+          if (teacherMembership?.institution_id) {
+            classCodeInstitutionId = teacherMembership.institution_id;
+            const instName = (teacherMembership as any).institutions?.name;
+            if (instName) finalOrgName = instName;
+          }
+        } catch (e) {
+          console.log('[signup] Could not resolve teacher institution for class code:', e);
+        }
       }
 
       // Check for legacy Magic Link invite
@@ -1441,26 +1464,31 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
 
     // Auto-link to PostgreSQL institution_members if joining via Class Code or JOTM Org Code
     if (!inviteRecord && finalOrgCode) {
-      // Which code should we use to look up the institution? 
-      // If it's a CLASS code, we need the teacher's JOTM code
-      const lookupCode = matchedTeacher?.organizationCode || finalOrgCode;
-      
-      const { data: instData } = await supabase
-        .from('institutions')
-        .select('id, code')
-        .eq('code', lookupCode)
-        .maybeSingle();
+      // Prefer the institution resolved from the teacher (class-code join); otherwise
+      // look it up from the org code the user typed.
+      let institutionId = classCodeInstitutionId;
+      if (!institutionId) {
+        const lookupCode = matchedTeacher?.organizationCode || finalOrgCode;
+        const { data: instData } = await supabase
+          .from('institutions')
+          .select('id, code')
+          .eq('code', lookupCode)
+          .maybeSingle();
+        if (instData) institutionId = instData.id;
+      }
 
-      if (instData) {
-        console.log(`[signup] Auto-linking ${role} ${email} to institution ${instData.id}`);
+      if (institutionId) {
+        console.log(`[signup] Auto-linking ${role} ${email} to institution ${institutionId}`);
         await supabase.from('institution_members').insert({
           user_id: data.user.id,
           user_name: name,
           user_email: email,
           role: role === 'professional' ? 'teacher' : role, // Map professional to teacher for institutions
-          institution_id: instData.id,
+          institution_id: institutionId,
           joined_via_code: finalOrgCode, // Store the actual code they typed (CLASS- or JOTM-)
-          status: 'pending'
+          // Students joining via a teacher's class code are approved automatically;
+          // org-code self-joins remain pending for admin review.
+          status: matchedTeacher ? 'approved' : 'pending'
         });
       }
     }
