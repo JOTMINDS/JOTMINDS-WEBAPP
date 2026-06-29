@@ -296,10 +296,17 @@ app.post('/share', async (c) => {
   const user = await verifyAuth(c.req.raw);
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
-  // Get user's current profile
-  const profile = await kv.get(`profile:${user.id}`);
+  // Get user's current profile, generating it on the fly if it doesn't exist yet
+  // (e.g. sharing straight after completing the thinking-profile assessment).
+  let profile = await kv.get(`profile:${user.id}`);
   if (!profile) {
-    return c.json({ error: 'No profile to share. Generate your profile first.' }, 404);
+    profile = await generateUnifiedProfile(user.id);
+    if (profile) {
+      await kv.set(`profile:${user.id}`, profile);
+    }
+  }
+  if (!profile) {
+    return c.json({ error: 'Complete at least one assessment before sharing your profile.' }, 404);
   }
 
   // Generate unique share token
