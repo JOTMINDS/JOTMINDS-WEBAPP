@@ -2,9 +2,11 @@ import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { CheckCircle2, AlertCircle, Lightbulb, TrendingUp, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Lightbulb, TrendingUp, ArrowRight, Download } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { FeedbackPrompt } from './FeedbackPrompt';
+import { exportReportToPDF } from '../utils/pdfGenerator';
+import { toast } from 'sonner';
 
 interface AssessmentSummaryProps {
   type: 'learning' | 'thinking' | 'decision';
@@ -39,54 +41,50 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
 
   // Determine which assessments are incomplete
   const getNextAssessment = () => {
-    console.log('[AssessmentSummary] Checking for next assessment');
-    console.log('[AssessmentSummary] User:', user);
-    console.log('[AssessmentSummary] Assessments Completed:', user?.assessmentsCompleted);
-    
-    if (!user?.assessmentsCompleted) {
-      console.log('[AssessmentSummary] No assessmentsCompleted array found');
-      return null;
-    }
-
     const assessmentMapping = {
       'learning': 'kolb',
       'thinking': 'sternberg',
       'decision': 'dual-process'
     };
 
-    const typeMapping = {
-      'kolb': 'learning',
-      'sternberg': 'thinking',
-      'dual-process': 'decision'
-    };
-
-    const completed = user.assessmentsCompleted;
-    console.log('[AssessmentSummary] Completed assessments:', completed);
+    // Always treat the assessment that was just completed as done, even if the
+    // user profile (assessmentsCompleted) hasn't been refreshed yet. Otherwise
+    // we'd re-offer the same assessment the user just finished.
+    const completed = new Set([
+      ...((user?.assessmentsCompleted as string[]) || []),
+      assessmentMapping[type],
+    ]);
 
     // Check each assessment type
     const assessmentOrder: ('learning' | 'thinking' | 'decision')[] = ['learning', 'thinking', 'decision'];
-    
+
     for (const assessmentType of assessmentOrder) {
       const internalType = assessmentMapping[assessmentType as keyof typeof assessmentMapping];
-      console.log(`[AssessmentSummary] Checking ${assessmentType} (${internalType}):`, !completed.includes(internalType));
-      if (!completed.includes(internalType)) {
+      if (!completed.has(internalType)) {
         const nextAssessmentInfo = {
           type: assessmentType,
           title: assessmentType === 'learning' ? 'Learning Style' :
                  assessmentType === 'thinking' ? 'Thinking Style' :
                  'Decision Style'
         };
-        console.log('[AssessmentSummary] Next assessment found:', nextAssessmentInfo);
         return nextAssessmentInfo;
       }
     }
 
-    console.log('[AssessmentSummary] All assessments completed');
     return null; // All assessments completed
   };
 
   const nextAssessment = getNextAssessment();
-  console.log('[AssessmentSummary] Final nextAssessment:', nextAssessment);
+
+  const handleDownloadPDF = async () => {
+    toast.loading('Preparing your report…', { id: 'summary-pdf' });
+    const ok = await exportReportToPDF(
+      'assessment-summary-report',
+      `${(user?.name || 'JotMinds').replace(/\s+/g, '-')}-${type}-results.pdf`,
+    );
+    if (ok) toast.success('Report downloaded', { id: 'summary-pdf' });
+    else toast.error('Could not generate the report', { id: 'summary-pdf' });
+  };
 
   // Format/Normalize style names to be consistent and beautiful
   const formatStyleName = (style: string): string => {
@@ -131,7 +129,7 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
 
   return (
     <div className="min-h-screen py-8 px-4" style={{ background: 'linear-gradient(to bottom, #F8F9FA 0%, #FFFFFF 100%)' }}>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto" id="assessment-summary-report">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ backgroundColor: '#E8F9FF' }}>
@@ -278,13 +276,20 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
         )}
 
         {/* Actions */}
-        <div className="flex justify-center gap-4 flex-wrap">
+        <div className="flex justify-center gap-4 flex-wrap no-print">
           <Button
             onClick={onBackToDashboard}
             size="lg"
             variant="outline"
           >
             Back to Dashboard
+          </Button>
+          <Button
+            onClick={handleDownloadPDF}
+            size="lg"
+            variant="outline"
+          >
+            <Download className="w-4 h-4 mr-2" /> Download PDF
           </Button>
           {nextAssessment && onStartNextAssessment && (
             <Button

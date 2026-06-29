@@ -59,8 +59,10 @@ export function TeachingStyleResults({ score, onContinue, onDeepDive }: Teaching
         {/* Radar Chart */}
         <Card className="col-span-1 border-2 shadow-md">
           <CardHeader>
-            <CardTitle>Cognitive Classroom Analytics</CardTitle>
-            <CardDescription>Visual map of your teaching engines</CardDescription>
+            <CardTitle>Your teaching style at a glance</CardTitle>
+            <CardDescription>
+              Each spoke is a part of how you teach. The further a point sits from the centre, the more you lean toward the second style in that pair.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
@@ -72,14 +74,41 @@ export function TeachingStyleResults({ score, onContinue, onDeepDive }: Teaching
                   <Radar
                     name="My Style"
                     dataKey="A"
-                    stroke="#8884d8"
+                    stroke="#6B4C9A"
                     strokeWidth={3}
-                    fill="#8884d8"
-                    fillOpacity={0.5}
+                    fill="#6B4C9A"
+                    fillOpacity={0.45}
                   />
-                  <Tooltip />
+                  <Tooltip formatter={(v: any) => [`${v}/100`, 'Score']} />
                 </RadarChart>
               </ResponsiveContainer>
+            </div>
+
+            {/* Plain-language legend: what each spoke means */}
+            <div className="mt-4 space-y-2 border-t pt-3">
+              {([
+                { subject: 'Authority', key: 'axisAuthority', value: score.scores.axisAuthority },
+                { subject: 'Construction', key: 'axisKnowledge', value: score.scores.axisKnowledge },
+                { subject: 'Motivation', key: 'axisMotivation', value: score.scores.axisMotivation },
+                { subject: 'Growth', key: 'axisAssessment', value: score.scores.axisAssessment },
+                { subject: 'Adaptability', key: 'axisAdaptability', value: score.scores.axisAdaptability },
+                { subject: 'Climate', key: 'axisClimate', value: score.scores.axisClimate },
+              ] as const).map(({ subject, key, value }) => {
+                const axis = axisDescriptions[key as keyof typeof axisDescriptions];
+                if (!axis) return null;
+                return (
+                  <div key={key} className="flex items-center justify-between gap-3 text-xs">
+                    <span className="font-medium text-foreground w-24 shrink-0">{subject}</span>
+                    <span className="text-muted-foreground flex-1 text-right">
+                      {axis.low} <span className="opacity-50">↔</span> {axis.high}
+                    </span>
+                    <span className={`font-semibold w-10 text-right ${getAxisColor(value)}`}>{value}</span>
+                  </div>
+                );
+              })}
+              <p className="text-[11px] text-muted-foreground pt-1">
+                Tip: a score near 50 means you balance both sides; closer to 0 or 100 means a clear lean.
+              </p>
             </div>
           </CardContent>
         </Card>

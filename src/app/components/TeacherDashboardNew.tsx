@@ -6,7 +6,8 @@ import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServe
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress } from '../utils/storage';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
-import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList } from 'lucide-react';
+import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download } from 'lucide-react';
+import { exportReportToPDF } from '../utils/pdfGenerator';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
@@ -248,6 +249,16 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     }
   };
 
+  const handleDownloadCognitiveResults = async () => {
+    toast.loading('Preparing your report…', { id: 'cog-pdf' });
+    const ok = await exportReportToPDF(
+      'teacher-cognitive-report',
+      `${(user.name || 'JotMinds').replace(/\s+/g, '-')}-cognitive-profile.pdf`,
+    );
+    if (ok) toast.success('Report downloaded', { id: 'cog-pdf' });
+    else toast.error('Could not generate the report', { id: 'cog-pdf' });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F7FF] flex items-center justify-center">
@@ -298,7 +309,21 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         onViewSettings={onViewSettings}
       />
       <TeacherTabBar activeTab={activeTab} onTabChange={setActiveTab} />
-      
+
+      {/* Connected students — always visible across tabs */}
+      <div className="px-4 lg:px-6 pt-4 max-w-[960px] mx-auto">
+        <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>
+          <span className="text-xl" aria-hidden>👥</span>
+          <div>
+            <div className="text-lg font-semibold leading-none">
+              {loading ? '…' : students.length}
+              <span className="text-sm font-normal text-white/80"> {students.length === 1 ? 'student' : 'students'} connected</span>
+            </div>
+            <div className="text-xs text-white/70 mt-0.5">Learners linked to your account</div>
+          </div>
+        </div>
+      </div>
+
       {/* Onboarding Info for New Teachers */}
       {students.length === 0 && activeTab !== 'my-style' && (
         <div className="px-4 lg:px-6 py-4 max-w-[960px] mx-auto">
@@ -392,19 +417,30 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             const doneCount = [!!kolb, !!thinkStyle, !!dual].filter(Boolean).length;
 
             return (
+              <div id="teacher-cognitive-report">
               <Card className="border-2 border-[#6B4C9A]/20">
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+                  <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 text-base">
                       <span>🧬</span> Cognitive Profile
                     </div>
-                    <Badge style={{ backgroundColor: doneCount === 3 ? '#1E8A6E20' : '#E0A02020', color: doneCount === 3 ? '#1E8A6E' : '#E0A020' }}>
-                      {doneCount}/3 complete
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge style={{ backgroundColor: doneCount === 3 ? '#1E8A6E20' : '#E0A02020', color: doneCount === 3 ? '#1E8A6E' : '#E0A020' }}>
+                        {doneCount}/3 complete
+                      </Badge>
+                      {doneCount > 0 && (
+                        <Button size="sm" variant="outline" className="no-print h-7 text-xs" onClick={handleDownloadCognitiveResults}>
+                          <Download className="w-3.5 h-3.5 mr-1.5" /> Download PDF
+                        </Button>
+                      )}
+                    </div>
                   </CardTitle>
                   <CardDescription>
                     All 3 core assessments — visible to your school in their Combined Analysis report. Complete all three to unlock your full educator profile.
                   </CardDescription>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Each bar shows relative strength on that dimension — a longer bar means a stronger preference. Your dominant style is highlighted as a badge.
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-5">
 
@@ -488,6 +524,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                   )}
                 </CardContent>
               </Card>
+              </div>
             );
           })()}
         </div>

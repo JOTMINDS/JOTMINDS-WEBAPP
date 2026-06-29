@@ -159,10 +159,10 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              <CardTitle className="text-[16px]">Assessment Completion by Type</CardTitle>
+              <CardTitle className="text-[16px]">How many students finished each assessment</CardTitle>
             </div>
             <CardDescription className="text-[13px]">
-              Track how many students have completed each assessment type
+              The coloured bar is how many students completed it; the grey bar is your whole class. The closer the two bars, the more of your class has finished.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2">
