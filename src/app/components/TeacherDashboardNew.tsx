@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { User, Assessment } from '../types';
 import { useAuth } from './AuthContext';
 import { getUserAssessmentResults, getStudentsForTeacher } from '../utils/api';
-import { fetchMyAssessmentResults, submitTeachingStyleAssessment } from '../utils/assessmentApi';
+import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress } from '../utils/storage';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
@@ -70,86 +70,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     try {
       const results = await fetchMyAssessmentResults();
       // Normalize server results into the same shape used locally
-      const normalized = results.map((r: any) => {
-        let type = r.assessmentType;
-        if (type === 'learning') type = 'kolb';
-        else if (type === 'thinking') type = 'sternberg';
-        else if (type === 'decision') type = 'dual-process';
-
-        const rawResults = r.results || {};
-        const rawScores = rawResults.scores || rawResults || {};
-        const scoreObj: any = {};
-
-        const capitalize = (str: string) => {
-          if (!str) return 'Unknown';
-          return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-        };
-
-        if (type === 'kolb') {
-          const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
-          
-          // Reconstruct CE, RO, AC, AE from style scores
-          const totalQ = rawResults.totalQuestions || 12;
-          const maxPerStyle = (totalQ / 4) * 5; // e.g. 15 for 12 questions
-          
-          const diverging = rawScores.Diverging || rawScores.diverging || 0;
-          const accommodating = rawScores.Accommodating || rawScores.accommodating || 0;
-          const assimilating = rawScores.Assimilating || rawScores.assimilating || 0;
-          const converging = rawScores.Converging || rawScores.converging || 0;
-
-          const ce = rawScores.CE !== undefined ? rawScores.CE : Math.round(((diverging + accommodating) / (maxPerStyle * 2)) * 48);
-          const ro = rawScores.RO !== undefined ? rawScores.RO : Math.round(((diverging + assimilating) / (maxPerStyle * 2)) * 48);
-          const ac = rawScores.AC !== undefined ? rawScores.AC : Math.round(((assimilating + converging) / (maxPerStyle * 2)) * 48);
-          const ae = rawScores.AE !== undefined ? rawScores.AE : Math.round(((accommodating + converging) / (maxPerStyle * 2)) * 48);
-
-          scoreObj.kolb = {
-            style,
-            scores: {
-              CE: ce,
-              RO: ro,
-              AC: ac,
-              AE: ae,
-              Diverging: diverging,
-              Accommodating: accommodating,
-              Assimilating: assimilating,
-              Converging: converging
-            }
-          };
-        } else if (type === 'sternberg') {
-          const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
-          scoreObj.sternberg = {
-            style,
-            scores: {
-              analytical: rawScores.analytical !== undefined ? rawScores.analytical : (rawScores.Analytical || 0),
-              creative: rawScores.creative !== undefined ? rawScores.creative : (rawScores.Creative || 0),
-              practical: rawScores.practical !== undefined ? rawScores.practical : (rawScores.Practical || 0)
-            }
-          };
-        } else if (type === 'dual-process') {
-          const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
-          scoreObj.dualProcess = {
-            style,
-            scores: {
-              system1: rawScores.system1 !== undefined ? rawScores.system1 : (rawScores.System1 || rawScores.intuitive || rawScores.Intuitive || 0),
-              system2: rawScores.system2 !== undefined ? rawScores.system2 : (rawScores.System2 || rawScores.reflective || rawScores.Reflective || 0)
-            }
-          };
-        } else {
-          scoreObj[type] = rawResults;
-        }
-
-        return {
-          id: r.id || r.resultKey || `server-${r.assessmentType}-${r.completedAt}`,
-          userId: r.userId,
-          type,
-          responses: [],
-          score: scoreObj,
-          completedAt: r.completedAt,
-          completed: true,
-          fromServer: true
-        };
-      });
-      setServerAssessments(normalized);
+      setServerAssessments(normalizeServerResults(results));
     } catch (e) {
       console.error('[TeacherDashboard] Failed to load server assessments:', e);
     }
@@ -281,7 +202,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const teachingStyleAssessments = useMemo(() => 
     [...myAssessments, ...serverAssessments]
       .filter(a => a.type === 'teaching-style')
-      .sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0)),
+      .sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()),
     [myAssessments, serverAssessments]
   );
 

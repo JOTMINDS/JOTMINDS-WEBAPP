@@ -30,9 +30,11 @@ import {
   type TeacherPerformance,
   type ClassMetrics,
 } from '../utils/schoolAnalytics';
-import { getSchoolRosterAPI } from '../utils/api';
+import { getSchoolRosterAPI, getAllAssessmentResults } from '../utils/api';
+import { normalizeServerResults } from '../utils/assessmentApi';
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { SchoolTeacherStylesView } from './SchoolTeacherStylesView';
+import { StudentDetailView } from './StudentDetailView';
 import { getUserJotsCode } from '../utils/jotsCode';
 import {
   BarChart,
@@ -74,6 +76,11 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
   const [classes, setClasses] = useState(initialClasses || []);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Student reports: assessment results live in the server KV, not local storage.
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  const [studentAssessments, setStudentAssessments] = useState<any[]>([]);
+  const [studentResultsLoading, setStudentResultsLoading] = useState(false);
+
   useEffect(() => {
     loadSchoolData();
   }, [schoolId]);
@@ -106,6 +113,28 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
       setIsLoading(false);
     }
   };
+
+  // Batch-fetch every student's assessment results from the server so the
+  // admin can open full per-student reports.
+  useEffect(() => {
+    let cancelled = false;
+    const ids = (students || []).map((s: any) => s.id).filter(Boolean);
+    if (ids.length === 0) { setStudentAssessments([]); return; }
+    setStudentResultsLoading(true);
+    (async () => {
+      try {
+        const res = await getAllAssessmentResults(ids);
+        const normalized = res?.success ? normalizeServerResults(res.results || []) : [];
+        if (!cancelled) setStudentAssessments(normalized);
+      } catch (e) {
+        console.error('Failed to load student assessment results', e);
+        if (!cancelled) setStudentAssessments([]);
+      } finally {
+        if (!cancelled) setStudentResultsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [students]);
 
   useEffect(() => {
     if (students.length > 0) {
@@ -155,6 +184,17 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
   // Show teaching styles sub-view
   if (showTeacherStyles && user) {
     return <SchoolTeacherStylesView admin={user} onBack={() => setShowTeacherStyles(false)} />;
+  }
+
+  // Show individual student report sub-view
+  if (selectedStudent) {
+    return (
+      <StudentDetailView
+        student={selectedStudent}
+        assessments={studentAssessments}
+        onBack={() => setSelectedStudent(null)}
+      />
+    );
   }
 
   const COLORS = ['#5B7DB1', '#6B4C9A', '#10b981', '#f59e0b'];
@@ -343,10 +383,11 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-6 overflow-x-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="teachers">Teachers</TabsTrigger>
+            <TabsTrigger value="students">Students</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
             <TabsTrigger value="grades">Grades</TabsTrigger>
           </TabsList>
@@ -686,6 +727,65 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Students Tab — roster summary + per-student report drill-down */}
+          <TabsContent value="students" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Student Reports</CardTitle>
+                <CardDescription>
+                  View each student's completed assessments. Click a student to open their full cognitive report.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {studentResultsLoading && (
+                  <div className="flex items-center gap-3 py-4 text-muted-foreground">
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+                    <span className="text-sm">Loading student assessments…</span>
+                  </div>
+                )}
+
+                {!studentResultsLoading && students.length === 0 && (
+                  <div className="py-10 text-center text-muted-foreground">No students enrolled yet.</div>
+                )}
+
+                <div className="space-y-2">
+                  {students.map((s: any) => {
+                    const mine = studentAssessments.filter((a: any) => a.userId === s.id && a.completed);
+                    const learning = mine.find((a: any) => a.score?.kolb)?.score?.kolb?.style;
+                    const thinking = mine.find((a: any) => a.score?.sternberg)?.score?.sternberg?.style;
+                    const decision = mine.find((a: any) => a.score?.dualProcess)?.score?.dualProcess?.style;
+                    const styleTags = [learning, thinking, decision].filter(Boolean) as string[];
+                    const name = s.name || s.studentName || 'Student';
+                    return (
+                      <div
+                        key={s.id}
+                        className="flex items-center justify-between gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 truncate">{name}</div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <Badge variant="secondary">{mine.length} completed</Badge>
+                            {styleTags.map((t, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">{t}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={mine.length === 0}
+                          onClick={() => setSelectedStudent(s)}
+                        >
+                          {mine.length === 0 ? 'No reports' : 'View Report →'}
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
