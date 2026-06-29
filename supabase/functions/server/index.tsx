@@ -3219,8 +3219,42 @@ app.post('/make-server-fc8eb847/access-request/revoke', async (c) => {
       await kv.set(approvedRequest.id, updatedRequest);
     }
 
-    return c.json({ 
-      success: true, 
+    // Notify the parent by email that their access was removed by the child.
+    if (parentProfile.email) {
+      try {
+        const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${resendApiKey}`
+          },
+          body: JSON.stringify({
+            from: 'JotMinds <service@jotminds.com>',
+            to: parentProfile.email,
+            subject: 'Your access to a JotMinds account was removed',
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                  <img src="https://www.jotminds.com/logo.png" alt="JotMinds Logo" style="height: 48px; width: auto;" />
+                </div>
+                <h2>Account access removed</h2>
+                <p>Hi ${parentProfile.name || 'there'},</p>
+                <p><strong>${userProfile.name || 'A student'}</strong> has removed your access to their JotMinds account.</p>
+                <p>You will no longer be able to view their cognitive profile or assessment results. If you believe this was a mistake, please reach out to them directly to request access again.</p>
+                <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">This is an automated notification from JotMinds.</p>
+              </div>
+            `
+          })
+        });
+      } catch (emailErr) {
+        console.error('[access-request/revoke] Failed to send parent notification email:', emailErr);
+        // Non-fatal: the revoke itself succeeded.
+      }
+    }
+
+    return c.json({
+      success: true,
       message: `Access revoked from ${parentProfile.name}`
     });
   } catch (error) {
