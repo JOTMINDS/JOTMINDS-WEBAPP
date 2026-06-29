@@ -949,6 +949,7 @@ function AppContent() {
           <ParentDashboard
             user={displayUser}
             onLogout={logoutHandler}
+            onViewSettings={() => setIsSettingsOpen(true)}
           />
         );
       }

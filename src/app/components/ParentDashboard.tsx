@@ -21,7 +21,7 @@ import {
   getParentObservationsByParent,
   hasChildGrantedAccess
 } from '../utils/storage';
-import { Users, Plus, UserCheck, Clock, CheckCircle2, XCircle, User as UserIcon, LogOut, Mail, Calendar, BookOpen, TrendingUp, Brain, Heart, Shield, Home, UserPlus, X, Eye, Lightbulb, MessageSquare, Sparkles, FileText, GitCompare, RefreshCw } from 'lucide-react';
+import { Users, Plus, UserCheck, Clock, CheckCircle2, XCircle, User as UserIcon, LogOut, Mail, Calendar, BookOpen, TrendingUp, Brain, Heart, Shield, Home, UserPlus, X, Eye, Lightbulb, MessageSquare, Sparkles, FileText, GitCompare, RefreshCw, Settings } from 'lucide-react';
 import { FrameworkInfo } from './FrameworkInfo';
 import { getGhanaMapping } from '../utils/scoring';
 import { calculateAge } from '../utils/dateUtils';
@@ -32,9 +32,10 @@ import { formatDate, formatDateTime } from '../utils/dateFormat';
 interface ParentDashboardProps {
   user: User;
   onLogout: () => void;
+  onViewSettings?: () => void;
 }
 
-export function ParentDashboard({ user, onLogout }: ParentDashboardProps) {
+export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashboardProps) {
   const [children, setChildren] = useState<User[]>([]);
   const [childrenData, setChildrenData] = useState<Map<string, Assessment[]>>(new Map());
   const [childEmail, setChildEmail] = useState('');
@@ -390,6 +391,12 @@ export function ParentDashboard({ user, onLogout }: ParentDashboardProps) {
               </Button>
             </div>
             <FrameworkInfo userRole="parent" />
+            {onViewSettings && (
+              <Button variant="outline" onClick={onViewSettings}>
+                <Settings className="mr-2 h-4 w-4" />
+                Profile & Settings
+              </Button>
+            )}
             <Button variant="outline" onClick={onLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Logout
