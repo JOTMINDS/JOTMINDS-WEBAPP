@@ -80,6 +80,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [studentAssessments, setStudentAssessments] = useState<any[]>([]);
   const [studentResultsLoading, setStudentResultsLoading] = useState(false);
+  const [studentFilter, setStudentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
 
   useEffect(() => {
     loadSchoolData();
@@ -738,7 +739,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               <CardHeader>
                 <CardTitle>Student Reports</CardTitle>
                 <CardDescription>
-                  View each student's completed assessments. Click a student to open their full cognitive report.
+                  Every student in the school. Each row shows the teacher they're assigned to (if any). Click a student to open their full cognitive report.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -753,40 +754,76 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                   <div className="py-10 text-center text-muted-foreground">No students enrolled yet.</div>
                 )}
 
-                <div className="space-y-2">
-                  {students.map((s: any) => {
-                    const mine = studentAssessments.filter((a: any) => a.userId === s.id && a.completed);
-                    const learning = mine.find((a: any) => a.score?.kolb)?.score?.kolb?.style;
-                    const thinking = mine.find((a: any) => a.score?.sternberg)?.score?.sternberg?.style;
-                    const decision = mine.find((a: any) => a.score?.dualProcess)?.score?.dualProcess?.style;
-                    const styleTags = [learning, thinking, decision].filter(Boolean) as string[];
-                    const name = s.name || s.studentName || 'Student';
-                    return (
-                      <div
-                        key={s.id}
-                        className="flex items-center justify-between gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="min-w-0">
-                          <div className="font-medium text-gray-900 truncate">{name}</div>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <Badge variant="secondary">{mine.length} completed</Badge>
-                            {styleTags.map((t, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">{t}</Badge>
-                            ))}
-                          </div>
+                {students.length > 0 && (() => {
+                  const assignedCount = students.filter((s: any) => s.teacherId || (s.linkedTeachers && s.linkedTeachers.length > 0)).length;
+                  const visible = students.filter((s: any) => {
+                    const isAssigned = !!(s.teacherId || (s.linkedTeachers && s.linkedTeachers.length > 0));
+                    return studentFilter === 'all' ? true : studentFilter === 'assigned' ? isAssigned : !isAssigned;
+                  });
+                  return (
+                    <>
+                      <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                        <p className="text-sm text-muted-foreground">
+                          {students.length} students · {assignedCount} assigned to a teacher · {students.length - assignedCount} unassigned
+                        </p>
+                        <div className="flex gap-1">
+                          {(['all', 'assigned', 'unassigned'] as const).map(f => (
+                            <Button
+                              key={f}
+                              variant={studentFilter === f ? 'default' : 'outline'}
+                              size="sm"
+                              className="capitalize text-xs h-7"
+                              onClick={() => setStudentFilter(f)}
+                            >
+                              {f}
+                            </Button>
+                          ))}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={mine.length === 0}
-                          onClick={() => setSelectedStudent(s)}
-                        >
-                          {mine.length === 0 ? 'No reports' : 'View Report →'}
-                        </Button>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div className="space-y-2">
+                        {visible.map((s: any) => {
+                          const mine = studentAssessments.filter((a: any) => a.userId === s.id && a.completed);
+                          const learning = mine.find((a: any) => a.score?.kolb)?.score?.kolb?.style;
+                          const thinking = mine.find((a: any) => a.score?.sternberg)?.score?.sternberg?.style;
+                          const decision = mine.find((a: any) => a.score?.dualProcess)?.score?.dualProcess?.style;
+                          const styleTags = [learning, thinking, decision].filter(Boolean) as string[];
+                          const name = s.name || s.studentName || 'Student';
+                          const assignedTeacher = s.teacherName || null;
+                          return (
+                            <div
+                              key={s.id}
+                              className="flex items-center justify-between gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="min-w-0">
+                                <div className="font-medium text-gray-900 truncate">{name}</div>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  {assignedTeacher ? (
+                                    <Badge variant="outline" className="text-xs border-[#5B7DB1] text-[#5B7DB1]">👩‍🏫 {assignedTeacher}</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs text-muted-foreground">Unassigned</Badge>
+                                  )}
+                                  <Badge variant="secondary">{mine.length} completed</Badge>
+                                  {styleTags.map((t, i) => (
+                                    <Badge key={i} variant="outline" className="text-xs">{t}</Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={mine.length === 0}
+                                onClick={() => setSelectedStudent(s)}
+                              >
+                                {mine.length === 0 ? 'No reports' : 'View Report →'}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>

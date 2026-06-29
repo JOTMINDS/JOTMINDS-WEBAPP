@@ -2598,7 +2598,7 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
           studentRows.map(async (m: any) => {
             const studentId = m.user_id;
             const studentProfile = await kv.get(`user:${studentId}`);
-            
+
             // Only include students assigned to THIS teacher
             if (studentProfile?.teacherId !== user.id && !(studentProfile?.linkedTeachers || []).includes(user.id)) {
               return null;
@@ -2753,18 +2753,29 @@ app.get('/make-server-fc8eb847/school/roster', async (c) => {
       u.school && u.school.toLowerCase().trim() === schoolName.toLowerCase().trim()
     );
 
-    const students = rosterUsers.filter((u: any) => u.role === 'student').map((s: any) => ({
-      id: s.id,
-      name: s.name,
-      learningStyle: s.learningStyle || 'Unknown',
-      thinkingStyle: s.thinkingStyle || 'Unknown',
-      strengths: s.strengths || [],
-      areasForImprovement: s.areasForImprovement || [],
-      recentScores: s.recentScores || {
-        analytical: 70, creative: 70, practical: 70, reflection: 70, intuition: 70, logic: 70
-      },
-      lastAssessmentDate: s.lastAssessmentDate || s.createdAt || new Date().toISOString()
-    }));
+    // Build an id -> name lookup so we can label which teacher a student is assigned to
+    const teacherNameById: Record<string, string> = {};
+    rosterUsers.filter((u: any) => u.role === 'teacher').forEach((t: any) => { teacherNameById[t.id] = t.name; });
+
+    const students = rosterUsers.filter((u: any) => u.role === 'student').map((s: any) => {
+      const assignedTeacherId = s.teacherId || (Array.isArray(s.linkedTeachers) ? s.linkedTeachers[0] : null) || null;
+      return {
+        id: s.id,
+        name: s.name,
+        learningStyle: s.learningStyle || 'Unknown',
+        thinkingStyle: s.thinkingStyle || 'Unknown',
+        strengths: s.strengths || [],
+        areasForImprovement: s.areasForImprovement || [],
+        recentScores: s.recentScores || {
+          analytical: 70, creative: 70, practical: 70, reflection: 70, intuition: 70, logic: 70
+        },
+        // Teacher assignment — so the school portal can show who each student belongs to
+        teacherId: assignedTeacherId,
+        teacherName: s.teacherName || (assignedTeacherId ? teacherNameById[assignedTeacherId] : null) || null,
+        linkedTeachers: s.linkedTeachers || [],
+        lastAssessmentDate: s.lastAssessmentDate || s.createdAt || new Date().toISOString()
+      };
+    });
 
     const teachers = rosterUsers.filter((u: any) => u.role === 'teacher').map((t: any) => ({
       id: t.id,
