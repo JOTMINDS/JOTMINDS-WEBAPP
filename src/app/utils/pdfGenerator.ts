@@ -294,9 +294,10 @@ export function generatePDF(assessment: Assessment, userName: string, ghanaMappi
   }
 
   // Save
+  const safeUserName = userName || 'User';
   const filename = isOrganizational 
-    ? `organizational-assessment-${userName.replace(/\s+/g, '-')}.pdf`
-    : `thinking-styles-report-${userName.replace(/\s+/g, '-')}.pdf`;
+    ? `organizational-assessment-${safeUserName.replace(/\s+/g, '-')}.pdf`
+    : `thinking-styles-report-${safeUserName.replace(/\s+/g, '-')}.pdf`;
   doc.save(filename);
 }
 
@@ -338,24 +339,32 @@ export async function exportReportToPDF(elementId: string, filename: string = 'J
         const img = new Image();
         img.src = '/logo.png'; // Assuming logo is in public folder
         img.onload = () => {
-          // Add watermark to center of each page
-          // Opacity is handled by setting global alpha if supported, or just drawing it normally.
-          // jsPDF supports setGState for opacity.
-          const totalPages = Math.ceil(imgHeight / pdfHeight);
-          for (let i = 1; i <= totalPages; i++) {
-            pdf.setPage(i);
-            
-            // Try to set opacity
-            pdf.saveGraphicsState();
-            pdf.setGState(new (pdf as any).GState({opacity: 0.1}));
-            
-            // Draw logo in center (approx 100x100 mm)
-            const watermarkSize = 100;
-            pdf.addImage(img, 'PNG', (pdfWidth - watermarkSize) / 2, (pdfHeight - watermarkSize) / 2, watermarkSize, watermarkSize);
-            
-            pdf.restoreGraphicsState();
+          try {
+            const totalPages = Math.ceil(imgHeight / pdfHeight);
+            for (let i = 1; i <= totalPages; i++) {
+              pdf.setPage(i);
+              
+              try {
+                pdf.saveGraphicsState();
+                pdf.setGState(new (pdf as any).GState({opacity: 0.1}));
+              } catch (e) {
+                console.warn('GState not supported or failed', e);
+              }
+              
+              const watermarkSize = 100;
+              pdf.addImage(img, 'PNG', (pdfWidth - watermarkSize) / 2, (pdfHeight - watermarkSize) / 2, watermarkSize, watermarkSize);
+              
+              try {
+                pdf.restoreGraphicsState();
+              } catch (e) {
+                // Ignore
+              }
+            }
+          } catch (e) {
+            console.error('Error adding watermark', e);
+          } finally {
+            resolve();
           }
-          resolve();
         };
         img.onerror = () => {
           console.warn("Watermark image not found, proceeding without it.");

@@ -7,7 +7,7 @@ import { Input } from './ui/input';
 import {
   ArrowLeft, Users, TrendingUp, AlertTriangle, CheckCircle,
   Search, ChevronDown, ChevronUp, BarChart3, Activity,
-  BookOpen, Award, Zap
+  BookOpen, Award, Zap, HelpCircle
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTip,
@@ -18,6 +18,7 @@ import { getEngagementMetrics } from '../utils/engagementTracking';
 import { getGamificationProfile } from '../utils/gamification';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { getAllAssessmentResults } from '../utils/api';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 import { InstitutionMember } from '../utils/institution';
 
@@ -415,6 +416,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
   }, [stats]);
 
   return (
+    <TooltipProvider>
     <div className={`min-h-screen ${embedded ? 'bg-transparent' : 'bg-[#f8f9fa]'}`}>
       {/* Header */}
       {!embedded && (
@@ -469,13 +471,21 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         {tab === 'overview' && (<>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: 'Total Students', value: stats.total, color: '#5B7DB1', icon: <Users className="w-4 h-4" /> },
-              { label: 'Assessed', value: `${stats.assessed} (${Math.round((stats.assessed / Math.max(stats.total, 1)) * 100)}%)`, color: '#1E8A6E', icon: <CheckCircle className="w-4 h-4" /> },
-              { label: 'Avg Engagement', value: `${stats.avgEng}/100`, color: '#6B4C9A', icon: <Activity className="w-4 h-4" /> },
-              { label: 'At Risk', value: stats.riskCounts.high, color: '#DC2626', icon: <AlertTriangle className="w-4 h-4" /> },
+              { label: 'Total Students', value: stats.total, color: '#5B7DB1', icon: <Users className="w-4 h-4" />, help: 'Total number of active students currently enrolled in the institution.' },
+              { label: 'Assessed', value: `${stats.assessed} (${Math.round((stats.assessed / Math.max(stats.total, 1)) * 100)}%)`, color: '#1E8A6E', icon: <CheckCircle className="w-4 h-4" />, help: 'Number of students who have completed at least one assessment.' },
+              { label: 'Avg Engagement', value: `${stats.avgEng}/100`, color: '#6B4C9A', icon: <Activity className="w-4 h-4" />, help: 'Average engagement score across the school based on recent activity, assessments completed, and daily streaks.' },
+              { label: 'At Risk', value: stats.riskCounts.high, color: '#DC2626', icon: <AlertTriangle className="w-4 h-4" />, help: 'Students with very low engagement scores, indicating they may need additional support.' },
             ].map(s => (
               <Card key={s.label}><CardContent className="pt-4 text-center">
-                <div className="flex justify-center mb-1" style={{ color: s.color }}>{s.icon}</div>
+                <div className="flex justify-center items-center gap-1.5 mb-1" style={{ color: s.color }}>
+                  {s.icon}
+                  {s.help && (
+                    <Tooltip>
+                      <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" /></TooltipTrigger>
+                      <TooltipContent className="max-w-[200px] text-center">{s.help}</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
                 <div className="text-xl font-semibold" style={{ color: s.color }}>{s.value}</div>
                 <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
               </CardContent></Card>
@@ -484,7 +494,15 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
           <div className="grid md:grid-cols-2 gap-4">
             <Card>
-              <CardHeader><CardTitle className="text-sm">Engagement Distribution</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  Engagement Distribution
+                  <Tooltip>
+                    <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
+                    <TooltipContent className="max-w-[220px]">Breakdown of students by their overall engagement scores (0-100), calculated from recent activity and usage.</TooltipContent>
+                  </Tooltip>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="h-[200px]">
                 {stats.engagementBands.length === 0
                   ? <div className="h-full flex items-center justify-center text-gray-400 text-sm">No data yet</div>
@@ -502,7 +520,15 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-sm">Assessment Type Completion</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  Assessment Type Completion
+                  <Tooltip>
+                    <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
+                    <TooltipContent className="max-w-[220px]">Shows how many students have completed the 3 core assessments: Learning Style, Thinking Style, and Decision Style.</TooltipContent>
+                  </Tooltip>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={[
@@ -524,7 +550,15 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
           </div>
 
           <Card>
-            <CardHeader><CardTitle className="text-sm">Student Risk Breakdown</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                Student Risk Breakdown
+                <Tooltip>
+                  <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[250px]">Students are categorized by risk based on their engagement and assessment frequency. High Risk means very low engagement.</TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               {Object.entries(stats.riskCounts).map(([risk, count]) => {
                 const p = Math.round((count / Math.max(stats.total, 1)) * 100);
@@ -661,9 +695,18 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         </>)}
 
         {tab === 'leaders' && (<>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4">
             <Card>
-              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Award className="w-4 h-4 text-[#E0A020]" /> JotMinds Champions (XP)</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Award className="w-4 h-4 text-orange-500" /> 
+                  Gamification Leaders
+                  <Tooltip>
+                    <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
+                    <TooltipContent className="max-w-[200px]">Students with the highest XP earned from taking assessments and logging in daily.</TooltipContent>
+                  </Tooltip>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-3">
                 {stats.topXP.length === 0 ? <p className="text-sm text-gray-500">No XP data available.</p> : stats.topXP.map((s, i) => (
                   <div key={s.user.id} className="flex justify-between items-center bg-yellow-50 p-3 rounded-lg">
@@ -681,7 +724,16 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-orange-500" /> Streak Leaders</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-500" /> 
+                  Active Streaks
+                  <Tooltip>
+                    <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
+                    <TooltipContent className="max-w-[200px]">Students who have logged in and engaged with the platform for consecutive days.</TooltipContent>
+                  </Tooltip>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-3">
                 {stats.topStreaks.length === 0 ? <p className="text-sm text-gray-500">No active streaks.</p> : stats.topStreaks.map((s, i) => (
                   <div key={s.user.id} className="flex justify-between items-center bg-orange-50 p-3 rounded-lg">
@@ -699,7 +751,16 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4 text-[#1E8A6E]" /> Top Quiz Performers</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-[#1E8A6E]" /> 
+                  Top Quiz Performers
+                  <Tooltip>
+                    <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
+                    <TooltipContent className="max-w-[220px]">Students with the highest average scores across all cognitive assessments taken.</TooltipContent>
+                  </Tooltip>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-3">
                 {stats.topScores.length === 0 ? <p className="text-sm text-gray-500">No quiz scores available.</p> : stats.topScores.map((s, i) => (
                   <div key={s.user.id} className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg">
@@ -721,7 +782,13 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         {tab === 'cognitive' && (<>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Cognitive Profile Summary</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2">
+                Cognitive Profile Summary
+                <Tooltip>
+                  <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[250px]">Averages the scores of all students who took the assessments, highlighting the dominant cognitive traits in your school.</TooltipContent>
+                </Tooltip>
+              </CardTitle>
               <p className="text-xs text-gray-500 mt-1">Aggregated dimensions across all completed student assessments</p>
             </CardHeader>
             <CardContent>
@@ -882,5 +949,6 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         </>)}
       </div>
     </div>
+    </TooltipProvider>
   );
 }

@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import {
-  ArrowLeft, Building2, QrCode, Users, BarChart3, Download, Settings, Shield, Loader, LogOut
+  ArrowLeft, Building2, QrCode, Users, BarChart3, Download, Settings, Shield, Loader, LogOut, Brain
 } from 'lucide-react';
 import { User } from '../../types';
 import {
@@ -239,11 +239,11 @@ export function InstitutionDashboard({
   
   let availableTabs: Tab[];
   if (isPrimaryAdmin) {
-    availableTabs = ['overview', 'code', 'members', 'analytics', 'reports', 'settings', 'profile'];
+    availableTabs = ['overview', 'code', 'members', 'analytics', 'reports', 'teacher_styles', 'settings', 'profile'];
   } else if (isCoAdmin) {
-    availableTabs = ['overview', 'members', 'analytics', 'reports', 'profile'];
+    availableTabs = ['overview', 'members', 'analytics', 'reports', 'teacher_styles', 'profile'];
   } else {
-    availableTabs = ['overview', 'members', 'analytics', 'reports', 'profile'];
+    availableTabs = ['overview', 'members', 'analytics', 'reports', 'teacher_styles', 'profile'];
   }
 
   return (
@@ -294,9 +294,12 @@ export function InstitutionDashboard({
                 {t === 'members' && <Users className="h-4 w-4" />}
                 {t === 'analytics' && <BarChart3 className="h-4 w-4" />}
                 {t === 'reports' && <Download className="h-4 w-4" />}
+                {t === 'teacher_styles' && <Brain className="h-4 w-4" />}
                 {t === 'settings' && <Settings className="h-4 w-4" />}
                 {t === 'profile' && <Shield className="h-4 w-4" />}
-                <span className="capitalize">{t}</span>
+                <span className="capitalize">
+                  {t === 'analytics' ? 'Assessment Analytics' : t.replace('_', ' ')}
+                </span>
               </button>
             ))}
           </div>
