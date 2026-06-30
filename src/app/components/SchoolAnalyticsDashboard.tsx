@@ -519,14 +519,25 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
           <div className="grid md:grid-cols-2 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
+              <CardHeader className="pb-0">
+                <CardTitle className="text-sm flex items-center gap-2 mb-1">
                   Engagement Distribution
                   <Tooltip>
                     <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
-                    <TooltipContent className="max-w-[220px]">Breakdown of students by their overall engagement scores (0-100), calculated from recent activity and usage.</TooltipContent>
+                    <TooltipContent className="max-w-[280px]">
+                      <p className="mb-1 text-sm font-semibold border-b pb-1 mb-2">How is this calculated?</p>
+                      <ul className="text-xs space-y-1.5">
+                        <li><strong className="text-[#1E8A6E]">High (70+):</strong> Consistently completing assessments and maintaining learning streaks.</li>
+                        <li><strong className="text-[#E0A020]">Medium (40-69):</strong> Semi-active, taking assessments occasionally.</li>
+                        <li><strong className="text-[#DC2626]">Low (&lt;40):</strong> Rarely active, dropping streaks, may need motivation.</li>
+                        <li><strong className="text-gray-400">Untracked:</strong> Have not taken any assessments yet.</li>
+                      </ul>
+                    </TooltipContent>
                   </Tooltip>
                 </CardTitle>
+                <p className="text-xs text-gray-500 leading-snug">
+                  Students grouped by their 0-100 engagement score.
+                </p>
               </CardHeader>
               <CardContent className="h-[200px]">
                 {stats.engagementBands.length === 0
@@ -545,14 +556,17 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
+              <CardHeader className="pb-0">
+                <CardTitle className="text-sm flex items-center gap-2 mb-1">
                   Assessment Type Completion
                   <Tooltip>
                     <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
                     <TooltipContent className="max-w-[220px]">Shows how many students have completed the 3 core assessments: Learning Style, Thinking Style, and Decision Style.</TooltipContent>
                   </Tooltip>
                 </CardTitle>
+                <p className="text-xs text-gray-500 leading-snug">
+                  Completion status for the 3 core cognitive modules.
+                </p>
               </CardHeader>
               <CardContent className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -575,14 +589,25 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
+            <CardHeader className="pb-0">
+              <CardTitle className="text-sm flex items-center gap-2 mb-1">
                 Student Risk Breakdown
                 <Tooltip>
                   <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
-                  <TooltipContent className="max-w-[250px]">Students are categorized by risk based on their engagement and assessment frequency. High Risk means very low engagement.</TooltipContent>
+                  <TooltipContent className="max-w-[280px]">
+                    <p className="mb-1 text-sm font-semibold border-b pb-1 mb-2">Risk Categories</p>
+                    <ul className="text-xs space-y-1.5">
+                      <li><strong className="text-[#DC2626]">At Risk:</strong> Severe drop in engagement, action recommended.</li>
+                      <li><strong className="text-[#E0A020]">Needs Support:</strong> Noticeable drop in engagement.</li>
+                      <li><strong className="text-[#1E8A6E]">On Track:</strong> Healthy and consistent engagement.</li>
+                      <li><strong className="text-gray-400">Not Started:</strong> Pending onboarding or first assessment.</li>
+                    </ul>
+                  </TooltipContent>
                 </Tooltip>
               </CardTitle>
+              <p className="text-xs text-gray-500 leading-snug mb-3">
+                Students flagged for intervention based on engagement dips.
+              </p>
             </CardHeader>
             <CardContent>
               {Object.entries(stats.riskCounts).map(([risk, count]) => {
