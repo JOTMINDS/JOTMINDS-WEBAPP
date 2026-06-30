@@ -7,7 +7,7 @@ import { Input } from './ui/input';
 import {
   ArrowLeft, Users, TrendingUp, AlertTriangle, CheckCircle,
   Search, ChevronDown, ChevronUp, BarChart3, Activity,
-  BookOpen, Award, Zap, HelpCircle
+  BookOpen, Award, Zap, HelpCircle, Info, Sparkles
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTip,
@@ -469,7 +469,32 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
         {tab === 'overview' && (<>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="mb-6 bg-blue-50/50 text-blue-900 p-5 rounded-xl border border-blue-100 shadow-sm text-sm">
+            <h3 className="font-semibold mb-2 flex items-center gap-1.5 text-base"><Info className="w-5 h-5 text-blue-600" /> Understanding Your Dashboard</h3>
+            <p className="text-blue-800/80 leading-relaxed">
+              Welcome to the Assessment Analytics overview. This dashboard aggregates the cognitive and engagement data of all students in your school. 
+              Use these insights to identify students who may need additional support, track completion rates for our core cognitive assessments (Learning Style, Thinking Style, and Decision Style), 
+              and discover the dominant cognitive traits across your student body.
+            </p>
+          </div>
+
+          {insights.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wider flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" /> Actionable Insights
+              </h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {insights.map((ins, i) => (
+                  <div key={i} className={`p-4 rounded-lg border text-sm ${ins.type === 'warning' ? 'bg-red-50 border-red-100 text-red-900' : ins.type === 'success' ? 'bg-green-50 border-green-100 text-green-900' : 'bg-gray-50 border-gray-100 text-gray-900'}`}>
+                    <div className="font-semibold mb-1">{ins.title}</div>
+                    <div className="opacity-90">{ins.body}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             {[
               { label: 'Total Students', value: stats.total, color: '#5B7DB1', icon: <Users className="w-4 h-4" />, help: 'Total number of active students currently enrolled in the institution.' },
               { label: 'Assessed', value: `${stats.assessed} (${Math.round((stats.assessed / Math.max(stats.total, 1)) * 100)}%)`, color: '#1E8A6E', icon: <CheckCircle className="w-4 h-4" />, help: 'Number of students who have completed at least one assessment.' },
