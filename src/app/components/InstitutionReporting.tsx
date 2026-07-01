@@ -36,18 +36,31 @@ export function InstitutionReporting({ institutionId, institutionName, members =
         setAllUsers(users);
 
         // Get approved student user IDs in this institution
-        const studentMemberIds = members
+        let studentMemberIds = members
           .filter(m => m.role === 'student' && m.status === 'approved')
           .map(m => m.userId);
 
-        let assessmentsArray = [];
+        // Fallback: If members sync is empty, use local storage students for this context
+        if (studentMemberIds.length === 0) {
+          if (currentTeacherId) {
+             studentMemberIds = users.filter(u => u.role === 'student' && (u.teacherId === currentTeacherId || (u.linkedTeachers && u.linkedTeachers.includes(currentTeacherId)))).map(u => u.id);
+          } else {
+             studentMemberIds = users.filter(u => u.role === 'student').map(u => u.id);
+          }
+        }
+
+        let assessmentsArray: any[] = [];
         if (studentMemberIds.length > 0) {
-          // getAllAssessmentResults is async from api.ts
-          const response = await getAllAssessmentResults(studentMemberIds);
-          if (response && Array.isArray(response.results)) {
-            assessmentsArray = response.results;
-          } else if (Array.isArray(response)) {
-            assessmentsArray = response;
+          // Chunk requests to avoid URI Too Long (414)
+          const chunkSize = 50;
+          for (let i = 0; i < studentMemberIds.length; i += chunkSize) {
+            const chunk = studentMemberIds.slice(i, i + chunkSize);
+            const response = await getAllAssessmentResults(chunk);
+            if (response && Array.isArray(response.results)) {
+              assessmentsArray.push(...response.results);
+            } else if (Array.isArray(response)) {
+              assessmentsArray.push(...response);
+            }
           }
         }
         setAllAssessments(assessmentsArray);
@@ -70,14 +83,34 @@ export function InstitutionReporting({ institutionId, institutionName, members =
   const filteredData = useMemo(() => {
     let usersInScope = allUsers.filter(u => u.role === 'student');
     
+    // Check if we actually have any approved student members
+    const hasStudentMembers = members.some(m => m.role === 'student' && m.status === 'approved');
+
     // If members are provided, ensure student is part of institution
-    if (members.length > 0) {
-      usersInScope = usersInScope.filter(u => approvedMemberIds.has(u.id));
+    if (hasStudentMembers) {
+      const studentMembers = members.filter(m => m.role === 'student' && m.status === 'approved');
+      
+      usersInScope = studentMembers.map(m => {
+        const local = usersInScope.find(u => u.id === m.userId);
+        if (local) return local;
+        
+        // Virtual user for those not in local storage
+        return {
+          id: m.userId,
+          name: m.userName || 'Unknown Student',
+          role: 'student',
+        } as any;
+      });
+    } else {
+      // Fallback: If no student members are synced, filter local users based on teacher assignment
+      if (currentTeacherId) {
+        usersInScope = usersInScope.filter(u => u.teacherId === currentTeacherId || (u.linkedTeachers && u.linkedTeachers.includes(currentTeacherId)));
+      }
     }
 
     // Filter by Teacher
     if (selectedTeacherId !== 'all') {
-      usersInScope = usersInScope.filter(u => u.teacherId === selectedTeacherId);
+      usersInScope = usersInScope.filter(u => u.teacherId === selectedTeacherId || (u.linkedTeachers && u.linkedTeachers.includes(selectedTeacherId)));
     }
 
     // Match assessments
@@ -283,7 +316,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
                         </td>
                         <td className="p-3 font-medium text-gray-900">{student?.name || 'Unknown Student'}</td>
                         <td className="p-3 text-gray-600">{teacherName || 'Unassigned'}</td>
-                        <td className="p-3 text-gray-600 capitalize">{a.type.replace(/-/g, ' ')}</td>
+                        <td className="p-3 text-gray-600 capitalize">{a.type?.replace(/-/g, ' ') || 'Unknown'}</td>
                       </tr>
                     );
                   })}

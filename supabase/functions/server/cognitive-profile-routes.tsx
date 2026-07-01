@@ -43,10 +43,50 @@ async function generateUnifiedProfile(userId: string) {
     kolbResult ? 'kolb' : null,
     sternbergResult ? 'sternberg' : null,
     dualProcessResult ? 'dual-process' : null,
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
 
   if (completedAssessments.length === 0) {
-    return null; // No assessments completed
+    // Fallback: check if they have a unified thinking assessment (Adult/SHS/JHS)
+    const adultResult = await kv.get(`result:${userId}:adult-thinking`);
+    const shsResult = await kv.get(`result:${userId}:shs-thinking`);
+    const jhsResult = await kv.get(`result:${userId}:jhs-thinking`);
+
+    const fallbackResult = adultResult || shsResult || jhsResult;
+    
+    if (fallbackResult) {
+      const type = fallbackResult.assessmentType || 'thinking';
+      const scores = fallbackResult.results?.percentages || fallbackResult.results?.scores || {};
+      
+      return {
+        // Core Dimensions
+        learningAgility: scores.reflective || 50, 
+        analyticalDepth: scores.analytical || 0,
+        creativeCapacity: scores.creative || 0,
+        practicalExecution: scores.practical || 0,
+        intuitiveSpeed: scores.creative || 0,
+        reflectiveDepth: scores.reflective || 0,
+        
+        // Derived Meta-Dimensions
+        cognitiveFlexibility: 50, 
+        innovationPotential: Math.round(((scores.creative || 0) + (scores.analytical || 0)) / 2),
+        executionCapability: Math.round(((scores.practical || 0) + (scores.analytical || 0)) / 2),
+        metacognitiveAwareness: 50,
+
+        // Summary Stats
+        completedAssessments: [type],
+        profileCompleteness: 100, 
+        dominantStyle: fallbackResult.results?.dominantStyle || fallbackResult.results?.primaryStyle || 'Balanced',
+        cognitiveArchetype: fallbackResult.results?.professionalProfile || fallbackResult.results?.personalityType || 'Balanced Learner',
+
+        // Metadata
+        generatedAt: new Date().toISOString(),
+        sourceResults: {
+          [type]: fallbackResult.id || null
+        }
+      };
+    }
+
+    return null; // No assessments completed at all
   }
 
   // Extract scores with safe defaults

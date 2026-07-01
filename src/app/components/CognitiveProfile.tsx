@@ -722,7 +722,8 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `cognitive-profile-${userName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.html`;
+    const safeUserName = userName || 'User';
+    link.download = `cognitive-profile-${safeUserName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.html`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

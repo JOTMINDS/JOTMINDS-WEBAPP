@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import {
   ArrowLeft, Copy, CheckCircle, ChevronDown, ChevronUp,
-  Info, TrendingUp, QrCode, Search, Brain, BookOpen, Layers, Zap
+  Info, TrendingUp, QrCode, Search, Brain, BookOpen, Layers, Zap, Target
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -297,7 +297,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
   const teachers = useMemo(() => {
     if (!search) return allData;
     const q = search.toLowerCase();
-    return allData.filter(t => t.user.name.toLowerCase().includes(q) || t.user.phone?.includes(q));
+    return allData.filter(t => (t.user.name || '').toLowerCase().includes(q) || t.user.phone?.includes(q));
   }, [allData, search]);
 
   const withTeaching = teachers.filter(t => t.teaching);
@@ -503,7 +503,45 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
 
         {/* ── TEACHING STYLE ── */}
         {tab === 'teaching' && (<>
-          {!withTeaching.length && <Card><CardContent className="py-14 text-center"><BookOpen className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">No teaching style assessments yet</p></CardContent></Card>}
+          {/* TEACHING STYLE EXPLANATION CARD */}
+          <Card className="border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 mb-6">
+            <CardContent className="pt-4">
+              <div className="flex items-start gap-3">
+                <BookOpen className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">Understanding Teaching Styles</h3>
+                  <p className="text-sm text-blue-800 mb-3">
+                    The JotMinds Teaching Style Assessment measures 6 key dimensions of instructional practice. By understanding your teachers' dominant styles, you can better assign them to students with matching learning needs.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mt-4 text-xs">
+                    <div>
+                      <strong className="text-blue-900 block mb-1">Teaching Dimensions (Radar Chart)</strong>
+                      <ul className="space-y-1 text-blue-800 list-disc pl-4">
+                        <li><strong>Authority vs. Facilitation:</strong> Directing learning vs. guiding it.</li>
+                        <li><strong>Transmission vs. Construction:</strong> Giving knowledge directly vs. having students build it.</li>
+                        <li><strong>Motivation:</strong> External rewards vs. fostering internal drive.</li>
+                        <li><strong>Assessment:</strong> Grading for evaluation vs. grading for improvement.</li>
+                        <li><strong>Adaptability:</strong> Sticking to a rigid plan vs. adjusting to student needs.</li>
+                        <li><strong>Climate:</strong> Strict, high-pressure spaces vs. emotionally secure environments.</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <strong className="text-blue-900 block mb-1">Common Teaching Archetypes</strong>
+                      <ul className="space-y-1 text-blue-800 list-disc pl-4">
+                        <li><strong style={{ color: '#DC2626' }}>Authoritative Instructor:</strong> Highly structured, focused on direct knowledge transmission.</li>
+                        <li><strong style={{ color: '#1E8A6E' }}>Facilitator Coach:</strong> Guides students to discover concepts independently.</li>
+                        <li><strong style={{ color: '#6B4C9A' }}>Learning Architect:</strong> Designs comprehensive environments for active knowledge construction.</li>
+                        <li><strong style={{ color: '#E0A020' }}>Engagement Driver:</strong> Highly motivating, driving active student participation.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {!withTeaching.length && <Card className="mb-4"><CardContent className="py-14 text-center"><BookOpen className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">No teaching style assessments yet</p></CardContent></Card>}
           {teachers.filter(t => !t.teaching).length > 0 && (
             <Card className="border-blue-100 bg-blue-50"><CardContent className="pt-4 flex items-start gap-3">
               <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
@@ -644,8 +682,28 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
 
         {/* ── FULL ANALYSIS ── */}
         {tab === 'analysis' && (<>
+          {/* ANALYSIS EXPLANATION CARD */}
+          <Card className="border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 mb-6">
+            <CardContent className="pt-4">
+              <div className="flex items-start gap-3">
+                <Target className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">Understanding Educator Alignment</h3>
+                  <p className="text-sm text-blue-800 mb-3">
+                    Educator Alignment measures the harmony between a teacher's natural cognitive processing (how they learn and think) and their enacted teaching style (how they run their classroom).
+                  </p>
+                  <div className="space-y-2 text-xs text-blue-800">
+                    <p><strong>High Alignment (75-100):</strong> The teacher teaches the way they naturally think. This indicates "authentic pedagogy," resulting in lower burnout and highly consistent classroom environments.</p>
+                    <p><strong>Moderate Alignment (55-74):</strong> The teacher adapts their natural style to fit curriculum or school demands. This "productive tension" is common and often healthy, but requires energy to sustain.</p>
+                    <p><strong>Low Alignment (0-54):</strong> The teacher operates in a style opposite to their natural cognitive preferences. This can lead to rapid burnout, inconsistency, and stress. Targeted CPD (Continuous Professional Development) is highly recommended to help them find a more authentic instructional approach.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {!fullProfiles.filter(x => x.profile).length && (
-            <Card><CardContent className="py-14 text-center"><TrendingUp className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">Full Analysis requires at least Teaching Style + one cognitive assessment</p><p className="text-xs text-gray-400 mt-1">Encourage teachers to complete all 4 assessments for a complete report</p></CardContent></Card>
+            <Card className="mb-4"><CardContent className="py-14 text-center"><TrendingUp className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">Full Analysis requires at least Teaching Style + one cognitive assessment</p><p className="text-xs text-gray-400 mt-1">Encourage teachers to complete all 4 assessments for a complete report</p></CardContent></Card>
           )}
 
           {avgOverall > 0 && (

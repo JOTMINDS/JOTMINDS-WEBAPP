@@ -312,7 +312,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
     const engagementBands = [
       { label: 'High (70+)', value: assessed.filter(s => s.engagementScore >= 70).length, color: '#1E8A6E' },
       { label: 'Medium (40–69)', value: assessed.filter(s => s.engagementScore >= 40 && s.engagementScore < 70).length, color: '#E0A020' },
-      { label: 'Low (<40)', value: assessed.filter(s => s.engagementScore < 40 && s.engagementScore > 0).length, color: '#DC2626' },
+      { label: 'Low (<40)', value: assessed.filter(s => s.engagementScore < 40).length, color: '#DC2626' },
       { label: 'Untracked', value: summaries.filter(s => s.assessmentCount === 0).length, color: '#9ca3af' },
     ].filter(b => b.value > 0);
     const topStreaks = [...summaries].filter(s => s.streak > 0).sort((a, b) => b.streak - a.streak).slice(0, 5);

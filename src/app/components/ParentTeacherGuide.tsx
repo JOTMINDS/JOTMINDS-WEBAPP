@@ -165,19 +165,55 @@ export function ParentTeacherGuide({ childName = "your child", results }: Parent
 
           {results && (
             <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-lg border-2 border-yellow-300">
-              <p className="text-lg mb-3">
-                <strong>{childName}'s Primary Thinking Power:</strong>
-              </p>
-              <div className="flex items-center gap-3">
-                <span className="text-4xl">{sortedStyles[0].emoji}</span>
+              <h3 className="text-xl font-bold mb-4 text-orange-800">
+                {childName}'s Thinking Profile
+              </h3>
+              
+              <div className="grid gap-6 md:grid-cols-2 mb-6">
                 <div>
-                  <p className="text-xl text-purple-600">
-                    {sortedStyles[0].friendlyName}
+                  <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                    Primary Power
                   </p>
-                  <p className="text-base text-gray-700">
-                    Score: {sortedStyles[0].score} / 25
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl">{sortedStyles[0].emoji}</span>
+                    <div>
+                      <p className="text-xl text-purple-600 font-bold">
+                        {sortedStyles[0].friendlyName}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        Score: {sortedStyles[0].score} / 25
+                      </p>
+                    </div>
+                  </div>
                 </div>
+
+                {sortedStyles[1] && (sortedStyles[1].score || 0) > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                      Secondary Power
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-4xl">{sortedStyles[1].emoji}</span>
+                      <div>
+                        <p className="text-xl text-purple-600 font-bold">
+                          {sortedStyles[1].friendlyName}
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          Score: {sortedStyles[1].score} / 25
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 bg-white/60 rounded-md border border-orange-200">
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  <strong>What does this mean?</strong><br/>
+                  Their <strong>Primary Power</strong> is their natural, go-to way of thinking—it's how they most comfortably learn and solve problems. 
+                  Their <strong>Secondary Power</strong> is their backup strength, which they often blend with their primary style to tackle trickier challenges. 
+                  Remember, there is no "best" style; everyone has a unique mix that makes them special!
+                </p>
               </div>
             </div>
           )}
@@ -187,11 +223,12 @@ export function ParentTeacherGuide({ childName = "your child", results }: Parent
       {/* Detailed Style Guides */}
       {sortedStyles.map((style, index) => {
         const isPrimary = results && index === 0;
+        const isSecondary = results && index === 1 && (style.score || 0) > 0;
         
         return (
           <Card
             key={style.name}
-            className={`${isPrimary ? 'border-4 border-yellow-400 shadow-xl' : 'border-2 border-gray-200'}`}
+            className={`${isPrimary ? 'border-4 border-yellow-400 shadow-xl' : isSecondary ? 'border-4 border-orange-300 shadow-lg' : 'border-2 border-gray-200'}`}
           >
             <CardHeader className={`bg-gradient-to-r ${style.color} text-white`}>
               <div className="flex items-center justify-between">
@@ -207,6 +244,11 @@ export function ParentTeacherGuide({ childName = "your child", results }: Parent
                 {isPrimary && (
                   <Badge className="bg-yellow-400 text-yellow-900 text-base px-4 py-2">
                     ⭐ Primary Style
+                  </Badge>
+                )}
+                {isSecondary && (
+                  <Badge className="bg-orange-300 text-orange-900 text-base px-4 py-2">
+                    ✨ Secondary Style
                   </Badge>
                 )}
               </div>

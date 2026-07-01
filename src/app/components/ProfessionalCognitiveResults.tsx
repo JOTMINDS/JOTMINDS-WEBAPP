@@ -115,7 +115,8 @@ export function ProfessionalCognitiveResults({
 
   const handleDownload = async () => {
     // Add loading state if needed, but for simplicity just fire it
-    await exportReportToPDF('pdf-report-container', `Executive_Summary_${userName.replace(/\s+/g, '_')}.pdf`);
+    const safeUserName = userName || 'User';
+    await exportReportToPDF('pdf-report-container', `Executive_Summary_${safeUserName.replace(/\s+/g, '_')}.pdf`);
   };
 
   return (

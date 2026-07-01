@@ -565,6 +565,12 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 bg-[rgb(0,0,0)]">
         <div className="max-w-3xl mx-auto py-8">
+          <div className="mb-4">
+            <Button variant="outline" onClick={handleCancel} className="shadow-soft bg-white/50 backdrop-blur-sm hover:bg-white/80">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {isOrganizational ? 'Back to Dashboard' : 'Back'}
+            </Button>
+          </div>
           <Card>
             <CardHeader>
               <div className="flex items-start gap-4">
@@ -698,6 +704,12 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-2 sm:p-4">
       <div className="max-w-2xl mx-auto py-4 sm:py-8">
+        <div className="mb-4">
+          <Button variant="outline" onClick={handleCancel} size="sm" className="shadow-soft bg-white/50 backdrop-blur-sm hover:bg-white/80 dark:bg-gray-800/50 dark:hover:bg-gray-800/80">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {isOrganizational ? 'Back to Dashboard' : 'Back'}
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-start justify-between gap-3">

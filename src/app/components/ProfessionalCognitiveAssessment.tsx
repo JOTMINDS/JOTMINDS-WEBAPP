@@ -156,7 +156,7 @@ export function ProfessionalCognitiveAssessment({ onComplete, onBack }: Professi
         <div className="flex items-center justify-between">
           <Button variant="outline" onClick={onBack} className="shadow-soft">
             <ChevronLeft className="mr-2 h-4 w-4" />
-            Back
+            Back to Dashboard
           </Button>
           <Badge variant="secondary" className="text-sm">
             Professional Assessment

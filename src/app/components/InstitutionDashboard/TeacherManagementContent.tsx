@@ -44,9 +44,8 @@ export function TeacherManagementContent({
     }
   }, [teacher.id]);
 
-  const teachingStyleAssmt = teacher.assessmentsCompleted?.includes('teaching-style')
-    ? teacher.assessments?.find((a: any) => a.type === 'teaching-style')
-    : null;
+  const teacherAssessments = getAssessmentsByUserId(teacher.id) || [];
+  const teachingStyleAssmt = teacherAssessments.find((a: any) => a.type === 'teaching-style');
 
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
@@ -301,18 +300,18 @@ export function TeacherManagementContent({
               <ClipboardList className="w-4 h-4 text-[#6B4C9A]" /> Assessment History
             </h4>
             
-            {!teacher.assessments || teacher.assessments.length === 0 ? (
+            {!teacherAssessments || teacherAssessments.length === 0 ? (
               <div className="bg-white p-6 rounded-lg text-sm text-gray-500 border border-gray-200 text-center">
                 This teacher has not completed any assessments yet.
               </div>
             ) : (
               <div className="space-y-3">
-                {teacher.assessments.map((assmt: any, index: number) => (
+                {teacherAssessments.map((assmt: any, index: number) => (
                   <div key={index} className="bg-white p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h5 className="font-semibold text-gray-900 capitalize">
-                          {assmt.type.replace('-', ' ')}
+                          {assmt.type?.replace('-', ' ') || 'Unknown'}
                         </h5>
                         <p className="text-xs text-gray-500">
                           {assmt.completedAt ? new Date(assmt.completedAt).toLocaleDateString() : 'Unknown Date'}

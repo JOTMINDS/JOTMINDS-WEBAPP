@@ -9,6 +9,8 @@ import { ParentTeacherGuide } from './ParentTeacherGuide';
 import { ParentObservationAssessmentComponent } from './ParentObservationAssessment';
 import { ParentObservationResults } from './ParentObservationResults';
 import { DualViewIntegration } from './DualViewIntegration';
+import { ParentChildPairingAnalytics } from './ParentChildPairingAnalytics';
+import { AdultThinkingAssessment } from './AdultThinkingAssessment';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -18,6 +20,7 @@ import {
   getAllUsers, 
   getUserAssessments, 
   saveUser,
+  saveAssessment,
   getParentObservationsByParent,
   hasChildGrantedAccess
 } from '../utils/storage';
@@ -48,6 +51,12 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
   const [takingObservation, setTakingObservation] = useState<{ child: User } | null>(null);
   const [viewingObservationResult, setViewingObservationResult] = useState<{ assessment: ParentObservationAssessment; child: User } | null>(null);
   const [viewingDualView, setViewingDualView] = useState<{ child: User; parentObservation: ParentObservationAssessment } | null>(null);
+  
+  // New Parent Self-Assessment states
+  const [parentAssessments, setParentAssessments] = useState<Assessment[]>([]);
+  const [takingParentAssessment, setTakingParentAssessment] = useState(false);
+  const [viewingPairing, setViewingPairing] = useState<{ child: User; parentAssessment: Assessment; childAssessments: Assessment[] } | null>(null);
+
   const [activeTab, setActiveTab] = useState('overview');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -55,7 +64,13 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
   useEffect(() => {
     loadChildrenData();
     loadParentObservations();
+    loadParentAssessments();
   }, []);
+
+  const loadParentAssessments = () => {
+    const assessments = getUserAssessments(user.id);
+    setParentAssessments(assessments.filter(a => a.type === 'adult-thinking'));
+  };
 
   const loadChildrenData = async () => {
     try {
@@ -190,24 +205,24 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
       const style = assessment.score.kolb.style;
       switch (style) {
         case 'Diverging':
-          tips.push('Encourage group study sessions and discussions');
-          tips.push('Ask them to explain what they\'re learning in their own words');
-          tips.push('Support their creative approaches to problem-solving');
+          tips.push('Invite them to explain new concepts to you at the dinner table');
+          tips.push('Host study groups with their friends to help them learn through conversation');
+          tips.push('Praise their out-of-the-box ideas and brainstorm with them when they feel stuck');
           break;
         case 'Assimilating':
-          tips.push('Provide quiet study time and organized materials');
-          tips.push('Help them create structured study schedules');
-          tips.push('Encourage them to make notes and summaries');
+          tips.push('Set up a quiet, clutter-free desk space where they can focus deeply');
+          tips.push('Sit together on Sundays to map out a clear study schedule for the week ahead');
+          tips.push('Buy them notebooks or colored pens to help them organize their summaries');
           break;
         case 'Converging':
-          tips.push('Support hands-on learning activities and experiments');
-          tips.push('Help them apply concepts to real-world problems');
-          tips.push('Encourage practical application of knowledge');
+          tips.push('Connect their homework to real-life situations (like using math while cooking or shopping)');
+          tips.push('Encourage them to build, fix, or experiment with things around the house');
+          tips.push('Ask them "how would you use this in real life?" when reviewing their notes');
           break;
         case 'Accommodating':
-          tips.push('Provide opportunities for active learning');
-          tips.push('Support their adaptability and flexibility');
-          tips.push('Encourage trial-and-error learning approaches');
+          tips.push('Let them take frequent, active breaks rather than forcing long, sitting study sessions');
+          tips.push('Be patient when they try new, unconventional ways to tackle their homework');
+          tips.push('Remind them that it\'s completely okay to make mistakes as long as they learn from them');
           break;
       }
     }
@@ -216,19 +231,19 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
       const style = assessment.score.sternberg.style;
       switch (style) {
         case 'Analytical':
-          tips.push('Provide resources for deeper analysis and research');
-          tips.push('Encourage critical thinking about topics');
-          tips.push('Support systematic problem-solving approaches');
+          tips.push('Give them puzzles, strategy games, or mysteries to solve in their free time');
+          tips.push('Challenge them with "why" and "how" questions when discussing everyday topics');
+          tips.push('Help them break down large, overwhelming assignments into smaller, logical steps');
           break;
         case 'Creative':
-          tips.push('Allow time for creative projects and exploration');
-          tips.push('Encourage unique approaches to assignments');
-          tips.push('Support their imaginative thinking');
+          tips.push('Set aside unstructured free time where they can draw, build, or write without rules');
+          tips.push('Focus on praising their unique approach to a project rather than just the final grade');
+          tips.push('When they have a wild idea, say "let\'s see how that works" instead of shooting it down');
           break;
         case 'Practical':
-          tips.push('Help them see real-world applications of learning');
-          tips.push('Support hands-on projects and activities');
-          tips.push('Encourage practical skill development');
+          tips.push('Show them how the subjects they are learning apply to careers and daily life');
+          tips.push('Involve them in hands-on household projects, like fixing a bike or planting a garden');
+          tips.push('Focus on teaching them practical life skills alongside their academic studies');
           break;
       }
     }
@@ -247,32 +262,32 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
       const normalizedStyle = style.toLowerCase();
       
       if (normalizedStyle.includes('analytical') || normalizedStyle.includes('logical')) {
-          tips.push('Provide resources for deeper analysis and research');
-          tips.push('Encourage critical thinking about topics');
-          tips.push('Support systematic problem-solving approaches');
+          tips.push('Give them puzzles, strategy games, or mysteries to solve in their free time');
+          tips.push('Challenge them with "why" and "how" questions when discussing everyday topics');
+          tips.push('Help them break down large, overwhelming assignments into smaller, logical steps');
       } else if (normalizedStyle.includes('creative') || normalizedStyle.includes('imaginative')) {
-          tips.push('Allow time for creative projects and exploration');
-          tips.push('Encourage unique approaches to assignments');
-          tips.push('Support their imaginative thinking');
+          tips.push('Set aside unstructured free time where they can draw, build, or write without rules');
+          tips.push('Focus on praising their unique approach to a project rather than just the final grade');
+          tips.push('When they have a wild idea, say "let\'s see how that works" instead of shooting it down');
       } else if (normalizedStyle.includes('practical') || normalizedStyle.includes('pragmatic')) {
-          tips.push('Help them see real-world applications of learning');
-          tips.push('Support hands-on projects and activities');
-          tips.push('Encourage practical skill development');
+          tips.push('Show them how the subjects they are learning apply to careers and daily life');
+          tips.push('Involve them in hands-on household projects, like fixing a bike or planting a garden');
+          tips.push('Focus on teaching them practical life skills alongside their academic studies');
       } else if (normalizedStyle.includes('reflective')) {
-          tips.push('Allow extra time for processing information');
-          tips.push('Encourage journaling or writing down thoughts');
-          tips.push('Create a quiet environment for deep thinking');
+          tips.push('Give them plenty of time to process a question before expecting an answer');
+          tips.push('Encourage them to keep a journal to sort out their thoughts and feelings');
+          tips.push('Ensure they have a peaceful, distraction-free corner where they can think deeply');
       }
     }
 
     if (assessment.score.dualProcess) {
       const style = assessment.score.dualProcess.style;
       if (style === 'Intuitive') {
-        tips.push('Remind them to slow down and check their work');
-        tips.push('Encourage them to plan before acting on instinct');
+        tips.push('Gently remind them to take a deep breath and double-check their answers before turning them in');
+        tips.push('Help them create a simple checklist they can follow before making quick decisions');
       } else if (style === 'Reflective') {
-        tips.push('Help them trust their preparation');
-        tips.push('Encourage timely decision-making');
+        tips.push('Remind them of past successes to build confidence in the hard work they\'ve put in');
+        tips.push('Set a friendly timer to help them avoid overthinking and make decisions more smoothly');
       }
     }
 
@@ -356,6 +371,42 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
     );
   }
 
+  // If taking parent self-assessment
+  if (takingParentAssessment) {
+    return (
+      <AdultThinkingAssessment
+        userId={user.id}
+        onComplete={(results) => {
+          setTakingParentAssessment(false);
+          const assessment: Assessment = {
+            id: Date.now().toString(),
+            userId: user.id,
+            type: 'adult-thinking',
+            score: { 'adult-thinking': results },
+            completed: true,
+            completedAt: new Date().toISOString()
+          };
+          saveAssessment(assessment);
+          loadParentAssessments();
+          toast.success("Assessment completed! You can now view Cognitive Match insights on your children's profiles.");
+        }}
+        onCancel={() => setTakingParentAssessment(false)}
+      />
+    );
+  }
+
+  // If viewing parent-child cognitive pairing
+  if (viewingPairing) {
+    return (
+      <ParentChildPairingAnalytics
+        child={viewingPairing.child}
+        parentAssessment={viewingPairing.parentAssessment}
+        childAssessments={viewingPairing.childAssessments}
+        onBack={() => setViewingPairing(null)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-violet-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="border-b bg-white/80 backdrop-blur-sm shadow-sm dark:bg-gray-950/80 dark:border-gray-800">
@@ -409,6 +460,33 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
       </div>
 
       <div className="max-w-7xl mx-auto p-4 space-y-6">
+        
+        {/* Parent Assessment Call-to-Action Banner */}
+        {parentAssessments.length === 0 && !takingParentAssessment && !viewingPairing && (
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white shadow-md border border-purple-400/30 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-white/20 rounded-full flex-shrink-0">
+                <Brain className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-1">Strongly Recommended: Know Your Own Cognitive Style</h3>
+                <p className="text-purple-100 max-w-2xl text-sm md:text-base">
+                  Take a quick self-assessment to discover your own thinking style. We'll use this to generate personalized 
+                  <strong> Parent-Child Cognitive Match Insights</strong>, helping you understand how to best support your child's unique needs.
+                </p>
+              </div>
+            </div>
+            <Button 
+              onClick={() => setTakingParentAssessment(true)}
+              className="bg-white text-purple-700 hover:bg-purple-50 whitespace-nowrap shadow-sm font-semibold"
+              size="lg"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Take Assessment
+            </Button>
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-2 sm:grid-cols-4 gap-1 mb-6">
             <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
@@ -725,7 +803,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                             )}
                             
                             {(kolbAssessment || sternbergAssessment || dualProcessAssessment || otherAssessments.length > 0) && (
-                              <div className="pt-2">
+                              <div className="pt-2 flex flex-col sm:flex-row gap-2">
                                 <Button 
                                   onClick={() => setViewingChildReport({ 
                                     child, 
@@ -736,6 +814,21 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                   <Eye className="mr-2 h-4 w-4" />
                                   View Complete Cognitive Profile
                                 </Button>
+                                
+                                {parentAssessments.length > 0 && (
+                                  <Button 
+                                    onClick={() => setViewingPairing({
+                                      child,
+                                      parentAssessment: parentAssessments[0],
+                                      childAssessments: childrenData.get(child.id) || []
+                                    })}
+                                    variant="outline"
+                                    className="w-full sm:w-auto border-purple-300 text-purple-700 hover:bg-purple-50"
+                                  >
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                    Cognitive Match
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </div>
@@ -856,10 +949,10 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                               <div className="p-4 bg-purple-50 rounded-lg">
                                 <h4 className="mb-2">General Support Tips</h4>
                                 <ul className="space-y-2 text-sm">
-                                  <li>• Create a consistent study environment and routine</li>
-                                  <li>• Celebrate their unique strengths and approaches</li>
-                                  <li>• Communicate regularly with their teachers</li>
-                                  <li>• Encourage self-reflection on their learning</li>
+                                  <li>• Set up a dedicated, distraction-free study zone in your home</li>
+                                  <li>• Focus on praising their effort and hard work, not just their grades</li>
+                                  <li>• Check in regularly with their teachers to stay aligned on their progress</li>
+                                  <li>• Ask them what they enjoyed learning today, instead of just asking "how was school?"</li>
                                 </ul>
                               </div>
                             </div>
