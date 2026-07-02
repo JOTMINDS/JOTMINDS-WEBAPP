@@ -3,37 +3,117 @@ import html2canvas from 'html2canvas';
 import { Assessment, GhanaMapping } from '../types';
 import { getStyleDescription } from './scoring';
 import { getAssessmentInsights } from './insights';
+import { poppinsBase64 } from './poppinsFont';
+import { poppinsBoldBase64 } from './poppinsFontBold';
 
-export function generatePDF(assessment: Assessment, userName: string, ghanaMapping: GhanaMapping | null, isOrganizational: boolean = false) {
+// ── JotMinds brand palette (RGB) ──────────────────────────────────────────────
+const BRAND = {
+  indigo: [91, 125, 177] as [number, number, number],   // #5B7DB1 primary
+  dark: [35, 32, 99] as [number, number, number],        // #232063 deep
+  purple: [107, 76, 154] as [number, number, number],    // #6B4C9A secondary
+  coral: [255, 113, 91] as [number, number, number],     // #FF715B accent
+  violet: [123, 97, 255] as [number, number, number],    // #7B61FF accent
+  ink: [33, 37, 41] as [number, number, number],         // body text
+  muted: [108, 117, 125] as [number, number, number],    // secondary text
+  hairline: [225, 228, 235] as [number, number, number], // borders
+};
+
+function tint(rgb: [number, number, number], amount = 0.92): [number, number, number] {
+  return [
+    Math.round(rgb[0] + (255 - rgb[0]) * amount),
+    Math.round(rgb[1] + (255 - rgb[1]) * amount),
+    Math.round(rgb[2] + (255 - rgb[2]) * amount),
+  ];
+}
+
+function loadLogo(): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = '/logo.png';
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+
+export async function generatePDF(assessment: Assessment, userName: string, ghanaMapping: GhanaMapping | null, isOrganizational: boolean = false) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 16;
+  const contentWidth = pageWidth - margin * 2;
   let yPos = 20;
 
-  // Header - JotMinds Branding
-  doc.setFontSize(24);
-  doc.setFont(undefined, 'bold');
-  doc.text('JotMinds', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 8;
-  
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  doc.text('Discover How You Think', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 12;
-  
-  doc.setFontSize(16);
-  const title = isOrganizational 
-    ? 'Organizational Cognitive Assessment Report' 
-    : 'Personal Cognitive Profile Report';
-  doc.text(title, pageWidth / 2, yPos, { align: 'center' });
-  yPos += 10;
+  // Load fonts
+  doc.addFileToVFS('Poppins-Regular.ttf', poppinsBase64);
+  doc.addFont('Poppins-Regular.ttf', 'Poppins', 'normal');
+  doc.addFileToVFS('Poppins-Bold.ttf', poppinsBoldBase64);
+  doc.addFont('Poppins-Bold.ttf', 'Poppins', 'bold');
+  doc.setFont('Poppins', 'normal');
 
-  doc.setFontSize(12);
-  doc.text(userName || 'User', pageWidth / 2, yPos, { align: 'center' });
+  const logo = await loadLogo();
+
+  // ── Header band ─────────────────────────────────────────────────────────────
+  const bandHeight = 40;
+  doc.setFillColor(...BRAND.indigo);
+  doc.rect(0, 0, pageWidth, bandHeight, 'F');
+  // Thin accent strip under the band
+  doc.setFillColor(...BRAND.coral);
+  doc.rect(0, bandHeight, pageWidth, 1.5, 'F');
+
+  let logoRight = margin;
+  if (logo && logo.naturalWidth > 0) {
+    const logoH = 20;
+    const logoW = (logo.naturalWidth / logo.naturalHeight) * logoH;
+    doc.addImage(logo, 'PNG', margin, (bandHeight - logoH) / 2, logoW, logoH);
+    logoRight = margin + logoW + 6;
+  }
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('Poppins', 'bold');
+  doc.setFontSize(22);
+  doc.text('JotMinds', logoRight, 19);
+  doc.setFont('Poppins', 'normal');
+  doc.setFontSize(9);
+  doc.text('Discover How You Think', logoRight, 26);
+
+  // Report label on the right of the band
+  doc.setFont('Poppins', 'bold');
+  doc.setFontSize(10);
+  const titleLine1 = isOrganizational ? 'ORGANIZATIONAL' : 'PERSONAL COGNITIVE';
+  doc.text(titleLine1, pageWidth - margin, 17, { align: 'right' });
+  doc.setFont('Poppins', 'normal');
+  doc.setFontSize(9);
+  doc.text('Assessment Report', pageWidth - margin, 23, { align: 'right' });
+
+  yPos = bandHeight + 12;
+
+  // ── Subject / meta line ──────────────────────────────────────────────────────
+  doc.setTextColor(...BRAND.dark);
+  doc.setFont('Poppins', 'bold');
+  doc.setFontSize(15);
+  doc.text(userName || 'User', margin, yPos);
   yPos += 6;
 
-  doc.setFontSize(10);
-  doc.text(`Date: ${new Date(assessment.completedAt).toLocaleDateString()}`, pageWidth / 2, yPos, { align: 'center' });
-  yPos += 15;
+  doc.setTextColor(...BRAND.muted);
+  doc.setFont('Poppins', 'normal');
+  doc.setFontSize(9.5);
+  doc.text(
+    `Completed on ${new Date(assessment.completedAt).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })}`,
+    margin,
+    yPos,
+  );
+  yPos += 12;
+  
+  doc.setTextColor(...BRAND.ink);
 
   // Main Style
   const mainStyle = assessment.score.kolb?.style || assessment.score.sternberg?.style || assessment.score.dualProcess?.style || '';
@@ -52,17 +132,17 @@ export function generatePDF(assessment: Assessment, userName: string, ghanaMappi
   const insights = getAssessmentInsights(assessment);
   
   doc.setFontSize(16);
-  doc.setFont(undefined, 'bold');
+  doc.setFont('Poppins', 'bold');
   doc.text('Executive Summary', 20, yPos);
   yPos += 10;
-  doc.setFont(undefined, 'normal');
+  doc.setFont('Poppins', 'normal');
 
   // Top Strength
   doc.setFontSize(12);
-  doc.setFont(undefined, 'bold');
+  doc.setFont('Poppins', 'bold');
   doc.text('Top Strength:', 20, yPos);
   yPos += 6;
-  doc.setFont(undefined, 'normal');
+  doc.setFont('Poppins', 'normal');
   doc.setFontSize(10);
   const strengthLines = doc.splitTextToSize(insights.strengths[0] || 'N/A', pageWidth - 40);
   doc.text(strengthLines, 25, yPos);
@@ -70,10 +150,10 @@ export function generatePDF(assessment: Assessment, userName: string, ghanaMappi
 
   // Priority Development Area
   doc.setFontSize(12);
-  doc.setFont(undefined, 'bold');
+  doc.setFont('Poppins', 'bold');
   doc.text('Priority Development Area:', 20, yPos);
   yPos += 6;
-  doc.setFont(undefined, 'normal');
+  doc.setFont('Poppins', 'normal');
   doc.setFontSize(10);
   const weaknessLines = doc.splitTextToSize(insights.weaknesses[0] || 'N/A', pageWidth - 40);
   doc.text(weaknessLines, 25, yPos);
@@ -81,10 +161,10 @@ export function generatePDF(assessment: Assessment, userName: string, ghanaMappi
 
   // Key Action
   doc.setFontSize(12);
-  doc.setFont(undefined, 'bold');
+  doc.setFont('Poppins', 'bold');
   doc.text('Key Action for Improvement:', 20, yPos);
   yPos += 6;
-  doc.setFont(undefined, 'normal');
+  doc.setFont('Poppins', 'normal');
   doc.setFontSize(10);
   const improvementLines = doc.splitTextToSize(insights.improvements[0] || 'N/A', pageWidth - 40);
   doc.text(improvementLines, 25, yPos);
@@ -98,10 +178,10 @@ export function generatePDF(assessment: Assessment, userName: string, ghanaMappi
     }
     
     doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('Poppins', 'bold');
     doc.text('Organizational Fit:', 20, yPos);
     yPos += 6;
-    doc.setFont(undefined, 'normal');
+    doc.setFont('Poppins', 'normal');
     doc.setFontSize(10);
     
     insights.organizationalFit.slice(0, 2).forEach((fit) => {

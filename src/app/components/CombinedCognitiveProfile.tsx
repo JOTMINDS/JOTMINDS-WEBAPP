@@ -311,8 +311,7 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
 
   const insights = generateInsights();
 
-  const handleDownloadPDF = () => {
-    // Create a combined assessment object for PDF generation
+  const handleDownloadPDF = async () => {
     const combinedAssessment: Assessment = {
       ...latestKolb,
       type: 'combined',

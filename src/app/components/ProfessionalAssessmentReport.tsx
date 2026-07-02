@@ -32,8 +32,9 @@ export function ProfessionalAssessmentReport({
   onBack 
 }: ProfessionalAssessmentReportProps) {
   
-  const handleDownloadPDF = () => {
-    generatePDF(assessment, userName, null, true);
+  const handleDownloadPDF = async () => {
+    await generatePDF(assessment, userName, null, true);
+    toast.success('PDF downloaded successfully!');
   };
 
   // Get all three assessments if available
@@ -653,6 +654,22 @@ export function ProfessionalAssessmentReport({
             </p>
           </CardContent>
         </Card>
+
+        <div className="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 max-w-4xl mx-auto dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-400">
+          <div className="text-center text-xs mb-4">
+            Important Note: JotMinds provides evidence-informed insights based on user responses and established theories in education and psychology. It is designed to support self-awareness, learning, reflection, and development. It is not a medical, clinical, diagnostic, IQ, or psychometric certification tool, and should not be used as the sole basis for high-stakes decisions.
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex flex-col md:flex-row justify-between items-center text-xs">
+            <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2 md:mb-0">
+              JotMinds Professional Report
+            </div>
+            <div className="flex flex-col md:items-end gap-1">
+              <span>Assessment Version: Professional v1.0</span>
+              <span>Framework Version: Evidence-Informed Model v1.0</span>
+              <span>Generated: {new Date().toLocaleDateString()}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

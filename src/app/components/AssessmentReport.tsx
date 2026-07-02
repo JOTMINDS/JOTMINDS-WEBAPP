@@ -27,6 +27,7 @@ import { GuidedReflection } from './GuidedReflection';
 import { GhanaEducationGuidance } from './GhanaEducationGuidance';
 import { AcademicSuccessTips } from './AcademicSuccessTips';
 import { useEffect } from 'react';
+import { getOrganizationalAssessmentText, getPersonalDevelopmentText, GLOBAL_DISCLAIMER } from '../utils/reportTextVariations';
 
 interface AssessmentReportProps {
   assessment: Assessment;
@@ -113,8 +114,8 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
     }
   };
 
-  const handleDownloadPDF = () => {
-    generatePDF(assessment, userName, ghanaMapping, isOrganizational);
+  const handleDownloadPDF = async () => {
+    await generatePDF(assessment, userName, ghanaMapping, isOrganizational);
     toast.success('PDF downloaded successfully!');
   };
 
@@ -781,9 +782,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     Overall Assessment
                   </h4>
                   <p className="text-sm opacity-95">
-                    {assessment.type === 'kolb' && `This individual demonstrates ${mainStyle.toLowerCase()} learning agility, making them well-suited for roles requiring ${insights.organizationalFit[0]?.split(':')[1]?.trim().toLowerCase() || 'diverse capabilities'}. Focus on leveraging their natural strengths while developing complementary skills for maximum organizational value.`}
-                    {assessment.type === 'sternberg' && `With a ${mainStyle.toLowerCase()} thinking orientation, this profile indicates strong capabilities in ${insights.organizationalFit[0]?.split(':')[1]?.trim().toLowerCase() || 'diverse areas'}. Strategic placement in appropriate roles and targeted development can maximize both individual and organizational performance.`}
-                    {assessment.type === 'dual-process' && `The ${mainStyle.toLowerCase()} decision-making profile suggests effective performance in ${insights.organizationalFit[0]?.split(':')[1]?.trim().toLowerCase() || 'various contexts'}. Consider role alignment and training to optimize decision quality across different business scenarios.`}
+                    {getOrganizationalAssessmentText(assessment.type, mainStyle, insights.organizationalFit[0]?.split(':')[1]?.trim() || '')}
                   </p>
                 </div>
               </>
@@ -796,7 +795,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                   Your Development Path
                 </h4>
                 <p className="text-sm opacity-95">
-                  Your {mainStyle} profile is a strength to build upon. Focus on {insights.improvements[0]?.toLowerCase()} while leveraging your natural abilities. The detailed analysis below provides specific strategies for your growth journey.
+                  {getPersonalDevelopmentText(mainStyle, insights.improvements[0] || '')}
                 </p>
               </div>
             )}
@@ -1421,6 +1420,22 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
 
         <div className="no-print">
           <FeedbackPrompt />
+        </div>
+
+        <div className="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 max-w-4xl mx-auto dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-400">
+          <div className="text-center text-xs mb-4">
+            {GLOBAL_DISCLAIMER}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex flex-col md:flex-row justify-between items-center text-xs">
+            <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2 md:mb-0">
+              JotMinds Learner Report
+            </div>
+            <div className="flex flex-col md:items-end gap-1">
+              <span>Assessment Version: Student {assessment.ageGroup || '15-18'} v1.0</span>
+              <span>Framework Version: Evidence-Informed Model v1.0</span>
+              <span>Generated: {new Date().toLocaleDateString()}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
