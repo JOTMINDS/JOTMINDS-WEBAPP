@@ -108,7 +108,7 @@ export function InstitutionMembers({
   const counts = getMemberCounts(members);
 
   const getStudentsForTeacherCount = (teacherId: string) => {
-    return allPlatformUsers.filter(u => u.role === 'student' && u.teacherId === teacherId).length;
+    return allPlatformUsers.filter(u => u.role === 'student' && (u.teacherId === teacherId || (u.linkedTeachers && u.linkedTeachers.includes(teacherId)))).length;
   };
 
   const handleApprove = async (userId: string) => {
@@ -491,12 +491,22 @@ export function InstitutionMembers({
                           <p className="text-xs text-[#1E8A6E] mt-0.5 font-medium">
                             {(() => {
                               const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
-                              const teacherProfile = studentProfile?.teacherId 
-                                ? allPlatformUsers.find(u => u.id === studentProfile.teacherId) 
-                                : null;
-                              const teacherName = studentProfile?.teacherName || teacherProfile?.name;
-                              return teacherName 
-                                ? `Assigned Teacher: ${teacherName}` 
+                              const teacherIds = [];
+                              if (studentProfile?.teacherId) teacherIds.push(studentProfile.teacherId);
+                              if (studentProfile?.linkedTeachers) teacherIds.push(...studentProfile.linkedTeachers);
+                              
+                              const uniqueTeacherIds = Array.from(new Set(teacherIds));
+                              const teacherNames = uniqueTeacherIds.map(id => {
+                                const teacherProfile = allPlatformUsers.find(u => u.id === id);
+                                return teacherProfile?.name;
+                              }).filter(Boolean);
+
+                              if (studentProfile?.teacherName && !teacherNames.includes(studentProfile.teacherName)) {
+                                teacherNames.unshift(studentProfile.teacherName);
+                              }
+                              
+                              return teacherNames.length > 0
+                                ? `Assigned Teacher${teacherNames.length > 1 ? 's' : ''}: ${teacherNames.join(', ')}` 
                                 : 'Assigned Teacher: Unassigned';
                             })()}
                           </p>
