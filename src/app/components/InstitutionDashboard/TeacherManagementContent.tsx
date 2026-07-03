@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { BarChart3, Users, User as UserIcon, Save, CheckCircle2, ClipboardList } from 'lucide-react';
+import { BarChart3, Users, User as UserIcon, Save, CheckCircle2, ClipboardList, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { updateMemberDetails } from '../../utils/institution';
-import { saveUser, getAssessmentsByUserId } from '../../utils/storage';
+import { getAllAssessmentResults } from '../../utils/api';
+import { generatePDF } from '../../utils/pdfGenerator';
+import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../../utils/storage';
 import { User } from '../../types';
 
 interface TeacherManagementContentProps {
@@ -20,31 +22,53 @@ export function TeacherManagementContent({
   allPlatformUsers,
   onRefresh
 }: TeacherManagementContentProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'students' | 'performance' | 'assessments'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'performance' | 'assessments'>('profile');
   const [isSaving, setIsSaving] = useState(false);
 
-  const students = allPlatformUsers.filter(u => u.role === 'student' && u.teacherId === teacher.id);
-  // We show all students in the institution
-  const allInstitutionStudents = allPlatformUsers.filter(u => u.role === 'student' && u.school === teacher.school);
+  const classes = getAllClasses();
+  const assignments = getAssignmentsForTeacher(teacher.id);
+  const teacherClassIds = new Set<string>();
+  classes.filter(c => c.classTeacherId === teacher.id).forEach(c => teacherClassIds.add(c.id));
+  assignments.forEach(a => teacherClassIds.add(a.classId));
+  
+  const students = allPlatformUsers.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
 
   const [editName, setEditName] = useState(teacher.name || '');
   const [editPhone, setEditPhone] = useState(teacher.phone || '');
   
-  // Keep track of which students are assigned in the UI before saving
-  const [assignedStudentIds, setAssignedStudentIds] = useState<Set<string>>(
-    new Set(students.map(s => s.id))
-  );
-
   // Sync state when teacher changes
   React.useEffect(() => {
     if (teacher) {
       setEditName(teacher.name || '');
       setEditPhone(teacher.phone || '');
-      setAssignedStudentIds(new Set(allPlatformUsers.filter(u => u.role === 'student' && u.teacherId === teacher.id).map(s => s.id)));
     }
   }, [teacher.id]);
 
-  const teacherAssessments = getAssessmentsByUserId(teacher.id) || [];
+  const [teacherAssessments, setTeacherAssessments] = useState<any[]>([]);
+  const [isLoadingAssessments, setIsLoadingAssessments] = useState(false);
+
+  React.useEffect(() => {
+    const fetchAssessments = async () => {
+      setIsLoadingAssessments(true);
+      try {
+        const response = await getAllAssessmentResults([teacher.id]);
+        if (response && Array.isArray(response.results)) {
+          setTeacherAssessments(response.results);
+        } else if (Array.isArray(response)) {
+          setTeacherAssessments(response);
+        } else {
+          setTeacherAssessments(getAssessmentsByUserId(teacher.id) || []);
+        }
+      } catch (err) {
+        console.error('Failed to load teacher assessments:', err);
+        setTeacherAssessments(getAssessmentsByUserId(teacher.id) || []);
+      } finally {
+        setIsLoadingAssessments(false);
+      }
+    };
+    fetchAssessments();
+  }, [teacher.id]);
+
   const teachingStyleAssmt = teacherAssessments.find((a: any) => a.type === 'teaching-style');
 
   const handleSaveProfile = async () => {
@@ -79,52 +103,7 @@ export function TeacherManagementContent({
     }
   };
 
-  const handleSaveStudents = async () => {
-    setIsSaving(true);
-    try {
-      let changes = 0;
-      
-      // We need to update students who were added to this teacher, and students who were removed.
-      allInstitutionStudents.forEach(student => {
-        const isSelected = assignedStudentIds.has(student.id);
-        const wasAssigned = student.teacherId === teacher.id;
-        
-        if (isSelected && !wasAssigned) {
-          saveUser({ ...student, teacherId: teacher.id, teacherName: teacher.name });
-          changes++;
-        } else if (!isSelected && wasAssigned) {
-          // Unassign them by removing teacherId and teacherName
-          const updatedStudent = { ...student };
-          delete updatedStudent.teacherId;
-          delete updatedStudent.teacherName;
-          saveUser(updatedStudent);
-          changes++;
-        }
-      });
-      
-      if (changes > 0) {
-        await onRefresh();
-        toast.success(`Updated assignments for ${changes} student(s)`);
-      } else {
-        toast.info('No changes to save');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to update student assignments');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
-  const toggleStudent = (studentId: string) => {
-    const next = new Set(assignedStudentIds);
-    if (next.has(studentId)) {
-      next.delete(studentId);
-    } else {
-      next.add(studentId);
-    }
-    setAssignedStudentIds(next);
-  };
 
   return (
     <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -138,14 +117,7 @@ export function TeacherManagementContent({
         >
           <UserIcon className="w-4 h-4" /> Profile
         </button>
-        <button
-          onClick={() => setActiveTab('students')}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'students' ? 'border-[#6B4C9A] text-[#6B4C9A]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          }`}
-        >
-          <Users className="w-4 h-4" /> Students
-        </button>
+
         <button
           onClick={() => setActiveTab('performance')}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -195,44 +167,7 @@ export function TeacherManagementContent({
           </div>
         )}
 
-        {/* STUDENTS TAB */}
-        {activeTab === 'students' && (
-          <div className="space-y-4">
-            <div className="bg-white p-5 rounded-lg border border-gray-200 flex-1">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="text-sm font-semibold text-gray-900">Assigned Students ({assignedStudentIds.size})</h4>
-                <Button onClick={handleSaveStudents} disabled={isSaving} size="sm" className="bg-[#1E8A6E] hover:bg-[#18725b] text-white gap-2">
-                  <CheckCircle2 className="w-4 h-4" /> Save Assignments
-                </Button>
-              </div>
-              
-              {allInstitutionStudents.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 text-sm border rounded-lg bg-gray-50">
-                  No students found in this institution.
-                </div>
-              ) : (
-                <div className="border rounded-md overflow-hidden divide-y max-h-80 overflow-y-auto">
-                  {allInstitutionStudents.map(student => (
-                    <div key={student.id} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors bg-white">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{student.name}</p>
-                        <p className="text-xs text-gray-500">{student.email}</p>
-                      </div>
-                      <Button 
-                        variant={assignedStudentIds.has(student.id) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleStudent(student.id)}
-                        className={assignedStudentIds.has(student.id) ? "bg-[#1E8A6E] hover:bg-[#18725b] text-white" : "text-gray-600"}
-                      >
-                        {assignedStudentIds.has(student.id) ? "Assigned" : "Assign"}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+
 
         {/* PERFORMANCE TAB */}
         {activeTab === 'performance' && (
@@ -286,7 +221,7 @@ export function TeacherManagementContent({
                 </div>
               ) : (
                 <div className="bg-white p-4 rounded-lg text-sm text-gray-500 border border-gray-200 text-center">
-                  No students are currently assigned to this teacher. Use the Students tab to assign them.
+                  No students are currently assigned to this teacher's classes.
                 </div>
               )}
             </div>
@@ -295,13 +230,18 @@ export function TeacherManagementContent({
 
         {/* ASSESSMENTS TAB */}
         {activeTab === 'assessments' && (
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <div className="bg-white p-5 rounded-lg border border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-[#6B4C9A]" /> Assessment History
             </h4>
             
-            {!teacherAssessments || teacherAssessments.length === 0 ? (
-              <div className="bg-white p-6 rounded-lg text-sm text-gray-500 border border-gray-200 text-center">
+            {isLoadingAssessments ? (
+              <div className="text-center py-8 text-gray-500 text-sm border rounded-lg bg-gray-50">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#6B4C9A] mx-auto mb-2"></div>
+                Loading assessments...
+              </div>
+            ) : !teacherAssessments || teacherAssessments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 text-sm border rounded-lg bg-gray-50">
                 This teacher has not completed any assessments yet.
               </div>
             ) : (
@@ -317,8 +257,27 @@ export function TeacherManagementContent({
                           {assmt.completedAt ? new Date(assmt.completedAt).toLocaleDateString() : 'Unknown Date'}
                         </p>
                       </div>
-                      <div className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs font-medium">
-                        Completed
+                      <div className="flex items-center gap-3">
+                        <div className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs font-medium">
+                          Completed
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 text-xs flex items-center gap-1"
+                          onClick={async () => {
+                            toast.loading('Generating report...', { id: 'pdf-gen' });
+                            try {
+                              await generatePDF(assmt, teacher.name, null, true);
+                              toast.success('Report downloaded', { id: 'pdf-gen' });
+                            } catch (error) {
+                              toast.error('Failed to generate report', { id: 'pdf-gen' });
+                            }
+                          }}
+                        >
+                          <Download className="w-3 h-3" />
+                          Export PDF
+                        </Button>
                       </div>
                     </div>
                     

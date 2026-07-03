@@ -5,10 +5,12 @@ import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { User, Assessment } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
-import { ArrowLeft, TrendingUp, BookOpen, Brain, Target, Lightbulb, FileText } from 'lucide-react';
+import { ArrowLeft, TrendingUp, BookOpen, Brain, Target, Lightbulb, FileText, Download } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 import { Textarea } from './ui/textarea';
 import { formatDate } from '../utils/dateFormat';
+import { generatePDF } from '../utils/pdfGenerator';
+import { toast } from 'sonner';
 
 interface StudentDetailViewProps {
   student: User;
@@ -445,24 +447,44 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
                             {formatDate(assessment.completedAt!)}
                           </p>
                         </div>
-                        <Badge>
-                          {(() => {
-                            if (assessment.type === 'kolb') return assessment.score.kolb?.style;
-                            if (assessment.type === 'sternberg') return assessment.score.sternberg?.style;
-                            if (assessment.type === 'dual-process') return assessment.score.dualProcess?.style;
-                            if (assessment.type === 'jhs-thinking') {
-                              const s = assessment.score['jhs-thinking']?.primaryStyle;
-                              return s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Assessed';
-                            }
-                            if (assessment.type === 'shs-thinking') return assessment.score['shs-thinking']?.primaryStyle || 'Assessed';
-                            if (assessment.type === 'adult-thinking') {
+                        <div className="flex items-center gap-3">
+                          <Badge>
+                            {(() => {
+                              if (assessment.type === 'kolb') return assessment.score.kolb?.style;
+                              if (assessment.type === 'sternberg') return assessment.score.sternberg?.style;
+                              if (assessment.type === 'jhs-thinking') {
+                                const s = assessment.score['jhs-thinking']?.primaryStyle;
+                                return s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Completed';
+                              }
+                              if (assessment.type === 'shs-thinking') return assessment.score['shs-thinking']?.primaryStyle || 'Completed';
+                              if (assessment.type === 'adult-thinking') {
                                 const s = assessment.score['adult-thinking']?.dominantStyle;
-                                return s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Assessed';
-                            }
-                            if (assessment.type === 'child-thinking') return assessment.score['child-thinking']?.primaryStyle || 'Assessed';
-                            return 'Completed';
-                          })()}
-                        </Badge>
+                                return s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Completed';
+                              }
+                              if (assessment.type === 'child-thinking') return assessment.score['child-thinking']?.primaryStyle || 'Completed';
+                              if (assessment.type === 'decision') return assessment.score.decision?.style;
+                              if (assessment.type === 'dual-process') return assessment.score['dual-process']?.style;
+                              return 'Completed';
+                            })()}
+                          </Badge>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-xs flex items-center gap-1"
+                            onClick={async () => {
+                              toast.loading('Generating report...', { id: 'pdf-gen' });
+                              try {
+                                await generatePDF(assessment, student.name, null, true);
+                                toast.success('Report downloaded', { id: 'pdf-gen' });
+                              } catch (error) {
+                                toast.error('Failed to generate report', { id: 'pdf-gen' });
+                              }
+                            }}
+                          >
+                            <Download className="w-3 h-3" />
+                            Export PDF
+                          </Button>
+                        </div>
                       </div>
                     ))}
                 </div>
