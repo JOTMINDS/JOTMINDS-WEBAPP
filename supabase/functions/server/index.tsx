@@ -1285,6 +1285,14 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
+    // Enforce phone number uniqueness if provided
+    if (phone) {
+      const existingPhoneUser = await kv.get(`phone:${phone}`);
+      if (existingPhoneUser) {
+        return c.json({ error: 'This phone number is already registered to another account.' }, 400);
+      }
+    }
+
     let finalOrgCode = null;
     let finalOrgName = organizationName || null;
     let inviteRecord = null;
@@ -1540,9 +1548,12 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       cognitiveProfile: null
     });
 
-    // Create fast lookup index for parent-student linking
+    // Create fast lookup index for parent-student linking and phone uniqueness
     if (email) {
       await kv.set(`email:${email.toLowerCase()}`, data.user.id);
+    }
+    if (phone) {
+      await kv.set(`phone:${phone}`, data.user.id);
     }
 
     // If admin, add to admin list
@@ -1745,6 +1756,22 @@ app.patch('/make-server-fc8eb847/user/profile', async (c) => {
     
     // Get current user profile
     const userProfile = await kv.get(`user:${user.id}`) || {};
+    
+    // Check for phone number uniqueness if it's being updated
+    if (updates.phone && updates.phone !== userProfile.phone) {
+      const existingPhoneUser = await kv.get(`phone:${updates.phone}`);
+      if (existingPhoneUser && existingPhoneUser !== user.id) {
+        return c.json({ error: 'This phone number is already registered to another account.' }, 400);
+      }
+      
+      // Delete old phone lookup if it existed
+      if (userProfile.phone) {
+        await kv.del(`phone:${userProfile.phone}`);
+      }
+      
+      // Set new phone lookup
+      await kv.set(`phone:${updates.phone}`, user.id);
+    }
     
     // Update only the provided fields
     const updatedProfile = {
