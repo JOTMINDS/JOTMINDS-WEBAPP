@@ -19,6 +19,7 @@ interface ProfileSettingsModalProps {
 
 export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }: ProfileSettingsModalProps) {
   // Personal State
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [secondaryEmail, setSecondaryEmail] = useState('');
@@ -53,6 +54,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
 
   useEffect(() => {
     if (isOpen && user) {
+      setName(user.name || '');
       setEmail(user.email || '');
       setPhone(user.phone || '');
       setSecondaryEmail(user.secondaryEmail || '');
@@ -84,7 +86,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
     setSuccess('');
 
     try {
-      const updates = { phone, secondaryEmail, secondaryPhone };
+      const updates = { name, phone, secondaryEmail, secondaryPhone };
       const updatedData = await updateUserProfile(updates);
       const updatedUser = { ...user, ...updatedData };
       onProfileUpdate(updatedUser);
@@ -192,6 +194,13 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
               <form id="profile-form" onSubmit={handlePersonalSave} className="space-y-5">
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Primary Contact</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" className="pl-10" />
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
                     <div className="relative">

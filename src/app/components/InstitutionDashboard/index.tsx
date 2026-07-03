@@ -35,6 +35,7 @@ import { InviteMemberModal } from './InviteMemberModal';
 import { TransferMemberModal } from './TransferMemberModal';
 import { BulkUploadModal } from './BulkUploadModal';
 import { TeacherManagementModal } from './TeacherManagementModal';
+import ClassManagement from './ClassManagement';
 
 // Shared siblings
 import { SchoolAnalyticsDashboard } from '../SchoolAnalyticsDashboard';
@@ -47,15 +48,17 @@ interface InstitutionDashboardProps {
   onLogout: () => void;
   onRegisterNew: () => void;
   initialInstitution?: Institution;
+  onProfileUpdate?: () => void;
 }
 
-type Tab = 'overview' | 'code' | 'members' | 'analytics' | 'reports' | 'settings' | 'profile' | 'teacher_styles';
+type Tab = 'overview' | 'code' | 'members' | 'classes' | 'analytics' | 'reports' | 'settings' | 'profile' | 'teacher_styles';
 
 export function InstitutionDashboard({
   user,
   onLogout,
   onRegisterNew,
-  initialInstitution
+  initialInstitution,
+  onProfileUpdate
 }: InstitutionDashboardProps) {
   const [tab, setTab] = useState<Tab>('overview');
   const [institution, setInstitution] = useState<Institution | null>(initialInstitution || null);
@@ -239,9 +242,9 @@ export function InstitutionDashboard({
   
   let availableTabs: Tab[];
   if (isPrimaryAdmin) {
-    availableTabs = ['overview', 'code', 'members', 'analytics', 'reports', 'teacher_styles', 'settings', 'profile'];
+    availableTabs = ['overview', 'code', 'members', 'classes', 'analytics', 'reports', 'teacher_styles', 'settings', 'profile'];
   } else if (isCoAdmin) {
-    availableTabs = ['overview', 'members', 'analytics', 'reports', 'teacher_styles', 'profile'];
+    availableTabs = ['overview', 'members', 'classes', 'analytics', 'reports', 'teacher_styles', 'profile'];
   } else {
     availableTabs = ['overview', 'members', 'analytics', 'reports', 'teacher_styles', 'profile'];
   }
@@ -292,6 +295,7 @@ export function InstitutionDashboard({
                 {t === 'overview' && <Building2 className="h-4 w-4" />}
                 {t === 'code' && <QrCode className="h-4 w-4" />}
                 {t === 'members' && <Users className="h-4 w-4" />}
+                {t === 'classes' && <Building2 className="h-4 w-4" />}
                 {t === 'analytics' && <BarChart3 className="h-4 w-4" />}
                 {t === 'reports' && <Download className="h-4 w-4" />}
                 {t === 'teacher_styles' && <Brain className="h-4 w-4" />}
@@ -361,6 +365,10 @@ export function InstitutionDashboard({
           />
         )}
 
+        {tab === 'classes' && (
+          <ClassManagement />
+        )}
+
         {tab === 'analytics' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <SchoolAnalyticsDashboard user={user} onBack={() => setTab('overview')} embedded={true} institutionMembers={members} />
@@ -373,7 +381,7 @@ export function InstitutionDashboard({
 
         {tab === 'profile' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px] relative">
-            <ProfileSettingsModal isOpen={true} onClose={() => setTab('overview')} user={user} onProfileUpdate={() => {}} />
+            <ProfileSettingsModal isOpen={true} onClose={() => setTab('overview')} user={user} onProfileUpdate={onProfileUpdate || (() => {})} />
           </div>
         )}
 

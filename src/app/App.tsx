@@ -844,6 +844,7 @@ function AppContent() {
           user={impersonatedUser || user}
           onLogout={handleBackToDashboard}
           onRegisterNew={handleViewInstitutionRegister}
+          onProfileUpdate={refreshUser}
         />
       ) : null;
 
@@ -867,6 +868,7 @@ function AppContent() {
               user={displayUser}
               onLogout={logoutHandler}
               onRegisterNew={handleViewInstitutionRegister}
+              onProfileUpdate={refreshUser}
             />
           );
         }
@@ -889,6 +891,7 @@ function AppContent() {
             user={displayUser}
             onLogout={logoutHandler}
             onRegisterNew={handleViewInstitutionRegister}
+            onProfileUpdate={refreshUser}
           />
         );
       }
