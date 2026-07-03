@@ -7,7 +7,7 @@ import { Input } from './ui/input';
 import {
   ArrowLeft, Users, TrendingUp, AlertTriangle, CheckCircle,
   Search, ChevronDown, ChevronUp, BarChart3, Activity,
-  BookOpen, Award, Zap, HelpCircle, Info, Sparkles
+  BookOpen, Award, Zap, HelpCircle, Info, Sparkles, Target
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTip,
@@ -29,7 +29,7 @@ interface SchoolAnalyticsDashboardProps {
   institutionMembers?: InstitutionMember[];
 }
 
-type Tab = 'overview' | 'students' | 'class' | 'leaders' | 'cognitive' | 'insights' | 'comparison';
+type Tab = 'overview' | 'students' | 'class' | 'leaders' | 'cognitive' | 'insights' | 'comparison' | 'alignment';
 
 interface StudentSummary {
   user: User;
@@ -454,6 +454,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             ['students', Users, 'Students'], 
             ['class', BookOpen, 'By Class'], 
             ['comparison', Users, 'Teachers vs Students'],
+            ['alignment', Target, 'Alignment & Advice'],
             ['leaders', Award, 'Gamification Leaders'],
             ['cognitive', Zap, 'Cognitive Profiles'],
             ['insights', Activity, 'Insights']
@@ -967,8 +968,144 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
           </div>
         </>)}
 
+        {tab === 'alignment' && (<>
+          <div className="mb-6 bg-indigo-50/50 text-indigo-900 p-5 rounded-xl border border-indigo-100 shadow-sm text-sm">
+            <h3 className="font-semibold mb-2 flex items-center gap-1.5 text-base"><Target className="w-5 h-5 text-indigo-600" /> School Alignment & Recommendations</h3>
+            <p className="text-indigo-800/80 leading-relaxed">
+              This section automatically analyzes cognitive gaps between your teaching staff and student body. 
+              Review the tailored recommendations below to better align instructional methods with student learning needs, and follow the scoring advice to boost overall engagement.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-blue-500" />
+                  Cognitive Alignment Recommendations
+                </CardTitle>
+                <p className="text-xs text-gray-500 mt-1">Generated based on the largest gaps between student needs and teacher styles.</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {stats.comparisonData.length === 0 ? (
+                  <p className="text-sm text-gray-400">Not enough data to generate recommendations. Ensure both teachers and students have taken assessments.</p>
+                ) : (
+                  (() => {
+                    const gaps = stats.comparisonData.map(d => ({
+                      name: d.name,
+                      studentScore: d['Student Avg (%)'],
+                      teacherScore: d['Teacher Avg (%)'],
+                      diff: d['Student Avg (%)'] - d['Teacher Avg (%)']
+                    })).filter(g => Math.abs(g.diff) >= 10)
+                       .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+
+                    if (gaps.length === 0) {
+                      return (
+                        <div className="p-4 bg-green-50 text-green-800 rounded-lg border border-green-100 text-sm">
+                          <strong className="flex items-center gap-2 mb-1"><CheckCircle className="w-4 h-4" /> Strong Alignment Detected</strong>
+                          Your teaching staff's cognitive profiles align closely with your students' needs. Maintain current differentiated instruction strategies!
+                        </div>
+                      );
+                    }
+
+                    return gaps.map((gap, i) => (
+                      <div key={i} className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-bold text-blue-900">{gap.name} Gap</span>
+                          <Badge variant="outline" className="text-blue-700 bg-blue-100 border-blue-200 text-[10px]">
+                            {gap.diff > 0 ? `Students +${Math.round(gap.diff)}%` : `Teachers +${Math.round(Math.abs(gap.diff))}%`}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-blue-800">
+                          {gap.diff > 0 
+                            ? `Students show a significantly higher preference for ${gap.name} thinking than the teaching staff.` 
+                            : `Teachers lean much more heavily on ${gap.name} thinking than the student body.`}
+                        </p>
+                        <div className="mt-2 text-xs font-semibold text-blue-900">
+                          Recommendation:
+                          <span className="font-normal block mt-1">
+                            {gap.name === 'Practical' && gap.diff > 0 && "Incorporate more hands-on, project-based learning. Relate abstract concepts to real-world applications."}
+                            {gap.name === 'Practical' && gap.diff < 0 && "Ensure theoretical concepts aren't being overlooked in favor of immediate applications."}
+                            
+                            {gap.name === 'Creative' && gap.diff > 0 && "Allow for more open-ended assignments and creative expression in assessments."}
+                            {gap.name === 'Creative' && gap.diff < 0 && "Provide more structured rubrics to help students understand exactly what is expected."}
+                            
+                            {gap.name === 'Analytical' && gap.diff > 0 && "Challenge students with deeper logical puzzles, debates, and critical thinking exercises."}
+                            {gap.name === 'Analytical' && gap.diff < 0 && "Break down complex logical steps more explicitly, as students may struggle to intuitively grasp analytical leaps."}
+                            
+                            {gap.name === 'Reflective' && gap.diff > 0 && "Provide more time for students to process information internally before requiring answers."}
+                            {gap.name === 'Reflective' && gap.diff < 0 && "Incorporate more immediate, active learning activities to keep energy high."}
+                            
+                            {gap.name === 'Intuitive' && gap.diff > 0 && "Use storytelling, analogies, and big-picture overviews before diving into details."}
+                            {gap.name === 'Intuitive' && gap.diff < 0 && "Provide detailed, step-by-step instructions rather than relying on students to 'figure it out'."}
+
+                            {!['Practical', 'Creative', 'Analytical', 'Reflective', 'Intuitive'].includes(gap.name) && gap.diff > 0 && `Provide more opportunities for students to utilize their ${gap.name} strengths.`}
+                            {!['Practical', 'Creative', 'Analytical', 'Reflective', 'Intuitive'].includes(gap.name) && gap.diff < 0 && `Be mindful that teachers' strong ${gap.name} preference might not resonate easily with the students.`}
+                          </span>
+                        </div>
+                      </div>
+                    ));
+                  })()
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  Score Improvement Guide
+                </CardTitle>
+                <p className="text-xs text-gray-500 mt-1">Actionable steps to boost school-wide engagement and Gamification XP scores.</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs mt-0.5">1</div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900">Encourage Daily Streaks</h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Students earn significant XP multipliers by logging in daily. Have teachers incorporate a quick 3-minute morning check-in on the platform.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <div className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs mt-0.5">2</div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900">Assign Cognitive Modules</h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Ensure all students complete the Learning Style, Thinking Style, and Decision Style assessments. Currently, {Math.round((stats.assessed / Math.max(stats.total, 1)) * 100)}% of students have taken an assessment.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs mt-0.5">3</div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900">Host a Gamification Leaderboard</h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Use the "Gamification Leaders" tab to announce the top students weekly. Recognition is a powerful motivator for increasing engagement scores.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs mt-0.5">4</div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900">Review "At Risk" Students</h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        You have {stats.riskCounts.high} students in the "At Risk" category (Engagement &lt; 25). Assign targeted interventions to these students to quickly bring up the school average of {stats.avgEng}/100.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>)}
+
         {tab === 'insights' && (<>
-          {insights.length === 0 && <p className="text-center py-12 text-gray-400 text-sm">Add students and run assessments to generate insights</p>}
           {insights.map((ins, i) => (
             <Card key={i} className={`border-l-4 ${ins.type === 'warning' ? 'border-l-amber-400 bg-amber-50' : ins.type === 'success' ? 'border-l-green-500 bg-green-50' : 'border-l-blue-400 bg-blue-50'}`}>
               <CardContent className="pt-4 flex items-start gap-3">
