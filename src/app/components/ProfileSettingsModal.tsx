@@ -24,6 +24,8 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
   const [phone, setPhone] = useState('');
   const [secondaryEmail, setSecondaryEmail] = useState('');
   const [secondaryPhone, setSecondaryPhone] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [parentName, setParentName] = useState('');
   
   // Institution State
   const [orgName, setOrgName] = useState('');
@@ -33,6 +35,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
   const [isActive, setIsActive] = useState(true);
   const [adminEmail, setAdminEmail] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -59,6 +62,8 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
       setPhone(user.phone || '');
       setSecondaryEmail(user.secondaryEmail || '');
       setSecondaryPhone(user.secondaryPhone || '');
+      setAvatarUrl(user.avatarUrl || '');
+      setParentName(user.parentName || '');
       setOrgName(user.institutionName || user.organizationName || '');
       setOrgType(user.institutionType || user.organizationType || '');
       setOrgSector(user.industrySector || '');
@@ -86,7 +91,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
     setSuccess('');
 
     try {
-      const updates = { name, phone, secondaryEmail, secondaryPhone };
+      const updates = { name, phone, secondaryEmail, secondaryPhone, avatarUrl, parentName };
       const updatedData = await updateUserProfile(updates);
       const updatedUser = { ...user, ...updatedData };
       onProfileUpdate(updatedUser);
@@ -161,6 +166,24 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
     reader.readAsDataURL(file);
   };
 
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 500) { 
+      setError('Profile photo size must be less than 500KB.');
+      return;
+    }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarUrl(reader.result as string);
+      setIsUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
@@ -192,6 +215,25 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
 
             <TabsContent value="personal">
               <form id="profile-form" onSubmit={handlePersonalSave} className="space-y-5">
+                
+                <div className="flex flex-col items-center gap-3 mb-6">
+                  <div className="w-24 h-24 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800/50 relative group">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Profile Photo" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="h-10 w-10 text-slate-400" />
+                    )}
+                    <div 
+                      className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      onClick={() => avatarInputRef.current?.click()}
+                    >
+                      <Upload className="h-6 w-6 text-white mb-1" />
+                      <span className="text-[10px] text-white font-medium">Upload</span>
+                    </div>
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" ref={avatarInputRef} onChange={handleAvatarUpload} />
+                </div>
+
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Primary Contact</h3>
                   <div className="space-y-2">
@@ -209,6 +251,16 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                     </div>
                   </div>
                   <PhoneInput id="phone" value={phone} onChange={setPhone} label="Phone Number" />
+                  
+                  {user?.role === 'student' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="parentName">Parent/Guardian Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="parentName" type="text" value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="Parent/Guardian Name" className="pl-10" />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {isOrg && (
                   <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">

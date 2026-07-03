@@ -202,6 +202,7 @@ export const getSession = async () => {
 // User Profile APIs
 export const updateUserProfile = async (updates: Partial<{
   parentPin: string;
+  parentName: string;
   name: string;
   phone: string;
   school: string;
