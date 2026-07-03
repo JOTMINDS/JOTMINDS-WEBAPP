@@ -550,6 +550,13 @@ export function ProfessionalCognitiveResults({
             </p>
           </CardContent>
         </Card>
+
+        <div className="flex justify-center mt-6 no-print">
+          <Button onClick={onBack} size="lg" className="w-full sm:w-auto min-w-[200px]">
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Back to Dashboard
+          </Button>
+        </div>
       </div>
     </div>
   );

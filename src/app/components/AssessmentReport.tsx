@@ -1422,6 +1422,13 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           <FeedbackPrompt />
         </div>
 
+        <div className="flex justify-center mt-6 no-print">
+          <Button onClick={onBack} size="lg" className="w-full sm:w-auto min-w-[200px]">
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Back to Dashboard
+          </Button>
+        </div>
+
         <div className="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 max-w-4xl mx-auto dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-400">
           <div className="text-center text-xs mb-4">
             {GLOBAL_DISCLAIMER}
