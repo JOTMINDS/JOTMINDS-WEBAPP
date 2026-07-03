@@ -4,7 +4,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import {
-  AlertTriangle, AlertCircle, Building2, MapPin, Mail, Phone, Globe, Shield, QrCode, CheckCircle2, Copy, Share2, Crown, ShieldMinus
+  AlertTriangle, AlertCircle, Building2, MapPin, Mail, Phone, Globe, Shield, QrCode, CheckCircle2, Copy, Share2, Crown, ShieldMinus, BarChart3
 } from 'lucide-react';
 import { Institution, InstitutionMember, getMemberCountsByStatus } from '../../utils/institution';
 
@@ -111,6 +111,29 @@ export function InstitutionOverview({
           </Card>
         ))}
       </div>
+
+      {/* Teaching Styles Overview Link */}
+      <Card className="border-blue-200 bg-blue-50/50">
+        <CardContent className="pt-5 pb-5">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Teaching Styles Analytics</h3>
+              <p className="text-xs text-gray-600">
+                Compare teaching styles across your school's educators to optimize student placement and professional development.
+              </p>
+            </div>
+            <Button 
+              size="sm" 
+              className="shrink-0"
+              style={{ backgroundColor: '#5B7DB1' }}
+              onClick={() => setTab('teacher_styles')}
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Compare Styles
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Admin Team */}
       <Card>
