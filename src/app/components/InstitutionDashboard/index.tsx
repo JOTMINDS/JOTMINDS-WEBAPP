@@ -315,7 +315,10 @@ export function InstitutionDashboard({
                 {t === 'settings' && <Settings className="h-4 w-4" />}
                 {t === 'profile' && <Shield className="h-4 w-4" />}
                 <span className="capitalize">
-                  {t === 'analytics' ? 'Assessment Analytics' : t.replace('_', ' ')}
+                  {t === 'analytics' ? 'Assessment Analytics' : 
+                   t === 'settings' ? 'School Settings' :
+                   t === 'profile' ? 'My Profile' :
+                   t.replace('_', ' ')}
                 </span>
               </button>
             ))}

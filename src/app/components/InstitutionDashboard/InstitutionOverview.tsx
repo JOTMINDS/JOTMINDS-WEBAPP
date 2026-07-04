@@ -30,6 +30,9 @@ export function InstitutionOverview({
   setTab
 }: InstitutionOverviewProps) {
   const statusCounts = getMemberCountsByStatus(members);
+  const headAdminMember = members.find(m => m.userId === institution.adminId);
+  const adminName = headAdminMember?.userName || institution.adminName;
+  const adminEmail = headAdminMember?.userEmail || institution.adminEmail;
 
   return (
     <div className="space-y-5">
@@ -82,7 +85,7 @@ export function InstitutionOverview({
               { label: 'Email', icon: <Mail className="w-3.5 h-3.5" />, value: institution.email },
               { label: 'Phone', icon: <Phone className="w-3.5 h-3.5" />, value: institution.phone },
               { label: 'Website', icon: <Globe className="w-3.5 h-3.5" />, value: institution.website || '—' },
-              { label: 'Admin', icon: <Shield className="w-3.5 h-3.5" />, value: institution.adminName },
+              { label: 'Admin', icon: <Shield className="w-3.5 h-3.5" />, value: adminName },
             ].map(row => (
               <div key={row.label}>
                 <p className="text-[10px] text-gray-400 flex items-center gap-1 mb-0.5">{row.icon}{row.label}</p>
@@ -142,16 +145,16 @@ export function InstitutionOverview({
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-[#5B7DB1] flex items-center justify-center text-white text-xs shrink-0">
-                {institution.adminName.charAt(0)}
+                {adminName.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{institution.adminName}</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">{adminName}</p>
                   <Badge className="bg-[#5B7DB1]/20 text-[#5B7DB1] text-[10px] flex items-center gap-1 hover:bg-[#5B7DB1]/20">
                     <Crown className="w-3 h-3" /> Head Admin
                   </Badge>
                 </div>
-                <p className="text-xs text-gray-500 truncate">{institution.adminEmail}</p>
+                <p className="text-xs text-gray-500 truncate">{adminEmail}</p>
               </div>
             </div>
             
