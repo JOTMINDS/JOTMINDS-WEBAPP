@@ -83,9 +83,14 @@ export function InviteMemberModal({
           </div>
           <div className="flex gap-3 justify-end mt-6">
             <Button variant="ghost" onClick={onClose} disabled={isInviting}>Cancel</Button>
-            <Button style={{ backgroundColor: '#6B4C9A' }} onClick={handleInvite} disabled={isInviting}>
+            <Button 
+              style={{ backgroundColor: '#6B4C9A' }} 
+              onClick={handleInvite} 
+              disabled={isInviting}
+              className="disabled:opacity-90 disabled:cursor-wait"
+            >
               {isInviting ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
-              Send Invite
+              {isInviting ? 'Sending...' : 'Send Invite'}
             </Button>
           </div>
         </div>

@@ -410,8 +410,14 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={isLoading} style={{ backgroundColor: '#6B4C9A' }}>
-                  {isLoading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : 'Add & Send Invite'}
+                <Button 
+                  type="submit" 
+                  disabled={isLoading} 
+                  style={{ backgroundColor: '#6B4C9A' }}
+                  className="disabled:opacity-90 disabled:cursor-wait"
+                >
+                  {isLoading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  {isLoading ? 'Sending...' : 'Add & Send Invite'}
                 </Button>
               </div>
             </form>
