@@ -82,7 +82,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
   const approvedMemberIds = new Set(members.filter(m => m.status === 'approved').map(m => m.userId));
   
   // Teachers in this institution
-  const teachers = members.length > 0 ? allUsers.filter(u => u.role === 'teacher' && approvedMemberIds.has(u.id)) : [];
+  const teachers = members.filter(m => m.role === 'teacher' && m.status === 'approved');
 
   // Filtered dataset
   const filteredData = useMemo(() => {
@@ -198,7 +198,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
     const rows = assessments.map(a => {
       const student = users.find(u => u.id === a.userId);
       const studentClass = student?.classId ? getAllClasses().find(c => c.id === student.classId) : null;
-      const teacher = studentClass ? teachers.find(t => t.id === studentClass.classTeacherId) : null;
+      const teacher = studentClass ? teachers.find(t => t.userId === studentClass.classTeacherId) : null;
       
       const row = [
         student?.id || a.userId,
@@ -206,7 +206,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
         student?.email || '',
         student?.role || '',
         studentClass?.name || 'Unassigned',
-        teacher?.name || 'Unassigned',
+        teacher?.userName || teacher?.userEmail || 'Unassigned',
         a.id,
         a.type,
         a.completedAt || '',
@@ -250,7 +250,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
                   onChange={(e) => setSelectedTeacherId(e.target.value)}
                 >
                   <option value="all">All Teachers</option>
-                  {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  {teachers.map(t => <option key={t.userId} value={t.userId}>{t.userName || t.userEmail}</option>)}
                 </select>
               </div>
             )}
@@ -304,7 +304,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
                   {filteredData.assessments.slice(0, 50).map(a => {
                     const student = filteredData.users.find(u => u.id === a.userId);
                     const studentClass = student?.classId ? getAllClasses().find(c => c.id === student.classId) : null;
-                    const teacher = studentClass ? teachers.find(t => t.id === studentClass.classTeacherId) : null;
+                    const teacher = studentClass ? teachers.find(t => t.userId === studentClass.classTeacherId) : null;
                     return (
                       <tr key={a.id} className="hover:bg-gray-50 transition-colors">
                         <td className="p-3 text-gray-500 whitespace-nowrap">
@@ -312,7 +312,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
                         </td>
                         <td className="p-3 font-medium text-gray-900">{student?.name || 'Unknown Student'}</td>
                         <td className="p-3 text-gray-600">{studentClass?.name || 'Unassigned'}</td>
-                        <td className="p-3 text-gray-600">{teacher?.name || 'Unassigned'}</td>
+                        <td className="p-3 text-gray-600">{teacher?.userName || teacher?.userEmail || 'Unassigned'}</td>
                         <td className="p-3 text-gray-600 capitalize">{a.type?.replace(/-/g, ' ') || 'Unknown'}</td>
                       </tr>
                     );
