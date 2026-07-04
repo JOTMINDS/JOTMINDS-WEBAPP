@@ -13,12 +13,17 @@ import {
   ChevronDown, 
   ExternalLink,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  Send,
+  Link2,
+  Loader
 } from 'lucide-react';
 import { formatDate } from '../../utils/dateFormat';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { StudentDetailView } from '../StudentDetailView';
 import { KidsCognitiveProfile } from '../kids/KidsCognitiveProfile';
+import { sendStudentReminder } from '../../utils/api';
+import { toast } from 'sonner';
 
 interface TeacherIndividualStudentViewProps {
   students: User[];
@@ -41,6 +46,7 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
   const [isStrategiesOpen, setIsStrategiesOpen] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [viewFullProfile, setViewFullProfile] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
 
   const selectedStudent = students.find(s => s.id === selectedStudentId);
   
@@ -618,10 +624,52 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                <Button className="rounded-full">
-                  Send Reminder to Student
+                <Button 
+                  className="rounded-full disabled:opacity-90 disabled:cursor-wait" 
+                  disabled={isSendingReminder || !selectedStudent.email}
+                  onClick={async () => {
+                    if (!selectedStudent.email) {
+                      toast.error('No email address found for this student');
+                      return;
+                    }
+                    setIsSendingReminder(true);
+                    try {
+                      await sendStudentReminder(
+                        selectedStudent.email,
+                        selectedStudent.name,
+                        selectedStudent.school || selectedStudent.organizationName || 'your school'
+                      );
+                      toast.success(`Reminder sent to ${selectedStudent.name}`);
+                    } catch (err) {
+                      toast.error(`Failed to send reminder to ${selectedStudent.name}`);
+                    } finally {
+                      setIsSendingReminder(false);
+                    }
+                  }}
+                >
+                  {isSendingReminder ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                  {isSendingReminder ? 'Sending...' : 'Send Reminder to Student'}
                 </Button>
-                <Button variant="outline" className="rounded-full">
+                <Button 
+                  variant="outline" 
+                  className="rounded-full"
+                  onClick={() => {
+                    const assessmentUrl = `${window.location.origin}/auth`;
+                    navigator.clipboard.writeText(assessmentUrl).then(() => {
+                      toast.success('Assessment link copied to clipboard!');
+                    }).catch(() => {
+                      // Fallback for older browsers
+                      const textArea = document.createElement('textarea');
+                      textArea.value = assessmentUrl;
+                      document.body.appendChild(textArea);
+                      textArea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textArea);
+                      toast.success('Assessment link copied to clipboard!');
+                    });
+                  }}
+                >
+                  <Link2 className="w-4 h-4 mr-2" />
                   Share Assessment Link
                 </Button>
               </div>

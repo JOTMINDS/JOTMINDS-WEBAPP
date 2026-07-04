@@ -496,6 +496,13 @@ export const sendEmail = async (recipientEmail: string, subject: string, htmlCon
   });
 };
 
+export const sendStudentReminder = async (email: string, studentName: string, schoolName: string) => {
+  return makeRequest('/send-reminder', {
+    method: 'POST',
+    body: JSON.stringify({ email, professionalName: studentName, organizationName: schoolName }),
+  });
+};
+
 // Role Profiles APIs (Cognitive Role Fit)
 export const getRoleProfiles = async (institutionId?: string) => {
   const query = institutionId ? `?institutionId=${institutionId}` : '';
