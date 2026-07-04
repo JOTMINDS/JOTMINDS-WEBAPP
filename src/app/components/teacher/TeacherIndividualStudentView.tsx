@@ -82,7 +82,7 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
 
   // Get student assessments
   const studentAssessments = assessments.filter(
-    a => a.userId === selectedStudentId && a.completed
+    a => a.userId === selectedStudentId && (a.completed || a.completedAt)
   );
   
   const latestLearning = studentAssessments
@@ -270,9 +270,9 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
           {students.map((student) => {
             const studentCompletedCount = [
-              assessments.find(a => a.userId === student.id && (a.type === 'kolb' || (a.type as any) === 'learning') && a.completed),
-              assessments.find(a => a.userId === student.id && ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && a.completed),
-              assessments.find(a => a.userId === student.id && (a.type === 'dual-process' || (a.type as any) === 'decision') && a.completed)
+              assessments.find(a => a.userId === student.id && (a.type === 'kolb' || (a.type as any) === 'learning') && (a.completed || a.completedAt)),
+              assessments.find(a => a.userId === student.id && ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && (a.completed || a.completedAt)),
+              assessments.find(a => a.userId === student.id && (a.type === 'dual-process' || (a.type as any) === 'decision') && (a.completed || a.completedAt))
             ].filter(Boolean).length;
             
             const isSelected = student.id === selectedStudentId;

@@ -5,8 +5,9 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
-  Users, Upload, UserPlus, AlertCircle, CheckCircle2, Trash2, Mail, Clock, RefreshCw, Loader, BarChart3, Crown, ShieldMinus, Brain
+  Users, Upload, UserPlus, AlertCircle, CheckCircle2, Trash2, Mail, Clock, RefreshCw, Loader, BarChart3, Crown, ShieldMinus, Brain, Download
 } from 'lucide-react';
+import { generatePDF } from '../../utils/pdfGenerator';
 import {
   Institution,
   InstitutionMember,
@@ -558,6 +559,35 @@ export function InstitutionMembers({
                           </div>
                       </div>
                     )}
+
+                    {/* Export Report button for members with completed assessments */}
+                    {(m.role === 'student' || m.role === 'teacher') && (() => {
+                      const completedAssessments = getAssessmentsByUserId(m.userId).filter((a: any) => a.completedAt);
+                      if (completedAssessments.length === 0) return null;
+                      return (
+                        <div className="hidden md:flex items-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-[#6B4C9A] border-[#6B4C9A]/30 hover:bg-[#6B4C9A]/10 h-7 text-xs"
+                            onClick={async () => {
+                              const latestAssessment = completedAssessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())[0];
+                              toast.loading('Generating report...', { id: `pdf-${m.userId}` });
+                              try {
+                                await generatePDF(latestAssessment, m.userName, null, m.role === 'teacher');
+                                toast.success('Report downloaded', { id: `pdf-${m.userId}` });
+                              } catch (error) {
+                                console.error('PDF generation error:', error);
+                                toast.error('Failed to generate report', { id: `pdf-${m.userId}` });
+                              }
+                            }}
+                            disabled={processingMemberId === m.userId}
+                          >
+                            <Download className="w-3 h-3 mr-1" /> Export Report
+                          </Button>
+                        </div>
+                      );
+                    })()}
                     
                     <div className="flex items-center gap-2 mt-2 sm:mt-0">
                       {isPrimaryAdmin && m.role === 'teacher' && (

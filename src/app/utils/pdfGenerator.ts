@@ -116,20 +116,31 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   doc.setTextColor(...BRAND.ink);
 
   // Main Style
-  const mainStyle = assessment.score.kolb?.style || assessment.score.sternberg?.style || assessment.score.dualProcess?.style || '';
+  const score = assessment.score || {};
+  const mainStyle = score.kolb?.style || score.sternberg?.style || score.dualProcess?.style || score['teaching-style']?.primaryStyle || '';
   doc.setFontSize(16);
-  doc.text(`Your Style: ${mainStyle}`, 20, yPos);
+  doc.text(`Your Style: ${mainStyle || 'N/A'}`, 20, yPos);
   yPos += 10;
 
   // Description
-  const description = getStyleDescription(assessment.type as any, mainStyle);
+  let description = '';
+  try {
+    description = mainStyle ? getStyleDescription(assessment.type as any, mainStyle) : 'Assessment completed successfully.';
+  } catch {
+    description = 'Assessment completed successfully.';
+  }
   doc.setFontSize(10);
   const descLines = doc.splitTextToSize(description, pageWidth - 40);
   doc.text(descLines, 20, yPos);
   yPos += descLines.length * 5 + 15;
 
   // Executive Summary
-  const insights = getAssessmentInsights(assessment);
+  let insights: any;
+  try {
+    insights = getAssessmentInsights(assessment);
+  } catch {
+    insights = { strengths: ['Assessment completed'], weaknesses: ['N/A'], improvements: ['Continue learning'], organizationalFit: [] };
+  }
   
   doc.setFontSize(16);
   doc.setFont('Poppins', 'bold');
@@ -209,35 +220,58 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   yPos += 8;
 
   doc.setFontSize(10);
-  if (assessment.score.kolb) {
+  if (score.kolb) {
     const ceLabel = isOrganizational ? 'Hands-on Experience:' : 'Concrete Experience:';
     const roLabel = isOrganizational ? 'Reflective Analysis:' : 'Reflective Observation:';
     const acLabel = isOrganizational ? 'Conceptual Frameworks:' : 'Abstract Conceptualization:';
     const aeLabel = isOrganizational ? 'Active Implementation:' : 'Active Experimentation:';
     
-    doc.text(`${ceLabel} ${assessment.score.kolb.scores.CE}`, 25, yPos);
+    doc.text(`${ceLabel} ${score.kolb.scores?.CE ?? 'N/A'}`, 25, yPos);
     yPos += 6;
-    doc.text(`${roLabel} ${assessment.score.kolb.scores.RO}`, 25, yPos);
+    doc.text(`${roLabel} ${score.kolb.scores?.RO ?? 'N/A'}`, 25, yPos);
     yPos += 6;
-    doc.text(`${acLabel} ${assessment.score.kolb.scores.AC}`, 25, yPos);
+    doc.text(`${acLabel} ${score.kolb.scores?.AC ?? 'N/A'}`, 25, yPos);
     yPos += 6;
-    doc.text(`${aeLabel} ${assessment.score.kolb.scores.AE}`, 25, yPos);
+    doc.text(`${aeLabel} ${score.kolb.scores?.AE ?? 'N/A'}`, 25, yPos);
     yPos += 10;
-  } else if (assessment.score.sternberg) {
-    doc.text(`Analytical: ${assessment.score.sternberg.scores.analytical}`, 25, yPos);
+  } else if (score.sternberg) {
+    doc.text(`Analytical: ${score.sternberg.scores?.analytical ?? 'N/A'}`, 25, yPos);
     yPos += 6;
-    doc.text(`Creative: ${assessment.score.sternberg.scores.creative}`, 25, yPos);
+    doc.text(`Creative: ${score.sternberg.scores?.creative ?? 'N/A'}`, 25, yPos);
     yPos += 6;
-    doc.text(`Practical: ${assessment.score.sternberg.scores.practical}`, 25, yPos);
+    doc.text(`Practical: ${score.sternberg.scores?.practical ?? 'N/A'}`, 25, yPos);
     yPos += 10;
-  } else if (assessment.score.dualProcess) {
+  } else if (score.dualProcess) {
     const system1Label = isOrganizational ? 'Intuitive/Rapid:' : 'Intuitive (System 1):';
     const system2Label = isOrganizational ? 'Analytical/Deliberate:' : 'Reflective (System 2):';
     
-    doc.text(`${system1Label} ${assessment.score.dualProcess.scores.system1}`, 25, yPos);
+    doc.text(`${system1Label} ${score.dualProcess.scores?.system1 ?? 'N/A'}`, 25, yPos);
     yPos += 6;
-    doc.text(`${system2Label} ${assessment.score.dualProcess.scores.system2}`, 25, yPos);
+    doc.text(`${system2Label} ${score.dualProcess.scores?.system2 ?? 'N/A'}`, 25, yPos);
     yPos += 10;
+  } else if (score['teaching-style']) {
+    doc.text(`Primary Style: ${score['teaching-style'].primaryStyle || 'N/A'}`, 25, yPos);
+    yPos += 6;
+    doc.text(`Secondary Style: ${score['teaching-style'].secondaryStyle || 'N/A'}`, 25, yPos);
+    yPos += 10;
+  } else {
+    // Generic fallback for any other assessment type
+    try {
+      const scoreEntries = Object.entries(score);
+      if (scoreEntries.length > 0) {
+        scoreEntries.slice(0, 6).forEach(([key, value]) => {
+          doc.text(`${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`, 25, yPos);
+          yPos += 6;
+        });
+        yPos += 4;
+      } else {
+        doc.text('Score details not available', 25, yPos);
+        yPos += 10;
+      }
+    } catch {
+      doc.text('Score details not available', 25, yPos);
+      yPos += 10;
+    }
   }
 
   if (yPos > 250) {

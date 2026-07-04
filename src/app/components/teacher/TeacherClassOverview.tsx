@@ -30,10 +30,10 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
   // Calculate class statistics
   const totalStudents = students.length;
   const studentsWithAssessments = students.filter(s => 
-    assessments.some(a => a.userId === s.id && a.completed)
+    assessments.some(a => a.userId === s.id && (a.completed || a.completedAt))
   ).length;
   
-  const completedAssessments = assessments.filter(a => a.completed).length;
+  const completedAssessments = assessments.filter(a => a.completed || a.completedAt).length;
   const averageCompletion = totalStudents > 0 
     ? Math.round((studentsWithAssessments / totalStudents) * 100) 
     : 0;
@@ -41,7 +41,7 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
   // Learning style distribution
   const learningStyleDistribution: Record<string, number> = {};
   assessments
-    .filter(a => (a.type === 'kolb' || (a.type as any) === 'learning') && a.completed)
+    .filter(a => (a.type === 'kolb' || (a.type as any) === 'learning') && (a.completed || a.completedAt))
     .forEach(a => {
       const style = a.score?.kolb?.style || (a.score as any)?.learning?.style || 'Unknown';
       learningStyleDistribution[style] = (learningStyleDistribution[style] || 0) + 1;
@@ -55,7 +55,7 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
   // Thinking style distribution
   const thinkingStyleDistribution: Record<string, number> = {};
   assessments
-    .filter(a => ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && a.completed)
+    .filter(a => ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && (a.completed || a.completedAt))
     .forEach(a => {
       let style = 'Unknown';
       if (a.type === 'sternberg') {
@@ -80,11 +80,11 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
   }));
 
   // Assessment completion by type
-  const kolbCount = assessments.filter(a => (a.type === 'kolb' || (a.type as any) === 'learning') && a.completed).length;
+  const kolbCount = assessments.filter(a => (a.type === 'kolb' || (a.type as any) === 'learning') && (a.completed || a.completedAt)).length;
   const thinkingCount = assessments.filter(a => 
-    ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && a.completed
+    ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && (a.completed || a.completedAt)
   ).length;
-  const decisionCount = assessments.filter(a => (a.type === 'dual-process' || (a.type as any) === 'decision') && a.completed).length;
+  const decisionCount = assessments.filter(a => (a.type === 'dual-process' || (a.type as any) === 'decision') && (a.completed || a.completedAt)).length;
 
   const completionData = [
     { name: 'Learning Style', completed: kolbCount, total: totalStudents },
