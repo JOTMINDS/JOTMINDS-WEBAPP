@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { validateInstitutionCode, transferMember, transferStudent } from '../../utils/institution';
-import { saveUser } from '../../utils/storage';
+import { validateInstitutionCode, transferMember, InstitutionMember } from '../../utils/institution';
+import { saveUser, getAllClasses } from '../../utils/storage';
 
 interface TransferMemberModalProps {
   isOpen: boolean;
@@ -16,6 +16,7 @@ interface TransferMemberModalProps {
   institutionName: string;
   allPlatformUsers: any[];
   onTransferSuccess: () => void;
+  institutionMembers?: InstitutionMember[];
 }
 
 export function TransferMemberModal({
@@ -27,14 +28,15 @@ export function TransferMemberModal({
   institutionId,
   institutionName,
   allPlatformUsers,
-  onTransferSuccess
+  onTransferSuccess,
+  institutionMembers = []
 }: TransferMemberModalProps) {
   const [transferCode, setTransferCode] = useState('');
-  const [selectedTeacherId, setSelectedTeacherId] = useState('');
+  const [selectedClassId, setSelectedClassId] = useState('');
 
   useEffect(() => {
     setTransferCode('');
-    setSelectedTeacherId('');
+    setSelectedClassId('');
   }, [isOpen, memberId]);
 
   if (!isOpen) return null;
@@ -67,20 +69,17 @@ export function TransferMemberModal({
   };
 
   const handleStudentTransfer = async () => {
-    if (!selectedTeacherId) return;
+    if (!selectedClassId) return;
 
-    const teacher = allPlatformUsers.find(u => u.id === selectedTeacherId);
-    if (!teacher) return;
+    const instTeacherIds = new Set(institutionMembers.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+    const classes = getAllClasses().filter(c => !c.classTeacherId || instTeacherIds.has(c.classTeacherId));
+    const targetClass = classes.find(c => c.id === selectedClassId);
+    if (!targetClass) return;
     
-    const success = await transferStudent(memberId, institutionId, selectedTeacherId, teacher.name);
-    
-    if (success) {
-      const userToUpdate = allPlatformUsers.find(u => u.id === memberId);
-      if (userToUpdate) {
-        userToUpdate.teacherId = selectedTeacherId;
-        userToUpdate.teacherName = teacher.name;
-        saveUser(userToUpdate);
-      }
+    const userToUpdate = allPlatformUsers.find(u => u.id === memberId);
+    if (userToUpdate) {
+      userToUpdate.classId = selectedClassId;
+      saveUser(userToUpdate);
       toast.success('Student successfully transferred to new class.');
       onTransferSuccess();
       onClose();
@@ -115,25 +114,30 @@ export function TransferMemberModal({
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
         <h3 className="text-lg font-bold mb-2">Transfer Student to Another Class</h3>
         <p className="text-sm text-gray-500 mb-4">
-          Select a new teacher to reassign <strong>{memberName}</strong> to their class.
+          Select a new class for <strong>{memberName}</strong>.
         </p>
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Select New Teacher</label>
+            <label className="text-sm font-medium">Select New Class</label>
             <select
               className="w-full mt-1 border rounded-md p-2 bg-white"
-              value={selectedTeacherId}
-              onChange={(e) => setSelectedTeacherId(e.target.value)}
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
             >
-              <option value="">-- Choose Teacher --</option>
-              {allPlatformUsers.filter(u => u.role === 'teacher' && u.organizationName === institutionName).map(t => (
-                <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-              ))}
+              <option value="">-- Choose Class --</option>
+              {(() => {
+                const instTeacherIds = new Set(institutionMembers.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+                return getAllClasses()
+                  .filter(c => !c.classTeacherId || instTeacherIds.has(c.classTeacherId))
+                  .map(c => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.academicYear})</option>
+                  ));
+              })()}
             </select>
           </div>
           <div className="flex gap-3 justify-end mt-6">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button style={{ backgroundColor: '#1E8A6E' }} onClick={handleStudentTransfer} disabled={!selectedTeacherId}>Transfer Student</Button>
+            <Button style={{ backgroundColor: '#1E8A6E' }} onClick={handleStudentTransfer} disabled={!selectedClassId}>Transfer Student</Button>
           </div>
         </div>
       </div>
