@@ -114,7 +114,7 @@ function AppContent() {
       const searchParams = new URLSearchParams(window.location.search);
       const code = searchParams.get('code');
       const roleParam = searchParams.get('role');
-      const inviteToken = searchParams.get('token');
+      const inviteToken = searchParams.get('inviteToken');
       
       if (code) {
         const processCode = async () => {
