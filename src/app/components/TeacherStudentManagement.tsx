@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
 import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
-import { getStudentsForTeacher, updateUserProfile } from '../utils/api';
+import { getStudentsForTeacher, updateUserProfile, inviteStudentToClass } from '../utils/api';
 import { getInstitutionForMember } from '../utils/institution';
 import { projectId } from '../utils/supabase/info';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -123,23 +123,14 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
       saveUser(newStudent);
 
       // 2. Send Invite Email via Edge Function
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/send-student-invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      await inviteStudentToClass({
           email: formData.email,
           studentName: formData.name,
           teacherName: teacher.name,
-          schoolName: teacher.organizationName,
+          schoolName: teacher.organizationName || '',
           teacherId: teacher.id,
           institutionId: institutionId || undefined
-        })
       });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Failed to send invite email');
-      }
 
       toast.success('Student added and invite sent!');
       setIsAddModalOpen(false);
@@ -214,7 +205,17 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
           }
         }
         
-        // Optionally send batch emails here or just rely on local save
+        // Fire and forget emails for all imported students
+        Promise.allSettled(newStudents.map(student => 
+            inviteStudentToClass({
+              email: student.email,
+              studentName: student.name,
+              teacherName: teacher.name,
+              schoolName: teacher.organizationName || '',
+              teacherId: teacher.id,
+              institutionId: institutionId || undefined
+            })
+        )).catch(err => console.error("Batch email error", err));
         toast.success(`${newStudents.length} students imported successfully.`);
         setIsBulkModalOpen(false);
         loadStudents();

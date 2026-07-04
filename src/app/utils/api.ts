@@ -503,6 +503,13 @@ export const sendStudentReminder = async (email: string, studentName: string, sc
   });
 };
 
+export const inviteStudentToClass = async (payload: { email: string; studentName: string; teacherName: string; schoolName: string; teacherId: string; institutionId?: string }) => {
+  return makeRequest('/send-student-invite', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
 // Role Profiles APIs (Cognitive Role Fit)
 export const getRoleProfiles = async (institutionId?: string) => {
   const query = institutionId ? `?institutionId=${institutionId}` : '';

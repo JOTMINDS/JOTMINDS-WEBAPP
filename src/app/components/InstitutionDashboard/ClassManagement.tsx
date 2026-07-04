@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Class, User, TeacherClassAssignment } from '../../types';
 import { InstitutionMember } from '../../utils/institution';
 import { getAllClasses, saveClass, deleteClass, getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment } from '../../utils/storage';
+import { inviteStudentToClass } from '../../utils/api';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ClassManagementProps {
@@ -113,10 +114,25 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   };
 
   const handleSaveStudents = () => {
+    const activeClass = classes.find(c => c.id === activeStudentClassId);
+    const classTeacher = teachers.find(t => t.id === activeClass?.classTeacherId);
+    const teacherName = classTeacher ? classTeacher.name : 'Your School Administrator';
+    const teacherId = classTeacher ? classTeacher.id : 'admin';
+
     students.forEach(student => {
       const isSelected = selectedStudents.has(student.id);
       if (isSelected && student.classId !== activeStudentClassId) {
         saveUser({ ...student, classId: activeStudentClassId });
+        
+        // Send email notification that they were added to the class
+        inviteStudentToClass({
+          email: student.email,
+          studentName: student.name,
+          teacherName: teacherName,
+          schoolName: student.organizationName || 'Your School',
+          teacherId: teacherId,
+          institutionId: institutionId
+        }).catch(err => console.error("Failed to send class assignment email", err));
       } else if (!isSelected && student.classId === activeStudentClassId) {
         saveUser({ ...student, classId: undefined });
       }
