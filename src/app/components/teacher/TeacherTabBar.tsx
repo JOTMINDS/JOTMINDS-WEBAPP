@@ -1,6 +1,6 @@
 interface TeacherTabBarProps {
-  activeTab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'manage-class';
-  onTabChange: (tab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'manage-class') => void;
+  activeTab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'analytics-compare' | 'manage-class';
+  onTabChange: (tab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'analytics-compare' | 'manage-class') => void;
 }
 
 export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
@@ -54,6 +54,18 @@ export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
           `}
         >
           My Profile
+        </button>
+        <button
+          onClick={() => onTabChange('analytics-compare')}
+          className={`
+            px-4 py-2 rounded-full text-[14px] font-semibold transition-all duration-200 whitespace-nowrap
+            ${activeTab === 'analytics-compare'
+              ? 'bg-white text-foreground shadow-sm'
+              : 'bg-transparent text-muted-foreground hover:text-foreground'
+            }
+          `}
+        >
+          Alignment Analysis
         </button>
         <button
           onClick={() => onTabChange('manage-class')}

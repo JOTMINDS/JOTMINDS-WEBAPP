@@ -49,7 +49,7 @@ export function TeacherDashboard({
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
   const [activeStudentTab, setActiveStudentTab] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'manage-class' | 'teaching-style'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'manage-class' | 'teaching-style' | 'analytics-compare'>('overview');
   const [institutionId, setInstitutionId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);

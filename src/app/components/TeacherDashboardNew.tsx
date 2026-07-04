@@ -15,7 +15,8 @@ import {
   TeacherAppHeader, 
   TeacherTabBar, 
   TeacherClassOverview, 
-  TeacherIndividualStudentView 
+  TeacherIndividualStudentView,
+  TeacherAnalyticsComparison
 } from './teacher';
 import { TeachingStyleAssessment } from './TeachingStyleAssessment';
 import { TeachingStyleResults } from './TeachingStyleResults';
@@ -44,7 +45,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'teaching-style' | 'manage-class'>('individual');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'teaching-style' | 'analytics-compare' | 'manage-class'>('individual');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -716,6 +717,15 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {activeTab === 'analytics-compare' && (
+        <TeacherAnalyticsComparison
+          teacherAssessments={allMyAssessments}
+          studentAssessments={allAssessments}
+          students={students}
+          teacherProfile={user}
+        />
       )}
 
       {activeTab === 'manage-class' && (
