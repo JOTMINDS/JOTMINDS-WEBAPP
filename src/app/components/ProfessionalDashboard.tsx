@@ -1024,9 +1024,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button onClick={() => setActiveAssessment('kolb')}>
-                          Retake Assessment
-                        </Button>
+
                         <Button variant="outline" onClick={() => setViewingReport(getLatestAssessment('kolb'))}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Report
@@ -1071,9 +1069,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button onClick={() => setActiveAssessment('sternberg')}>
-                          Retake Assessment
-                        </Button>
+
                         <Button variant="outline" onClick={() => setViewingReport(getLatestAssessment('sternberg'))}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Report
@@ -1118,9 +1114,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button onClick={() => setActiveAssessment('dual-process')}>
-                          Retake Assessment
-                        </Button>
+
                         <Button variant="outline" onClick={() => setViewingReport(getLatestAssessment('dual-process'))}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Report

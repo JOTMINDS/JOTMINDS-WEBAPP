@@ -464,9 +464,11 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                       <p className="text-sm font-medium text-gray-800">📚 Learning Style (Kolb)</p>
                       <div className="flex items-center gap-2">
                         {kolb && <Badge style={{ backgroundColor: KOLB_COLORS[kolb.style] + '20', color: KOLB_COLORS[kolb.style] }} className="text-[10px]">{kolb.style}</Badge>}
-                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onStartAssessment?.('learning')}>
-                          {kolb ? 'Retake' : 'Take'}
-                        </Button>
+                        {!kolb && (
+                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onStartAssessment?.('learning')}>
+                            Take
+                          </Button>
+                        )}
                       </div>
                     </div>
                     {kolb && (
@@ -487,9 +489,11 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                       <p className="text-sm font-medium text-gray-800">🧠 Thinking Style</p>
                       <div className="flex items-center gap-2">
                         {thinkStyle && <Badge style={{ backgroundColor: THINK_COLORS[thinkStyle] + '20', color: THINK_COLORS[thinkStyle] }} className="text-[10px]">{thinkStyle}</Badge>}
-                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setShowingThinkingAssessment(true)}>
-                          {thinkStyle ? 'Retake' : 'Take'}
-                        </Button>
+                        {!thinkStyle && (
+                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setShowingThinkingAssessment(true)}>
+                            Take
+                          </Button>
+                        )}
                       </div>
                     </div>
                     {thinkStyle && (
@@ -514,9 +518,11 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                       <p className="text-sm font-medium text-gray-800">⚡ Decision Style</p>
                       <div className="flex items-center gap-2">
                         {dual && <Badge style={{ backgroundColor: DUAL_COLORS[dual.style] + '20', color: DUAL_COLORS[dual.style] }} className="text-[10px]">{dual.style}</Badge>}
-                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onStartAssessment?.('decision')}>
-                          {dual ? 'Retake' : 'Take'}
-                        </Button>
+                        {!dual && (
+                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onStartAssessment?.('decision')}>
+                            Take
+                          </Button>
+                        )}
                       </div>
                     </div>
                     {dual?.scores && (
