@@ -87,9 +87,9 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
   const decisionCount = assessments.filter(a => (a.type === 'dual-process' || (a.type as any) === 'decision') && (a.completed || a.completedAt)).length;
 
   const completionData = [
-    { name: 'Learning Style', completed: kolbCount, total: totalStudents },
-    { name: 'Thinking Style', completed: thinkingCount, total: totalStudents },
-    { name: 'Decision Style', completed: decisionCount, total: totalStudents }
+    { name: 'Learning Style', completed: kolbCount, pending: Math.max(0, totalStudents - kolbCount), total: totalStudents },
+    { name: 'Thinking Style', completed: thinkingCount, pending: Math.max(0, totalStudents - thinkingCount), total: totalStudents },
+    { name: 'Decision Style', completed: decisionCount, pending: Math.max(0, totalStudents - decisionCount), total: totalStudents }
   ];
 
   return (
@@ -159,37 +159,41 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              <CardTitle className="text-[16px]">How many students finished each assessment</CardTitle>
+              <CardTitle className="text-[16px]">Assessment Completion Progress</CardTitle>
             </div>
             <CardDescription className="text-[13px]">
-              The coloured bar is how many students completed it; the grey bar is your whole class. The closer the two bars, the more of your class has finished.
+              See what percentage of your class has completed each assessment type.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={completionData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={completionData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
                 <XAxis 
-                  dataKey="name" 
+                  type="number"
+                  domain={[0, totalStudents > 0 ? totalStudents : 1]}
                   tick={{ fontSize: 12 }}
                   stroke="#64748b"
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }}
+                  dataKey="name" 
+                  type="category"
+                  tick={{ fontSize: 13, fill: '#334155', fontWeight: 500 }}
                   stroke="#64748b"
+                  width={100}
                 />
                 <Tooltip 
+                  cursor={{fill: 'transparent'}}
                   contentStyle={{ 
                     borderRadius: '12px', 
                     border: '1px solid #E2E8F0',
                     fontSize: '13px'
                   }}
+                  formatter={(value: number, name: string) => [value, name === 'completed' ? 'Completed' : 'Pending']}
                 />
-                <Legend 
-                  wrapperStyle={{ fontSize: '13px' }}
-                />
-                <Bar dataKey="completed" fill={COLORS.primary} name="Completed" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="total" fill="#E2E8F0" name="Total Students" radius={[8, 8, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} />
+                <Bar dataKey="completed" stackId="a" fill={COLORS.success} name="Completed" radius={[0, 0, 0, 0]} barSize={24} />
+                <Bar dataKey="pending" stackId="a" fill="#E2E8F0" name="Pending" radius={[0, 4, 4, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -216,27 +220,10 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
                       data={learningStyleData}
                       cx="50%"
                       cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={2}
                       labelLine={false}
-                      label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
-                        const RADIAN = Math.PI / 180;
-                        const radius = outerRadius + 25;
-                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                        
-                        return (
-                          <text 
-                            x={x} 
-                            y={y} 
-                            fill="#334155"
-                            textAnchor={x > cx ? 'start' : 'end'} 
-                            dominantBaseline="central"
-                            style={{ fontSize: '12px', fontWeight: 500 }}
-                          >
-                            {`${name} ${(percent * 100).toFixed(0)}%`}
-                          </text>
-                        );
-                      }}
-                      outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -253,7 +240,9 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
                         border: '1px solid #E2E8F0',
                         fontSize: '13px'
                       }}
+                      formatter={(value: number) => [`${value} student${value !== 1 ? 's' : ''}`, 'Count']}
                     />
+                    <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -279,9 +268,10 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
                       data={thinkingStyleData}
                       cx="50%"
                       cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={2}
                       labelLine={false}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -298,7 +288,9 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
                         border: '1px solid #E2E8F0',
                         fontSize: '13px'
                       }}
+                      formatter={(value: number) => [`${value} student${value !== 1 ? 's' : ''}`, 'Count']}
                     />
+                    <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
