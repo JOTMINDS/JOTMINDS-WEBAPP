@@ -1,3 +1,6 @@
+import React, { useState } from 'react';
+import { toast } from 'sonner';
+import { exportReportToPDF } from '../utils/pdfGenerator';
 import { AssessmentScore } from '../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -5,7 +8,7 @@ import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { teachingStyleProfiles, axisDescriptions } from '../utils/teachingStyleData';
-import { Download, Share2, CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Download, Share2, CheckCircle, AlertTriangle, ArrowRight, Loader } from 'lucide-react';
 
 interface TeachingStyleResultsProps {
   score: AssessmentScore['teaching-style'];
@@ -14,6 +17,8 @@ interface TeachingStyleResultsProps {
 }
 
 export function TeachingStyleResults({ score, onContinue, onDeepDive }: TeachingStyleResultsProps) {
+  const [exportingPDF, setExportingPDF] = useState(false);
+
   if (!score) return null;
 
   const primaryProfile = teachingStyleProfiles[score.primaryStyle as keyof typeof teachingStyleProfiles];
@@ -37,8 +42,26 @@ export function TeachingStyleResults({ score, onContinue, onDeepDive }: Teaching
     return value > 50 ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400";
   };
 
+  const handleExportPDF = async () => {
+    setExportingPDF(true);
+    toast.loading('Generating report...', { id: 'pdf-export' });
+    try {
+      const success = await exportReportToPDF('teaching-style-results-container', `Teaching_Style_${score.primaryStyle.replace(/\s+/g, '_')}.pdf`);
+      if (success) {
+        toast.success('Report downloaded successfully!', { id: 'pdf-export' });
+      } else {
+        toast.error('Could not find the report container to export.', { id: 'pdf-export' });
+      }
+    } catch (error) {
+      console.error('Failed to export PDF:', error);
+      toast.error('An error occurred while generating the report.', { id: 'pdf-export' });
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div id="teaching-style-results-container" className="space-y-8 animate-in fade-in duration-500 bg-white p-6 rounded-xl">
       {/* Header */}
       <div className="text-center space-y-4">
         <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200 text-lg px-4 py-1">
@@ -202,9 +225,10 @@ export function TeachingStyleResults({ score, onContinue, onDeepDive }: Teaching
       </Card>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-        <Button variant="outline" className="gap-2">
-          <Download className="h-4 w-4" /> Export Report
+      <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4 pdf-exclude">
+        <Button variant="outline" className="gap-2" onClick={handleExportPDF} disabled={exportingPDF}>
+          {exportingPDF ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} 
+          {exportingPDF ? 'Exporting...' : 'Export Report'}
         </Button>
         <Button variant="outline" className="gap-2">
           <Share2 className="h-4 w-4" /> Share Profile
