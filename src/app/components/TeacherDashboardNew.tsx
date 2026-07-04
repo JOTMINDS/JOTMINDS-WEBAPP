@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { User, Assessment } from '../types';
 import { useAuth } from './AuthContext';
-import { getUserAssessmentResults, getStudentsForTeacher } from '../utils/api';
+import { getUserAssessmentResults, getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
 import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { toast } from 'sonner';
@@ -138,6 +138,24 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
           if (response.success && response.students) {
             serverStudents = response.students;
             serverAssessments = serverStudents.flatMap((s: any) => s.assessments || []);
+            
+            if (serverAssessments.length === 0 && serverStudents.length > 0) {
+              const studentIds = serverStudents.map(s => s.id);
+              const chunkSize = 50;
+              for (let i = 0; i < studentIds.length; i += chunkSize) {
+                const chunk = studentIds.slice(i, i + chunkSize);
+                try {
+                  const res = await getAllAssessmentResults(chunk);
+                  if (res && Array.isArray(res.results)) {
+                    serverAssessments.push(...res.results);
+                  } else if (Array.isArray(res)) {
+                    serverAssessments.push(...res);
+                  }
+                } catch (e) {
+                  console.error('Failed to fetch assessments chunk:', e);
+                }
+              }
+            }
           }
         } catch (err) {
           console.log('[TeacherDashboardNew] Failed to fetch server students:', err);
