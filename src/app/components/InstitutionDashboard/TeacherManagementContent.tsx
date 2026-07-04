@@ -208,13 +208,13 @@ export function TeacherManagementContent({
                   </div>
                   <div className="bg-white border rounded-lg p-3 text-center">
                     <p className="text-2xl font-bold text-[#5B7DB1]">
-                      {Math.round(students.filter((s: any) => s.assessmentsCompleted && s.assessmentsCompleted.length > 0).length / students.length * 100)}%
+                      {Math.round(students.filter((s: any) => getAssessmentsByUserId(s.id).filter((a: any) => a.completedAt).length > 0).length / students.length * 100)}%
                     </p>
                     <p className="text-xs text-gray-500">Assessment Completion</p>
                   </div>
                   <div className="bg-white border rounded-lg p-3 text-center">
                     <p className="text-2xl font-bold text-amber-500">
-                      {students.filter((s: any) => !s.assessmentsCompleted || s.assessmentsCompleted.length === 0).length}
+                      {students.filter((s: any) => getAssessmentsByUserId(s.id).filter((a: any) => a.completedAt).length === 0).length}
                     </p>
                     <p className="text-xs text-gray-500">Need Attention</p>
                   </div>

@@ -491,7 +491,7 @@ export function InstitutionMembers({
                         </div>
                         <p className="text-xs text-gray-500">{m.userEmail}</p>
                         {m.userPhone && <p className="text-xs text-gray-400">{m.userPhone}</p>}
-                        {m.role === 'teacher' && (
+                        {(m.role === 'teacher' || m.role === 'admin') && (
                           <p className="text-xs text-[#6B4C9A] mt-0.5 font-medium">
                             {getStudentsForTeacherCount(m.userId)} Assigned Students
                           </p>
@@ -527,11 +527,11 @@ export function InstitutionMembers({
                           <span className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider mb-1">Assessments</span>
                           <div className="flex gap-2">
                             <Badge variant="secondary" className="bg-white text-indigo-700 border-indigo-200 font-bold shadow-sm">
-                                {(allPlatformUsers.find(u => u.id === m.userId)?.assessmentsCompleted || []).filter((a: any) => a.completedAt).length} Completed
+                                {getAssessmentsByUserId(m.userId).filter(a => a.completedAt).length} Completed
                             </Badge>
                             <Badge variant="outline" className="bg-white text-slate-600 border-slate-200 shadow-sm" title="Assessment Frequency">
                                 {(() => {
-                                  const assessments = (allPlatformUsers.find(u => u.id === m.userId)?.assessmentsCompleted || []).filter((a: any) => a.completedAt);
+                                  const assessments = getAssessmentsByUserId(m.userId).filter(a => a.completedAt);
                                   if (assessments.length === 0) return 'No Tests';
                                   
                                   assessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
@@ -584,19 +584,20 @@ export function InstitutionMembers({
                         </Button>
                       )}
 
+                      {(m.role === 'teacher' || m.role === 'admin') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-[#5B7DB1]"
+                          onClick={() => onOpenTeacherManagement(m.userId)}
+                          disabled={processingMemberId === m.userId}
+                        >
+                          <Users className="w-3.5 h-3.5 mr-1.5" /> Manage
+                        </Button>
+                      )}
+
                       {m.role !== 'admin' && (
                         <>
-                          {m.role === 'teacher' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-[#5B7DB1]"
-                              onClick={() => onOpenTeacherManagement(m.userId)}
-                              disabled={processingMemberId === m.userId}
-                            >
-                              <Users className="w-3.5 h-3.5 mr-1.5" /> Manage
-                            </Button>
-                          )}
                           {m.role === 'teacher' && (
                             <Button
                               size="sm"
