@@ -5,6 +5,7 @@ import { SHSResults } from '../utils/shsScoring';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getAuthToken } from '../utils/api';
 import { createShareLink } from '../utils/cognitiveProfileApi';
+import { saveAssessment } from '../utils/storage';
 
 interface SHSThinkingContainerProps {
   userId: string;
@@ -56,6 +57,20 @@ export function SHSThinkingContainer({
 
       console.log('[SHSThinkingContainer] ✓ Results saved successfully');
       
+      // Save locally so teacher portal can see it
+      saveAssessment({
+        id: `local-shs-thinking-${Date.now()}`,
+        userId,
+        type: 'shs-thinking',
+        responses: [],
+        score: {
+          analytical: assessmentResults.analytical,
+          creative: assessmentResults.creative,
+          practical: assessmentResults.practical,
+        },
+        completedAt: new Date().toISOString()
+      } as any);
+
       // Show results
       setResults(assessmentResults);
     } catch (err) {

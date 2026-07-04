@@ -14,6 +14,7 @@ interface ChildrenThinkingResultsProps {
   };
   userName: string;
   onBackToDashboard: () => void;
+  onShareResults?: () => void;
 }
 
 interface ThinkingStyle {
@@ -35,7 +36,7 @@ const getScoreDescription = (score: number): { level: string; emoji: string; mes
   return { level: 'Growing', emoji: '🌱', message: "You're just starting to grow this thinking skill." };
 };
 
-export function ChildrenThinkingResults({ results, userName, onBackToDashboard }: ChildrenThinkingResultsProps) {
+export function ChildrenThinkingResults({ results, userName, onBackToDashboard, onShareResults }: ChildrenThinkingResultsProps) {
   const thinkingStyles: ThinkingStyle[] = [
     {
       name: 'Creative',
@@ -297,10 +298,21 @@ export function ChildrenThinkingResults({ results, userName, onBackToDashboard }
             <Home className="mr-2 h-5 w-5" />
             Back to My Dashboard
           </Button>
+          {onShareResults && (
+            <Button
+              variant="outline"
+              size="lg"
+              className="text-lg flex-1"
+              onClick={onShareResults}
+            >
+              <Share2 className="mr-2 h-5 w-5" />
+              Share Results
+            </Button>
+          )}
           <Button
             variant="outline"
             size="lg"
-            className="text-lg"
+            className="text-lg flex-1"
             onClick={() => window.print()}
           >
             <Download className="mr-2 h-5 w-5" />

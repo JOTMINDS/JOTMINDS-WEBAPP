@@ -5,6 +5,7 @@ import { AdultResults } from '../utils/adultScoring';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getAuthToken } from '../utils/api';
 import { createShareLink } from '../utils/cognitiveProfileApi';
+import { saveAssessment } from '../utils/storage';
 
 interface AdultThinkingContainerProps {
   userId: string;
@@ -55,6 +56,20 @@ export function AdultThinkingContainer({
       }
 
       console.log('[AdultThinkingContainer] ✓ Results saved successfully');
+      
+      // Save locally so teacher portal can see it
+      saveAssessment({
+        id: `local-adult-thinking-${Date.now()}`,
+        userId,
+        type: 'adult-thinking',
+        responses: [],
+        score: {
+          analytical: assessmentResults.analytical,
+          creative: assessmentResults.creative,
+          practical: assessmentResults.practical,
+        },
+        completedAt: new Date().toISOString()
+      } as any);
       
       // Show results
       setResults(assessmentResults);
