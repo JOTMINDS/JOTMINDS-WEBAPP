@@ -253,7 +253,7 @@ export const submitAssessmentWithServerScoring = async (
     // Determine dominant and secondary style
     const sorted = Object.entries(scoringResult.results).sort((a: any, b: any) => b[1] - a[1]);
     const dominantStyle = sorted[0]?.[0] || '';
-    const secondaryStyle = sorted[1]?.[1] > 0 ? sorted[1]?.[0] : null;
+    const secondaryStyle = (sorted[1]?.[1] as any) > 0 ? sorted[1]?.[0] : null;
 
     return {
       ...data,

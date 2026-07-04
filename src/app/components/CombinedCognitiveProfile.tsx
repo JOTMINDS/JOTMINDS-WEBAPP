@@ -68,8 +68,8 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
   // The scores might be at score.dualProcess directly OR at score.dualProcess.scores
   const dualProcessScores = latestDualProcess.score.dualProcess?.scores || latestDualProcess.score.dualProcess || {};
   const normalizedDualProcessScores = {
-    system1: dualProcessScores.system1 ?? dualProcessScores.Intuitive ?? 0,
-    system2: dualProcessScores.system2 ?? dualProcessScores.Reflective ?? 0,
+    system1: (dualProcessScores as any).system1 ?? (dualProcessScores as any).Intuitive ?? 0,
+    system2: (dualProcessScores as any).system2 ?? (dualProcessScores as any).Reflective ?? 0,
   };
   
   console.log('🔧 Dual-Process Score Normalization:', {
@@ -314,14 +314,14 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
   const handleDownloadPDF = async () => {
     const combinedAssessment: Assessment = {
       ...latestKolb,
-      type: 'combined',
+      type: 'combined' as any,
       score: {
         kolb: latestKolb.score.kolb,
         sternberg: latestSternberg.score.sternberg,
         dualProcess: latestDualProcess.score.dualProcess,
       },
     };
-    generatePDF(combinedAssessment, userName);
+    generatePDF(combinedAssessment as any, userName, null, false);
   };
 
   return (

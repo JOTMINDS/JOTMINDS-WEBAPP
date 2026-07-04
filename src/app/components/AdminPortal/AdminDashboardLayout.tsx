@@ -28,6 +28,7 @@ export const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({
     { id: 'users', label: 'User Directory', icon: <Users className="w-5 h-5" /> },
     { id: 'organizations', label: 'Organizations', icon: <Building2 className="w-5 h-5" /> },
     { id: 'content', label: 'System & Content', icon: <Settings className="w-5 h-5" /> },
+    { id: 'settings', label: 'Platform Settings', icon: <Settings className="w-5 h-5" /> },
   ];
 
   const handleNavClick = (id: string) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
-import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId } from '../utils/storage';
+import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { getStudentsForTeacher, updateUserProfile } from '../utils/api';
 import { getInstitutionForMember } from '../utils/institution';
 import { projectId } from '../utils/supabase/info';
@@ -26,6 +26,7 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkClassId, setBulkClassId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [institutionId, setInstitutionId] = useState<string | null>(null);
 
@@ -34,7 +35,10 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
   const [isJoining, setIsJoining] = useState(false);
 
   // Form State
-  const [formData, setFormData] = useState({ id: '', name: '', email: '', phone: '', dateOfBirth: '' });
+  const [formData, setFormData] = useState({ id: '', name: '', email: '', phone: '', dateOfBirth: '', classId: '' });
+  const classes = getAllClasses();
+  const assignments = getAssignmentsForTeacher(teacher.id);
+  const myClasses = classes.filter(c => c.classTeacherId === teacher.id || assignments.some(a => a.classId === c.id));
 
   useEffect(() => {
     loadStudents();
@@ -82,7 +86,11 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
 
     // 2. Fetch from local storage
     const all = getAllUsers();
-    const localStudents = all.filter(u => u.role === 'student' && (u.teacherId === teacher.id || (u.linkedTeachers && u.linkedTeachers.includes(teacher.id))));
+    const teacherClassIds = new Set<string>();
+    classes.filter(c => c.classTeacherId === teacher.id).forEach(c => teacherClassIds.add(c.id));
+    assignments.forEach(a => teacherClassIds.add(a.classId));
+    
+    const localStudents = all.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
 
     // 3. Merge avoiding duplicates (server takes precedence)
     const mergedMap = new Map();
@@ -106,7 +114,7 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
         email: formData.email,
         phone: formData.phone || '',
         dateOfBirth: formData.dateOfBirth,
-        teacherId: teacher.id,
+        classId: formData.classId,
         school: teacher.organizationName,
         organizationName: teacher.organizationName,
         organizationCode: teacher.organizationCode,
@@ -135,7 +143,7 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
 
       toast.success('Student added and invite sent!');
       setIsAddModalOpen(false);
-      setFormData({ id: '', name: '', email: '', phone: '', dateOfBirth: '' });
+      setFormData({ id: '', name: '', email: '', phone: '', dateOfBirth: '', classId: '' });
       loadStudents();
     } catch (err) {
       console.error(err);
@@ -170,6 +178,11 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!bulkClassId) {
+      toast.error('Please select a class first.');
+      return;
+    }
+
     setIsLoading(true);
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -192,7 +205,7 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
               email: email.trim(),
               phone: phone?.trim() || '',
               dateOfBirth: dateOfBirth?.trim() || '',
-              teacherId: teacher.id,
+              classId: bulkClassId,
               school: teacher.organizationName,
               createdAt: new Date().toISOString()
             };
@@ -305,7 +318,7 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
             <Upload className="w-4 h-4 mr-2" /> Bulk Upload
           </Button>
           <Button onClick={() => {
-            setFormData({ id: '', name: '', email: '', phone: '', dateOfBirth: '' });
+            setFormData({ id: '', name: '', email: '', phone: '', dateOfBirth: '', classId: myClasses.length === 1 ? myClasses[0].id : '' });
             setIsAddModalOpen(true);
           }} style={{ backgroundColor: '#6B4C9A' }}>
             <Plus className="w-4 h-4 mr-2" /> Add Student
@@ -326,7 +339,8 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
                       name: student.name,
                       email: student.email,
                       phone: student.phone || '',
-                      dateOfBirth: student.dateOfBirth || ''
+                      dateOfBirth: student.dateOfBirth || '',
+                      classId: student.classId || ''
                     });
                     setIsEditModalOpen(true);
                   }}>
@@ -380,6 +394,20 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
                 <label className="text-sm font-medium">Date of Birth</label>
                 <Input type="date" required value={formData.dateOfBirth} onChange={e => setFormData({...formData, dateOfBirth: e.target.value})} />
               </div>
+              <div>
+                <label className="text-sm font-medium">Assign to Class</label>
+                <select
+                  required
+                  className="w-full mt-1 border rounded-md p-2 bg-white"
+                  value={formData.classId}
+                  onChange={e => setFormData({...formData, classId: e.target.value})}
+                >
+                  <option value="">-- Select Class --</option>
+                  {myClasses.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
                 <Button type="submit" disabled={isLoading} style={{ backgroundColor: '#6B4C9A' }}>
@@ -416,6 +444,20 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
                 <Input type="date" disabled value={formData.dateOfBirth} className="bg-slate-50 text-slate-500 cursor-not-allowed" />
                 <p className="text-xs text-gray-400 mt-1">Locked to ensure COPPA compliance.</p>
               </div>
+              <div>
+                <label className="text-sm font-medium">Assign to Class</label>
+                <select
+                  required
+                  className="w-full mt-1 border rounded-md p-2 bg-white"
+                  value={formData.classId}
+                  onChange={e => setFormData({...formData, classId: e.target.value})}
+                >
+                  <option value="">-- Select Class --</option>
+                  {myClasses.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
                 <Button type="submit" style={{ backgroundColor: '#6B4C9A' }}>Save Changes</Button>
@@ -432,6 +474,20 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
             <h3 className="text-lg font-bold mb-2">Bulk Upload Students</h3>
             <p className="text-sm text-gray-500 mb-4">Upload a CSV file containing your student roster.</p>
             
+            <div className="mb-4">
+              <label className="text-sm font-medium mb-1 block">Assign to Class</label>
+              <select
+                className="w-full mt-1 border rounded-md p-2 bg-white"
+                value={bulkClassId}
+                onChange={e => setBulkClassId(e.target.value)}
+              >
+                <option value="">-- Select Class --</option>
+                {myClasses.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="mb-4">
               <h4 className="text-sm font-medium mb-1">Expected Format:</h4>
               <pre className="text-xs bg-gray-100 p-2 rounded">
@@ -454,9 +510,9 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
               </Button>
             </div>
 
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Input type="file" accept=".csv" className="hidden" id="csv-upload" onChange={handleBulkUpload} disabled={isLoading} />
-              <label htmlFor="csv-upload" className="cursor-pointer flex flex-col items-center">
+            <div className={`border-2 border-dashed border-gray-300 rounded-lg p-6 text-center ${!bulkClassId ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <Input type="file" accept=".csv" className="hidden" id="csv-upload" onChange={handleBulkUpload} disabled={isLoading || !bulkClassId} />
+              <label htmlFor="csv-upload" className={`flex flex-col items-center ${!bulkClassId ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                 <Upload className="w-8 h-8 text-gray-400 mb-2" />
                 <span className="text-sm text-gray-600 font-medium">Click to upload CSV</span>
                 <span className="text-xs text-gray-400 mt-1">Maximum 500 rows</span>

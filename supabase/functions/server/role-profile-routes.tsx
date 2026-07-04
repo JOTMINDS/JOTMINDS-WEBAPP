@@ -17,12 +17,35 @@ async function getSupabase(request: Request) {
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;
   
-  return supabase;
+  return { supabase, user: data.user };
+}
+
+function mapToDb(clientPayload: any, userId: string) {
+  return {
+    title: clientPayload.name || clientPayload.title,
+    org_id: clientPayload.orgId || clientPayload.org_id,
+    cognitive_demands: clientPayload.idealScores || clientPayload.cognitive_demands,
+    created_by: userId,
+    description: clientPayload.description,
+    department: clientPayload.department,
+    is_active: clientPayload.isActive !== undefined ? clientPayload.isActive : clientPayload.is_active,
+  };
+}
+
+function mapToClient(dbRecord: any) {
+  return {
+    ...dbRecord,
+    name: dbRecord.title,
+    orgId: dbRecord.org_id,
+    idealScores: dbRecord.cognitive_demands,
+    isActive: dbRecord.is_active
+  };
 }
 
 app.get('/', async (c) => {
-  const supabase = await getSupabase(c.req.raw);
-  if (!supabase) return c.json({ error: 'Unauthorized' }, 401);
+  const auth = await getSupabase(c.req.raw);
+  if (!auth) return c.json({ error: 'Unauthorized' }, 401);
+  const { supabase } = auth;
 
   const institutionId = c.req.query('institutionId');
   
@@ -35,47 +58,52 @@ app.get('/', async (c) => {
     const { data, error } = await query;
     if (error) throw error;
     
-    return c.json({ success: true, profiles: data });
+    return c.json({ success: true, profiles: data.map(mapToClient) });
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500);
   }
 });
 
 app.post('/', async (c) => {
-  const supabase = await getSupabase(c.req.raw);
-  if (!supabase) return c.json({ error: 'Unauthorized' }, 401);
+  const auth = await getSupabase(c.req.raw);
+  if (!auth) return c.json({ error: 'Unauthorized' }, 401);
+  const { supabase, user } = auth;
 
   try {
     const body = await c.req.json();
-    const { data, error } = await supabase.from('role_profiles').insert([body]).select().single();
+    const dbPayload = mapToDb(body, user.id);
+    const { data, error } = await supabase.from('role_profiles').insert([dbPayload]).select().single();
     
     if (error) throw error;
-    return c.json({ success: true, profile: data }, 201);
+    return c.json({ success: true, profile: mapToClient(data) }, 201);
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500);
   }
 });
 
 app.put('/:id', async (c) => {
-  const supabase = await getSupabase(c.req.raw);
-  if (!supabase) return c.json({ error: 'Unauthorized' }, 401);
+  const auth = await getSupabase(c.req.raw);
+  if (!auth) return c.json({ error: 'Unauthorized' }, 401);
+  const { supabase, user } = auth;
 
   const id = c.req.param('id');
   
   try {
     const body = await c.req.json();
-    const { data, error } = await supabase.from('role_profiles').update(body).eq('id', id).select().single();
+    const dbPayload = mapToDb(body, user.id);
+    const { data, error } = await supabase.from('role_profiles').update(dbPayload).eq('id', id).select().single();
     
     if (error) throw error;
-    return c.json({ success: true, profile: data });
+    return c.json({ success: true, profile: mapToClient(data) });
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500);
   }
 });
 
 app.delete('/:id', async (c) => {
-  const supabase = await getSupabase(c.req.raw);
-  if (!supabase) return c.json({ error: 'Unauthorized' }, 401);
+  const auth = await getSupabase(c.req.raw);
+  if (!auth) return c.json({ error: 'Unauthorized' }, 401);
+  const { supabase } = auth;
 
   const id = c.req.param('id');
   
@@ -89,8 +117,9 @@ app.delete('/:id', async (c) => {
 });
 
 app.get('/:id/fit-scores', async (c) => {
-  const supabase = await getSupabase(c.req.raw);
-  if (!supabase) return c.json({ error: 'Unauthorized' }, 401);
+  const auth = await getSupabase(c.req.raw);
+  if (!auth) return c.json({ error: 'Unauthorized' }, 401);
+  const { supabase } = auth;
 
   const id = c.req.param('id');
   

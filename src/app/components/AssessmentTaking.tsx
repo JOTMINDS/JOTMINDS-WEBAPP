@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getPersonalizedQuestions } from '../utils/assessmentQuestions';
 import { calculateKolbScore, calculateSternbergScore, calculateDualProcessScore } from '../utils/scoring';
 import { generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress } from '../utils/storage';
@@ -80,7 +80,7 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Prevent double submission
-  const submittedRef = useState(false);
+  const submittedRef = useRef(false);
 
   // Check for saved progress on mount
   useEffect(() => {
@@ -213,7 +213,7 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
     if (showIntro) return;
     
     // Don't save if no answers have been given yet
-    const hasAnyAnswers = responses.some(r => r > 0);
+    const hasAnyAnswers = responses.some(r => r && r.value > 0);
     if (!hasAnyAnswers) return;
 
     // Save progress including the questions
@@ -232,7 +232,7 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
         setIsSaving(true);
         
         // Save to localStorage (immediate, always works)
-        saveAssessmentProgress(progress);
+        saveAssessmentProgress(progress as any);
         setLastSaveTime(progress.lastSaved);
         console.log('Progress saved to localStorage:', progress);
         
@@ -309,7 +309,7 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
 
   const handleSubmit = async () => {
     // Prevent double submission
-    if (isSubmitting || submittedRef[0]) {
+    if (isSubmitting || submittedRef.current) {
       console.warn('Submission already in progress or completed');
       return;
     }
@@ -322,7 +322,7 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
     }
 
     setIsSubmitting(true);
-    submittedRef[0] = true;
+    submittedRef.current = true;
 
     try {
       toast.info('Calculating your results...');
@@ -483,7 +483,7 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
       toast.error(error.message || 'Failed to submit assessment. Please try again.');
       // Reset submission state to allow retry
       setIsSubmitting(false);
-      submittedRef[0] = false;
+      submittedRef.current = false;
     } finally {
       setIsSubmitting(false);
     }
@@ -503,7 +503,7 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
         setQuestions(savedProgress.questions);
       }
       setCurrentQuestion(savedProgress.currentQuestion);
-      setResponses(savedProgress.responses);
+      setResponses(savedProgress.responses as any);
       setShowIntro(false);
       toast.success('Progress restored! Continue where you left off.');
     }
@@ -794,7 +794,6 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
                       : 'border-gray-200 hover:border-[#6B4C9A] hover:bg-accent'
                     }
                   `}
-                  onClick={() => handleResponse('1')}
                 >
                   <RadioGroupItem value="1" id="r1" className="w-5 h-5 min-w-[20px]" />
                   <Label htmlFor="r1" className="flex-1 cursor-pointer text-sm sm:text-base leading-relaxed break-words">
@@ -811,7 +810,6 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
                       : 'border-gray-200 hover:border-[#6B4C9A] hover:bg-accent'
                     }
                   `}
-                  onClick={() => handleResponse('2')}
                 >
                   <RadioGroupItem value="2" id="r2" className="w-5 h-5 min-w-[20px]" />
                   <Label htmlFor="r2" className="flex-1 cursor-pointer text-sm sm:text-base leading-relaxed break-words">
@@ -828,7 +826,6 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
                       : 'border-gray-200 hover:border-[#6B4C9A] hover:bg-accent'
                     }
                   `}
-                  onClick={() => handleResponse('3')}
                 >
                   <RadioGroupItem value="3" id="r3" className="w-5 h-5 min-w-[20px]" />
                   <Label htmlFor="r3" className="flex-1 cursor-pointer text-sm sm:text-base leading-relaxed break-words">
@@ -845,7 +842,6 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
                       : 'border-gray-200 hover:border-[#6B4C9A] hover:bg-accent'
                     }
                   `}
-                  onClick={() => handleResponse('4')}
                 >
                   <RadioGroupItem value="4" id="r4" className="w-5 h-5 min-w-[20px]" />
                   <Label htmlFor="r4" className="flex-1 cursor-pointer text-sm sm:text-base leading-relaxed break-words">
@@ -862,7 +858,6 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
                       : 'border-gray-200 hover:border-[#6B4C9A] hover:bg-accent'
                     }
                   `}
-                  onClick={() => handleResponse('5')}
                 >
                   <RadioGroupItem value="5" id="r5" className="w-5 h-5 min-w-[20px]" />
                   <Label htmlFor="r5" className="flex-1 cursor-pointer text-sm sm:text-base leading-relaxed break-words">

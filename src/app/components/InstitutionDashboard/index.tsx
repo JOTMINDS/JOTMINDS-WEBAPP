@@ -134,7 +134,20 @@ export function InstitutionDashboard({
       const allUsers = getAllUsers();
       setAllPlatformUsers(allUsers);
 
-      const updatedMembers = await getInstitutionMembers(institution.id);
+      const { members: updatedMembers, profiles: fetchedProfiles } = await getInstitutionMembers(institution.id);
+      
+      // Merge fetched profiles with any local storage profiles
+      const mergedUsers = [...allUsers];
+      fetchedProfiles.forEach((p: any) => {
+        if (!mergedUsers.find((u: any) => u.id === p.id)) {
+          mergedUsers.push(p);
+        } else {
+          const index = mergedUsers.findIndex((u: any) => u.id === p.id);
+          mergedUsers[index] = { ...mergedUsers[index], ...p };
+        }
+      });
+      setAllPlatformUsers(mergedUsers);
+
       if (user.role === 'teacher') {
         const teacherStudents = updatedMembers.filter(m => {
           if (m.role === 'teacher') {
@@ -366,7 +379,7 @@ export function InstitutionDashboard({
         )}
 
         {tab === 'classes' && (
-          <ClassManagement />
+          <ClassManagement institutionMembers={members} allPlatformUsers={allPlatformUsers} />
         )}
 
         {tab === 'analytics' && (
@@ -430,6 +443,7 @@ export function InstitutionDashboard({
           institutionId={institution.id}
           institutionName={institution.name}
           allPlatformUsers={allPlatformUsers}
+          institutionMembers={members}
           onTransferSuccess={loadData}
         />
       )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -115,9 +115,9 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
 
   useEffect(() => {
     loadUserData();
-  }, [userId]);
+  }, [userId, selectedPlanDuration, weeklyHours]);
 
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     try {
       const { results } = await getAllAssessmentResults();
 
@@ -172,11 +172,11 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
         setCoachInsights(insights);
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('Failed to load user profile for coach:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, selectedPlanDuration, weeklyHours]);
 
   const regenerateStudyPlan = (duration: number) => {
     setSelectedPlanDuration(duration);
@@ -459,7 +459,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {profileInterpretation.strengths.map((strength: {area: string; description: string}, index: number) => (
+                    {profileInterpretation.strengths.map((strength: any, index: number) => (
                       <div key={index} className="border rounded-lg p-4 bg-green-50">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="text-green-900">{strength.area}</h3>
@@ -487,7 +487,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {profileInterpretation.developmentAreas.map((area: {area: string; description: string; suggestion: string}, index: number) => (
+                    {profileInterpretation.developmentAreas.map((area: any, index: number) => (
                       <div key={index} className="border rounded-lg p-4 bg-orange-50">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="text-orange-900">{area.area}</h3>

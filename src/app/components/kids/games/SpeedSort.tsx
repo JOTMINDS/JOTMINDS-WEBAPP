@@ -119,13 +119,13 @@ export function SpeedSort({ onBack }: SpeedSortProps) {
         <div className="flex items-center justify-between mb-6">
           <KidsButton
             onClick={handleBackClick}
-            variant="secondary"
+            variant="primary"
             icon={<ArrowLeft className="w-6 h-6" />}
           >
             Back
           </KidsButton>
           
-          <Mascot mode="happy" size="sm" showThought={false} />
+          <Mascot mode="happy" size="small" showThought={false} />
           
           <div className="w-32" /> {/* Spacer */}
         </div>
@@ -276,7 +276,7 @@ export function SpeedSort({ onBack }: SpeedSortProps) {
               <KidsButton onClick={startGame} variant="primary">
                 🔄 Play Again
               </KidsButton>
-              <KidsButton onClick={handleBackClick} variant="secondary">
+              <KidsButton onClick={handleBackClick} variant="primary">
                 ← Back to Games
               </KidsButton>
             </div>

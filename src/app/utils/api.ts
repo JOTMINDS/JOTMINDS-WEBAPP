@@ -282,7 +282,7 @@ export const getAllUsers = async () => {
 };
 
 export const getAdminStats = async () => {
-  return makeRequest('/teacher/students');
+  return makeRequest('/admin/stats');
 };
 
 export const getUserData = async (userId: string) => {

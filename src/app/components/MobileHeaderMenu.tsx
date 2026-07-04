@@ -22,7 +22,7 @@ export function MobileHeaderMenu({ onLogout, userRole }: MobileHeaderMenuProps) 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="md:hidden">
+        <Button variant="outline" size="icon" className="md:hidden" aria-label="Open menu">
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>

@@ -29,19 +29,41 @@ export interface OrganizationCodeDetails {
   isActive: boolean;
 }
 
+export interface Class {
+  id: string;
+  name: string;
+  academicYear: string;
+  classTeacherId?: string; // Optional primary teacher
+  studentCount?: number;
+  institutionId?: string;
+  createdAt: string;
+}
+
+export interface TeacherClassAssignment {
+  id: string;
+  teacherId: string;
+  classId: string;
+  subjectId?: string; // Can be a custom string for subject names
+  role: 'class_teacher' | 'subject_teacher' | 'both';
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  phone: string;
+  phone?: string;
   school?: string; // Optional - not applicable for supervisors
   role: UserRole;
   educationLevel?: EducationLevel;
   dateOfBirth?: string; // Changed from age to dateOfBirth (ISO format: YYYY-MM-DD)
   age?: number; // Computed property - calculated from dateOfBirth
   parentId?: string;
+  classId?: string; // The primary class this student belongs to
+  /** @deprecated use classId instead */
   teacherId?: string;
+  /** @deprecated assigned teachers are resolved through classId */
   teacherName?: string; // Stored name of their assigned teacher for immediate rendering
+  /** @deprecated assigned teachers are resolved through classId */
   linkedTeachers?: string[]; // Multiple linked teachers (for students joining via Class Code or Magic Link)
   students?: string[]; // For teachers and parents
   classCode?: string; // For teachers: uniquely identifies their class
@@ -53,12 +75,15 @@ export interface User {
   parentPin?: string; // PIN for Kids Mode parental controls (hashed)
   jotsCode?: string; // legacy alias — use organizationCode instead
   organizationCode?: string; // the actual code the user registered with
-  createdAt: string;
+  createdAt?: string;
+  consentVersion?: string;
   assessments?: Assessment[]; // Full assessment objects (legacy)
   assessmentsCompleted?: string[]; // Array of completed assessment types (backend standard)
+  cognitiveProfile?: any; // The users computed cognitive profile
   reviews?: SupervisorReviewData[];
   avatarUrl?: string; // Profile photo (data URL) — shown to the user and their linked parent
 }
+
 
 export interface Assessment {
   id: string;

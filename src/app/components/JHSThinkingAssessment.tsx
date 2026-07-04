@@ -387,7 +387,7 @@ export function JHSThinkingAssessment({ userId, onComplete, onCancel }: JHSThink
                         ? sectionInfo.color
                         : '#E5E7EB',
                       borderWidth: '2px',
-                      ringColor: sectionInfo.color
+                      ['--tw-ring-color' as any]: sectionInfo.color
                     }}
                   >
                     <div className="text-3xl sm:text-4xl">{item.emoji}</div>

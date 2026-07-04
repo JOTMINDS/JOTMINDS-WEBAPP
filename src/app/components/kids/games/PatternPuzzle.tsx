@@ -157,13 +157,13 @@ export function PatternPuzzle({ onBack }: PatternPuzzleProps) {
         <div className="flex items-center justify-between mb-6">
           <KidsButton
             onClick={handleBackClick}
-            variant="secondary"
+            variant="primary"
             icon={<ArrowLeft className="w-6 h-6" />}
           >
             Back
           </KidsButton>
           
-          <Mascot mode="thinking" size="sm" showThought={false} />
+          <Mascot mode="thinking" size="small" showThought={false} />
           
           <div className="w-32" /> {/* Spacer */}
         </div>
@@ -221,7 +221,7 @@ export function PatternPuzzle({ onBack }: PatternPuzzleProps) {
             {!showHint ? (
               <KidsButton
                 onClick={handleShowHint}
-                variant="secondary"
+                variant="primary"
                 icon={<HelpCircle className="w-5 h-5" />}
               >
                 Need a Hint?
@@ -346,7 +346,7 @@ export function PatternPuzzle({ onBack }: PatternPuzzleProps) {
                   <KidsButton onClick={handlePlayAgain} variant="primary">
                     🔄 Play Again
                   </KidsButton>
-                  <KidsButton onClick={handleBackClick} variant="secondary">
+                  <KidsButton onClick={handleBackClick} variant="primary">
                     ← Back to Games
                   </KidsButton>
                 </div>

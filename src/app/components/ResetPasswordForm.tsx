@@ -87,7 +87,7 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
 
       if (updateError) {
         console.error('[ResetPassword] Update error:', updateError);
-        setError('Failed to reset password. Please try again or request a new reset code.');
+        setError(updateError.message || 'Failed to reset password. Please try again or request a new reset code.');
         setLoading(false);
         return;
       }

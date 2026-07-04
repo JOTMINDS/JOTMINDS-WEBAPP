@@ -1,0 +1,352 @@
+src/app/App.tsx(124,56): error TS2554: Expected 2 arguments, but got 3.
+src/app/App.tsx(262,91): error TS2551: Property 'organizationType' does not exist on type 'User'. Did you mean 'organizationName'?
+src/app/App.tsx(262,147): error TS2339: Property 'industrySector' does not exist on type 'User'.
+src/app/App.tsx(267,17): error TS2551: Property 'organizationType' does not exist on type 'User'. Did you mean 'organizationName'?
+src/app/App.tsx(267,73): error TS2339: Property 'industrySector' does not exist on type 'User'.
+src/app/App.tsx(311,103): error TS2551: Property 'organizationType' does not exist on type 'User'. Did you mean 'organizationName'?
+src/app/App.tsx(311,165): error TS2339: Property 'industrySector' does not exist on type 'User'.
+src/app/App.tsx(601,66): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(635,11): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(718,26): error TS2339: Property 'school' does not exist on type 'User'.
+src/app/App.tsx(719,28): error TS2339: Property 'school' does not exist on type 'User'.
+src/app/App.tsx(793,11): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(801,11): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(809,11): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(817,11): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(829,11): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(837,11): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(846,11): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(867,26): error TS2551: Property 'organizationType' does not exist on type 'User'. Did you mean 'organizationName'?
+src/app/App.tsx(867,89): error TS2339: Property 'industrySector' does not exist on type 'User'.
+src/app/App.tsx(870,15): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(882,13): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(893,13): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(904,13): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(938,15): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(946,13): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(955,13): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/App.tsx(965,13): error TS2739: Type 'User' is missing the following properties from type 'User': phone, createdAt
+src/app/components/AdminPanel.tsx(80,15): error TS2741: Property 'onClose' is missing in type '{}' but required in type 'AdminDiagnosticProps'.
+src/app/components/AdultThinkingContainer.tsx(79,75): error TS2339: Property 'archetype' does not exist on type 'AdultResults'.
+src/app/components/AILearningCoach.tsx(462,58): error TS2345: Argument of type '(strength: { area: string; description: string; }, index: number) => React.JSX.Element' is not assignable to parameter of type '(value: { area: string; score: number; explanation: string; evidenceFromProfile: string; }, index: number, array: { area: string; score: number; explanation: string; evidenceFromProfile: string; }[]) => Element'.
+  Types of parameters 'strength' and 'value' are incompatible.
+    Property 'description' is missing in type '{ area: string; score: number; explanation: string; evidenceFromProfile: string; }' but required in type '{ area: string; description: string; }'.
+src/app/components/AILearningCoach.tsx(466,84): error TS2339: Property 'score' does not exist on type '{ area: string; description: string; }'.
+src/app/components/AILearningCoach.tsx(468,78): error TS2339: Property 'explanation' does not exist on type '{ area: string; description: string; }'.
+src/app/components/AILearningCoach.tsx(470,102): error TS2339: Property 'evidenceFromProfile' does not exist on type '{ area: string; description: string; }'.
+src/app/components/AILearningCoach.tsx(490,65): error TS2345: Argument of type '(area: { area: string; description: string; suggestion: string; }, index: number) => React.JSX.Element' is not assignable to parameter of type '(value: { area: string; currentLevel: number; explanation: string; evidenceFromProfile: string; suggestedActions: string[]; }, index: number, array: { area: string; currentLevel: number; explanation: string; evidenceFromProfile: string; suggestedActions: string[]; }[]) => Element'.
+  Types of parameters 'area' and 'value' are incompatible.
+    Type '{ area: string; currentLevel: number; explanation: string; evidenceFromProfile: string; suggestedActions: string[]; }' is missing the following properties from type '{ area: string; description: string; suggestion: string; }': description, suggestion
+src/app/components/AILearningCoach.tsx(494,82): error TS2339: Property 'currentLevel' does not exist on type '{ area: string; description: string; suggestion: string; }'.
+src/app/components/AILearningCoach.tsx(496,75): error TS2339: Property 'explanation' does not exist on type '{ area: string; description: string; suggestion: string; }'.
+src/app/components/AILearningCoach.tsx(498,99): error TS2339: Property 'evidenceFromProfile' does not exist on type '{ area: string; description: string; suggestion: string; }'.
+src/app/components/AILearningCoach.tsx(502,33): error TS2339: Property 'suggestedActions' does not exist on type '{ area: string; description: string; suggestion: string; }'.
+src/app/components/Assessment.tsx(219,30): error TS2339: Property 'user_metadata' does not exist on type 'User'.
+src/app/components/Assessment.tsx(219,68): error TS2339: Property 'educationLevel' does not exist on type 'User'.
+src/app/components/Assessment.tsx(220,22): error TS2339: Property 'user_metadata' does not exist on type 'User'.
+src/app/components/Assessment.tsx(220,52): error TS2339: Property 'school' does not exist on type 'User'.
+src/app/components/Assessment.tsx(222,24): error TS2339: Property 'user_metadata' does not exist on type 'User'.
+src/app/components/Assessment.tsx(222,56): error TS2339: Property 'position' does not exist on type 'User'.
+src/app/components/Assessment.tsx(223,30): error TS2339: Property 'user_metadata' does not exist on type 'User'.
+src/app/components/Assessment.tsx(223,68): error TS2339: Property 'industrySector' does not exist on type 'User'.
+src/app/components/Assessment.tsx(259,24): error TS2345: Argument of type '{ id: string; userId: string; type: "learning" | "thinking" | "decision"; responses: any[]; score: { [key: string]: number; }; completedAt: string; }' is not assignable to parameter of type 'Assessment'.
+  Types of property 'type' are incompatible.
+    Type '"learning" | "thinking" | "decision"' is not assignable to type '"kolb" | "sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"'.
+      Type '"learning"' is not assignable to type '"kolb" | "sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"'.
+src/app/components/AssessmentReport.tsx(8,26): error TS2724: '"../utils/storage"' has no exported member named 'getReflections'. Did you mean 'getAllReflections'?
+src/app/components/AssessmentReport.tsx(11,34): error TS2307: Cannot find module './SternbergResults' or its corresponding type declarations.
+src/app/components/AssessmentReport.tsx(249,53): error TS2339: Property 'Intuitive' does not exist on type '{ system1: number; system2: number; }'.
+src/app/components/AssessmentReport.tsx(250,53): error TS2339: Property 'Reflective' does not exist on type '{ system1: number; system2: number; }'.
+src/app/components/AssessmentReport.tsx(316,11): error TS2367: This comparison appears to be unintentional because the types '"teaching-style" | "child-thinking"' and '"children-thinking"' have no overlap.
+src/app/components/AssessmentReport.tsx(322,48): error TS2345: Argument of type '"kolb" | "sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' is not assignable to parameter of type '"kolb" | "sternberg" | "dual-process"'.
+  Type '"teaching-style"' is not assignable to type '"kolb" | "sternberg" | "dual-process"'.
+src/app/components/AssessmentReport.tsx(767,31): error TS2339: Property 'organizationalFit' does not exist on type 'AssessmentInsights | AIInsightsResponse'.
+  Property 'organizationalFit' does not exist on type 'AIInsightsResponse'.
+src/app/components/AssessmentReport.tsx(785,91): error TS2339: Property 'organizationalFit' does not exist on type 'AssessmentInsights | AIInsightsResponse'.
+  Property 'organizationalFit' does not exist on type 'AIInsightsResponse'.
+src/app/components/AssessmentReport.tsx(1016,35): error TS2339: Property 'organizationalFit' does not exist on type 'AssessmentInsights | AIInsightsResponse'.
+  Property 'organizationalFit' does not exist on type 'AIInsightsResponse'.
+src/app/components/AssessmentReport.tsx(1057,35): error TS2339: Property 'continuousReview' does not exist on type 'AssessmentInsights | AIInsightsResponse'.
+  Property 'continuousReview' does not exist on type 'AIInsightsResponse'.
+src/app/components/AssessmentReport.tsx(1441,61): error TS2339: Property 'ageGroup' does not exist on type 'Assessment'.
+src/app/components/AssessmentTaking.tsx(235,32): error TS2345: Argument of type '{ userId: string; assessmentType: "kolb" | "sternberg" | "dual-process"; isOrganizational: boolean; currentQuestion: number; responses: QuestionResponse[]; questions: Question[]; lastSaved: string; }' is not assignable to parameter of type 'AssessmentProgress'.
+  Types of property 'responses' are incompatible.
+    Type 'QuestionResponse[]' is not assignable to type 'number[]'.
+      Type 'QuestionResponse' is not assignable to type 'number'.
+src/app/components/AssessmentTaking.tsx(506,20): error TS2345: Argument of type 'number[]' is not assignable to parameter of type 'SetStateAction<QuestionResponse[]>'.
+  Type 'number[]' is not assignable to type 'QuestionResponse[]'.
+    Type 'number' is not assignable to type 'QuestionResponse'.
+src/app/components/AuthForm.tsx(114,30): error TS2304: Cannot find name 'validateInviteToken'.
+src/app/components/CognitiveProfile.tsx(254,40): error TS2339: Property 'user_metadata' does not exist on type 'User'.
+src/app/components/CognitiveProfileView.tsx(173,35): error TS2339: Property 'archetype' does not exist on type 'CognitiveProfile'.
+src/app/components/CognitiveProfileView.tsx(175,35): error TS2339: Property 'archetypeDescription' does not exist on type 'CognitiveProfile'.
+src/app/components/CognitiveProfileView.tsx(203,19): error TS2339: Property 'strengths' does not exist on type 'CognitiveProfile'.
+src/app/components/CognitiveProfileView.tsx(203,40): error TS2339: Property 'strengths' does not exist on type 'CognitiveProfile'.
+src/app/components/CognitiveProfileView.tsx(210,17): error TS2339: Property 'strengths' does not exist on type 'CognitiveProfile'.
+src/app/components/CognitiveProfileView.tsx(222,19): error TS2339: Property 'growthAreas' does not exist on type 'CognitiveProfile'.
+src/app/components/CognitiveProfileView.tsx(222,42): error TS2339: Property 'growthAreas' does not exist on type 'CognitiveProfile'.
+src/app/components/CognitiveProfileView.tsx(229,17): error TS2339: Property 'growthAreas' does not exist on type 'CognitiveProfile'.
+src/app/components/CombinedCognitiveProfile.tsx(71,32): error TS2339: Property 'system1' does not exist on type '{}'.
+src/app/components/CombinedCognitiveProfile.tsx(71,61): error TS2339: Property 'Intuitive' does not exist on type '{}'.
+src/app/components/CombinedCognitiveProfile.tsx(72,32): error TS2339: Property 'system2' does not exist on type '{}'.
+src/app/components/CombinedCognitiveProfile.tsx(72,61): error TS2339: Property 'Reflective' does not exist on type '{}'.
+src/app/components/CombinedCognitiveProfile.tsx(317,7): error TS2322: Type '"combined"' is not assignable to type '"kolb" | "sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"'.
+src/app/components/CombinedCognitiveProfile.tsx(324,5): error TS2554: Expected 3-4 arguments, but got 2.
+src/app/components/Dashboard.tsx(350,73): error TS2339: Property 'educationLevel' does not exist on type 'User'.
+src/app/components/Dashboard.tsx(351,62): error TS2339: Property 'school' does not exist on type 'User'.
+src/app/components/Dashboard.tsx(351,86): error TS2339: Property 'school' does not exist on type 'User'.
+src/app/components/Dashboard.tsx(351,109): error TS2339: Property 'position' does not exist on type 'User'.
+src/app/components/Dashboard.tsx(351,148): error TS2339: Property 'position' does not exist on type 'User'.
+src/app/components/HeadTeacherDashboard.tsx(62,10): error TS2304: Cannot find name 'User'.
+src/app/components/InstitutionDashboard/InstitutionOverview.tsx(129,37): error TS2345: Argument of type '"teacher_styles"' is not assignable to parameter of type '"code" | "profile" | "members" | "settings" | "overview" | "analytics" | "reports"'.
+src/app/components/JHSThinkingAssessment.tsx(390,23): error TS2353: Object literal may only specify known properties, and 'ringColor' does not exist in type 'Properties<string | number, string & {}>'.
+src/app/components/JHSThinkingContainer.tsx(80,75): error TS2339: Property 'archetype' does not exist on type 'JHSResults'.
+src/app/components/kids/games/EmojiFeelings.tsx(128,25): error TS2345: Argument of type '"correct"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/EmojiFeelings.tsx(145,25): error TS2345: Argument of type '"incorrect"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/EmojiFeelings.tsx(156,23): error TS2345: Argument of type '"back"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/EmojiFeelings.tsx(178,13): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/EmojiFeelings.tsx(184,32): error TS2322: Type '"sm"' is not assignable to type '"small" | "medium" | "large"'.
+src/app/components/kids/games/EmojiFeelings.tsx(354,53): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/MemoryMatch.tsx(87,27): error TS2345: Argument of type '"correct"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/MemoryMatch.tsx(115,27): error TS2345: Argument of type '"incorrect"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/MemoryMatch.tsx(131,23): error TS2345: Argument of type '"back"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/MemoryMatch.tsx(149,13): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/MemoryMatch.tsx(155,32): error TS2322: Type '"sm"' is not assignable to type '"small" | "medium" | "large"'.
+src/app/components/kids/games/MemoryMatch.tsx(280,59): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/PatternPuzzle.tsx(100,25): error TS2345: Argument of type '"correct"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/PatternPuzzle.tsx(118,25): error TS2345: Argument of type '"incorrect"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/PatternPuzzle.tsx(134,23): error TS2345: Argument of type '"back"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/PatternPuzzle.tsx(160,13): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/PatternPuzzle.tsx(166,35): error TS2322: Type '"sm"' is not assignable to type '"small" | "medium" | "large"'.
+src/app/components/kids/games/PatternPuzzle.tsx(224,17): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/PatternPuzzle.tsx(349,57): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/SpeedSort.tsx(80,25): error TS2345: Argument of type '"correct"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/SpeedSort.tsx(98,25): error TS2345: Argument of type '"incorrect"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/SpeedSort.tsx(109,23): error TS2345: Argument of type '"back"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/SpeedSort.tsx(122,13): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/SpeedSort.tsx(128,32): error TS2322: Type '"sm"' is not assignable to type '"small" | "medium" | "large"'.
+src/app/components/kids/games/SpeedSort.tsx(189,63): error TS2322: Type '{ children: string; onClick: () => void; variant: "primary"; className: string; }' is not assignable to type 'IntrinsicAttributes & KidsButtonProps'.
+  Property 'className' does not exist on type 'IntrinsicAttributes & KidsButtonProps'.
+src/app/components/kids/games/SpeedSort.tsx(279,53): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/StoryBuilder.tsx(199,23): error TS2345: Argument of type '"back"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/games/StoryBuilder.tsx(219,13): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/games/StoryBuilder.tsx(225,34): error TS2322: Type '"sm"' is not assignable to type '"small" | "medium" | "large"'.
+src/app/components/kids/games/StoryBuilder.tsx(317,55): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/index.ts(3,18): error TS2305: Module '"./Mascot"' has no exported member 'HappyMascot'.
+src/app/components/kids/index.ts(3,31): error TS2724: '"./Mascot"' has no exported member named 'SadMascot'. Did you mean 'Mascot'?
+src/app/components/kids/index.ts(5,10): error TS2614: Module '"./SoundFeedback"' has no exported member 'SoundFeedback'. Did you mean to use 'import SoundFeedback from "./SoundFeedback"' instead?
+src/app/components/kids/KidsAssessment.tsx(600,45): error TS2322: Type '{ message: string; size: string; }' is not assignable to type 'IntrinsicAttributes & { message: string; }'.
+  Property 'size' does not exist on type 'IntrinsicAttributes & { message: string; }'.
+src/app/components/kids/KidsAssessment.tsx(739,43): error TS2322: Type '{ message: string; size: string; }' is not assignable to type 'IntrinsicAttributes & { message?: string; }'.
+  Property 'size' does not exist on type 'IntrinsicAttributes & { message?: string; }'.
+src/app/components/kids/KidsAssessment.tsx(922,17): error TS2554: Expected 1 arguments, but got 0.
+src/app/components/kids/KidsAssessment.tsx(1171,49): error TS2322: Type '{ message: string; size: string; }' is not assignable to type 'IntrinsicAttributes & { message?: string; }'.
+  Property 'size' does not exist on type 'IntrinsicAttributes & { message?: string; }'.
+src/app/components/kids/KidsAssessmentApproved.tsx(234,45): error TS2322: Type '{ message: string; size: string; }' is not assignable to type 'IntrinsicAttributes & { message: string; }'.
+  Property 'size' does not exist on type 'IntrinsicAttributes & { message: string; }'.
+src/app/components/kids/KidsAssessmentApproved.tsx(390,43): error TS2322: Type '{ message: string; size: string; }' is not assignable to type 'IntrinsicAttributes & { message?: string; }'.
+  Property 'size' does not exist on type 'IntrinsicAttributes & { message?: string; }'.
+src/app/components/kids/KidsDashboard.tsx(639,41): error TS2345: Argument of type '"error"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/KidsResults.tsx(247,51): error TS2322: Type '{ children: string; onClick: () => void; color: string; }' is not assignable to type 'IntrinsicAttributes & KidsButtonProps'.
+  Property 'color' does not exist on type 'IntrinsicAttributes & KidsButtonProps'.
+src/app/components/kids/KidsStickerBook.tsx(265,13): error TS2322: Type '{ message: string; mood: string; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'message' does not exist on type 'IntrinsicAttributes'.
+src/app/components/kids/KidsStickerBook.tsx(427,15): error TS2322: Type '{ children: (string | Element)[]; size: "large"; onClick: () => void; className: string; }' is not assignable to type 'IntrinsicAttributes & KidsButtonProps'.
+  Property 'className' does not exist on type 'IntrinsicAttributes & KidsButtonProps'.
+src/app/components/kids/KidsStickerBook.tsx(437,13): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/MiniGamesHub.tsx(68,23): error TS2345: Argument of type '"back"' is not assignable to parameter of type 'SoundType'.
+src/app/components/kids/MiniGamesHub.tsx(79,13): error TS2322: Type '"secondary"' is not assignable to type '"success" | "primary" | "warning" | "fun" | "rainbow"'.
+src/app/components/kids/MiniGamesHub.tsx(90,36): error TS2322: Type '"sm"' is not assignable to type '"small" | "medium" | "large"'.
+src/app/components/kids/MiniGamesHub.tsx(118,15): error TS2322: Type '{ children: Element; className: string; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & KidsCardProps'.
+  Property 'className' does not exist on type 'IntrinsicAttributes & KidsCardProps'.
+src/app/components/Logo.tsx(2,23): error TS2307: Cannot find module '../../imports/25a0182e-0aa1-4066-9c54-a860cd28207c.png' or its corresponding type declarations.
+src/app/components/OrganizationAuthForm.tsx(392,9): error TS2353: Object literal may only specify known properties, and 'industrySector' does not exist in type '{ email: string; password: string; name: string; role: string; organizationName?: string; organizationType?: string; position?: string; phone?: string; secondaryEmail?: string; secondaryPhone?: string; ... 10 more ...; inviteToken?: string; }'.
+src/app/components/OrganizationAuthForm.tsx(665,75): error TS2367: This comparison appears to be unintentional because the types '"Corporate" | "NGO" | "Government" | "Startup" | "Other"' and '""' have no overlap.
+src/app/components/OrganizationAuthForm.tsx(677,74): error TS2367: This comparison appears to be unintentional because the types '"Corporate" | "NGO" | "Government" | "Startup" | "Other"' and '""' have no overlap.
+src/app/components/parent/ParentResponsibilitiesGuide.tsx(3,10): error TS2459: Module '"../../types/age-feature-configs"' declares 'AgeCategory' locally, but it is not exported.
+src/app/components/ParentChildCognitiveReport.tsx(174,12): error TS2678: Type '"Balanced"' is not comparable to type '"" | SternbergStyle'.
+src/app/components/ParentChildCognitiveReport.tsx(199,12): error TS2678: Type '"Intuitive-Dominant"' is not comparable to type '"" | DualProcessStyle'.
+src/app/components/ParentChildCognitiveReport.tsx(205,12): error TS2678: Type '"Analytical-Dominant"' is not comparable to type '"" | DualProcessStyle'.
+src/app/components/ParentDashboard.tsx(385,22): error TS2322: Type 'AdultResults' is not assignable to type '{ dominantStyle: string; scores: Record<string, number>; }'.
+  Types of property 'scores' are incompatible.
+    Type 'AdultScores' is not assignable to type 'Record<string, number>'.
+      Index signature for type 'string' is missing in type 'AdultScores'.
+src/app/components/ParentDashboard.tsx(779,50): error TS2367: This comparison appears to be unintentional because the types '"kolb" | "sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"children-thinking"' have no overlap.
+src/app/components/ParentObservationResults.tsx(58,32): error TS2339: Property 'user_metadata' does not exist on type 'User'.
+src/app/components/PhoneInput.tsx(3,23): error TS2307: Cannot find module '@/components/ui/label' or its corresponding type declarations.
+src/app/components/PhoneInput.tsx(4,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/app/components/ProfessionalAssessmentReport.tsx(37,5): error TS2304: Cannot find name 'toast'.
+src/app/components/ProfessionalAssessmentReport.tsx(63,66): error TS2345: Argument of type 'KolbStyle' is not assignable to parameter of type '"kolb" | "sternberg" | "dual-process"'.
+  Type '"Accommodating"' is not assignable to type '"kolb" | "sternberg" | "dual-process"'.
+src/app/components/ProfessionalAssessmentReport.tsx(64,76): error TS2345: Argument of type 'SternbergStyle' is not assignable to parameter of type '"kolb" | "sternberg" | "dual-process"'.
+  Type '"Analytical"' is not assignable to type '"kolb" | "sternberg" | "dual-process"'.
+src/app/components/ProfessionalAssessmentReport.tsx(65,73): error TS2345: Argument of type 'DualProcessStyle' is not assignable to parameter of type '"kolb" | "sternberg" | "dual-process"'.
+  Type '"Intuitive"' is not assignable to type '"kolb" | "sternberg" | "dual-process"'.
+src/app/components/ProfessionalAssessmentReport.tsx(153,13): error TS2339: Property 'AC' does not exist on type '{ style: KolbStyle; scores: { CE: number; RO: number; AC: number; AE: number; concreteExperience?: number; reflectiveObservation?: number; abstractConceptualization?: number; activeExperimentation?: number; }; }'.
+src/app/components/ProfessionalAssessmentReport.tsx(153,17): error TS2339: Property 'AE' does not exist on type '{ style: KolbStyle; scores: { CE: number; RO: number; AC: number; AE: number; concreteExperience?: number; reflectiveObservation?: number; abstractConceptualization?: number; activeExperimentation?: number; }; }'.
+src/app/components/ProfessionalAssessmentReport.tsx(153,21): error TS2339: Property 'CE' does not exist on type '{ style: KolbStyle; scores: { CE: number; RO: number; AC: number; AE: number; concreteExperience?: number; reflectiveObservation?: number; abstractConceptualization?: number; activeExperimentation?: number; }; }'.
+src/app/components/ProfessionalAssessmentReport.tsx(153,25): error TS2339: Property 'RO' does not exist on type '{ style: KolbStyle; scores: { CE: number; RO: number; AC: number; AE: number; concreteExperience?: number; reflectiveObservation?: number; abstractConceptualization?: number; activeExperimentation?: number; }; }'.
+src/app/components/ProfessionalCognitiveResults.tsx(517,30): error TS2304: Cannot find name 'Legend'.
+src/app/components/ProfileEvolution.tsx(46,11): error TS2304: Cannot find name 'toast'.
+src/app/components/ProfileEvolution.tsx(52,13): error TS2304: Cannot find name 'toast'.
+src/app/components/ProfileEvolution.tsx(58,13): error TS2304: Cannot find name 'toast'.
+src/app/components/ProfileEvolution.tsx(123,55): error TS2339: Property 'snapshotAt' does not exist on type 'CognitiveProfile'.
+src/app/components/QuestionBankAudit.tsx(2,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/app/components/QuestionBankAudit.tsx(3,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/app/components/QuestionBankAudit.tsx(4,26): error TS2307: Cannot find module '@/components/ui/progress' or its corresponding type declarations.
+src/app/components/SchoolAnalyticsDashboard.tsx(69,38): error TS2367: This comparison appears to be unintentional because the types '"kolb" | "sternberg" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"decision"' have no overlap.
+src/app/components/SchoolAnalyticsDashboard.tsx(165,21): error TS2339: Property 'CE' does not exist on type 'AssessmentScore'.
+src/app/components/SchoolAnalyticsDashboard.tsx(165,29): error TS2339: Property 'RO' does not exist on type 'AssessmentScore'.
+src/app/components/SchoolAnalyticsDashboard.tsx(165,37): error TS2339: Property 'AC' does not exist on type 'AssessmentScore'.
+src/app/components/SchoolAnalyticsDashboard.tsx(165,45): error TS2339: Property 'AE' does not exist on type 'AssessmentScore'.
+src/app/components/SchoolAnalyticsDashboard.tsx(174,21): error TS2339: Property 'analytical' does not exist on type 'AssessmentScore'.
+src/app/components/SchoolAnalyticsDashboard.tsx(174,37): error TS2339: Property 'creative' does not exist on type 'AssessmentScore'.
+src/app/components/SchoolAnalyticsDashboard.tsx(174,51): error TS2339: Property 'practical' does not exist on type 'AssessmentScore'.
+src/app/components/SchoolAnalyticsDashboard.tsx(179,21): error TS2339: Property 'system1' does not exist on type 'AssessmentScore'.
+src/app/components/SchoolAnalyticsDashboard.tsx(179,34): error TS2339: Property 'system2' does not exist on type 'AssessmentScore'.
+src/app/components/SchoolAnalyticsDashboard.tsx(189,45): error TS2339: Property 'assessmentType' does not exist on type 'Assessment'.
+src/app/components/SchoolAnalyticsDashboard.tsx(190,38): error TS2339: Property 'results' does not exist on type 'Assessment'.
+src/app/components/SchoolAnalyticsDashboard.tsx(213,35): error TS2339: Property 'answers' does not exist on type 'Assessment'.
+src/app/components/SchoolAnalyticsDashboard.tsx(250,42): error TS2367: This comparison appears to be unintentional because the types '"kolb" | "sternberg" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"decision"' have no overlap.
+src/app/components/SchoolAnalyticsDashboard.tsx(674,103): error TS2345: Argument of type 'string' is not assignable to parameter of type '"learning" | "thinking" | "decision" | "kolb" | "sternberg" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"'.
+src/app/components/SHSThinkingContainer.tsx(79,75): error TS2339: Property 'archetype' does not exist on type 'SHSResults'.
+src/app/components/StudentDashboard.tsx(1645,41): error TS2345: Argument of type '"children-thinking"' is not assignable to parameter of type '"kolb" | "sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"'.
+src/app/components/StudentDashboard.tsx(1648,64): error TS2345: Argument of type '"children-thinking"' is not assignable to parameter of type '"kolb" | "sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"'.
+src/app/components/StudentDashboardTabs/ProfileTab.tsx(9,10): error TS2305: Module '"../../utils/teachingStyleScoring"' has no exported member 'Assessment'.
+src/app/components/StudentDetailView.tsx(28,39): error TS2367: This comparison appears to be unintentional because the types '"sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"learning"' have no overlap.
+src/app/components/StudentDetailView.tsx(36,47): error TS2367: This comparison appears to be unintentional because the types '"kolb" | "sternberg" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"decision"' have no overlap.
+src/app/components/StudentDetailView.tsx(39,87): error TS2339: Property 'learning' does not exist on type 'AssessmentScore'.
+src/app/components/StudentDetailView.tsx(39,161): error TS2339: Property 'learning' does not exist on type 'AssessmentScore'.
+src/app/components/StudentDetailView.tsx(58,80): error TS2339: Property 'learning' does not exist on type 'AssessmentScore'.
+src/app/components/StudentDetailView.tsx(186,87): error TS2339: Property 'decision' does not exist on type 'AssessmentScore'.
+src/app/components/StudentDetailView.tsx(256,81): error TS2339: Property 'learning' does not exist on type 'AssessmentScore'.
+src/app/components/StudentDetailView.tsx(315,88): error TS2339: Property 'decision' does not exist on type 'AssessmentScore'.
+src/app/components/StudentDetailView.tsx(465,35): error TS2367: This comparison appears to be unintentional because the types '"dual-process" | "teaching-style"' and '"decision"' have no overlap.
+src/app/components/StudentDetailView.tsx(465,91): error TS2339: Property 'decision' does not exist on type 'AssessmentScore'.
+src/app/components/SupervisorAuthForm.tsx(113,42): error TS2304: Cannot find name 'data'.
+src/app/components/SupervisorDashboard.tsx(472,37): error TS2322: Type '{ user: User; onLogout: () => void; onSettings: () => void; }' is not assignable to type 'IntrinsicAttributes & MobileHeaderMenuProps'.
+  Property 'user' does not exist on type 'IntrinsicAttributes & MobileHeaderMenuProps'.
+src/app/components/SupervisorDashboard.tsx(949,11): error TS2322: Type '{ isOpen: boolean; onClose: () => void; organizationName: string; organizationCode: string; supervisorName: string; onSuccess: () => void; }' is not assignable to type 'IntrinsicAttributes & OrganizationBulkUploadModalProps'.
+  Property 'onSuccess' does not exist on type 'IntrinsicAttributes & OrganizationBulkUploadModalProps'.
+src/app/components/SupervisorDashboard.tsx(1023,36): error TS2339: Property 'country' does not exist on type 'User'.
+src/app/components/teacher/TeacherClassOverview.tsx(44,40): error TS2367: This comparison appears to be unintentional because the types '"sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"learning"' have no overlap.
+src/app/components/teacher/TeacherClassOverview.tsx(46,54): error TS2339: Property 'learning' does not exist on type 'AssessmentScore'.
+src/app/components/teacher/TeacherClassOverview.tsx(83,67): error TS2367: This comparison appears to be unintentional because the types '"sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"learning"' have no overlap.
+src/app/components/teacher/TeacherClassOverview.tsx(87,79): error TS2367: This comparison appears to be unintentional because the types '"kolb" | "sternberg" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"decision"' have no overlap.
+src/app/components/teacher/TeacherIndividualStudentView.tsx(89,39): error TS2367: This comparison appears to be unintentional because the types '"sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"learning"' have no overlap.
+src/app/components/teacher/TeacherIndividualStudentView.tsx(97,47): error TS2367: This comparison appears to be unintentional because the types '"kolb" | "sternberg" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"decision"' have no overlap.
+src/app/components/teacher/TeacherIndividualStudentView.tsx(116,72): error TS2339: Property 'learning' does not exist on type 'AssessmentScore'.
+src/app/components/teacher/TeacherIndividualStudentView.tsx(168,72): error TS2339: Property 'learning' does not exist on type 'AssessmentScore'.
+src/app/components/teacher/TeacherIndividualStudentView.tsx(215,72): error TS2339: Property 'learning' does not exist on type 'AssessmentScore'.
+src/app/components/teacher/TeacherIndividualStudentView.tsx(273,86): error TS2367: This comparison appears to be unintentional because the types '"sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"learning"' have no overlap.
+src/app/components/teacher/TeacherIndividualStudentView.tsx(275,94): error TS2367: This comparison appears to be unintentional because the types '"kolb" | "sternberg" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' and '"decision"' have no overlap.
+src/app/components/teacher/TeacherIndividualStudentView.tsx(370,79): error TS2339: Property 'learning' does not exist on type 'AssessmentScore'.
+src/app/components/teacher/TeacherIndividualStudentView.tsx(423,86): error TS2339: Property 'decision' does not exist on type 'AssessmentScore'.
+src/app/components/TeacherAnalyticsDashboard.tsx(74,29): error TS2353: Object literal may only specify known properties, and 'diverging' does not exist in type '{ visual: number; auditory: number; kinesthetic: number; mixed: number; }'.
+src/app/components/TeacherAnalyticsDashboard.tsx(75,11): error TS2741: Property 'mixed' is missing in type '{ analytical: number; creative: number; practical: number; }' but required in type '{ analytical: number; creative: number; practical: number; mixed: number; }'.
+src/app/components/TeacherAnalyticsDashboard.tsx(77,28): error TS2353: Object literal may only specify known properties, and 'analytical' does not exist in type '{ learningAgility: number; analyticalDepth: number; creativeCapacity: number; practicalExecution: number; intuitiveSpeed: number; reflectiveDepth: number; }'.
+src/app/components/TeacherDashboard.tsx(347,46): error TS2322: Type 'Dispatch<SetStateAction<"individual" | "overview" | "my-style" | "manage-class">>' is not assignable to type '(tab: "teaching-style" | "individual" | "overview" | "my-style" | "manage-class") => void'.
+  Types of parameters 'value' and 'tab' are incompatible.
+    Type '"teaching-style" | "individual" | "overview" | "my-style" | "manage-class"' is not assignable to type 'SetStateAction<"individual" | "overview" | "my-style" | "manage-class">'.
+      Type '"teaching-style"' is not assignable to type 'SetStateAction<"individual" | "overview" | "my-style" | "manage-class">'.
+src/app/components/TeacherDashboard.tsx(662,13): error TS2322: Type '{ classStats: any; students: User[]; allAssessments: any[]; }' is not assignable to type 'IntrinsicAttributes & TeacherClassOverviewProps'.
+  Property 'classStats' does not exist on type 'IntrinsicAttributes & TeacherClassOverviewProps'.
+src/app/hooks/useAdminData.ts(71,20): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/hooks/useAdminData.ts(72,42): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/hooks/useAdminData.ts(73,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/hooks/useAdminData.ts(73,44): error TS2698: Spread types may only be created from object types.
+src/app/hooks/useAdminData.ts(149,17): error TS2345: Argument of type '{ isActive: boolean; }' is not assignable to parameter of type 'never'.
+src/app/hooks/useAdminData.ts(168,17): error TS2345: Argument of type '{ subscriptionStatus: string; }' is not assignable to parameter of type 'never'.
+src/app/supabase/functions/server/assessment-routes.tsx(1,22): error TS2307: Cannot find module 'npm:hono' or its corresponding type declarations.
+src/app/supabase/functions/server/assessment-routes.tsx(2,30): error TS2307: Cannot find module 'npm:@supabase/supabase-js' or its corresponding type declarations.
+src/app/supabase/functions/server/assessment-routes.tsx(11,5): error TS2304: Cannot find name 'Deno'.
+src/app/supabase/functions/server/assessment-routes.tsx(12,19): error TS2304: Cannot find name 'Deno'.
+src/app/supabase/functions/server/assessment-routes.tsx(12,64): error TS2304: Cannot find name 'Deno'.
+src/app/supabase/functions/server/daily-challenge-routes.tsx(1,22): error TS2307: Cannot find module 'npm:hono' or its corresponding type declarations.
+src/app/supabase/functions/server/index.tsx(1,22): error TS2307: Cannot find module 'npm:hono' or its corresponding type declarations.
+src/app/supabase/functions/server/index.tsx(2,22): error TS2307: Cannot find module 'npm:hono/cors' or its corresponding type declarations.
+src/app/supabase/functions/server/index.tsx(3,24): error TS2307: Cannot find module 'npm:hono/logger' or its corresponding type declarations.
+src/app/supabase/functions/server/index.tsx(4,30): error TS2307: Cannot find module 'npm:@supabase/supabase-js' or its corresponding type declarations.
+src/app/supabase/functions/server/index.tsx(22,5): error TS2304: Cannot find name 'Deno'.
+src/app/supabase/functions/server/index.tsx(23,19): error TS2304: Cannot find name 'Deno'.
+src/app/supabase/functions/server/index.tsx(23,64): error TS2304: Cannot find name 'Deno'.
+src/app/supabase/functions/server/index.tsx(2702,1): error TS2304: Cannot find name 'Deno'.
+src/app/supabase/functions/server/kv_store.tsx(13,30): error TS2307: Cannot find module 'jsr:@supabase/supabase-js' or its corresponding type declarations.
+src/app/supabase/functions/server/kv_store.tsx(16,3): error TS2304: Cannot find name 'Deno'.
+src/app/supabase/functions/server/kv_store.tsx(17,3): error TS2304: Cannot find name 'Deno'.
+src/app/utils/adaptiveChallenges.ts(125,10): error TS2678: Type '"memory"' is not comparable to type '"speed" | "accuracy" | "logic" | "creativity" | "endurance"'.
+src/app/utils/adaptiveChallenges.ts(299,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/adaptiveChallenges.ts(324,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/adaptiveChallenges.ts(444,10): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/assessmentApi.ts(256,28): error TS2365: Operator '>' cannot be applied to types 'unknown' and 'number'.
+src/app/utils/assessmentInsights.ts(328,20): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+src/app/utils/institution.ts(203,13): error TS2345: Argument of type '{ name: string; type: InstitutionType; address: string; region: string; district: string; email: string; phone: string; website: string; logo: string; tagline: string; teacher_size: string; ... 11 more ...; updated_at: string; }' is not assignable to parameter of type 'never'.
+src/app/utils/institution.ts(269,13): error TS2345: Argument of type '{ code: string; code_generated_at: string; code_expiry_days: number; updated_at: string; }' is not assignable to parameter of type 'never'.
+src/app/utils/institution.ts(375,7): error TS2739: Type 'undefined[]' is missing the following properties from type '{ members: InstitutionMember[]; profiles: any[]; }': members, profiles
+src/app/utils/institution.ts(396,7): error TS2353: Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/app/utils/institution.ts(439,13): error TS2345: Argument of type '{ status: string; }' is not assignable to parameter of type 'never'.
+src/app/utils/institution.ts(449,13): error TS2345: Argument of type '{ status: string; }' is not assignable to parameter of type 'never'.
+src/app/utils/institution.ts(484,20): error TS2339: Property 'user_id' does not exist on type 'never'.
+src/app/utils/institution.ts(485,22): error TS2339: Property 'user_name' does not exist on type 'never'.
+src/app/utils/institution.ts(486,23): error TS2339: Property 'user_email' does not exist on type 'never'.
+src/app/utils/institution.ts(487,23): error TS2339: Property 'user_phone' does not exist on type 'never'.
+src/app/utils/institution.ts(488,18): error TS2339: Property 'role' does not exist on type 'never'.
+src/app/utils/institution.ts(498,23): error TS2304: Cannot find name 'makeRequest'.
+src/app/utils/institution.ts(512,13): error TS2345: Argument of type '{ role?: "student" | "teacher" | "admin"; user_name: string; user_phone: string; }' is not assignable to parameter of type 'never'.
+src/app/utils/institution.ts(586,13): error TS2345: Argument of type '{ status: string; }' is not assignable to parameter of type 'never'.
+src/app/utils/institution.ts(689,13): error TS2345: Argument of type '{ name: string; type: InstitutionType; address: string; region: string; district: string; email: string; phone: string; website: string; logo: string; tagline: string; teacher_size: string; ... 10 more ...; phone_verified: boolean; }' is not assignable to parameter of type 'never[]'.
+  Type '{ name: string; type: InstitutionType; address: string; region: string; district: string; email: string; phone: string; website: string; logo: string; tagline: string; teacher_size: string; ... 10 more ...; phone_verified: boolean; }' is missing the following properties from type 'never[]': length, pop, push, concat, and 35 more.
+src/app/utils/institution.ts(714,13): error TS2345: Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/app/utils/institution.ts(723,13): error TS2345: Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/app/utils/institution.ts(735,13): error TS2345: Argument of type '{ admin_id: string; admin_name: string; admin_email: string; admin_phone: string; }' is not assignable to parameter of type 'never'.
+src/app/utils/institution.ts(762,40): error TS2339: Property 'status' does not exist on type 'never'.
+src/app/utils/institution.ts(764,36): error TS2339: Property 'institution_id' does not exist on type 'never'.
+src/app/utils/nudgeSystem.ts(144,37): error TS2339: Property 'earnedAt' does not exist on type 'Badge'.
+src/app/utils/nudgeSystem.ts(172,35): error TS2339: Property 'xpToNextLevel' does not exist on type 'GamificationProfile'.
+src/app/utils/nudgeSystem.ts(173,36): error TS2339: Property 'totalXP' does not exist on type 'GamificationProfile'.
+src/app/utils/pdfGenerator.ts(125,43): error TS2345: Argument of type '"kolb" | "sternberg" | "dual-process" | "teaching-style" | "jhs-thinking" | "shs-thinking" | "adult-thinking" | "child-thinking"' is not assignable to parameter of type '"kolb" | "sternberg" | "dual-process"'.
+  Type '"teaching-style"' is not assignable to type '"kolb" | "sternberg" | "dual-process"'.
+src/app/utils/privacyConsent.ts(125,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(133,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(145,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(161,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(167,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(190,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(237,19): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(252,19): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(272,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(286,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(303,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(318,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(328,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(403,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(411,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/privacyConsent.ts(420,23): error TS2304: Cannot find name 'safeParse'.
+src/app/utils/schoolAnalytics.ts(165,73): error TS2339: Property 'totalXP' does not exist on type 'GamificationProfile'.
+src/app/utils/storage.ts(174,33): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/app/utils/storage.ts(175,36): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/app/utils/storage.ts(176,32): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/app/utils/storage.ts(177,30): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/app/utils/storage.ts(567,48): error TS2304: Cannot find name 'JHSResults'.
+src/app/utils/storage.ts(568,29): error TS2304: Cannot find name 'JHSResults'.
+src/app/utils/storage.ts(572,39): error TS2304: Cannot find name 'JHSResults'.
+src/app/utils/storage.ts(573,29): error TS2304: Cannot find name 'JHSResults'.
+src/app/utils/storage.ts(583,48): error TS2304: Cannot find name 'SHSResults'.
+src/app/utils/storage.ts(584,29): error TS2304: Cannot find name 'SHSResults'.
+src/app/utils/storage.ts(588,39): error TS2304: Cannot find name 'SHSResults'.
+src/app/utils/storage.ts(589,29): error TS2304: Cannot find name 'SHSResults'.
+src/app/utils/storage.ts(599,50): error TS2304: Cannot find name 'AdultResults'.
+src/app/utils/storage.ts(600,29): error TS2304: Cannot find name 'AdultResults'.
+src/app/utils/storage.ts(604,41): error TS2304: Cannot find name 'AdultResults'.
+src/app/utils/storage.ts(605,29): error TS2304: Cannot find name 'AdultResults'.
+src/app/utils/storage.ts(719,64): error TS2339: Property 'strengths' does not exist on type 'AssessmentScore'.
+src/app/utils/storage.ts(720,65): error TS2339: Property 'weaknesses' does not exist on type 'AssessmentScore'.
+src/app/utils/storage.ts(721,70): error TS2339: Property 'recommendations' does not exist on type 'AssessmentScore'.
+src/app/utils/supabaseSync.ts(71,15): error TS2345: Argument of type '{ id: string; email: string; name: string; phone: string; school: string; role: UserRole; education_level: EducationLevel; date_of_birth: string; parent_id: string; ... 10 more ...; created_at: string; }' is not assignable to parameter of type 'never[]'.
+  Type '{ id: string; email: string; name: string; phone: string; school: string; role: UserRole; education_level: EducationLevel; date_of_birth: string; parent_id: string; ... 10 more ...; created_at: string; }' is missing the following properties from type 'never[]': length, pop, push, concat, and 35 more.
+src/app/utils/supabaseSync.ts(133,57): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/utils/supabaseSync.ts(141,31): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/utils/supabaseSync.ts(163,9): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'never[]'.
+src/app/utils/supabaseSync.ts(189,9): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'never[]'.
+src/app/utils/supabaseSync.ts(238,9): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'never[]'.
+src/main.tsx(5,8): error TS2882: Cannot find module or type declarations for side-effect import of './styles/index.css'.

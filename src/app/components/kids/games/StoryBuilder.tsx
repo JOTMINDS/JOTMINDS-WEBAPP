@@ -216,13 +216,13 @@ export function StoryBuilder({ onBack }: StoryBuilderProps) {
         <div className="flex items-center justify-between mb-6">
           <KidsButton
             onClick={handleBackClick}
-            variant="secondary"
+            variant="primary"
             icon={<ArrowLeft className="w-6 h-6" />}
           >
             Back
           </KidsButton>
           
-          <Mascot mode="excited" size="sm" showThought={false} />
+          <Mascot mode="excited" size="small" showThought={false} />
           
           <div className="w-32" /> {/* Spacer */}
         </div>
@@ -314,7 +314,7 @@ export function StoryBuilder({ onBack }: StoryBuilderProps) {
                 <KidsButton onClick={handlePlayAgain} variant="primary">
                   📖 Create New Story
                 </KidsButton>
-                <KidsButton onClick={handleBackClick} variant="secondary">
+                <KidsButton onClick={handleBackClick} variant="primary">
                   ← Back to Games
                 </KidsButton>
               </div>

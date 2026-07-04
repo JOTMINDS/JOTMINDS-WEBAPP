@@ -1,4 +1,4 @@
-import { User, Assessment, Reflection, AssessmentProgress, SupervisorReviewData, ParentObservationAssessment, ChildSharingConsent } from '../types';
+import { User, Assessment, Reflection, AssessmentProgress, SupervisorReviewData, ParentObservationAssessment, ChildSharingConsent, Class, TeacherClassAssignment } from '../types';
 import { createClient } from './supabase/client';
 import { projectId } from './supabase/info';
 import { calculateAge } from './dateUtils';
@@ -16,10 +16,12 @@ const STORAGE_KEYS = {
   SHS_RESULTS: 'ts_shs_results',
   ADULT_RESULTS: 'ts_adult_results',
   ROLE_PROFILES: 'ts_role_profiles',
+  CLASSES: 'ts_classes',
+  TEACHER_ASSIGNMENTS: 'ts_teacher_assignments',
 };
 
-// Helper for safe JSON parsing
-function safeParse<T>(key: string, fallback: T): T {
+// Helper for safe JSON parsing from localStorage key
+export function safeParse<T>(key: string, fallback: T): T {
   try {
     const item = localStorage.getItem(key);
     if (!item) return fallback;
@@ -30,6 +32,21 @@ function safeParse<T>(key: string, fallback: T): T {
     return parsed;
   } catch (error) {
     console.error(`Error parsing localStorage key "${key}":`, error);
+    return fallback;
+  }
+}
+
+// Helper for safe JSON parsing from raw data string
+export function safeParseData<T>(data: string | null | undefined, fallback: T): T {
+  if (!data) return fallback;
+  try {
+    const parsed = JSON.parse(data);
+    if (Array.isArray(fallback) && !Array.isArray(parsed)) {
+      return fallback;
+    }
+    return parsed;
+  } catch (error) {
+    console.error(`Error parsing JSON data:`, error);
     return fallback;
   }
 }
@@ -49,6 +66,76 @@ export function getCurrentUser(): User | null {
 
 export function getAllUsers(): User[] {
   return safeParse<User[]>(STORAGE_KEYS.USERS, []);
+}
+
+// Class management
+import { syncClassToSupabase, deleteClassFromSupabase, syncTeacherAssignmentToSupabase, deleteTeacherAssignmentFromSupabase } from './supabaseSync';
+
+export function getAllClasses(): Class[] {
+  return safeParse<Class[]>(STORAGE_KEYS.CLASSES, []);
+}
+
+export function saveClass(cls: Class) {
+  const classes = getAllClasses();
+  const index = classes.findIndex(c => c.id === cls.id);
+  if (index >= 0) {
+    classes[index] = cls;
+  } else {
+    classes.push(cls);
+  }
+  localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(classes));
+  
+  // Async background sync to Supabase
+  syncClassToSupabase(cls);
+}
+
+export function deleteClass(classId: string) {
+  const classes = getAllClasses();
+  const filtered = classes.filter(c => c.id !== classId);
+  localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(filtered));
+  
+  // Async background sync to Supabase
+  deleteClassFromSupabase(classId);
+}
+
+export function getClassById(classId: string): Class | undefined {
+  return getAllClasses().find(c => c.id === classId);
+}
+
+// Teacher Assignment management
+export function getAllTeacherAssignments(): TeacherClassAssignment[] {
+  return safeParse<TeacherClassAssignment[]>(STORAGE_KEYS.TEACHER_ASSIGNMENTS, []);
+}
+
+export function saveTeacherAssignment(assignment: TeacherClassAssignment) {
+  const assignments = getAllTeacherAssignments();
+  const index = assignments.findIndex(a => a.id === assignment.id);
+  if (index >= 0) {
+    assignments[index] = assignment;
+  } else {
+    assignments.push(assignment);
+  }
+  localStorage.setItem(STORAGE_KEYS.TEACHER_ASSIGNMENTS, JSON.stringify(assignments));
+  
+  // Async background sync to Supabase
+  syncTeacherAssignmentToSupabase(assignment);
+}
+
+export function deleteTeacherAssignment(assignmentId: string) {
+  const assignments = getAllTeacherAssignments();
+  const filtered = assignments.filter(a => a.id !== assignmentId);
+  localStorage.setItem(STORAGE_KEYS.TEACHER_ASSIGNMENTS, JSON.stringify(filtered));
+  
+  // Async background sync to Supabase
+  deleteTeacherAssignmentFromSupabase(assignmentId);
+}
+
+export function getAssignmentsForTeacher(teacherId: string): TeacherClassAssignment[] {
+  return getAllTeacherAssignments().filter(a => a.teacherId === teacherId);
+}
+
+export function getAssignmentsForClass(classId: string): TeacherClassAssignment[] {
+  return getAllTeacherAssignments().filter(a => a.classId === classId);
 }
 
 import { syncUserToSupabase, deleteUserFromSupabase } from './supabaseSync';
@@ -82,24 +169,28 @@ export function findUserByEmail(email: string): User | undefined {
   return users.find(u => u.email === email);
 }
 
-// Admin authentication - Multi-admin support
+// Admin authentication - Multi-admin support using environment variables
+// SECURITY FIX: Removed hardcoded plaintext credentials from client bundle
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+const ADMIN_NAME = import.meta.env.VITE_ADMIN_NAME || 'Admin';
+const ADMIN_ID = import.meta.env.VITE_ADMIN_ID || 'admin_001';
+
 const ADMIN_CREDENTIALS = [
   {
-    email: 'Alex.Attachey@gmail.com',
-    password: '0248838540',
-    name: 'Alex Attachey',
-    id: 'admin_001'
+    email: ADMIN_EMAIL,
+    password: ADMIN_PASSWORD,
+    name: ADMIN_NAME,
+    id: ADMIN_ID
   },
   // Add more admins here as needed
-  // {
-  //   email: 'admin2@example.com',
-  //   password: 'password2',
-  //   name: 'Admin Name 2',
-  //   id: 'admin_002'
-  // }
 ];
 
 export function authenticateAdmin(email: string, password: string): boolean {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    console.warn("Admin authentication is disabled because environment variables are not set.");
+    return false;
+  }
   return ADMIN_CREDENTIALS.some(
     admin => admin.email === email && admin.password === password
   );
@@ -473,13 +564,13 @@ export function deleteRoleProfile(id: string) {
 }
 
 // JHS/SHS/Adult Result Management
-export function getJHSResults(userId: string): JHSResults[] {
-  const results = safeParse<JHSResults[]>(STORAGE_KEYS.JHS_RESULTS, []);
-  return results.filter((r) => r.userId === userId);
+export function getJHSResults(userId: string): any[] {
+  const results = safeParse<any[]>(STORAGE_KEYS.JHS_RESULTS, []);
+  return results.filter(r => r.userId === userId);
 }
 
-export function saveJHSResult(result: JHSResults) {
-  const results = safeParse<JHSResults[]>(STORAGE_KEYS.JHS_RESULTS, []);
+export function saveJHSResult(result: any) {
+  const results = safeParse<any[]>(STORAGE_KEYS.JHS_RESULTS, []);
   const index = results.findIndex((r) => r.id === result.id || (r.completedAt === result.completedAt && r.userId === result.userId));
   if (index >= 0) {
     results[index] = result;
@@ -489,13 +580,13 @@ export function saveJHSResult(result: JHSResults) {
   localStorage.setItem(STORAGE_KEYS.JHS_RESULTS, JSON.stringify(results));
 }
 
-export function getSHSResults(userId: string): SHSResults[] {
-  const results = safeParse<SHSResults[]>(STORAGE_KEYS.SHS_RESULTS, []);
-  return results.filter((r) => r.userId === userId);
+export function getSHSResults(userId: string): any[] {
+  const results = safeParse<any[]>(STORAGE_KEYS.SHS_RESULTS, []);
+  return results.filter(r => r.userId === userId);
 }
 
-export function saveSHSResult(result: SHSResults) {
-  const results = safeParse<SHSResults[]>(STORAGE_KEYS.SHS_RESULTS, []);
+export function saveSHSResult(result: any) {
+  const results = safeParse<any[]>(STORAGE_KEYS.SHS_RESULTS, []);
   const index = results.findIndex((r) => r.id === result.id || (r.completedAt === result.completedAt && r.userId === result.userId));
   if (index >= 0) {
     results[index] = result;
@@ -505,13 +596,13 @@ export function saveSHSResult(result: SHSResults) {
   localStorage.setItem(STORAGE_KEYS.SHS_RESULTS, JSON.stringify(results));
 }
 
-export function getAdultResults(userId: string): AdultResults[] {
-  const results = safeParse<AdultResults[]>(STORAGE_KEYS.ADULT_RESULTS, []);
-  return results.filter((r) => r.userId === userId);
+export function getAdultResults(userId: string): any[] {
+  const results = safeParse<any[]>(STORAGE_KEYS.ADULT_RESULTS, []);
+  return results.filter(r => r.userId === userId);
 }
 
-export function saveAdultResult(result: AdultResults) {
-  const results = safeParse<AdultResults[]>(STORAGE_KEYS.ADULT_RESULTS, []);
+export function saveAdultResult(result: any) {
+  const results = safeParse<any[]>(STORAGE_KEYS.ADULT_RESULTS, []);
   const index = results.findIndex((r) => r.id === result.id || (r.completedAt === result.completedAt && r.userId === result.userId));
   if (index >= 0) {
     results[index] = result;
@@ -550,7 +641,8 @@ export async function syncDataWithServer() {
             if (data.success && data.user) {
                 // Preserve local students/teacher mapping if needed, but server should be source of truth
                 const localUser = getCurrentUser();
-                const mergedUser = { ...localUser, ...data.user };
+                // Spread localUser last so offline changes are preserved
+                const mergedUser = { ...data.user, ...localUser };
                 saveCurrentUser(mergedUser);
                 saveUser(mergedUser);
             }
@@ -567,6 +659,23 @@ export async function syncDataWithServer() {
             if (data.success && Array.isArray(data.reflections)) {
                 const serverReflections = data.reflections;
                 const localReflections = getAllReflections();
+                
+                // Push local offline reflections to server
+                for (const localRef of localReflections) {
+                    if (localRef.userId === user.id && !serverReflections.some((srv: any) => srv.id === localRef.id || srv.content === localRef.content)) {
+                        try {
+                            await fetch(`${baseUrl}/reflection`, {
+                                method: 'POST',
+                                headers,
+                                body: JSON.stringify({ content: localRef.content, assessmentResultId: localRef.assessmentId })
+                            });
+                        } catch (uploadErr) {
+                            console.error('Failed to upload offline reflection:', uploadErr);
+                        }
+                    }
+                }
+
+                // Pull server reflections to local
                 let hasChanges = false;
                 const mergedReflections = [...localReflections];
                 
@@ -595,6 +704,30 @@ export async function syncDataWithServer() {
             if (data.success && Array.isArray(data.results)) {
                 const serverResults = data.results;
                 const localAssessments = getAllAssessments();
+                
+                // Push local offline assessments to server
+                for (const localAss of localAssessments) {
+                    if (localAss.userId === user.id && !serverResults.some((srv: any) => srv.id === localAss.id || (srv.assessmentType === localAss.type && srv.completedAt === localAss.completedAt))) {
+                        try {
+                            await fetch(`${baseUrl}/assessment/submit`, {
+                                method: 'POST',
+                                headers,
+                                body: JSON.stringify({
+                                    assessmentType: localAss.type,
+                                    answers: localAss.responses,
+                                    results: localAss.score,
+                                    strengths: (localAss.score as any)?.strengths || [],
+                                    weaknesses: (localAss.score as any)?.weaknesses || [],
+                                    recommendations: (localAss.score as any)?.recommendations || []
+                                })
+                            });
+                        } catch (uploadErr) {
+                            console.error('Failed to upload offline assessment:', uploadErr);
+                        }
+                    }
+                }
+
+                // Pull server assessments to local
                 let hasChanges = false;
                 const mergedAssessments = [...localAssessments];
                 
@@ -615,7 +748,7 @@ export async function syncDataWithServer() {
                             completedAt: srvRes.completedAt || new Date().toISOString()
                         };
                         
-                        if (['kolb', 'sternberg', 'dual-process'].includes(newAssessment.type)) {
+                        if (['kolb', 'sternberg', 'dual-process', 'teaching-style', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(newAssessment.type)) {
                              mergedAssessments.push(newAssessment);
                              hasChanges = true;
                         }

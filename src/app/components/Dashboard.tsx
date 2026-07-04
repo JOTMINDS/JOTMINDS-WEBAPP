@@ -76,7 +76,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
 
         // If parent user, fetch linked children
-        if (displayUser?.role === 'Parent' && !impersonatedUser) {
+        if ((displayUser?.role as string) === 'Parent' && !impersonatedUser) {
           try {
             const { children } = await getLinkedChildren();
             setLinkedChildren(children || []);

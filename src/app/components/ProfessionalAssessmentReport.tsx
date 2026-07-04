@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -60,9 +61,9 @@ export function ProfessionalAssessmentReport({
   };
 
   const getDetailedProfileDescription = (): string => {
-    const kolbDesc = assessment.score.kolb ? getStyleDescription(assessment.score.kolb.style, 'kolb').split('.')[0] : '';
-    const sternbergDesc = assessment.score.sternberg ? getStyleDescription(assessment.score.sternberg.style, 'sternberg').split('.')[0] : '';
-    const dualDesc = assessment.score.dualProcess ? getStyleDescription(assessment.score.dualProcess.style, 'dual-process').split('.')[0] : '';
+    const kolbDesc = assessment.score.kolb ? getStyleDescription('kolb', assessment.score.kolb.style as any).split('.')[0] : '';
+    const sternbergDesc = assessment.score.sternberg ? getStyleDescription('sternberg', assessment.score.sternberg.style as any).split('.')[0] : '';
+    const dualDesc = assessment.score.dualProcess ? getStyleDescription('dual-process', assessment.score.dualProcess.style as any).split('.')[0] : '';
     
     return `${sternbergDesc} ${kolbDesc ? '— ' + kolbDesc.toLowerCase() : ''} ${dualDesc ? 'with ' + dualDesc.toLowerCase() : ''}`;
   };
@@ -72,10 +73,10 @@ export function ProfessionalAssessmentReport({
     
     const scores = assessment.score.kolb.scores;
     return [
-      { name: 'Concrete\nExperience', value: scores.CE, fullMark: 40 },
-      { name: 'Reflective\nObservation', value: scores.RO, fullMark: 40 },
-      { name: 'Abstract\nConceptualization', value: scores.AC, fullMark: 40 },
-      { name: 'Active\nExperimentation', value: scores.AE, fullMark: 40 },
+      { name: 'Concrete\nExperience', value: (scores as any).CE, fullMark: 40 },
+      { name: 'Reflective\nObservation', value: (scores as any).RO, fullMark: 40 },
+      { name: 'Abstract\nConceptualization', value: (scores as any).AC, fullMark: 40 },
+      { name: 'Active\nExperimentation', value: (scores as any).AE, fullMark: 40 },
     ];
   };
 
@@ -150,7 +151,7 @@ export function ProfessionalAssessmentReport({
   const getLearningStyleDetail = (): string => {
     if (!assessment.score.kolb) return 'Not assessed';
     
-    const { AC, AE, CE, RO, scores } = assessment.score.kolb;
+    const { AC, AE, CE, RO } = (assessment.score.kolb as any).scores;
     const dominantDimensions: string[] = [];
     const avg = (AC + AE + CE + RO) / 4;
     

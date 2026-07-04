@@ -2,20 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '../utils/supabase/client';
 import { setAuthToken, clearAuthToken, getSession } from '../utils/api';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  organizationName?: string;
-  assessmentsCompleted?: string[]; // Array of completed assessment types (e.g., ['kolb', 'sternberg'])
-  assessments?: any[]; // Legacy full assessment objects
-  cognitiveProfile?: any;
-  dateOfBirth?: string;
-  age?: number;
-  teacherId?: string;
-  teacherName?: string;
-}
+import { User } from '../types';
 
 interface AuthContextType {
   user: User | null;

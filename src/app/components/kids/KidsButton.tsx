@@ -3,9 +3,10 @@ import { ReactNode } from 'react';
 import soundManager from './SoundFeedback';
 
 interface KidsButtonProps {
+  [key: string]: any;
   children: ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'success' | 'warning' | 'fun' | 'rainbow';
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'fun' | 'rainbow' | string;
   size?: 'small' | 'medium' | 'large' | 'huge';
   icon?: ReactNode;
   disabled?: boolean;
@@ -73,7 +74,7 @@ export function KidsButton({
     }
   };
 
-  const buttonStyle = variants[variant];
+  const buttonStyle = variants[variant as keyof typeof variants] || variants['primary'];
 
   return (
     <motion.button

@@ -76,7 +76,7 @@ export function AdultThinkingContainer({
       if (navigator.share) {
         await navigator.share({
           title: 'My Professional Cognitive Profile',
-          text: `Check out my JotMinds cognitive profile! I'm a ${results.archetype}.`,
+          text: `Check out my JotMinds cognitive profile! I'm a ${results.professionalProfile}.`,
           url: shareUrl,
         });
       } else {

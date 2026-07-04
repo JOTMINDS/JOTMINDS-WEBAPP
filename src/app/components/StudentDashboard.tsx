@@ -1642,10 +1642,10 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                   </p>
                 </div>
 
-                {hasCompletedAssessment('children-thinking') ? (
+                {hasCompletedAssessment('child-thinking') ? (
                   <Button 
                     onClick={() => {
-                        const assessment = getLatestAssessment('children-thinking');
+                        const assessment = getLatestAssessment('child-thinking');
                         if (assessment) setViewingReport(assessment);
                     }}
                     className="w-full bg-gradient-to-r from-[#FF715B] via-[#6B4C9A] to-[#5B7DB1] hover:from-[#E6644F] hover:via-[#1AB5CC] hover:to-[#252770] text-white shadow-lg hover:shadow-xl transition-all text-base py-6"

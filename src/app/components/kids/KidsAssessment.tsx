@@ -919,7 +919,7 @@ export function KidsAssessment({ type, onComplete, onBack }: KidsAssessmentProps
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 play('pop');
-                onComplete();
+                onComplete(null);
               }}
             >
               <div className="flex items-center justify-center gap-4">

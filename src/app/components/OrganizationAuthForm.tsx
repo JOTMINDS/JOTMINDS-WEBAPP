@@ -397,7 +397,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
         hasConsented: true,
         consentType: 'organization_admin',
         consentDate: new Date().toISOString()
-      });
+      } as any);
 
       // Send organization code via email
       if (result.organizationCode) {
@@ -662,7 +662,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                       type="button"
                       onClick={() => setOrganizationType('Corporate')}
                       className={`w-full flex items-center p-4 border rounded-xl transition-all ${
-                        organizationType !== 'Educational Institution' && organizationType !== ''
+                        organizationType !== 'Educational Institution' && (organizationType as string) !== ''
                           ? 'border-purple-600 bg-purple-50/50 shadow-sm ring-1 ring-purple-600' 
                           : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50'
                       }`}
@@ -674,7 +674,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                         <h4 className="font-semibold text-slate-900">Corporate / Other</h4>
                         <p className="text-sm text-slate-500">Companies, Teams, Startups, NGOs</p>
                       </div>
-                      {organizationType !== 'Educational Institution' && organizationType !== '' && (
+                      {organizationType !== 'Educational Institution' && (organizationType as string) !== '' && (
                         <CheckCircle2 className="w-5 h-5 text-purple-600" />
                       )}
                     </button>

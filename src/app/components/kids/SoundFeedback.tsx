@@ -6,13 +6,15 @@
 export type SoundType = 
   | 'click'          // Standard button click
   | 'success'        // Correct answer, completion
+  | 'error'          // Incorrect answer
   | 'progress'       // Moving forward
   | 'celebration'    // Major achievement
   | 'whoosh'         // Quick transition
   | 'pop'            // Item appears
   | 'sparkle'        // Badge unlock
   | 'next'           // Next question
-  | 'select';        // Selection/navigation
+  | 'select'         // Selection/navigation
+  | string;          // Generic fallback
 
 class SoundManager {
   private audioContext: AudioContext | null = null;
@@ -69,6 +71,17 @@ class SoundManager {
   // Progress sound (gentle upward note)
   playProgress() {
     this.createOscillator(600, 0.15, 'sine');
+  }
+
+  // Error sound (descending/dissonant)
+  playError() {
+    if (!this.audioContext || !this.enabled) return;
+    const notes = [300, 150];
+    notes.forEach((freq, i) => {
+      setTimeout(() => {
+        this.createOscillator(freq, 0.2, 'sawtooth');
+      }, i * 150);
+    });
   }
 
   // Celebration sound (fanfare)
@@ -159,6 +172,9 @@ class SoundManager {
           break;
         case 'success':
           this.playSuccess();
+          break;
+        case 'error':
+          this.playError();
           break;
         case 'progress':
           this.playProgress();

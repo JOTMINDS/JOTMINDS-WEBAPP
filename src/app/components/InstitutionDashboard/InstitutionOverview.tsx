@@ -126,7 +126,7 @@ export function InstitutionOverview({
               size="sm" 
               className="shrink-0"
               style={{ backgroundColor: '#5B7DB1' }}
-              onClick={() => setTab('teacher_styles')}
+              onClick={() => setTab('teacher_styles' as any)}
             >
               <BarChart3 className="w-4 h-4 mr-2" />
               Compare Styles

@@ -59,7 +59,7 @@ interface Props {
   teachers: { id: string; name: string; classIds: string[] }[];
   classes: { id: string; name: string; grade: string; teacherId: string }[];
   onBack: () => void;
-  user?: User;
+  user?: any;
   onViewInstitutionDashboard?: () => void;
   onViewSettings?: () => void;
 }
@@ -755,9 +755,9 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                 )}
 
                 {students.length > 0 && (() => {
-                  const assignedCount = students.filter((s: any) => s.teacherId || (s.linkedTeachers && s.linkedTeachers.length > 0)).length;
+                  const assignedCount = students.filter((s: any) => s.classId || (s.linkedClasses && s.linkedClasses.length > 0)).length;
                   const visible = students.filter((s: any) => {
-                    const isAssigned = !!(s.teacherId || (s.linkedTeachers && s.linkedTeachers.length > 0));
+                    const isAssigned = !!(s.classId || (s.linkedClasses && s.linkedClasses.length > 0));
                     return studentFilter === 'all' ? true : studentFilter === 'assigned' ? isAssigned : !isAssigned;
                   });
                   return (

@@ -162,7 +162,7 @@ export function calculateSchoolMetrics(
   // Gamification metrics
   const gamificationProfiles = students.map(s => getGamificationProfile(s.userId));
   const totalBadgesEarned = gamificationProfiles.reduce((sum, p) => sum + p.badges.length, 0);
-  const totalXPEarned = gamificationProfiles.reduce((sum, p) => sum + p.totalXP, 0);
+  const totalXPEarned = gamificationProfiles.reduce((sum, p) => sum + ((p as any).totalXP || p.xp || 0), 0);
   const averageLevel =
     gamificationProfiles.reduce((sum, p) => sum + p.level, 0) / totalStudents || 0;
 

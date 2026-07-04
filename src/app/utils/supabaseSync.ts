@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client';
-import { User, Assessment } from '../types';
+import { User, Assessment, Class, TeacherClassAssignment } from '../types';
 
 /**
  * Maps a local User object to the Supabase public.users table format.
@@ -17,6 +17,7 @@ function mapUserToSupabase(user: User) {
     parent_id: user.parentId || null,
     teacher_id: user.teacherId || null,
     teacher_name: user.teacherName || null,
+    class_id: user.classId || null,
     students: user.students || [],
     organization_name: user.organizationName || null,
     organization_type: user.organizationType || null,
@@ -44,6 +45,7 @@ function mapSupabaseToUser(row: any): User {
     parentId: row.parent_id || undefined,
     teacherId: row.teacher_id || undefined,
     teacherName: row.teacher_name || undefined,
+    classId: row.class_id || undefined,
     students: row.students || undefined,
     organizationName: row.organization_name || undefined,
     organizationType: row.organization_type || undefined,
@@ -66,7 +68,7 @@ export async function syncUserToSupabase(user: User) {
     const supabase = createClient();
     const { error } = await supabase
       .from('users')
-      .upsert(mapUserToSupabase(user));
+      .upsert(mapUserToSupabase(user) as any);
       
     if (error) {
       console.error('[Supabase Sync] Error syncing user to Supabase:', error);
@@ -109,9 +111,9 @@ export async function syncAllUsersFromSupabase() {
     const supabase = createClient();
     // For now, in our hybrid model, we pull all users to populate the local cache.
     // In a fully scaled app, this would be scoped to the logged-in user's context.
-    const { data, error } = await supabase
+    const { data, error } = (await supabase
       .from('users')
-      .select('*');
+      .select('*')) as { data: any[] | null, error: any };
       
     if (error) {
       console.error('[Supabase Sync] Error fetching users from Supabase:', error);
@@ -165,12 +167,108 @@ export async function syncAssessmentToSupabase(assessment: Assessment) {
         score: assessment.score,
         completed: assessment.completed || true,
         completed_at: assessment.completedAt || new Date().toISOString()
-      });
+      } as any);
       
     if (error) {
       console.error('[Supabase Sync] Error syncing assessment to Supabase:', error);
     }
   } catch (error) {
     console.error('[Supabase Sync] Exception syncing assessment:', error);
+  }
+}
+
+/**
+ * Asynchronously pushes a class update to Supabase.
+ */
+export async function syncClassToSupabase(cls: Class) {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('classes')
+      .upsert({
+        id: cls.id,
+        name: cls.name,
+        academic_year: cls.academicYear,
+        class_teacher_id: cls.classTeacherId || null,
+        institution_id: cls.institutionId || null,
+        student_count: cls.studentCount || 0,
+        created_at: cls.createdAt || new Date().toISOString()
+      } as any);
+      
+    if (error) {
+      console.error('[Supabase Sync] Error syncing class to Supabase:', error);
+    } else {
+      console.log('[Supabase Sync] Successfully synced class:', cls.name);
+    }
+  } catch (error) {
+    console.error('[Supabase Sync] Exception syncing class:', error);
+  }
+}
+
+/**
+ * Asynchronously deletes a class from Supabase.
+ */
+export async function deleteClassFromSupabase(classId: string) {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('classes')
+      .delete()
+      .eq('id', classId);
+      
+    if (error) {
+      console.error('[Supabase Sync] Error deleting class from Supabase:', error);
+    } else {
+      console.log('[Supabase Sync] Successfully deleted class:', classId);
+    }
+  } catch (error) {
+    console.error('[Supabase Sync] Exception deleting class:', error);
+  }
+}
+
+/**
+ * Asynchronously pushes a teacher class assignment to Supabase.
+ */
+export async function syncTeacherAssignmentToSupabase(assignment: TeacherClassAssignment) {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('teacher_class_assignments')
+      .upsert({
+        id: assignment.id,
+        teacher_id: assignment.teacherId,
+        class_id: assignment.classId,
+        subject_id: assignment.subjectId || null,
+        role: assignment.role,
+      } as any);
+      
+    if (error) {
+      console.error('[Supabase Sync] Error syncing teacher assignment to Supabase:', error);
+    } else {
+      console.log('[Supabase Sync] Successfully synced teacher assignment:', assignment.id);
+    }
+  } catch (error) {
+    console.error('[Supabase Sync] Exception syncing teacher assignment:', error);
+  }
+}
+
+/**
+ * Asynchronously deletes a teacher class assignment from Supabase.
+ */
+export async function deleteTeacherAssignmentFromSupabase(assignmentId: string) {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('teacher_class_assignments')
+      .delete()
+      .eq('id', assignmentId);
+      
+    if (error) {
+      console.error('[Supabase Sync] Error deleting teacher assignment from Supabase:', error);
+    } else {
+      console.log('[Supabase Sync] Successfully deleted teacher assignment:', assignmentId);
+    }
+  } catch (error) {
+    console.error('[Supabase Sync] Exception deleting teacher assignment:', error);
   }
 }

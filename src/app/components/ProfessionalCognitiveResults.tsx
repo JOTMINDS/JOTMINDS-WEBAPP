@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { ProfessionalCognitiveProfile, getProfessionalInsights } from '../utils/professionalCognitiveScoring';
 import { 
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, 
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip 
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend 
 } from 'recharts';
 import { Download, ArrowLeft, CheckCircle2, Target, TrendingUp, Briefcase, MessageSquare, ExternalLink, Brain, Lightbulb, Scale } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
@@ -34,9 +34,15 @@ export function ProfessionalCognitiveResults({
 
   React.useEffect(() => {
     if (supervisorId) {
-      import('../utils/storage').then(({ getRoleProfiles }) => {
-        setRoleProfiles(getRoleProfiles(supervisorId));
-      });
+      import('../utils/api').then(({ getRoleProfiles }) => {
+        getRoleProfiles(supervisorId)
+          .then(res => {
+            if (res.success && res.profiles) {
+              setRoleProfiles(res.profiles);
+            }
+          })
+          .catch(console.error);
+      }).catch(console.error);
     }
   }, [supervisorId]);
   
@@ -492,11 +498,11 @@ export function ProfessionalCognitiveResults({
                     };
 
                     const radarData = [
-                      { subject: 'Analytical', Employee: actualScores.analytical, Ideal: selectedRole.idealScores.analytical },
-                      { subject: 'Creative', Employee: actualScores.creative, Ideal: selectedRole.idealScores.creative },
-                      { subject: 'Practical', Employee: actualScores.practical, Ideal: selectedRole.idealScores.practical },
-                      { subject: 'Intuitive', Employee: actualScores.intuitive, Ideal: selectedRole.idealScores.intuitive },
-                      { subject: 'Reflective', Employee: actualScores.reflective, Ideal: selectedRole.idealScores.reflective },
+                      { subject: 'Analytical', Employee: actualScores.analytical, Ideal: (selectedRole.idealScores?.analytical || 0) * 10 },
+                      { subject: 'Creative', Employee: actualScores.creative, Ideal: (selectedRole.idealScores?.creative || 0) * 10 },
+                      { subject: 'Practical', Employee: actualScores.practical, Ideal: (selectedRole.idealScores?.practical || 0) * 10 },
+                      { subject: 'Intuitive', Employee: actualScores.intuitive, Ideal: (selectedRole.idealScores?.intuitive || 0) * 10 },
+                      { subject: 'Reflective', Employee: actualScores.reflective, Ideal: (selectedRole.idealScores?.reflective || 0) * 10 },
                     ];
 
                     return (

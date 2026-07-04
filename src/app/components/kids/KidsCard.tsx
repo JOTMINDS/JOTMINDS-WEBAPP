@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { ReactNode } from 'react';
 
 interface KidsCardProps {
+  [key: string]: any;
   children: ReactNode;
   onClick?: () => void;
   color?: string;

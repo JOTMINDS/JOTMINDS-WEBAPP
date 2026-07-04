@@ -1,6 +1,7 @@
 import React from 'react';
 import { Shield, Eye, CheckCircle, AlertCircle, Info } from 'lucide-react';
-import { AgeCategory, getParentResponsibilities, getMonitoringLevelDescription } from '../../types/age-feature-configs';
+import { getParentResponsibilities, getMonitoringLevelDescription } from '../../types/age-feature-configs';
+import { AgeCategory } from '../../types/age-consent-types';
 
 interface ParentResponsibilitiesGuideProps {
   ageCategory: AgeCategory;

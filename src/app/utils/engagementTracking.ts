@@ -58,18 +58,17 @@ export interface EngagementInsight {
   recommendation?: string;
 }
 
+import { safeParse } from './storage';
+
 const STORAGE_KEY = 'jotminds_engagement_tracking';
 
 function getActivityLogs(userId: string): ActivityLog[] {
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (!data) return [];
-  const allLogs: ActivityLog[] = JSON.parse(data);
+  const allLogs = safeParse<ActivityLog[]>(STORAGE_KEY, []);
   return allLogs.filter(log => log.userId === userId);
 }
 
 function saveActivityLog(log: ActivityLog): void {
-  const data = localStorage.getItem(STORAGE_KEY);
-  const allLogs: ActivityLog[] = data ? JSON.parse(data) : [];
+  const allLogs = safeParse<ActivityLog[]>(STORAGE_KEY, []);
   allLogs.push(log);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(allLogs));
 }
@@ -410,6 +409,5 @@ export function generateEngagementInsights(metrics: EngagementMetrics): Engageme
 }
 
 export function getAllActivityLogs(): ActivityLog[] {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
+  return safeParse<ActivityLog[]>(STORAGE_KEY, []);
 }

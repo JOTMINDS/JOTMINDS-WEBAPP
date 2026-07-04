@@ -49,7 +49,7 @@ export function TeacherDashboard({
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
   const [activeStudentTab, setActiveStudentTab] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'manage-class'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'manage-class' | 'teaching-style'>('overview');
   const [institutionId, setInstitutionId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -104,10 +104,12 @@ export function TeacherDashboard({
             toast.warning('Using offline data - backend unavailable');
           }
           
-          assessmentsForStats = getAllAssessments();
-          
           const allUsers = getAllUsers();
           studentUsers = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
+          
+          // Scope assessments to only this teacher's students
+          const studentIds = new Set(studentUsers.map(s => s.id));
+          assessmentsForStats = getAllAssessments().filter((a: any) => studentIds.has(a.userId));
         }
       }
 
@@ -657,9 +659,8 @@ export function TeacherDashboard({
         {activeTab === 'overview' && (
           <div className="space-y-6">
           <TeacherClassOverview
-            classStats={classStats}
             students={students}
-            allAssessments={allAssessments}
+            assessments={allAssessments}
           />
         </div>
         )}

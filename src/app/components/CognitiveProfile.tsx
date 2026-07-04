@@ -251,7 +251,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
   };
 
   const handleExportProfile = () => {
-    const userName = impersonatedUser?.user_metadata?.name || 'User';
+    const userName = (impersonatedUser as any)?.user_metadata?.name || 'User';
     const exportDate = new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 

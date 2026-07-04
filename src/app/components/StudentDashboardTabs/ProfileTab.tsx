@@ -6,7 +6,7 @@ import { TabsContent } from '../ui/tabs';
 import { FileText, MessageSquare, Settings, Flame, Camera, Loader2 } from 'lucide-react';
 import { CardV2, CardV2Grid } from '../ui/card-v2';
 import { formatMonthYear } from '../../utils/dateFormat';
-import { Assessment } from '../../utils/teachingStyleScoring';
+import { Assessment } from '../../types';
 import { updateUserProfile } from '../../utils/api';
 import { toast } from 'sonner';
 

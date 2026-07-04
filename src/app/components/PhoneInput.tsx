@@ -1,7 +1,7 @@
 import React from 'react';
 import { Phone } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
 
 const COUNTRY_CODES = [
   { code: '+233', country: 'Ghana 🇬🇭' },

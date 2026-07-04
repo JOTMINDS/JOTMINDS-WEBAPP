@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Progress } from './ui/progress';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
+import { Checkbox } from './ui/checkbox';
 import { useAuth } from './AuthContext';
 import { ArrowLeft, ArrowRight, CheckCircle, Eye } from 'lucide-react';
 import { AssessmentPreview } from './AssessmentPreview';
@@ -42,6 +43,7 @@ export const Assessment: React.FC<AssessmentProps> = ({
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
   const [questionVersion, setQuestionVersion] = useState('v1');
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  const [parentConsent, setParentConsent] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Load questions from backend - will re-run on every mount due to key prop in App.tsx
@@ -214,10 +216,11 @@ export const Assessment: React.FC<AssessmentProps> = ({
       const userProfile = {
         age: user.age,
         role: user.role,
-        educationLevel: user.user_metadata?.educationLevel || user.educationLevel,
-        school: user.user_metadata?.school || user.school,
-        position: user.user_metadata?.position || user.position,
-        industrySector: user.user_metadata?.industrySector || user.industrySector,
+        educationLevel: (user as any).user_metadata?.educationLevel || user.educationLevel,
+        school: (user as any).user_metadata?.school || user.school,
+        parentConsent: parentConsent,
+        position: (user as any).user_metadata?.position || user.position,
+        industrySector: (user as any).user_metadata?.industrySector || user.industrySector,
         name: user.name
       };
       
@@ -253,7 +256,7 @@ export const Assessment: React.FC<AssessmentProps> = ({
           completedAt: new Date().toISOString()
         };
         
-        saveAssessment(newAssessment);
+        saveAssessment(newAssessment as any);
         results = fallbackResults;
       }
 
@@ -408,6 +411,28 @@ export const Assessment: React.FC<AssessmentProps> = ({
                   ))}
                 </div>
               </RadioGroup>
+
+              {/* Parent Consent Checkbox (shown only on last question when ready to submit) */}
+              {isLastQuestion && currentQuestionAnswered && (
+                <div className="flex items-start space-x-2 mt-6 p-4 border rounded-md bg-slate-50 dark:bg-slate-900">
+                  <Checkbox 
+                    id="parent-consent" 
+                    checked={parentConsent}
+                    onCheckedChange={(checked) => setParentConsent(checked as boolean)}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="parent-consent"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Share with Parent/Guardian
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      I consent to sharing an anonymized version of my profile with my parent/guardian to help guide discussions.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Navigation Buttons: 24px top, 12px bottom */}
               <div 

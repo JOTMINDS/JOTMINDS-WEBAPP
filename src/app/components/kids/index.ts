@@ -1,8 +1,8 @@
 // Kids Mode Components - All exports for easy importing
 export { KidsButton } from './KidsButton';
-export { Mascot, HappyMascot, SadMascot, ThinkingMascot, CelebratingMascot, EncouragingMascot } from './Mascot';
+export { Mascot, WelcomeMascot, EncouragingMascot, ThinkingMascot, CelebratingMascot } from './Mascot';
 export { Confetti, CelebrationEffect } from './Confetti';
-export { SoundFeedback, useSound } from './SoundFeedback';
+export { SoundEffect as SoundFeedback, useSound, soundManager } from './SoundFeedback';
 export { KidsCard, ProgressCard, RewardCard } from './KidsCard';
 export { AudioNarration, NarratedText } from './AudioNarration';
 export { KidsDashboard } from './KidsDashboard';

@@ -5,10 +5,10 @@ import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Assessment, UserRole } from '../types';
-import { saveReflection, getReflections, generateId } from '../utils/storage';
+import { saveReflection, getAllReflections, generateId } from '../utils/storage';
 import { getGhanaMapping, getStyleDescription } from '../utils/scoring';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { SternbergResults } from './SternbergResults';
+
 import { BookOpen, Briefcase, Lightbulb, FileText, Download, ArrowLeft, TrendingUp, AlertTriangle, Target, Users, BarChart3, Share2, Eye, Brain, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import { generatePDF } from '../utils/pdfGenerator';
 import { getAssessmentInsights, AssessmentInsights } from '../utils/insights';
@@ -246,8 +246,8 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
     } else if (assessment.score.dualProcess) {
       // Handle both naming conventions: system1/system2 (old) and Intuitive/Reflective (new from server)
       const scores = assessment.score.dualProcess.scores;
-      const system1Score = scores.system1 || scores.Intuitive || 0;
-      const system2Score = scores.system2 || scores.Reflective || 0;
+      const system1Score = scores.system1 || (scores as any).Intuitive || 0;
+      const system2Score = scores.system2 || (scores as any).Reflective || 0;
       
       console.log('[AssessmentReport] Dual-Process scores:', {
         raw: scores,
@@ -269,7 +269,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           description: 'Slow, deliberate, analytical decisions'
         },
       ];
-    } else if (assessment.score['jhs-thinking'] || assessment.score['shs-thinking'] || assessment.score['children-thinking']) {
+    } else if (assessment.type === 'child-thinking' || (assessment.type as any) === 'children-thinking') {
       const scores = assessment.score['jhs-thinking']?.scores || assessment.score['shs-thinking']?.scores || assessment.score['children-thinking']?.scores || {};
       return [
         { name: 'Creative', value: scores.creative || 0, color: 'hsl(var(--chart-1))' },
@@ -313,13 +313,13 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
       if (assessment.type === 'jhs-thinking') return 'JHS Thinking Style Profile';
       if (assessment.type === 'shs-thinking') return 'SHS Thinking Style Profile';
       if (assessment.type === 'adult-thinking') return 'Professional Thinking Profile';
-      if (assessment.type === 'children-thinking') return 'Thinking Adventure Profile';
+      if ((assessment.type as any) === 'children-thinking') return 'Thinking Adventure Profile';
     }
     return 'Assessment Profile';
   };
 
   const mainStyle = getMainStyle();
-  const styleDescription = getStyleDescription(assessment.type, mainStyle);
+  const styleInfo = getStyleDescription(assessment.type as any, mainStyle);
   const chartData = getChartData().filter(item => {
     // Filter out any items with NaN or undefined values
     return item.value !== undefined && !isNaN(item.value) && isFinite(item.value);
@@ -455,7 +455,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <p className="text-muted-foreground">{styleDescription}</p>
+              <p className="text-muted-foreground">{styleInfo}</p>
             </div>
 
             <div>
@@ -697,7 +697,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                 </Badge>
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                {styleDescription}
+                {styleInfo}
               </p>
             </div>
 
@@ -763,8 +763,9 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     <Users className="h-4 w-4" />
                     Organizational Fit Assessment
                   </h4>
+                  <div className="text-indigo-900 font-medium">{(insights as any).organizationalFit.recommendedRoles.join(', ')}</div>
                   <div className="space-y-2">
-                    {insights.organizationalFit.slice(0, 2).map((fit, index) => (
+                    {((insights as any).organizationalFit.details || []).map((fit: string, index: number) => (
                       <div key={index} className="flex items-start gap-2">
                         <span className="text-purple-600 dark:text-purple-400 mt-0.5">•</span>
                         <p className="text-sm text-[rgb(133,13,242)] dark:text-purple-300 flex-1">
@@ -782,7 +783,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     Overall Assessment
                   </h4>
                   <p className="text-sm opacity-95">
-                    {getOrganizationalAssessmentText(assessment.type, mainStyle, insights.organizationalFit[0]?.split(':')[1]?.trim() || '')}
+                    {getOrganizationalAssessmentText(assessment.type, mainStyle, (insights as any).organizationalFit[0]?.split(':')[1]?.trim() || '')}
                   </p>
                 </div>
               </>
@@ -1013,7 +1014,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                         border: `1px solid #C4B5FD`,
                         padding: `${componentSpacing.cardPadding}px`
                       }}>
-                        {insights.organizationalFit.map((fit, index) => (
+                        {(insights as any).organizationalFit && (insights as any).organizationalFit.map((fit: any, index: number) => (
                           <p key={index} className="text-sm" style={{ color: colors.neutral.gray700 }}>
                             <strong>{fit.split(':')[0]}:</strong>
                             {fit.split(':')[1]}
@@ -1054,7 +1055,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                         border: `1px solid ${colors.info.border}`,
                         padding: `${componentSpacing.cardPadding}px`
                       }}>
-                        {insights.continuousReview.map((review, index) => (
+                        {(insights as any).continuousReview && (insights as any).continuousReview.map((review: any, index: number) => (
                           <p key={index} className="text-sm" style={{ color: colors.neutral.gray700 }}>
                             <strong>{review.split(':')[0]}:</strong>
                             {review.split(':')[1]}
@@ -1438,7 +1439,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               JotMinds Learner Report
             </div>
             <div className="flex flex-col md:items-end gap-1">
-              <span>Assessment Version: Student {assessment.ageGroup || '15-18'} v1.0</span>
+              <span>Assessment Version: Student {(assessment as any).ageGroup || '15-18'} v1.0</span>
               <span>Framework Version: Evidence-Informed Model v1.0</span>
               <span>Generated: {new Date().toLocaleDateString()}</span>
             </div>

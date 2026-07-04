@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Users, ClipboardList, TrendingUp, ShieldCheck } from 'lucide-react';
+import { DataExport } from './DataExport';
 
 interface OverviewMetricsProps {
   stats: any;
@@ -140,6 +141,9 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Data Export for Validation */}
+      <DataExport />
     </div>
   );
 };

@@ -382,7 +382,8 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
             id: Date.now().toString(),
             userId: user.id,
             type: 'adult-thinking',
-            score: { 'adult-thinking': results },
+            responses: [],
+            score: { 'adult-thinking': results as any },
             completed: true,
             completedAt: new Date().toISOString()
           };
@@ -776,7 +777,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                         resultColor = "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
                                       } else if (assessment.type === 'adult-thinking' && rawResults.dominantStyle) {
                                         resultDisplay = rawResults.dominantStyle.charAt(0).toUpperCase() + rawResults.dominantStyle.slice(1);
-                                      } else if (assessment.type === 'children-thinking' && rawResults.personalityType) {
+                                      } else if ((assessment.type as any) === 'child-thinking' && rawResults.personalityType) {
                                         resultDisplay = rawResults.personalityType;
                                         resultColor = "bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800";
                                       }

@@ -38,7 +38,7 @@ export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormPro
 
       if (resetError) {
         console.error('[ForgotPassword] Error:', resetError);
-        setError('Failed to send password reset code. Please try again or contact support.');
+        setError(resetError.message || 'Failed to send password reset code. Please try again or contact support.');
         setLoading(false);
         return;
       }
@@ -74,7 +74,7 @@ export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormPro
 
       if (verifyError) {
         console.error('[ForgotPassword] OTP Verify Error:', verifyError);
-        setError('Invalid or expired code. Please try again.');
+        setError(verifyError.message || 'Invalid or expired code. Please try again.');
         setLoading(false);
         return;
       }

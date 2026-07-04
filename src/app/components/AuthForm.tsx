@@ -16,7 +16,7 @@ import { PasswordStrengthIndicator, checkPasswordStrength } from './PasswordStre
 import { Checkbox } from './ui/checkbox';
 import { OrganizationCodeHelp } from './OrganizationCodeHelp';
 import { Logo } from './Logo';
-import { validateInstitutionCode, addMember, generateOTP, verifyOTP } from '../utils/institution';
+import { validateInstitutionCode, addMember, generateOTP, verifyOTP, validateInviteToken } from '../utils/institution';
 
 interface AuthFormProps {
   onLogin: () => void;

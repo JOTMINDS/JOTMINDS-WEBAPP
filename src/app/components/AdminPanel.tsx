@@ -7,6 +7,7 @@ import { OrganizationManager } from './OrganizationManager';
 import { QuestionBankAudit } from './QuestionBankAudit';
 import { QuestionSeeder } from './QuestionSeeder';
 import { AdminDiagnostic } from './AdminDiagnostic';
+import { AdminSettings } from './AdminPortal/AdminSettings';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Loader, AlertCircle } from 'lucide-react';
 
@@ -76,9 +77,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <QuestionBankAudit />
                 <QuestionSeeder />
              </div>
-             <AdminDiagnostic />
+             <AdminDiagnostic onClose={() => {}} />
           </div>
         );
+      case 'settings':
+        return <AdminSettings />;
       default:
         return <OverviewMetrics stats={stats} />;
     }

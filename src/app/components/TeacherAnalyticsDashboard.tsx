@@ -71,11 +71,11 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
       if (studentList.length === 0) {
         setDistribution({
           totalStudents: 0,
-          learningStyles: { diverging: 0, assimilating: 0, converging: 0, accommodating: 0 },
-          thinkingStyles: { analytical: 0, creative: 0, practical: 0 },
-          distribution: { highPerformers: 0, midPerformers: 0, needsSupport: 0 },
-          averageScores: { analytical: 0, creative: 0, practical: 0, reflection: 0, intuition: 0, logic: 0 }
-        });
+          learningStyles: { visual: 0, auditory: 0, kinesthetic: 0, mixed: 0 },
+          thinkingStyles: { intuitive: 0, reflective: 0, mixed: 0 },
+          decisionStyles: { analytical: 0, conceptual: 0, directive: 0, behavioral: 0 }, archetypes: { theStrategist: 0, theInnovator: 0, theCommander: 0, theDiplomat: 0 }, distribution: { highPerformers: 0, midPerformers: 0, needsSupport: 0 },
+          averageScores: { learningAgility: 0, analyticalDepth: 0, creativeCapacity: 0, practicalExecution: 0, intuitiveSpeed: 0, reflectiveDepth: 0 }
+        } as any);
         setInsights([]);
         return;
       }
@@ -450,11 +450,11 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Thinking Style</p>
-                        <Badge variant="outline" className="capitalize">{student.thinkingStyle}</Badge>
+                        <Badge variant="outline" className="capitalize">{(student as any).thinkingStyle}</Badge>
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Archetype</p>
-                        <Badge variant="secondary">{student.archetype}</Badge>
+                        <Badge variant="secondary">{(student as any).archetype}</Badge>
                       </div>
                       <Button
                         variant="outline"

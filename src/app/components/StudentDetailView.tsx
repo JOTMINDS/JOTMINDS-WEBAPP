@@ -25,7 +25,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
   const studentAssessments = assessments.filter(a => a.userId === student.id && a.completed);
   
   const latestLearning = studentAssessments
-    .filter(a => a.type === 'kolb' || a.type === 'learning')
+    .filter(a => a.type === 'kolb' || (a.type as any) === 'learning')
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   
   const latestThinking = studentAssessments
@@ -33,10 +33,10 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   
   const latestDecision = studentAssessments
-    .filter(a => a.type === 'dual-process' || a.type === 'decision')
+    .filter(a => a.type === 'dual-process' || (a.type as any) === 'decision')
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
 
-  const learningScore = latestLearning?.score?.kolb?.scores || latestLearning?.score?.learning?.scores || latestLearning?.score?.kolb || latestLearning?.score?.learning || {};
+  const learningScore = latestLearning?.score?.kolb?.scores || (latestLearning?.score as any)?.learning?.scores || latestLearning?.score?.kolb || (latestLearning?.score as any)?.learning || {};
   const ce = Number(learningScore.CE ?? learningScore.concreteExperience ?? learningScore.ConcreteExperience ?? 0);
   const ro = Number(learningScore.RO ?? learningScore.reflectiveObservation ?? learningScore.ReflectiveObservation ?? 0);
   const ac = Number(learningScore.AC ?? learningScore.abstractConceptualization ?? learningScore.AbstractConceptualization ?? 0);
@@ -55,7 +55,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
     const strategies: string[] = [];
     
     if (latestLearning) {
-      const style = latestLearning.score?.kolb?.style || latestLearning.score?.learning?.style;
+      const style = latestLearning.score?.kolb?.style || (latestLearning.score as any)?.learning?.style;
       switch (style) {
         case 'Diverging':
           strategies.push(
@@ -183,7 +183,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
     }
 
     if (latestDecision) {
-      const style = latestDecision.score?.dualProcess?.style || latestDecision.score?.decision?.style || latestDecision.score?.['dual-process']?.style;
+      const style = latestDecision.score?.dualProcess?.style || (latestDecision.score as any)?.decision?.style || latestDecision.score?.['dual-process']?.style;
       if (style === 'Intuitive Dominant') {
         areas.push('Encourage more analytical reasoning and evidence-based decision-making');
       } else if (style === 'Reflective Dominant') {
@@ -253,7 +253,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
                 {latestLearning ? (
                   <div className="space-y-2">
                     <Badge className="text-base px-3 py-1">
-                      {latestLearning.score.kolb?.style || latestLearning.score.learning?.style}
+                      {latestLearning.score.kolb?.style || (latestLearning.score as any).learning?.style}
                     </Badge>
                     <p className="text-sm text-muted-foreground">
                       Assessed on {formatDate(latestLearning.completedAt!)}
@@ -312,7 +312,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
                 {latestDecision ? (
                   <div className="space-y-2">
                     <Badge className="text-base px-3 py-1">
-                      {latestDecision.score.dualProcess?.style || latestDecision.score.decision?.style || latestDecision.score['dual-process']?.style}
+                      {(latestDecision.score as any).dualProcess?.style || (latestDecision.score as any).decision?.style || (latestDecision.score as any)['dual-process']?.style}
                     </Badge>
                     <p className="text-sm text-muted-foreground">
                       Assessed on {formatDate(latestDecision.completedAt!)}
@@ -462,7 +462,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
                                 return s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Completed';
                               }
                               if (assessment.type === 'child-thinking') return assessment.score['child-thinking']?.primaryStyle || 'Completed';
-                              if (assessment.type === 'decision') return assessment.score.decision?.style;
+                              if ((assessment.type as any) === 'decision') return (assessment.score as any).decision?.style;
                               if (assessment.type === 'dual-process') return assessment.score['dual-process']?.style;
                               return 'Completed';
                             })()}

@@ -86,7 +86,7 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
   );
   
   const latestLearning = studentAssessments
-    .filter(a => a.type === 'kolb' || a.type === 'learning')
+    .filter(a => a.type === 'kolb' || (a.type as any) === 'learning')
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   
   const latestThinking = studentAssessments
@@ -94,7 +94,7 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
   
   const latestDecision = studentAssessments
-    .filter(a => a.type === 'dual-process' || a.type === 'decision')
+    .filter(a => a.type === 'dual-process' || (a.type as any) === 'decision')
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
 
   const completedCount = [latestLearning, latestThinking, latestDecision].filter(Boolean).length;
@@ -113,7 +113,7 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
     const insights: Array<{ icon: string; text: string }> = [];
     
     if (latestLearning?.score) {
-      const style = (latestLearning.score.kolb || latestLearning.score.learning)?.style;
+      const style = ((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style;
       switch (style) {
         case 'Diverging':
           insights.push({ icon: '🎯', text: 'Excels in group work and creative brainstorming' });
@@ -165,7 +165,7 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
     const strategies: string[] = [];
     
     if (latestLearning?.score) {
-      const style = (latestLearning.score.kolb || latestLearning.score.learning)?.style;
+      const style = ((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style;
       switch (style) {
         case 'Diverging':
           strategies.push(
@@ -212,7 +212,7 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
     }> = [];
 
     if (latestLearning) {
-      const style = (latestLearning.score.kolb || latestLearning.score.learning)?.style || '';
+      const style = ((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style || '';
       resources.push({
         type: 'Guide',
         title: `Teaching ${style} Learners: A Practical Guide`,
@@ -270,9 +270,9 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
           {students.map((student) => {
             const studentCompletedCount = [
-              assessments.find(a => a.userId === student.id && (a.type === 'kolb' || a.type === 'learning') && a.completed),
+              assessments.find(a => a.userId === student.id && (a.type === 'kolb' || (a.type as any) === 'learning') && a.completed),
               assessments.find(a => a.userId === student.id && ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && a.completed),
-              assessments.find(a => a.userId === student.id && (a.type === 'dual-process' || a.type === 'decision') && a.completed)
+              assessments.find(a => a.userId === student.id && (a.type === 'dual-process' || (a.type as any) === 'decision') && a.completed)
             ].filter(Boolean).length;
             
             const isSelected = student.id === selectedStudentId;
@@ -367,7 +367,7 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
                           <span className="text-[15px] font-semibold">Learning Style</span>
                         </div>
                         <Badge className="rounded-full px-3 py-1 text-[13px] font-semibold bg-[#16A34A] text-white">
-                          {(latestLearning.score.kolb || latestLearning.score.learning)?.style}
+                          {((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style}
                         </Badge>
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2">
@@ -420,7 +420,7 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
                           <span className="text-[15px] font-semibold">Decision Style</span>
                         </div>
                         <Badge className="rounded-full px-3 py-1 text-[13px] font-semibold bg-[#F97316] text-white">
-                          {(latestDecision.score.dualProcess || latestDecision.score.decision || latestDecision.score['dual-process'])?.style}
+                          {((latestDecision.score as any).dualProcess || (latestDecision.score as any).decision || (latestDecision.score as any)['dual-process'])?.style}
                         </Badge>
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2">

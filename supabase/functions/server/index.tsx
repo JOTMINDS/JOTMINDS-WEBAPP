@@ -601,17 +601,49 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
     try {
       const { data: institution } = await supabase.from('institutions').select('*').eq('id', institutionId).maybeSingle();
       if (institution) {
-        const allUsers = await kv.getByPrefix('user:');
         const { data: currentMembersList } = await supabase.from('institution_members').select('user_id').eq('institution_id', institutionId);
         const currentMemberIds = new Set((currentMembersList || []).map(m => m.user_id));
         
         const { data: currentTeachers } = await supabase.from('institution_members').select('user_id').eq('institution_id', institutionId).in('role', ['teacher', 'admin']);
         const institutionTeacherIds = new Set((currentTeachers || []).map(m => m.user_id));
 
+        const instName = (institution.name || '').trim();
+        
+        // Use JSONB queries to find matching users instead of scanning all users in memory
+        const [ {data: orgUsers}, {data: schoolUsers} ] = await Promise.all([
+          instName.length > 0 ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>organizationName', instName) : Promise.resolve({ data: [] }),
+          instName.length > 0 ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>school', instName) : Promise.resolve({ data: [] })
+        ]);
+        
+        let teacherUsers: any[] = [];
+        const teacherIdsArr = Array.from(institutionTeacherIds);
+        if (teacherIdsArr.length > 0) {
+           const {data} = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').in('value->>teacherId', teacherIdsArr);
+           teacherUsers = data || [];
+        }
+        
+        const rawUsers = [...(orgUsers || []), ...(schoolUsers || []), ...teacherUsers];
+        
+        const uniqueUsersMap = new Map();
+        for (const item of rawUsers) {
+           if (item && item.key) uniqueUsersMap.set(item.key, item);
+        }
+        
+        const allUsers = Array.from(uniqueUsersMap.values()).map(d => {
+          const val = d.value;
+          if (val && typeof val === 'object' && !val.id) {
+             const parts = d.key.split(':');
+             if (parts.length > 1) val.id = parts.slice(1).join(':');
+          }
+          return val;
+        }).filter(Boolean);
+
         const ops = [];
         for (const u of allUsers) {
           if (!u) continue;
-          const matchesName = u.organizationName === institution.name || u.school === institution.name;
+          const userOrg = (u.organizationName || u.school || '').trim().toLowerCase();
+          const instNameLower = instName.toLowerCase();
+          const matchesName = userOrg === instNameLower && userOrg.length > 0;
           const matchesTeacher = u.role === 'student' && u.teacherId && institutionTeacherIds.has(u.teacherId);
           
           if ((matchesName || matchesTeacher) && (u.role === 'teacher' || u.role === 'student')) {
@@ -655,7 +687,16 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
       .select('*')
       .eq('institution_id', institutionId);
 
-    return c.json({ success: true, members, invitations: invitations || [] });
+    // Fetch KV profiles for members so the dashboard can display assessments and exact details
+    const profiles = [];
+    if (members) {
+      for (const m of members) {
+        const profile = await kv.get(`user:${m.user_id}`);
+        if (profile) profiles.push(profile);
+      }
+    }
+
+    return c.json({ success: true, members, invitations: invitations || [], profiles });
   } catch (error: any) {
     console.error('[institutions/members] Error:', error);
     return c.json({ success: false, error: 'Internal server error', message: error.message }, 500);
@@ -1104,8 +1145,8 @@ app.post('/make-server-fc8eb847/validate-org-code', async (c) => {
 
     // Check if it's a class code
     if (code.startsWith('CLASS-')) {
-      const allUsers = await kv.getByPrefix('user:');
-      const teacher = allUsers.find((u: any) => u.role === 'teacher' && u.classCode === code);
+      const users = await kv.queryUsersInKV({ role: 'teacher', classCode: code });
+      const teacher = users[0];
       
       if (teacher) {
         console.log(`[validate-org-code] ✓ Class found: ${teacher.name} at ${teacher.school || teacher.organizationName || 'Unknown School'}`);
@@ -2068,7 +2109,7 @@ app.get('/make-server-fc8eb847/admin/users', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -2090,7 +2131,7 @@ app.get('/make-server-fc8eb847/admin/stats', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -2150,7 +2191,7 @@ app.get('/make-server-fc8eb847/admin/user/:userId', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -2241,10 +2282,15 @@ app.post('/make-server-fc8eb847/parent/link-child', async (c) => {
       // Fast path
       child = await kv.get(`user:${childId}`);
     } else {
-      // Safe Fallback: O(N) scan
-      const allUsers = await kv.getByPrefix('user:');
-      child = allUsers.find((u: any) => u.email.toLowerCase() === searchEmail);
-      if (child) {
+      // Safe Fallback: JSONB query instead of O(N) scan
+      const supabase = getSupabaseClient(true);
+      const { data } = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>email', searchEmail).maybeSingle();
+      if (data && data.value) {
+        child = data.value;
+        if (!child.id) {
+          const parts = data.key.split(':');
+          if (parts.length > 1) child.id = parts.slice(1).join(':');
+        }
         // Self-healing: create the index for future fast lookups
         await kv.set(`email:${searchEmail}`, child.id);
       }
@@ -2492,10 +2538,18 @@ app.get('/make-server-fc8eb847/parent/linked-children', async (c) => {
       return 'Unknown';
     };
     
+    // Get each child's profile in bulk
+    const childKeys = linkedChildrenIds.map((id: string) => `user:${id}`);
+    const childProfiles = childKeys.length > 0 ? await kv.mget(childKeys) : [];
+    const profilesMap = new Map();
+    childProfiles.forEach((p: any) => {
+      if (p && p.id) profilesMap.set(p.id, p);
+    });
+
     // Get each child's profile and assessments
     const childrenData = await Promise.all(
       linkedChildrenIds.map(async (childId: string) => {
-        const childProfile = await kv.get(`user:${childId}`);
+        const childProfile = profilesMap.get(childId);
         if (!childProfile) {
           console.log('[Backend] Child profile not found:', childId);
           return null;
@@ -2715,16 +2769,28 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
 
     console.log(`[Backend] Fetching students for teacher ${user.id} at school: ${schoolName}`);
 
-    // Get all users and filter by school and role
-    const allUsers = await kv.getByPrefix('user:');
+    // Get all students assigned to this teacher using targeted queries
+    const supabase = getSupabaseClient(true);
+    const [ {data: primaryStudents}, {data: linkedStudents} ] = await Promise.all([
+      supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').eq('value->>teacherId', user.id),
+      supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').contains('value', { linkedTeachers: [user.id] })
+    ]);
     
-    const students = allUsers.filter((u: any) => 
-      u.role === 'student' && 
-      (
-        u.teacherId === user.id ||
-        (u.linkedTeachers && u.linkedTeachers.includes(user.id))
-      )
-    );
+    const rawStudents = [...(primaryStudents || []), ...(linkedStudents || [])];
+    
+    const uniqueStudentsMap = new Map();
+    for (const item of rawStudents) {
+      if (item && item.key) uniqueStudentsMap.set(item.key, item);
+    }
+    
+    const students = Array.from(uniqueStudentsMap.values()).map(d => {
+      const val = d.value;
+      if (val && typeof val === 'object' && !val.id) {
+         const parts = d.key.split(':');
+         if (parts.length > 1) val.id = parts.slice(1).join(':');
+      }
+      return val;
+    }).filter(Boolean);
 
     console.log(`[Backend] Found ${students.length} students for school ${schoolName}`);
 
@@ -2802,11 +2868,17 @@ app.get('/make-server-fc8eb847/school/roster', async (c) => {
 
     console.log(`[Backend] Fetching roster for school: ${schoolName}`);
 
-    const allUsers = await kv.getByPrefix('user:');
+    const supabase = getSupabaseClient(true);
+    const { data: rawData } = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>school', schoolName.trim());
     
-    const rosterUsers = allUsers.filter((u: any) => 
-      u.school && u.school.toLowerCase().trim() === schoolName.toLowerCase().trim()
-    );
+    const rosterUsers = (rawData || []).map(d => {
+      const val = d.value;
+      if (val && typeof val === 'object' && !val.id) {
+         const parts = d.key.split(':');
+         if (parts.length > 1) val.id = parts.slice(1).join(':');
+      }
+      return val;
+    }).filter(Boolean);
 
     // Build an id -> name lookup so we can label which teacher a student is assigned to
     const teacherNameById: Record<string, string> = {};
@@ -2872,12 +2944,15 @@ app.post('/make-server-fc8eb847/access-request/create', async (c) => {
     
     // Fallback if index misses
     if (!child) {
-      console.log(`[Access Request] Cache miss for ${childEmail}, falling back to full scan`);
-      const allUsers = await kv.getByPrefix('user:');
-      child = allUsers.find((u: any) => 
-        u.email && u.email.toLowerCase() === childEmail.toLowerCase()
-      );
-      if (child) {
+      console.log(`[Access Request] Cache miss for ${childEmail}, falling back to targeted query`);
+      const supabase = getSupabaseClient(true);
+      const { data } = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>email', childEmail.toLowerCase()).maybeSingle();
+      if (data && data.value) {
+        child = data.value;
+        if (!child.id) {
+          const parts = data.key.split(':');
+          if (parts.length > 1) child.id = parts.slice(1).join(':');
+        }
         // Auto-heal the index
         await kv.set(`email:${childEmail.toLowerCase()}`, child.id);
       }
@@ -3506,25 +3581,24 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
       console.log(`[Migration] Generated organization code ${orgCode} for supervisor ${supervisorId}`);
     }
 
-    console.log('[supervisor/employees] Fetching all users...');
-    const allUsers = await kv.getByPrefix('user:');
-    console.log('[supervisor/employees] Total users in KV:', allUsers.length);
+    console.log('[supervisor/employees] Fetching users by organization code...');
+    const orgUsers = await kv.queryUsersInKV({ organizationCode: orgCode });
+    console.log('[supervisor/employees] Total users in org:', orgUsers.length);
     
     // Filter users by organization code who are professionals, supervisors, or organizations
-    const employees = allUsers.filter((u: any) => {
+    const employees = orgUsers.filter((u: any) => {
       const normalizedRole = (u.role || '').toLowerCase();
       const isValidMember = normalizedRole === 'professional' || 
         normalizedRole === 'professional/organization' ||
         u.role === 'Professional/Organization' ||
         normalizedRole === 'supervisor' ||
         normalizedRole === 'organization';
-      const matches = u.organizationCode === orgCode && isValidMember;
       
-      if (u.organizationCode === orgCode) {
-        console.log(`[supervisor/employees] User ${u.email} - orgCode match: ${u.organizationCode}, role: ${u.role} (normalized: ${normalizedRole}), isValidMember: ${isValidMember}, matches: ${matches}`);
+      if (isValidMember) {
+        console.log(`[supervisor/employees] User ${u.email} - role: ${u.role} (normalized: ${normalizedRole})`);
       }
       
-      return matches;
+      return isValidMember;
     });
 
     console.log('[supervisor/employees] ✓ Found', employees.length, 'employees for org code:', orgCode);
@@ -3722,20 +3796,28 @@ app.get('/make-server-fc8eb847/organization/members', async (c) => {
       return c.json({ success: true, members: [] });
     }
     
-    const allUsers = await kv.getByPrefix('user:');
+    const supabase = getSupabaseClient(true);
     
-    // Filter users by organization code (preferred) or name (fallback)
-    const members = allUsers.filter((u: any) => {
-      if (u.id === user.id) return false; // Exclude self
-      
-      // Prefer organizationCode matching
-      if (orgCode && u.organizationCode === orgCode) return true;
-      
-      // Fallback to organizationName matching
-      if (orgName && u.organizationName === orgName) return true;
-      
-      return false;
-    });
+    // Filter users by organization code (preferred) or name (fallback) using targeted queries
+    const [ {data: byCode}, {data: byName} ] = await Promise.all([
+      orgCode ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>organizationCode', orgCode) : Promise.resolve({ data: [] }),
+      orgName ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>organizationName', orgName) : Promise.resolve({ data: [] })
+    ]);
+    
+    const rawMembers = [...(byCode || []), ...(byName || [])];
+    const uniqueMembersMap = new Map();
+    for (const item of rawMembers) {
+      if (item && item.key) uniqueMembersMap.set(item.key, item);
+    }
+    
+    const members = Array.from(uniqueMembersMap.values()).map(d => {
+      const val = d.value;
+      if (val && typeof val === 'object' && !val.id) {
+         const parts = d.key.split(':');
+         if (parts.length > 1) val.id = parts.slice(1).join(':');
+      }
+      return val;
+    }).filter(u => u && u.id !== user.id);
 
     return c.json({ success: true, members });
   } catch (error) {
@@ -3781,7 +3863,7 @@ app.post('/make-server-fc8eb847/admin/fix-professional-org-code', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -3798,10 +3880,16 @@ app.post('/make-server-fc8eb847/admin/fix-professional-org-code', async (c) => {
     }
 
     // Find professional by email
-    const allUsers = await kv.getByPrefix('user:');
-    const professional = allUsers.find((u: any) => 
-      u.email.toLowerCase() === professionalEmail.toLowerCase()
-    );
+    const supabase = getSupabaseClient(true);
+    const { data } = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>email', professionalEmail).maybeSingle();
+    let professional = null;
+    if (data && data.value) {
+      professional = data.value;
+      if (!professional.id) {
+        const parts = data.key.split(':');
+        if (parts.length > 1) professional.id = parts.slice(1).join(':');
+      }
+    }
 
     if (!professional) {
       return c.json({ error: 'Professional not found' }, 404);
@@ -4096,7 +4184,7 @@ app.get('/make-server-fc8eb847/observation/parent/:parentId', async (c) => {
     const parentId = c.req.param('parentId');
     
     // Security: Only allow users to access their own observations or admin access
-    if (user.id !== parentId && user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.id !== parentId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -4158,7 +4246,7 @@ app.post('/make-server-fc8eb847/consent', async (c) => {
     }
 
     // Security: Only the child can grant/revoke consent for themselves
-    if (user.id !== consent.childId && user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.id !== consent.childId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden - Only the child can manage consent' }, 403);
     }
 
@@ -4251,7 +4339,7 @@ app.get('/make-server-fc8eb847/consent/child/:childId', async (c) => {
     const childId = c.req.param('childId');
     
     // Security: Only the child or admin can view their consents
-    if (user.id !== childId && user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.id !== childId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -4313,7 +4401,7 @@ app.get('/make-server-fc8eb847/review/professional/:professionalId', async (c) =
     const professionalId = c.req.param('professionalId');
     
     // Security: Only the professional themselves or admin can view reviews
-    if (user.id !== professionalId && user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.id !== professionalId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -4343,7 +4431,7 @@ app.get('/make-server-fc8eb847/review/supervisor/:supervisorId', async (c) => {
     const supervisorId = c.req.param('supervisorId');
     
     // Security: Only the supervisor themselves or admin can view their submitted reviews
-    if (user.id !== supervisorId && user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.id !== supervisorId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -4373,7 +4461,7 @@ app.post('/make-server-fc8eb847/admin/create-organization', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -4575,8 +4663,15 @@ app.post('/make-server-fc8eb847/organization/assign-admin', async (c) => {
     }
 
     // Find the target user by email
-    const users = await kv.getByPrefix('user:');
-    const targetUser = users.find((u: any) => u.email === email);
+    const { data } = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>email', email).maybeSingle();
+    let targetUser = null;
+    if (data && data.value) {
+      targetUser = data.value;
+      if (!targetUser.id) {
+        const parts = data.key.split(':');
+        if (parts.length > 1) targetUser.id = parts.slice(1).join(':');
+      }
+    }
     
     if (!targetUser) {
       return c.json({ error: 'User not found' }, 404);
@@ -4607,7 +4702,7 @@ app.get('/make-server-fc8eb847/admin/list-organizations', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -4636,7 +4731,7 @@ app.delete('/make-server-fc8eb847/admin/delete-organization/:code', async (c) =>
     }
 
     // Check if user is admin
-    if (user.email !== 'Alex.Attachey@gmail.com') {
+    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 

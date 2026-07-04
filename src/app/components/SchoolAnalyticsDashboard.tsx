@@ -66,7 +66,7 @@ function buildSummary(u: User): StudentSummary {
   const completedTypes = [...new Set(assessments.map((a: Assessment) => {
     if (['kolb', 'vark', 'learning'].includes(a.type)) return 'learning';
     if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(a.type)) return 'thinking';
-    if (a.type === 'dual-process' || a.type === 'decision') return 'decision';
+    if (a.type === 'dual-process' || (a.type as any) === 'decision') return 'decision';
     return a.type;
   }))];
 
@@ -121,7 +121,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
     } else {
       raw = user.school
         ? getStudentsBySchool(user.school)
-        : getAllUsers().filter((u: User) => u.role === 'student');
+        : []; // Don't leak cross-school student data
     }
     return raw.slice(0, 100);
   }, [user.school, user.role, user.id, institutionMembers]);
@@ -140,7 +140,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
     let raw: User[] = [];
     raw = user.school
       ? getAllUsers().filter((u: User) => u.role === 'teacher' && u.school === user.school)
-      : getAllUsers().filter((u: User) => u.role === 'teacher');
+      : []; // Don't leak cross-school teacher data
     return raw.slice(0, 100);
   }, [user.school, institutionMembers]);
 
@@ -162,7 +162,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         
         const determinePrimaryStyle = (scores: AssessmentScore, type: string) => {
           if (type === 'kolb' || type === 'learning') {
-            const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores;
+            const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores as any;
             const acCE = AC - CE;
             const aeRO = AE - RO;
             
@@ -171,12 +171,12 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             if (acCE < 0 && aeRO < 0) return 'Diverging';
             return 'Accommodating';
           } else if (type === 'sternberg') {
-            const { analytical = 0, creative = 0, practical = 0 } = scores;
+            const { analytical = 0, creative = 0, practical = 0 } = scores as any;
             if (analytical >= creative && analytical >= practical) return 'Analytical';
             if (creative >= analytical && creative >= practical) return 'Creative';
             return 'Practical';
           } else if (type === 'dual-process') {
-            const { system1 = 0, system2 = 0 } = scores;
+            const { system1 = 0, system2 = 0 } = scores as any;
             return system1 > system2 ? 'Intuitive' : 'Reflective';
           }
           return 'Unknown';
@@ -184,7 +184,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
         const grouped: Record<string, Assessment[]> = {};
         
-        rawAssessments.forEach((assessment: Assessment) => {
+        rawAssessments.forEach((assessment: any) => {
           const studentId = assessment.userId;
           const assessmentType = assessment.assessmentType;
           const results = assessment.results || {};
@@ -247,7 +247,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       const completedTypes = [...new Set(assessments.map((a: Assessment) => {
         if (['kolb', 'vark', 'learning'].includes(a.type)) return 'learning';
         if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(a.type)) return 'thinking';
-        if (a.type === 'dual-process' || a.type === 'decision') return 'decision';
+        if (a.type === 'dual-process' || (a.type as any) === 'decision') return 'decision';
         return a.type;
       }))];
 
@@ -671,7 +671,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                       <td className="px-3 py-2.5 text-center">
                         <div className="flex justify-center gap-0.5">
                           {['learning', 'thinking', 'decision'].map(t => (
-                            <div key={t} className={`w-2 h-2 rounded-full ${s.completedTypes.includes(t) ? 'bg-green-500' : 'bg-gray-200'}`} title={t} />
+                            <div key={t} className={`w-2 h-2 rounded-full ${s.completedTypes.includes(t as any) ? 'bg-green-500' : 'bg-gray-200'}`} title={t} />
                           ))}
                         </div>
                         <p className="text-[10px] text-gray-400 mt-0.5">{s.assessmentCount}</p>

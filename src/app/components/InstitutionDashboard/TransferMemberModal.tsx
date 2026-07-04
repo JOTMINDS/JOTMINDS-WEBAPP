@@ -126,9 +126,12 @@ export function TransferMemberModal({
             >
               <option value="">-- Choose Class --</option>
               {(() => {
-                const instTeacherIds = new Set(institutionMembers.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+                const instTeacherIds = new Set(institutionMembers.map(m => m.userId));
                 return getAllClasses()
-                  .filter(c => !c.classTeacherId || instTeacherIds.has(c.classTeacherId))
+                  .filter(c => 
+                    c.institutionId === institutionId || 
+                    (!c.institutionId && (!c.classTeacherId || instTeacherIds.has(c.classTeacherId)))
+                  )
                   .map(c => (
                     <option key={c.id} value={c.id}>{c.name} ({c.academicYear})</option>
                   ));

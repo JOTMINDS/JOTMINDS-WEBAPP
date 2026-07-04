@@ -87,7 +87,7 @@ export function MiniGamesHub({ onSelectGame, onBack }: MiniGamesHubProps) {
             animate={{ scale: 1 }}
             transition={{ type: 'spring', bounce: 0.5 }}
           >
-            <Mascot mode="excited" size="sm" showThought={false} />
+            <Mascot mode="excited" size="small" showThought={false} />
           </motion.div>
         </div>
 

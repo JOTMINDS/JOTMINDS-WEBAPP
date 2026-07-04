@@ -3,6 +3,8 @@
  * Ghana Data Protection Compliance
  */
 
+import { safeParse, safeParseData } from './storage';
+
 export interface ConsentRecord {
   id: string;
   userId: string;
@@ -122,8 +124,7 @@ export function recordConsent(
     userAgent: navigator.userAgent,
   };
 
-  const data = localStorage.getItem(CONSENT_STORAGE_KEY);
-  const allConsents: ConsentRecord[] = data ? JSON.parse(data) : [];
+  const allConsents = safeParse<ConsentRecord[]>(CONSENT_STORAGE_KEY, []);
   allConsents.push(consent);
   localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(allConsents));
 
@@ -131,10 +132,7 @@ export function recordConsent(
 }
 
 export function revokeConsent(userId: string, consentType: ConsentRecord['consentType']): void {
-  const data = localStorage.getItem(CONSENT_STORAGE_KEY);
-  if (!data) return;
-
-  const allConsents: ConsentRecord[] = JSON.parse(data);
+  const allConsents = safeParse<ConsentRecord[]>(CONSENT_STORAGE_KEY, []);
   const userConsents = allConsents.filter(c => c.userId === userId && c.consentType === consentType);
 
   userConsents.forEach(consent => {
@@ -146,10 +144,7 @@ export function revokeConsent(userId: string, consentType: ConsentRecord['consen
 }
 
 export function getConsentStatus(userId: string, consentType: ConsentRecord['consentType']): boolean {
-  const data = localStorage.getItem(CONSENT_STORAGE_KEY);
-  if (!data) return false;
-
-  const allConsents: ConsentRecord[] = JSON.parse(data);
+  const allConsents = safeParse<ConsentRecord[]>(CONSENT_STORAGE_KEY, []);
   const latestConsent = allConsents
     .filter(c => c.userId === userId && c.consentType === consentType)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
@@ -165,21 +160,13 @@ export function getConsentStatus(userId: string, consentType: ConsentRecord['con
 }
 
 export function getUserConsents(userId: string): ConsentRecord[] {
-  const data = localStorage.getItem(CONSENT_STORAGE_KEY);
-  if (!data) return [];
-
-  const allConsents: ConsentRecord[] = JSON.parse(data);
+  const allConsents = safeParse<ConsentRecord[]>(CONSENT_STORAGE_KEY, []);
   return allConsents.filter(c => c.userId === userId);
 }
 
 // Privacy Settings
 export function getPrivacySettings(userId: string): PrivacySettings {
-  const data = localStorage.getItem(PRIVACY_SETTINGS_KEY);
-  if (!data) {
-    return createDefaultPrivacySettings(userId);
-  }
-
-  const allSettings: PrivacySettings[] = JSON.parse(data);
+  const allSettings = safeParse<PrivacySettings[]>(PRIVACY_SETTINGS_KEY, []);
   const userSettings = allSettings.find(s => s.userId === userId);
 
   return userSettings || createDefaultPrivacySettings(userId);
@@ -202,8 +189,7 @@ function createDefaultPrivacySettings(userId: string): PrivacySettings {
 }
 
 export function updatePrivacySettings(userId: string, updates: Partial<PrivacySettings>): PrivacySettings {
-  const data = localStorage.getItem(PRIVACY_SETTINGS_KEY);
-  const allSettings: PrivacySettings[] = data ? JSON.parse(data) : [];
+  const allSettings = safeParse<PrivacySettings[]>(PRIVACY_SETTINGS_KEY, []);
 
   const existingIndex = allSettings.findIndex(s => s.userId === userId);
   const currentSettings = existingIndex >= 0 ? allSettings[existingIndex] : createDefaultPrivacySettings(userId);
@@ -250,8 +236,7 @@ export function logDataAccess(
     purpose,
   };
 
-  const data = localStorage.getItem(ACCESS_LOG_KEY);
-  const allLogs: DataAccessLog[] = data ? JSON.parse(data) : [];
+  const allLogs = safeParse<DataAccessLog[]>(ACCESS_LOG_KEY, []);
   allLogs.push(log);
 
   // Keep only last 1000 logs per user
@@ -266,10 +251,7 @@ export function logDataAccess(
 }
 
 export function getDataAccessLogs(userId: string, limit: number = 50): DataAccessLog[] {
-  const data = localStorage.getItem(ACCESS_LOG_KEY);
-  if (!data) return [];
-
-  const allLogs: DataAccessLog[] = JSON.parse(data);
+  const allLogs = safeParse<DataAccessLog[]>(ACCESS_LOG_KEY, []);
   return allLogs
     .filter(l => l.userId === userId)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -289,8 +271,7 @@ export function requestDataExport(
     format,
   };
 
-  const data = localStorage.getItem(EXPORT_REQUEST_KEY);
-  const allRequests: DataExportRequest[] = data ? JSON.parse(data) : [];
+  const allRequests = safeParse<DataExportRequest[]>(EXPORT_REQUEST_KEY, []);
   allRequests.push(request);
   localStorage.setItem(EXPORT_REQUEST_KEY, JSON.stringify(allRequests));
 
@@ -304,10 +285,7 @@ export function requestDataExport(
 }
 
 function processDataExport(requestId: string): void {
-  const data = localStorage.getItem(EXPORT_REQUEST_KEY);
-  if (!data) return;
-
-  const allRequests: DataExportRequest[] = JSON.parse(data);
+  const allRequests = safeParse<DataExportRequest[]>(EXPORT_REQUEST_KEY, []);
   const request = allRequests.find(r => r.id === requestId);
 
   if (!request) return;
@@ -324,10 +302,7 @@ function processDataExport(requestId: string): void {
 }
 
 export function getDataExportRequests(userId: string): DataExportRequest[] {
-  const data = localStorage.getItem(EXPORT_REQUEST_KEY);
-  if (!data) return [];
-
-  const allRequests: DataExportRequest[] = JSON.parse(data);
+  const allRequests = safeParse<DataExportRequest[]>(EXPORT_REQUEST_KEY, []);
   return allRequests.filter(r => r.userId === userId);
 }
 
@@ -342,8 +317,7 @@ export function requestDataDeletion(userId: string, reason?: string): DataDeleti
     retentionPeriod: 30, // 30 days before permanent deletion
   };
 
-  const data = localStorage.getItem(DELETION_REQUEST_KEY);
-  const allRequests: DataDeletionRequest[] = data ? JSON.parse(data) : [];
+  const allRequests = safeParse<DataDeletionRequest[]>(DELETION_REQUEST_KEY, []);
   allRequests.push(request);
   localStorage.setItem(DELETION_REQUEST_KEY, JSON.stringify(allRequests));
 
@@ -353,10 +327,7 @@ export function requestDataDeletion(userId: string, reason?: string): DataDeleti
 }
 
 export function getDataDeletionRequests(userId: string): DataDeletionRequest[] {
-  const data = localStorage.getItem(DELETION_REQUEST_KEY);
-  if (!data) return [];
-
-  const allRequests: DataDeletionRequest[] = JSON.parse(data);
+  const allRequests = safeParse<DataDeletionRequest[]>(DELETION_REQUEST_KEY, []);
   return allRequests.filter(r => r.userId === userId);
 }
 
@@ -431,8 +402,7 @@ export function recordParentalConsent(consent: Omit<ParentalConsent, 'id'>): Par
     ...consent,
   };
 
-  const data = localStorage.getItem(PARENTAL_CONSENT_KEY);
-  const allConsents: ParentalConsent[] = data ? JSON.parse(data) : [];
+  const allConsents = safeParse<ParentalConsent[]>(PARENTAL_CONSENT_KEY, []);
   allConsents.push(record);
   localStorage.setItem(PARENTAL_CONSENT_KEY, JSON.stringify(allConsents));
 
@@ -440,10 +410,7 @@ export function recordParentalConsent(consent: Omit<ParentalConsent, 'id'>): Par
 }
 
 export function getParentalConsent(studentUserId: string): ParentalConsent | null {
-  const data = localStorage.getItem(PARENTAL_CONSENT_KEY);
-  if (!data) return null;
-
-  const allConsents: ParentalConsent[] = JSON.parse(data);
+  const allConsents = safeParse<ParentalConsent[]>(PARENTAL_CONSENT_KEY, []);
   const latestConsent = allConsents
     .filter(c => c.studentUserId === studentUserId)
     .sort((a, b) => new Date(b.consentDate).getTime() - new Date(a.consentDate).getTime())[0];
@@ -452,10 +419,7 @@ export function getParentalConsent(studentUserId: string): ParentalConsent | nul
 }
 
 export function verifyParentalConsent(consentId: string, verificationCode: string): boolean {
-  const data = localStorage.getItem(PARENTAL_CONSENT_KEY);
-  if (!data) return false;
-
-  const allConsents: ParentalConsent[] = JSON.parse(data);
+  const allConsents = safeParse<ParentalConsent[]>(PARENTAL_CONSENT_KEY, []);
   const consent = allConsents.find(c => c.id === consentId);
 
   if (!consent || consent.verificationCode !== verificationCode) {

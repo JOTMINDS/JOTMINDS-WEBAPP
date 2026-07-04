@@ -102,7 +102,7 @@ app.post('/calculate', async (c) => {
     const user_id = authedUser.id; // derive from token
 
     const body = await c.req.json();
-    const { role_name, role_demands } = body;
+    const { role_name, role_demands, role_id } = body;
     if (!role_demands) {
       return c.json({ error: 'role_demands are required' }, 400);
     }
@@ -146,6 +146,32 @@ app.post('/calculate', async (c) => {
       role_demands,
       created_at: new Date().toISOString(),
     };
+
+    // Save to relational db if role_id is provided
+    if (role_id) {
+      const authHeader = c.req.raw.headers.get('Authorization');
+      const { createClient } = await import('npm:@supabase/supabase-js');
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader || '' } } }
+      );
+      
+      const dbPayload = {
+        candidate_id: user_id,
+        role_id: role_id,
+        fit_score: fit_score,
+        fit_category: fit_category,
+        gap_map: gap_map,
+        risk_flags: risk_flags,
+        candidate_profile: candidate
+      };
+      
+      const { error: dbError } = await supabase.from('cognitive_role_fit_scores').insert([dbPayload]);
+      if (dbError) {
+        console.error('[role-fit] Failed to save fit score to db:', dbError);
+      }
+    }
 
     await kv.set(`role_fit:${user_id}:${Date.now()}`, result);
     return c.json({ success: true, result });

@@ -3,6 +3,8 @@
  * Dynamic difficulty adjustment based on user performance
  */
 
+import { safeParse } from './storage';
+
 export interface AdaptiveChallenge {
   id: string;
   userId: string;
@@ -122,7 +124,7 @@ function generateExercisesForDifficulty(
     case 'logic':
       exercises.push(...generateLogicExercises(difficulty));
       break;
-    case 'memory':
+    case 'memory' as any:
       exercises.push(...generateMemoryExercises(difficulty));
       break;
     default:
@@ -246,13 +248,13 @@ export function completeAdaptiveChallenge(
   const accuracy = (correctCount / totalExercises) * 100;
 
   const times = results.map(r => r.timeSpent);
-  const averageResponseTime = times.reduce((sum, t) => sum + t, 0) / times.length;
+  const averageResponseTime = times.length > 0 ? times.reduce((sum, t) => sum + t, 0) / times.length : 0;
 
   // Calculate consistency (lower std deviation = more consistent)
   const mean = averageResponseTime;
-  const variance = times.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / times.length;
+  const variance = times.length > 0 ? times.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / times.length : 0;
   const stdDev = Math.sqrt(variance);
-  const consistencyScore = Math.max(0, 100 - (stdDev / mean) * 100);
+  const consistencyScore = mean > 0 ? Math.max(0, 100 - (stdDev / mean) * 100) : 100;
 
   // Determine difficulty rating
   let difficultyRating: ChallengePerformance['difficultyRating'];
@@ -296,8 +298,7 @@ export function completeAdaptiveChallenge(
 
 // User challenge profile management
 export function getUserChallengeProfile(userId: string): UserChallengeProfile {
-  const data = localStorage.getItem(PROFILE_KEY);
-  const allProfiles: Record<string, UserChallengeProfile> = data ? JSON.parse(data) : {};
+  const allProfiles = safeParse<Record<string, UserChallengeProfile>>(PROFILE_KEY, {});
 
   return allProfiles[userId] || {
     userId,
@@ -322,8 +323,7 @@ function updateUserChallengeProfile(
   challengeType: AdaptiveChallenge['challengeType'],
   performance: ChallengePerformance
 ): void {
-  const data = localStorage.getItem(PROFILE_KEY);
-  const allProfiles: Record<string, UserChallengeProfile> = data ? JSON.parse(data) : {};
+  const allProfiles = safeParse<Record<string, UserChallengeProfile>>(PROFILE_KEY, {});
 
   const profile = allProfiles[userId] || getUserChallengeProfile(userId);
 
@@ -443,8 +443,7 @@ export function getUnlockableLevels(userId: string): UnlockableLevel[] {
 
 // Helper functions
 function getAllChallenges(): AdaptiveChallenge[] {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
+  return safeParse<AdaptiveChallenge[]>(STORAGE_KEY, []);
 }
 
 function saveChallenge(challenge: AdaptiveChallenge): void {

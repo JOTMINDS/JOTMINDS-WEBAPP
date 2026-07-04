@@ -97,3 +97,31 @@ export const getByPrefix = async (prefix: string): Promise<any[]> => {
     return val;
   }) ?? [];
 };
+
+// Query users by JSONB properties in the value column.
+export const queryUsersInKV = async (filters: Record<string, any>): Promise<any[]> => {
+  const supabase = client()
+  let query = supabase.from("kv_store_fc8eb847").select("key, value").like("key", "user:%");
+  
+  for (const [key, val] of Object.entries(filters)) {
+    query = query.eq(`value->>${key}`, val);
+  }
+  
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data?.map((d) => {
+    const v = d.value;
+    if (v && typeof v === 'object') {
+      if (!v.id) {
+        const parts = d.key.split(':');
+        if (parts.length > 1) {
+          v.id = parts.slice(1).join(':');
+        }
+      }
+    }
+    return v;
+  }) ?? [];
+};

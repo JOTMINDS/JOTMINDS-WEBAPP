@@ -121,14 +121,14 @@ export function mapDBInvitationToLocal(db: any): InstitutionInvitation {
 
 // Get Auth session token
 async function getAuthToken(): Promise<string> {
-  const session = (await supabase.auth.getSession()).data.session;
+  const session = (await (supabase as any).auth.getSession()).data.session;
   return session?.access_token || '';
 }
 
 // ─── Storage (Supabase Backend Integrations) ───────────────────────────────────
 
 export async function getInstitutionById(id: string): Promise<Institution | null> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('institutions')
     .select('*')
     .eq('id', id)
@@ -139,7 +139,7 @@ export async function getInstitutionById(id: string): Promise<Institution | null
 }
 
 export async function getInstitutionByCode(code: string): Promise<Institution | null> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('institutions')
     .select('*')
     .eq('code', code.toUpperCase().trim())
@@ -150,7 +150,7 @@ export async function getInstitutionByCode(code: string): Promise<Institution | 
 }
 
 export async function getInstitutionByAdminId(adminId: string): Promise<Institution | null> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('institutions')
     .select('*')
     .eq('admin_id', adminId)
@@ -161,7 +161,7 @@ export async function getInstitutionByAdminId(adminId: string): Promise<Institut
 }
 
 export async function getInstitutionBySchoolName(name: string): Promise<Institution | null> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('institutions')
     .select('*')
     .eq('name', name.trim())
@@ -198,9 +198,9 @@ export async function saveInstitution(institution: Institution): Promise<void> {
     updated_at: new Date().toISOString()
   };
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institutions')
-    .update(dbRecord)
+    .update(dbRecord as any)
     .eq('id', institution.id);
 
   if (error) {
@@ -210,7 +210,7 @@ export async function saveInstitution(institution: Institution): Promise<void> {
 }
 
 export async function deleteInstitution(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institutions')
     .delete()
     .eq('id', id);
@@ -264,14 +264,14 @@ export async function regenerateCode(institutionId: string, expiryDays: number |
   const newCode = generateInstitutionCode();
   const timestamp = new Date().toISOString();
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('institutions')
     .update({
       code: newCode,
       code_generated_at: timestamp,
       code_expiry_days: expiryDays,
       updated_at: timestamp
-    })
+    } as any)
     .eq('id', institutionId)
     .select()
     .maybeSingle();
@@ -361,7 +361,7 @@ export async function validateInviteToken(token: string): Promise<any> {
 
 // ─── Member Management ────────────────────────────────────────────────────────
 
-export async function getInstitutionMembers(institutionId: string): Promise<InstitutionMember[]> {
+export async function getInstitutionMembers(institutionId: string): Promise<{ members: InstitutionMember[], profiles: any[] }> {
   try {
     const token = await getAuthToken();
     const response = await fetch(`${BASE_URL}/institutions/members?id=${institutionId}`, {
@@ -372,22 +372,25 @@ export async function getInstitutionMembers(institutionId: string): Promise<Inst
 
     if (!response.ok) {
       console.error('Failed to fetch institution members', await response.text());
-      return [];
+      return { members: [], profiles: [] };
     }
 
     const result = await response.json();
     if (result.success && result.members) {
-      return result.members.map(mapDBMemberToLocal);
+      return {
+        members: result.members.map(mapDBMemberToLocal),
+        profiles: result.profiles || []
+      };
     }
-    return [];
+    return { members: [], profiles: [] };
   } catch (error) {
     console.error('Error fetching institution members:', error);
-    return [];
+    return { members: [], profiles: [] };
   }
 }
 
 export async function addMember(institutionId: string, member: Omit<InstitutionMember, 'institutionId' | 'joinedAt'>): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institution_members')
     .upsert({
       user_id: member.userId,
@@ -398,7 +401,7 @@ export async function addMember(institutionId: string, member: Omit<InstitutionM
       institution_id: institutionId,
       joined_via_code: member.joinedViaCode,
       status: member.status || 'approved'
-    }, { onConflict: 'user_id, institution_id' });
+    } as any, { onConflict: 'user_id, institution_id' });
 
   if (error) throw error;
 }
@@ -431,9 +434,9 @@ export async function joinInstitution(code: string, member: { userId: string; us
 }
 
 export async function approveMember(institutionId: string, userId: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institution_members')
-    .update({ status: 'approved' })
+    .update({ status: 'approved' } as any)
     .eq('institution_id', institutionId)
     .eq('user_id', userId);
 
@@ -441,9 +444,9 @@ export async function approveMember(institutionId: string, userId: string): Prom
 }
 
 export async function rejectMember(institutionId: string, userId: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institution_members')
-    .update({ status: 'rejected' })
+    .update({ status: 'rejected' } as any)
     .eq('institution_id', institutionId)
     .eq('user_id', userId);
 
@@ -451,7 +454,7 @@ export async function rejectMember(institutionId: string, userId: string): Promi
 }
 
 export async function removeMember(institutionId: string, userId: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institution_members')
     .delete()
     .eq('institution_id', institutionId)
@@ -464,12 +467,12 @@ export async function transferMember(userId: string, currentInstitutionId: strin
   const newInst = await getInstitutionByCode(newInstitutionCode);
   if (!newInst) return false;
 
-  const { data: member, error } = await supabase
+  const { data: member, error } = await (supabase as any)
     .from('institution_members')
     .select('*')
     .eq('institution_id', currentInstitutionId)
     .eq('user_id', userId)
-    .maybeSingle();
+    .maybeSingle() as { data: any, error: any };
 
   if (error || !member) return false;
 
@@ -492,11 +495,17 @@ export async function transferMember(userId: string, currentInstitutionId: strin
 
 export async function transferStudent(studentId: string, institutionId: string, newTeacherId: string, newTeacherName: string): Promise<boolean> {
   try {
-    const res = await makeRequest('/institutions/transfer-student', {
+    const token = await getAuthToken();
+    const res = await fetch(`${BASE_URL}/institutions/transfer-student`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ studentId, institutionId, newTeacherId, newTeacherName }),
     });
-    return res.success === true;
+    const data = await res.json();
+    return data.success === true;
   } catch (error) {
     console.error('Failed to transfer student:', error);
     return false;
@@ -504,13 +513,13 @@ export async function transferStudent(studentId: string, institutionId: string, 
 }
 
 export async function updateMemberDetails(institutionId: string, userId: string, details: { userName: string; userPhone: string; role?: 'teacher' | 'student' | 'admin' }): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institution_members')
     .update({
       user_name: details.userName,
       user_phone: details.userPhone,
       ...(details.role ? { role: details.role } : {})
-    })
+    } as any)
     .eq('institution_id', institutionId)
     .eq('user_id', userId);
 
@@ -578,9 +587,9 @@ export async function inviteMember(email: string, role: 'teacher' | 'student', i
 }
 
 export async function cancelInvitation(inviteToken: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institution_invitations')
-    .update({ status: 'revoked' })
+    .update({ status: 'revoked' } as any)
     .eq('token', inviteToken);
 
   if (error) throw error;
@@ -681,9 +690,9 @@ export async function createInstitution(data: Omit<Institution, 'id' | 'code' | 
     phone_verified: data.phoneVerified || false
   };
 
-  const { data: inst, error } = await supabase
+  const { data: inst, error } = await (supabase as any)
     .from('institutions')
-    .insert(dbRecord)
+    .insert(dbRecord as any)
     .select()
     .single();
 
@@ -706,18 +715,18 @@ export async function createInstitution(data: Omit<Institution, 'id' | 'code' | 
 }
 
 export async function activateInstitution(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institutions')
-    .update({ is_active: true })
+    .update({ is_active: true } as any)
     .eq('id', id);
 
   if (error) throw error;
 }
 
 export async function deactivateInstitution(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institutions')
-    .update({ is_active: false })
+    .update({ is_active: false } as any)
     .eq('id', id);
 
   if (error) throw error;
@@ -727,14 +736,14 @@ export async function assignAdmin(institutionId: string, adminId: string, adminN
   const inst = await getInstitutionById(institutionId);
   if (!inst) return;
   
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('institutions')
     .update({
       admin_id: adminId,
       admin_name: adminName,
       admin_email: adminEmail,
       admin_phone: adminPhone
-    })
+    } as any)
     .eq('id', institutionId);
 
   if (error) throw error;
@@ -750,11 +759,11 @@ export async function assignAdmin(institutionId: string, adminId: string, adminN
 }
 
 export async function getInstitutionForMember(userId: string): Promise<Institution | null> {
-  const { data: member, error: memberError } = await supabase
+  const { data: member, error: memberError } = await (supabase as any)
     .from('institution_members')
     .select('institution_id, status')
     .eq('user_id', userId)
-    .maybeSingle();
+    .maybeSingle() as { data: any, error: any };
 
   if (memberError || !member || member.status !== 'approved') return null;
 

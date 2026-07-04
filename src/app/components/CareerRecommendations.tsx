@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { recordCareerExploration, recordCareerFavorite } from '../utils/gamification';
 import { useAuth } from './AuthContext';
 import { celebrateLevelUp, celebrateBadgeUnlock } from '../utils/confettiAnimations';
+import { getCareerDisclaimer } from '../utils/reportTextVariations';
 
 interface Career {
   title: string;
@@ -982,11 +983,14 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
           <div className="flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             <CardTitle>
-              {selectedDimension === 'all' ? 'All Career Pathways' : 'Filtered Careers'}
+              {selectedDimension === 'all' ? 'Potential Career Trajectories' : 'Filtered Trajectories'}
             </CardTitle>
           </div>
           <CardDescription>
-            Careers that align with your {cognitiveStyle} profile
+            <div className="mb-2">Pathways that may align with your {cognitiveStyle} profile.</div>
+            <div className="text-xs italic text-amber-600 dark:text-amber-400">
+              {getCareerDisclaimer()}
+            </div>
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -122,7 +122,7 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   yPos += 10;
 
   // Description
-  const description = getStyleDescription(assessment.type, mainStyle);
+  const description = getStyleDescription(assessment.type as any, mainStyle);
   doc.setFontSize(10);
   const descLines = doc.splitTextToSize(description, pageWidth - 40);
   doc.text(descLines, 20, yPos);

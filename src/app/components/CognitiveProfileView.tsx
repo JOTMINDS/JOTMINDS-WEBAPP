@@ -164,15 +164,15 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
       yPosition = 55;
 
       // Profile Completeness
-      yPosition = addText(`Profile Completeness: ${profile.profileCompleteness}%`, margin, yPosition, pageWidth - 2 * margin, 14, true);
+      yPosition = addText(`Profile Completeness: ${(profile as any).profileCompleteness}%`, margin, yPosition, pageWidth - 2 * margin, 14, true);
       yPosition += 10;
 
       // Archetype
       yPosition = addText('Cognitive Archetype', margin, yPosition, pageWidth - 2 * margin, 16, true);
       yPosition += 5;
-      yPosition = addText(profile.archetype, margin, yPosition, pageWidth - 2 * margin, 12);
+      yPosition = addText((profile as any).archetype, margin, yPosition, pageWidth - 2 * margin, 12);
       yPosition += 5;
-      yPosition = addText(profile.archetypeDescription, margin, yPosition, pageWidth - 2 * margin, 10);
+      yPosition = addText((profile as any).archetypeDescription, margin, yPosition, pageWidth - 2 * margin, 10);
       yPosition += 15;
 
       // Cognitive Dimensions
@@ -180,12 +180,12 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
       yPosition += 5;
 
       const dimensions = [
-        { name: 'Learning Agility', value: profile.learningAgility },
-        { name: 'Analytical Depth', value: profile.analyticalDepth },
-        { name: 'Creative Capacity', value: profile.creativeCapacity },
-        { name: 'Practical Execution', value: profile.practicalExecution },
-        { name: 'Intuitive Speed', value: profile.intuitiveSpeed },
-        { name: 'Reflective Depth', value: profile.reflectiveDepth }
+        { name: 'Learning Agility', value: (profile as any).learningAgility },
+        { name: 'Analytical Depth', value: (profile as any).analyticalDepth },
+        { name: 'Creative Capacity', value: (profile as any).creativeCapacity },
+        { name: 'Practical Execution', value: (profile as any).practicalExecution },
+        { name: 'Intuitive Speed', value: (profile as any).intuitiveSpeed },
+        { name: 'Reflective Depth', value: (profile as any).reflectiveDepth }
       ];
 
       dimensions.forEach(dim => {
@@ -200,14 +200,14 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
       yPosition += 10;
 
       // Strengths
-      if (profile.strengths && profile.strengths.length > 0) {
+      if ((profile as any).strengths && (profile as any).strengths.length > 0) {
         if (yPosition > 240) {
           doc.addPage();
           yPosition = margin;
         }
         yPosition = addText('Key Strengths', margin, yPosition, pageWidth - 2 * margin, 16, true);
         yPosition += 5;
-        profile.strengths.forEach(strength => {
+        (profile as any).strengths.forEach(strength => {
           if (yPosition > 270) {
             doc.addPage();
             yPosition = margin;
@@ -219,14 +219,14 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
       }
 
       // Growth Areas
-      if (profile.growthAreas && profile.growthAreas.length > 0) {
+      if ((profile as any).growthAreas && (profile as any).growthAreas.length > 0) {
         if (yPosition > 240) {
           doc.addPage();
           yPosition = margin;
         }
         yPosition = addText('Growth Opportunities', margin, yPosition, pageWidth - 2 * margin, 16, true);
         yPosition += 5;
-        profile.growthAreas.forEach(area => {
+        (profile as any).growthAreas.forEach(area => {
           if (yPosition > 270) {
             doc.addPage();
             yPosition = margin;

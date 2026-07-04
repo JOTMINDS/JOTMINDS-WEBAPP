@@ -110,7 +110,7 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
           `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/session`,
           {
             headers: {
-              'Authorization': `Bearer ${data.session.access_token}`
+              'Authorization': `Bearer ${authSession.access_token}`
             }
           }
         );
@@ -205,7 +205,7 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
           `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/session`,
           {
             headers: {
-              'Authorization': `Bearer ${data.session.access_token}`
+              'Authorization': `Bearer ${data.session?.access_token}`
             }
           }
         );

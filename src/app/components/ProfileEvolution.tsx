@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
@@ -120,7 +121,7 @@ export function ProfileEvolution({ onBack }: Props) {
   // Prepare trend data for charts
   const trendData = history.map((snapshot, index) => ({
     snapshot: `#${index + 1}`,
-    date: formatDate(snapshot.generatedAt || snapshot.snapshotAt || ''),
+    date: formatDate(snapshot.generatedAt || (snapshot as any).snapshotAt || ''),
     learningAgility: snapshot.learningAgility || 0,
     analyticalDepth: snapshot.analyticalDepth || 0,
     creativeCapacity: snapshot.creativeCapacity || 0,

@@ -3,7 +3,7 @@ import { User, Assessment } from '../types';
 import { useAuth } from './AuthContext';
 import { getUserAssessmentResults, getStudentsForTeacher } from '../utils/api';
 import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
-import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress } from '../utils/storage';
+import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download } from 'lucide-react';
@@ -119,7 +119,13 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         assessmentsForStats = assessmentResults || [];
         
         const allUsers = getAllUsers();
-        studentUsers = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
+        const classes = getAllClasses();
+        const assignments = getAssignmentsForTeacher(user.id);
+        const teacherClassIds = new Set<string>();
+        classes.filter(c => c.classTeacherId === user.id).forEach(c => teacherClassIds.add(c.id));
+        assignments.forEach(a => teacherClassIds.add(a.classId));
+        
+        studentUsers = allUsers.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
       } else {
         // Regular teacher viewing their own data
         
@@ -139,9 +145,17 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         // 2. Fetch from local storage
         let localStudents: User[] = [];
         const allUsers = getAllUsers();
-        localStudents = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
+        const classes = getAllClasses();
+        const assignments = getAssignmentsForTeacher(user.id);
+        const teacherClassIds = new Set<string>();
+        classes.filter(c => c.classTeacherId === user.id).forEach(c => teacherClassIds.add(c.id));
+        assignments.forEach(a => teacherClassIds.add(a.classId));
         
-        const localAssessments = getAllAssessments();
+        localStudents = allUsers.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
+        
+        // Scope local assessments to only this teacher's students
+        const localStudentIds = new Set(localStudents.map(s => s.id));
+        const localAssessments = getAllAssessments().filter((a: any) => localStudentIds.has(a.userId));
 
         // 3. Merge avoiding duplicates (server takes precedence)
         const mergedStudentsMap = new Map();

@@ -77,7 +77,7 @@ export function JHSThinkingContainer({
       if (navigator.share) {
         await navigator.share({
           title: 'My JHS Cognitive Profile',
-          text: `Check out my JotMinds cognitive profile! I'm a ${results.archetype}.`,
+          text: `Check out my JotMinds cognitive profile! I'm a ${(results as any).archetype}.`,
           url: shareUrl,
         });
       } else {

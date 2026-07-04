@@ -55,7 +55,7 @@ export function ParentObservationResults({
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      const parentName = user?.user_metadata?.name || 'Parent';
+      const parentName = (user as any)?.user_metadata?.name || 'Parent';
       const childName = child.name || 'Child';
       await generateParentObservationPDF(assessment, parentName, childName);
       toast.success('Report exported successfully!');

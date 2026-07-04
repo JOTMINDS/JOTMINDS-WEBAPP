@@ -6,7 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Download, Filter, Search, Calendar } from 'lucide-react';
 import { getAllAssessmentResults } from '../utils/api';
-import { getAllUsers } from '../utils/storage';
+import { getAllUsers, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { InstitutionMember } from '../utils/institution';
 
 interface InstitutionReportingProps {
@@ -43,9 +43,14 @@ export function InstitutionReporting({ institutionId, institutionName, members =
         // Fallback: If members sync is empty, use local storage students for this context
         if (studentMemberIds.length === 0) {
           if (currentTeacherId) {
-             studentMemberIds = users.filter(u => u.role === 'student' && (u.teacherId === currentTeacherId || (u.linkedTeachers && u.linkedTeachers.includes(currentTeacherId)))).map(u => u.id);
+             const classes = getAllClasses();
+             const assignments = getAssignmentsForTeacher(currentTeacherId);
+             const teacherClassIds = new Set<string>();
+             classes.filter(c => c.classTeacherId === currentTeacherId).forEach(c => teacherClassIds.add(c.id));
+             assignments.forEach(a => teacherClassIds.add(a.classId));
+             studentMemberIds = users.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId)).map(u => u.id);
           } else {
-             studentMemberIds = users.filter(u => u.role === 'student').map(u => u.id);
+             studentMemberIds = []; // Don't leak cross-school data
           }
         }
 
@@ -77,7 +82,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
   const approvedMemberIds = new Set(members.filter(m => m.status === 'approved').map(m => m.userId));
   
   // Teachers in this institution
-  const teachers = allUsers.filter(u => u.role === 'teacher' && (members.length === 0 || approvedMemberIds.has(u.id)));
+  const teachers = members.length > 0 ? allUsers.filter(u => u.role === 'teacher' && approvedMemberIds.has(u.id)) : [];
 
   // Filtered dataset
   const filteredData = useMemo(() => {
@@ -104,13 +109,26 @@ export function InstitutionReporting({ institutionId, institutionName, members =
     } else {
       // Fallback: If no student members are synced, filter local users based on teacher assignment
       if (currentTeacherId) {
-        usersInScope = usersInScope.filter(u => u.teacherId === currentTeacherId || (u.linkedTeachers && u.linkedTeachers.includes(currentTeacherId)));
+        const classes = getAllClasses();
+        const assignments = getAssignmentsForTeacher(currentTeacherId);
+        const teacherClassIds = new Set<string>();
+        classes.filter(c => c.classTeacherId === currentTeacherId).forEach(c => teacherClassIds.add(c.id));
+        assignments.forEach(a => teacherClassIds.add(a.classId));
+        usersInScope = usersInScope.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
+      } else {
+        // No institution members and no teacher context — don't show cross-school data
+        usersInScope = [];
       }
     }
 
     // Filter by Teacher
     if (selectedTeacherId !== 'all') {
-      usersInScope = usersInScope.filter(u => u.teacherId === selectedTeacherId || (u.linkedTeachers && u.linkedTeachers.includes(selectedTeacherId)));
+      const classes = getAllClasses();
+      const assignments = getAssignmentsForTeacher(selectedTeacherId);
+      const teacherClassIds = new Set<string>();
+      classes.filter(c => c.classTeacherId === selectedTeacherId).forEach(c => teacherClassIds.add(c.id));
+      assignments.forEach(a => teacherClassIds.add(a.classId));
+      usersInScope = usersInScope.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
     }
 
     // Match assessments
@@ -179,34 +197,26 @@ export function InstitutionReporting({ institutionId, institutionName, members =
 
     const rows = assessments.map(a => {
       const student = users.find(u => u.id === a.userId);
-      const teacher = student?.teacherId ? teachers.find(t => t.id === student.teacherId) : null;
+      const studentClass = student?.classId ? getAllClasses().find(c => c.id === student.classId) : null;
+      const teacher = studentClass ? teachers.find(t => t.id === studentClass.classTeacherId) : null;
       
       const row = [
         student?.id || a.userId,
         student?.name || 'Unknown',
         student?.email || '',
         student?.role || '',
+        studentClass?.name || 'Unassigned',
         teacher?.name || 'Unassigned',
-        teacher?.email || '',
         a.id,
         a.type,
         a.completedAt || '',
         typeof a.score === 'number' ? a.score : (a.score?.overall || '')
       ];
-
-      // Add dynamic scores
       dynamicHeaders.forEach(dh => {
         const key = dh.replace('Score_', '');
-        if (a.score && typeof a.score === 'object' && a.score[key] !== undefined) {
-          row.push(typeof a.score[key] === 'object' ? JSON.stringify(a.score[key]).replace(/,/g, ';') : String(a.score[key]));
-        } else {
-          row.push('');
-        }
+        row.push(a.score && typeof a.score === 'object' && a.score[key] !== undefined ? String(a.score[key]) : '');
       });
-
-      // Raw JSON
       row.push(a.score ? JSON.stringify(a.score).replace(/,/g, ';') : '');
-
       return row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',');
     });
 
@@ -233,43 +243,27 @@ export function InstitutionReporting({ institutionId, institutionName, members =
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {!currentTeacherId && (
               <div>
-                <Label>Teacher / Class</Label>
+                <Label>Teacher</Label>
                 <select 
                   className="w-full mt-1 border rounded-md p-2 h-10 bg-white"
                   value={selectedTeacherId}
                   onChange={(e) => setSelectedTeacherId(e.target.value)}
                 >
                   <option value="all">All Teachers</option>
-                  {teachers.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}'s Class</option>
-                  ))}
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               </div>
             )}
             <div>
               <Label>Start Date</Label>
-              <Input 
-                type="date" 
-                value={dateFrom} 
-                onChange={(e) => setDateFrom(e.target.value)} 
-                className="mt-1"
-              />
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="mt-1" />
             </div>
             <div>
               <Label>End Date</Label>
-              <Input 
-                type="date" 
-                value={dateTo} 
-                onChange={(e) => setDateTo(e.target.value)} 
-                className="mt-1"
-              />
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="mt-1" />
             </div>
             <div className="flex items-end">
-              <Button 
-                className="w-full h-10" 
-                style={{ backgroundColor: '#1E8A6E' }}
-                onClick={handleExportCSV}
-              >
+              <Button className="w-full h-10" style={{ backgroundColor: '#1E8A6E' }} onClick={handleExportCSV}>
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV Report
               </Button>
@@ -301,6 +295,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
                   <tr>
                     <th className="p-3">Date</th>
                     <th className="p-3">Student</th>
+                    <th className="p-3">Class</th>
                     <th className="p-3">Teacher</th>
                     <th className="p-3">Assessment Type</th>
                   </tr>
@@ -308,14 +303,16 @@ export function InstitutionReporting({ institutionId, institutionName, members =
                 <tbody className="divide-y bg-white">
                   {filteredData.assessments.slice(0, 50).map(a => {
                     const student = filteredData.users.find(u => u.id === a.userId);
-                    const teacherName = student?.teacherName || (student?.teacherId ? teachers.find(t => t.id === student.teacherId)?.name : null);
+                    const studentClass = student?.classId ? getAllClasses().find(c => c.id === student.classId) : null;
+                    const teacher = studentClass ? teachers.find(t => t.id === studentClass.classTeacherId) : null;
                     return (
                       <tr key={a.id} className="hover:bg-gray-50 transition-colors">
                         <td className="p-3 text-gray-500 whitespace-nowrap">
                           {a.completedAt ? new Date(a.completedAt).toLocaleDateString() : 'Unknown'}
                         </td>
                         <td className="p-3 font-medium text-gray-900">{student?.name || 'Unknown Student'}</td>
-                        <td className="p-3 text-gray-600">{teacherName || 'Unassigned'}</td>
+                        <td className="p-3 text-gray-600">{studentClass?.name || 'Unassigned'}</td>
+                        <td className="p-3 text-gray-600">{teacher?.name || 'Unassigned'}</td>
                         <td className="p-3 text-gray-600 capitalize">{a.type?.replace(/-/g, ' ') || 'Unknown'}</td>
                       </tr>
                     );

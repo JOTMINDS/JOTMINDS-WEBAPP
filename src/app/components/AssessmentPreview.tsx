@@ -11,6 +11,7 @@ import {
   BookOpen,
   HelpCircle
 } from 'lucide-react';
+import { getFrameworkExplanation } from '../utils/reportTextVariations';
 
 interface AssessmentPreviewProps {
   type: 'learning' | 'thinking' | 'decision';
@@ -32,7 +33,7 @@ export const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
       case 'learning':
         return {
           title: 'Learning Style Assessment',
-          description: 'Discover how you learn best and what study methods work for you',
+          description: getFrameworkExplanation('learning'),
           icon: <BookOpen className="h-8 w-8" />,
           color: 'from-blue-500 to-cyan-500',
           sampleQuestions: [
@@ -49,7 +50,7 @@ export const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
       case 'thinking':
         return {
           title: 'Thinking Style Assessment',
-          description: 'Understand how you process information and solve problems',
+          description: getFrameworkExplanation('thinking'),
           icon: <Target className="h-8 w-8" />,
           color: 'from-purple-500 to-pink-500',
           sampleQuestions: [
@@ -66,7 +67,7 @@ export const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
       case 'decision':
         return {
           title: 'Decision Style Assessment',
-          description: 'Learn about your decision-making patterns and preferences',
+          description: getFrameworkExplanation('decision'),
           icon: <HelpCircle className="h-8 w-8" />,
           color: 'from-green-500 to-emerald-500',
           sampleQuestions: [

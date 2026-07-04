@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Search, Heart, Hammer } from 'lucide-react';
 
 interface MascotProps {
+  [key: string]: any;
   message?: string;
   emotion?: 'happy' | 'excited' | 'thinking' | 'celebrating' | 'encouraging';
   position?: 'left' | 'right' | 'center';
@@ -384,7 +385,7 @@ export function Mascot({
 }
 
 // --- PRE-BUILT MASCOT VARIATIONS ---
-export function WelcomeMascot() {
+export function WelcomeMascot({ ...props }: any) {
   return (
     <Mascot
       emotion="excited"
@@ -395,7 +396,7 @@ export function WelcomeMascot() {
   );
 }
 
-export function EncouragingMascot({ message }: { message: string }) {
+export function EncouragingMascot({ message, ...props }: any) {
   return (
     <Mascot
       emotion="encouraging"
@@ -406,7 +407,7 @@ export function EncouragingMascot({ message }: { message: string }) {
   );
 }
 
-export function ThinkingMascot() {
+export function ThinkingMascot({ ...props }: any) {
   return (
     <Mascot
       emotion="thinking"
@@ -417,7 +418,7 @@ export function ThinkingMascot() {
   );
 }
 
-export function CelebratingMascot({ message }: { message?: string }) {
+export function CelebratingMascot({ message, ...props }: any) {
   return (
     <Mascot
       emotion="celebrating"

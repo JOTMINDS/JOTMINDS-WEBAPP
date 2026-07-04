@@ -3,6 +3,8 @@
  * Context-aware notifications based on user behavior and optimal timing
  */
 
+import { User, Assessment, Class, TeacherClassAssignment } from '../types';
+import { safeParse } from './storage';
 import { EngagementMetrics, getEngagementMetrics } from './engagementTracking';
 import { GamificationProfile, getGamificationProfile } from './gamification';
 
@@ -139,7 +141,7 @@ export function generatePersonalizedNudges(userId: string): Nudge[] {
   // Achievement celebration
   if (gamification.badges.length > 0) {
     const recentBadges = gamification.badges.filter(b => {
-      const earnedDate = new Date(b.earnedAt);
+      const earnedDate = new Date((b as any).earnedAt || (b as any).unlockedAt || new Date());
       const daysSince = Math.floor((new Date().getTime() - earnedDate.getTime()) / (1000 * 60 * 60 * 24));
       return daysSince === 0;
     });
@@ -167,8 +169,8 @@ export function generatePersonalizedNudges(userId: string): Nudge[] {
 
   // Level up celebration
   if (gamification.level > 1) {
-    const xpToNext = gamification.xpToNextLevel;
-    const currentXP = gamification.totalXP - (gamification.level - 1) * 100;
+    const xpToNext = (gamification as any).xpToNextLevel || 100;
+    const currentXP = (gamification as any).totalXP || gamification.xp || 0;
     const percentToNext = (currentXP / xpToNext) * 100;
 
     if (percentToNext >= 90) {
@@ -357,12 +359,7 @@ export function calculateOptimalReminderTime(userId: string): Date {
 }
 
 export function getReminderSchedule(userId: string): ReminderSchedule {
-  const data = localStorage.getItem(REMINDER_SCHEDULE_KEY);
-  if (!data) {
-    return createDefaultReminderSchedule(userId);
-  }
-
-  const allSchedules: ReminderSchedule[] = JSON.parse(data);
+  const allSchedules = safeParse<ReminderSchedule[]>(REMINDER_SCHEDULE_KEY, []);
   const schedule = allSchedules.find(s => s.userId === userId);
 
   return schedule || createDefaultReminderSchedule(userId);
@@ -388,8 +385,7 @@ function createDefaultReminderSchedule(userId: string): ReminderSchedule {
 }
 
 export function updateReminderSchedule(userId: string, updates: Partial<ReminderSchedule>): ReminderSchedule {
-  const data = localStorage.getItem(REMINDER_SCHEDULE_KEY);
-  const allSchedules: ReminderSchedule[] = data ? JSON.parse(data) : [];
+  const allSchedules = safeParse<ReminderSchedule[]>(REMINDER_SCHEDULE_KEY, []);
 
   const existingIndex = allSchedules.findIndex(s => s.userId === userId);
   const currentSchedule = existingIndex >= 0 ? allSchedules[existingIndex] : createDefaultReminderSchedule(userId);
@@ -412,8 +408,7 @@ export function updateReminderSchedule(userId: string, updates: Partial<Reminder
 
 // Nudge Management
 export function saveNudges(nudges: Nudge[]): void {
-  const data = localStorage.getItem(NUDGES_STORAGE_KEY);
-  const allNudges: Nudge[] = data ? JSON.parse(data) : [];
+  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []);
 
   nudges.forEach(nudge => {
     const existingIndex = allNudges.findIndex(n => n.id === nudge.id);
@@ -428,10 +423,7 @@ export function saveNudges(nudges: Nudge[]): void {
 }
 
 export function getUserNudges(userId: string, includeExpired: boolean = false): Nudge[] {
-  const data = localStorage.getItem(NUDGES_STORAGE_KEY);
-  if (!data) return [];
-
-  const allNudges: Nudge[] = JSON.parse(data);
+  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []);
   const now = new Date();
 
   return allNudges
@@ -451,10 +443,7 @@ export function getUserNudges(userId: string, includeExpired: boolean = false): 
 }
 
 export function dismissNudge(nudgeId: string): void {
-  const data = localStorage.getItem(NUDGES_STORAGE_KEY);
-  if (!data) return;
-
-  const allNudges: Nudge[] = JSON.parse(data);
+  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []);
   const nudge = allNudges.find(n => n.id === nudgeId);
 
   if (nudge) {
@@ -465,10 +454,7 @@ export function dismissNudge(nudgeId: string): void {
 }
 
 export function interactWithNudge(nudgeId: string): void {
-  const data = localStorage.getItem(NUDGES_STORAGE_KEY);
-  if (!data) return;
-
-  const allNudges: Nudge[] = JSON.parse(data);
+  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []);
   const nudge = allNudges.find(n => n.id === nudgeId);
 
   if (nudge) {

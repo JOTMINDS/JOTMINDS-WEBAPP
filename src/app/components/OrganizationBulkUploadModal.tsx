@@ -11,6 +11,7 @@ interface OrganizationBulkUploadModalProps {
   organizationName: string;
   organizationCode: string;
   supervisorName: string;
+  onSuccess?: () => void;
 }
 
 export function OrganizationBulkUploadModal({

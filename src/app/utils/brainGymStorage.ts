@@ -1,4 +1,5 @@
 import { DailyChallengeResults } from '../components/BrainGym';
+import { safeParse } from './storage';
 
 const BRAIN_GYM_KEY = 'jotminds_brain_gym';
 
@@ -17,25 +18,20 @@ export interface BrainGymProgress {
 }
 
 export function getBrainGymProgress(userId: string): BrainGymProgress {
-  const stored = localStorage.getItem(`${BRAIN_GYM_KEY}_${userId}`);
-  
-  if (!stored) {
-    return {
-      userId,
-      totalPoints: 0,
-      currentStreak: 0,
-      longestStreak: 0,
-      lastCompletedDate: '',
-      completedChallenges: [],
-      categoryStats: {
-        learning: { completed: 0, avgScore: 0, totalPoints: 0 },
-        thinking: { completed: 0, avgScore: 0, totalPoints: 0 },
-        decision: { completed: 0, avgScore: 0, totalPoints: 0 },
-      },
-    };
-  }
-  
-  return JSON.parse(stored);
+  const key = `${BRAIN_GYM_KEY}_${userId}`;
+  return safeParse<BrainGymProgress>(key, {
+    userId,
+    totalPoints: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastCompletedDate: '',
+    completedChallenges: [],
+    categoryStats: {
+      learning: { completed: 0, avgScore: 0, totalPoints: 0 },
+      thinking: { completed: 0, avgScore: 0, totalPoints: 0 },
+      decision: { completed: 0, avgScore: 0, totalPoints: 0 },
+    },
+  });
 }
 
 export function saveBrainGymResults(userId: string, results: DailyChallengeResults): BrainGymProgress {
