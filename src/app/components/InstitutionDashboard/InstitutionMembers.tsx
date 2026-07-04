@@ -17,7 +17,7 @@ import {
   removeMember,
   getInstitutionMembers
 } from '../../utils/institution';
-import { saveUser, getAssessmentsByUserId } from '../../utils/storage';
+import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../../utils/storage';
 
 interface InstitutionMembersProps {
   institution: Institution;
@@ -108,7 +108,16 @@ export function InstitutionMembers({
   const counts = getMemberCounts(members);
 
   const getStudentsForTeacherCount = (teacherId: string) => {
-    return allPlatformUsers.filter(u => u.role === 'student' && (u.teacherId === teacherId || (u.linkedTeachers && u.linkedTeachers.includes(teacherId)))).length;
+    const instTeacherIds = new Set(members.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+    const classes = getAllClasses().filter(c => !c.classTeacherId || instTeacherIds.has(c.classTeacherId));
+    const assignments = getAssignmentsForTeacher(teacherId);
+    
+    // Find all classes this teacher is involved in
+    const teacherClassIds = new Set<string>();
+    classes.filter(c => c.classTeacherId === teacherId).forEach(c => teacherClassIds.add(c.id));
+    assignments.forEach(a => teacherClassIds.add(a.classId));
+    
+    return allPlatformUsers.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId)).length;
   };
 
   const handleApprove = async (userId: string) => {
@@ -491,23 +500,13 @@ export function InstitutionMembers({
                           <p className="text-xs text-[#1E8A6E] mt-0.5 font-medium">
                             {(() => {
                               const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
-                              const teacherIds = [];
-                              if (studentProfile?.teacherId) teacherIds.push(studentProfile.teacherId);
-                              if (studentProfile?.linkedTeachers) teacherIds.push(...studentProfile.linkedTeachers);
-                              
-                              const uniqueTeacherIds = Array.from(new Set(teacherIds));
-                              const teacherNames = uniqueTeacherIds.map(id => {
-                                const teacherProfile = allPlatformUsers.find(u => u.id === id);
-                                return teacherProfile?.name;
-                              }).filter(Boolean);
-
-                              if (studentProfile?.teacherName && !teacherNames.includes(studentProfile.teacherName)) {
-                                teacherNames.unshift(studentProfile.teacherName);
+                              if (studentProfile?.classId) {
+                                const instTeacherIds = new Set(members.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+                                const classes = getAllClasses().filter(c => !c.classTeacherId || instTeacherIds.has(c.classTeacherId));
+                                const studentClass = classes.find(c => c.id === studentProfile.classId);
+                                return studentClass ? `Class: ${studentClass.name}` : 'Class: Unknown';
                               }
-                              
-                              return teacherNames.length > 0
-                                ? `Assigned Teacher${teacherNames.length > 1 ? 's' : ''}: ${teacherNames.join(', ')}` 
-                                : 'Assigned Teacher: Unassigned';
+                              return 'Class: Unassigned';
                             })()}
                           </p>
                         )}
@@ -523,40 +522,42 @@ export function InstitutionMembers({
                       </div>
                     </div>
 
-                    <div className="hidden md:flex flex-col items-center justify-center bg-indigo-50/50 rounded-lg px-5 py-2 border border-indigo-100/50">
-                        <span className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider mb-1">Assessments</span>
-                        <div className="flex gap-2">
-                          <Badge variant="secondary" className="bg-white text-indigo-700 border-indigo-200 font-bold shadow-sm">
-                              {getAssessmentsByUserId(m.userId).filter((a: any) => a.completedAt).length} Completed
-                          </Badge>
-                          <Badge variant="outline" className="bg-white text-slate-600 border-slate-200 shadow-sm" title="Assessment Frequency">
-                              {(() => {
-                                const assessments = getAssessmentsByUserId(m.userId).filter((a: any) => a.completedAt);
-                                if (assessments.length === 0) return 'No Tests';
-                                
-                                assessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
-                                const lastTest = new Date(assessments[0].completedAt);
-                                const daysSince = Math.floor((Date.now() - lastTest.getTime()) / (1000 * 3600 * 24));
-                                
-                                if (assessments.length >= 2) {
-                                  const firstTest = new Date(assessments[assessments.length - 1].completedAt);
-                                  const totalDays = Math.max(1, Math.floor((lastTest.getTime() - firstTest.getTime()) / (1000 * 3600 * 24)));
-                                  const avgDays = totalDays / (assessments.length - 1);
+                    {m.role === 'student' && (
+                      <div className="hidden md:flex flex-col items-center justify-center bg-indigo-50/50 rounded-lg px-5 py-2 border border-indigo-100/50">
+                          <span className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider mb-1">Assessments</span>
+                          <div className="flex gap-2">
+                            <Badge variant="secondary" className="bg-white text-indigo-700 border-indigo-200 font-bold shadow-sm">
+                                {(allPlatformUsers.find(u => u.id === m.userId)?.assessmentsCompleted || []).filter((a: any) => a.completedAt).length} Completed
+                            </Badge>
+                            <Badge variant="outline" className="bg-white text-slate-600 border-slate-200 shadow-sm" title="Assessment Frequency">
+                                {(() => {
+                                  const assessments = (allPlatformUsers.find(u => u.id === m.userId)?.assessmentsCompleted || []).filter((a: any) => a.completedAt);
+                                  if (assessments.length === 0) return 'No Tests';
                                   
-                                  if (daysSince > 60) return 'Inactive';
-                                  if (avgDays <= 10) return 'Weekly';
-                                  if (avgDays <= 20) return 'Bi-weekly';
-                                  if (avgDays <= 45) return 'Monthly';
-                                  return 'Sporadic';
-                                }
-                                
-                                if (daysSince <= 7) return 'Active (New)';
-                                if (daysSince > 30) return 'Inactive';
-                                return `${daysSince}d ago`;
-                              })()}
-                          </Badge>
-                        </div>
-                    </div>
+                                  assessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+                                  const lastTest = new Date(assessments[0].completedAt);
+                                  const daysSince = Math.floor((Date.now() - lastTest.getTime()) / (1000 * 3600 * 24));
+                                  
+                                  if (assessments.length >= 2) {
+                                    const firstTest = new Date(assessments[assessments.length - 1].completedAt);
+                                    const totalDays = Math.max(1, Math.floor((lastTest.getTime() - firstTest.getTime()) / (1000 * 3600 * 24)));
+                                    const avgDays = totalDays / (assessments.length - 1);
+                                    
+                                    if (daysSince > 60) return 'Inactive';
+                                    if (avgDays <= 10) return 'Weekly';
+                                    if (avgDays <= 20) return 'Bi-weekly';
+                                    if (avgDays <= 45) return 'Monthly';
+                                    return 'Sporadic';
+                                  }
+                                  
+                                  if (daysSince <= 7) return 'Active (New)';
+                                  if (daysSince > 30) return 'Inactive';
+                                  return `${daysSince}d ago`;
+                                })()}
+                            </Badge>
+                          </div>
+                      </div>
+                    )}
                     
                     <div className="flex items-center gap-2 mt-2 sm:mt-0">
                       {isPrimaryAdmin && m.role === 'teacher' && (
@@ -615,7 +616,7 @@ export function InstitutionMembers({
                               className="text-gray-500 hover:text-gray-700"
                               disabled={processingMemberId === m.userId}
                             >
-                              Transfer Class
+                              Change Class
                             </Button>
                           )}
                           <Button
