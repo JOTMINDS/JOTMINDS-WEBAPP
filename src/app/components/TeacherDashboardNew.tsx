@@ -663,6 +663,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                         ? handleDeepDive
                         : undefined
                     }
+                    onContinue={() => setActiveTab('overview')}
                 />
                 
                 {!selectedHistoryId && (
