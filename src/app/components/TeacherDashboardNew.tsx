@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { User, Assessment } from '../types';
 import { useAuth } from './AuthContext';
-import { getUserAssessmentResults, getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
+import { getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
 import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { toast } from 'sonner';
@@ -116,9 +116,6 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     try {
       // If viewing as admin (impersonated user), fetch from API
       if (impersonatedUser) {
-        const { results: assessmentResults } = await getUserAssessmentResults(user.id);
-        assessmentsForStats = assessmentResults || [];
-        
         const allUsers = getAllUsers();
         const classes = getAllClasses();
         const assignments = getAssignmentsForTeacher(user.id);
@@ -127,6 +124,50 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
         studentUsers = allUsers.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
+        
+        // Fetch assessments for the teacher's students (not the teacher themselves)
+        if (studentUsers.length > 0) {
+          const studentIds = studentUsers.map(s => s.id);
+          const chunkSize = 50;
+          for (let i = 0; i < studentIds.length; i += chunkSize) {
+            const chunk = studentIds.slice(i, i + chunkSize);
+            try {
+              const res = await getAllAssessmentResults(chunk);
+              const rawResults = res?.results || (Array.isArray(res) ? res : []);
+              const normalized = rawResults.map((r: any) => {
+                if (r.type && r.score) return r;
+                const assessmentType = r.assessmentType || r.type || 'unknown';
+                const rawScores = r.results || r.score || {};
+                let score: any = {};
+                if (assessmentType === 'kolb') {
+                  score.kolb = { style: rawScores.style || '', scores: rawScores };
+                } else if (assessmentType === 'sternberg') {
+                  score.sternberg = { style: rawScores.style || '', scores: rawScores };
+                } else if (assessmentType === 'dual-process') {
+                  score.dualProcess = { style: rawScores.style || '', scores: rawScores };
+                } else {
+                  score[assessmentType] = rawScores;
+                }
+                let userId = r.userId;
+                if (!userId && r.id) {
+                  const parts = r.id.split(':');
+                  if (parts.length >= 2) userId = parts[1];
+                }
+                return {
+                  id: r.id || `${assessmentType}-${userId}`,
+                  userId,
+                  type: assessmentType,
+                  completed: true,
+                  completedAt: r.completedAt,
+                  score
+                };
+              }).filter((a: any) => a.completedAt);
+              assessmentsForStats.push(...normalized);
+            } catch (e) {
+              console.error('Failed to fetch student assessments:', e);
+            }
+          }
+        }
       } else {
         // Regular teacher viewing their own data
         
@@ -146,11 +187,40 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 const chunk = studentIds.slice(i, i + chunkSize);
                 try {
                   const res = await getAllAssessmentResults(chunk);
-                  if (res && Array.isArray(res.results)) {
-                    serverAssessments.push(...res.results);
-                  } else if (Array.isArray(res)) {
-                    serverAssessments.push(...res);
-                  }
+                  const rawResults = res?.results || (Array.isArray(res) ? res : []);
+                  // Normalize raw KV records into the shape the frontend expects
+                  const normalized = rawResults.map((r: any) => {
+                    // If already in the expected shape, pass through
+                    if (r.type && r.score) return r;
+                    // Otherwise transform from raw KV shape
+                    const assessmentType = r.assessmentType || r.type || 'unknown';
+                    const rawScores = r.results || r.score || {};
+                    let score: any = {};
+                    if (assessmentType === 'kolb') {
+                      score.kolb = { style: rawScores.style || '', scores: rawScores };
+                    } else if (assessmentType === 'sternberg') {
+                      score.sternberg = { style: rawScores.style || '', scores: rawScores };
+                    } else if (assessmentType === 'dual-process') {
+                      score.dualProcess = { style: rawScores.style || '', scores: rawScores };
+                    } else {
+                      score[assessmentType] = rawScores;
+                    }
+                    // Extract userId from the KV key if not present
+                    let userId = r.userId;
+                    if (!userId && r.id) {
+                      const parts = r.id.split(':');
+                      if (parts.length >= 2) userId = parts[1];
+                    }
+                    return {
+                      id: r.id || `${assessmentType}-${userId}`,
+                      userId: userId,
+                      type: assessmentType,
+                      completed: true,
+                      completedAt: r.completedAt,
+                      score: score
+                    };
+                  }).filter((a: any) => a.completedAt);
+                  serverAssessments.push(...normalized);
                 } catch (e) {
                   console.error('Failed to fetch assessments chunk:', e);
                 }
