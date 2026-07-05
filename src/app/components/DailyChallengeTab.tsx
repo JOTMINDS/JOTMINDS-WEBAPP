@@ -720,6 +720,7 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
                   {qIndex + 1}. {q.question}
                 </p>
                 <RadioGroup
+                  name={`question-${qIndex}`}
                   value={selectedAnswers[qIndex]?.toString()}
                   onValueChange={(value) => setSelectedAnswers({ ...selectedAnswers, [qIndex]: parseInt(value) })}
                 >

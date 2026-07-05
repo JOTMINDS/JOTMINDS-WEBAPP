@@ -215,7 +215,7 @@ export function BrainGym({ userId, onComplete, onBack }: BrainGymProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [responses, setResponses] = useState<{ questionId: string; answer: number; timeSpent: number }[]>([]);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
   const challenges = dailyChallenges[currentCategory];
@@ -226,10 +226,10 @@ export function BrainGym({ userId, onComplete, onBack }: BrainGymProps) {
     setQuestionStartTime(Date.now());
   }, [currentQuestionIndex]);
 
-  const handleAnswerSelect = (value: number) => {
+  const handleAnswerSelect = (index: number, value: number) => {
     const timeSpent = Date.now() - questionStartTime;
     
-    setSelectedAnswer(value);
+    setSelectedIndex(index);
     setShowFeedback(true);
 
     // Record response
@@ -245,7 +245,7 @@ export function BrainGym({ userId, onComplete, onBack }: BrainGymProps) {
     setTimeout(() => {
       if (currentQuestionIndex < challenges.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setSelectedAnswer(null);
+        setSelectedIndex(null);
         setShowFeedback(false);
       } else {
         // Complete this category
@@ -276,7 +276,7 @@ export function BrainGym({ userId, onComplete, onBack }: BrainGymProps) {
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
-      setSelectedAnswer(null);
+      setSelectedIndex(null);
       setShowFeedback(false);
       // Remove last response
       setResponses(responses.slice(0, -1));
@@ -339,14 +339,10 @@ export function BrainGym({ userId, onComplete, onBack }: BrainGymProps) {
               {currentChallenge.options.map((option, index) => (
                 <button
                   key={index}
-                  onClick={() => !showFeedback && handleAnswerSelect(option.value)}
+                  onClick={() => !showFeedback && handleAnswerSelect(index, option.value)}
                   disabled={showFeedback}
                   className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                    showFeedback && selectedAnswer === option.value
-                      ? option.value >= 3
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 dark:border-green-400'
-                        : 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-400'
-                      : selectedAnswer === option.value && !showFeedback
+                    selectedIndex === index
                       ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 dark:border-purple-400'
                       : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-md hover:scale-[1.02]'
                   } ${showFeedback ? 'cursor-not-allowed' : 'cursor-pointer'}`}
@@ -359,10 +355,8 @@ export function BrainGym({ userId, onComplete, onBack }: BrainGymProps) {
                         {option.skill} skill
                       </div>
                     </div>
-                    {showFeedback && selectedAnswer === option.value && (
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                        option.value >= 3 ? 'bg-green-500' : 'bg-orange-500'
-                      }`}>
+                    {showFeedback && selectedIndex === index && (
+                      <div className="h-8 w-8 rounded-full flex items-center justify-center bg-purple-500">
                         <Check className="h-5 w-5 text-white" />
                       </div>
                     )}
