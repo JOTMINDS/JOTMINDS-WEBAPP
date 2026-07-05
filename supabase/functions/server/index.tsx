@@ -373,25 +373,27 @@ app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
       }
     }
 
-    if (!email || !teacherName || !institutionId) {
+    if (!email || !teacherName) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days expiry
 
-    const { error: inviteError } = await supabase.from('institution_invitations').insert({
-      email: email.toLowerCase().trim(),
-      institution_id: institutionId,
-      role: 'student',
-      token,
-      expires_at: expiresAt,
-      status: 'pending'
-    });
+    if (institutionId) {
+      const { error: inviteError } = await supabase.from('institution_invitations').insert({
+        email: email.toLowerCase().trim(),
+        institution_id: institutionId,
+        role: 'student',
+        token,
+        expires_at: expiresAt,
+        status: 'pending'
+      });
 
-    if (inviteError) {
-      console.error('[send-student-invite] DB Error:', inviteError);
-      return c.json({ error: 'Failed to record student invitation' }, 500);
+      if (inviteError) {
+        console.error('[send-student-invite] DB Error:', inviteError);
+        return c.json({ error: 'Failed to record student invitation' }, 500);
+      }
     }
 
     if (teacherId) {

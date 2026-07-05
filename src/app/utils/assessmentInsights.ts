@@ -242,7 +242,8 @@ export const generateDetailedStrengths = (
   framework: string,
   userProfile?: UserProfile
 ): string[] => {
-  const { dominantStyle, percentages, scores } = results;
+  const dominantStyle = results.dominantStyle || results.style || 'Balanced';
+  const percentages = results.percentages || {};
   const strengths: string[] = [];
   
   // Get template for dominant style
@@ -343,7 +344,8 @@ export const generateDetailedWeaknesses = (
   framework: string,
   userProfile?: UserProfile
 ): string[] => {
-  const { dominantStyle, percentages } = results;
+  const dominantStyle = results.dominantStyle || results.style || 'Balanced';
+  const percentages = results.percentages || {};
   const weaknesses: string[] = [];
   
   // Get template
@@ -418,7 +420,8 @@ export const generateDetailedRecommendations = (
   framework: string,
   userProfile?: UserProfile
 ): string[] => {
-  const { dominantStyle, percentages } = results;
+  const dominantStyle = results.dominantStyle || results.style || 'Balanced';
+  const percentages = results.percentages || {};
   const recommendations: string[] = [];
   
   const context = getEducationalContext(userProfile?.educationLevel, userProfile?.age, userProfile?.role);

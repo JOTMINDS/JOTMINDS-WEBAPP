@@ -655,18 +655,25 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
                   className="rounded-full"
                   onClick={() => {
                     const assessmentUrl = `${window.location.origin}/auth`;
-                    navigator.clipboard.writeText(assessmentUrl).then(() => {
-                      toast.success('Assessment link copied to clipboard!');
-                    }).catch(() => {
-                      // Fallback for older browsers
-                      const textArea = document.createElement('textarea');
-                      textArea.value = assessmentUrl;
-                      document.body.appendChild(textArea);
-                      textArea.select();
-                      document.execCommand('copy');
-                      document.body.removeChild(textArea);
-                      toast.success('Assessment link copied to clipboard!');
-                    });
+                    if (navigator.clipboard && window.isSecureContext) {
+                      navigator.clipboard.writeText(assessmentUrl).then(() => {
+                        toast.success('Assessment link copied to clipboard!');
+                      }).catch(() => {
+                        toast.error('Failed to copy link');
+                      });
+                    } else {
+                      try {
+                        const textArea = document.createElement('textarea');
+                        textArea.value = assessmentUrl;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        toast.success('Assessment link copied to clipboard!');
+                      } catch (err) {
+                        toast.error('Failed to copy link');
+                      }
+                    }
                   }}
                 >
                   <Link2 className="w-4 h-4 mr-2" />

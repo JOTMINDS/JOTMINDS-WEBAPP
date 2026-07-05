@@ -1,0 +1,177 @@
+export function generateModernThinkingInsights(style: string, scores: any): AssessmentInsights {
+  const insights: AssessmentInsights = {
+    strengths: [],
+    weaknesses: [],
+    improvements: [],
+    organizationalFit: [],
+    continuousReview: []
+  };
+
+  switch (style) {
+    case 'Analytical':
+      insights.strengths = [
+        'Excellent critical thinking and problem analysis abilities',
+        'Strong at breaking down complex problems systematically',
+        'Good at comparing and contrasting different options',
+        'Skilled in logical reasoning and evidence-based decisions',
+        'Effective at evaluating and critiquing ideas'
+      ];
+      insights.weaknesses = [
+        'May over-analyze situations and delay decisions',
+        'Can struggle with novel or unprecedented problems',
+        'Might overlook practical implementation challenges',
+        'May be less comfortable with ambiguous situations',
+        'Can appear overly critical or negative to others'
+      ];
+      insights.improvements = [
+        'Practice making decisions with incomplete information',
+        'Develop comfort with creative and unconventional solutions',
+        'Work on balancing analysis with practical action',
+        'Build skills in handling ambiguity and uncertainty',
+        'Learn to present critiques constructively'
+      ];
+      insights.organizationalFit = [
+        'Ideal for: Strategy, consulting, quality assurance, risk management, analytics',
+        'Team contribution: Provides thorough analysis and risk assessment',
+        'Leadership style: Data-driven, methodical, quality-focused'
+      ];
+      insights.continuousReview = [
+        'Monitor: Speed of decision-making and action-taking',
+        'Develop: Creative problem-solving and innovation',
+        'Leverage: Analytical skills in strategic initiatives'
+      ];
+      break;
+
+    case 'Creative':
+      insights.strengths = [
+        'Excellent at generating novel ideas and innovative solutions',
+        'Strong imagination and ability to think outside the box',
+        'Good at challenging assumptions and traditional approaches',
+        'Skilled at seeing connections others might miss',
+        'Comfortable with ambiguity and open-ended problems'
+      ];
+      insights.weaknesses = [
+        'May generate ideas without practical implementation',
+        'Can struggle with routine or structured tasks',
+        'Might overlook constraints and practical limitations',
+        'May have difficulty with detailed execution',
+        'Can be seen as impractical or unrealistic'
+      ];
+      insights.improvements = [
+        'Develop skills in evaluating and refining ideas',
+        'Practice considering practical constraints and resources',
+        'Work on following through with implementation',
+        'Build discipline for routine but necessary tasks',
+        'Learn to communicate ideas in practical terms'
+      ];
+      insights.organizationalFit = [
+        'Ideal for: Innovation, R&D, product development, marketing, design',
+        'Team contribution: Drives innovation and fresh perspectives',
+        'Leadership style: Visionary, innovative, change-oriented'
+      ];
+      insights.continuousReview = [
+        'Monitor: Conversion of creative ideas into viable solutions',
+        'Develop: Practical implementation and analytical evaluation',
+        'Leverage: Innovation capabilities in product development'
+      ];
+      break;
+
+    case 'Practical':
+      insights.strengths = [
+        'Excellent at applying knowledge to real-world situations',
+        'Strong common sense and practical problem-solving',
+        'Good at understanding context and environmental factors',
+        'Skilled at adapting solutions to specific situations',
+        'Effective at making things work in practice'
+      ];
+      insights.weaknesses = [
+        'May overlook innovative or unconventional solutions',
+        'Can struggle with theoretical or abstract concepts',
+        'Might focus too much on immediate rather than long-term',
+        'May have difficulty with novel or unprecedented situations',
+        'Can be resistant to change or new approaches'
+      ];
+      insights.improvements = [
+        'Develop comfort with theoretical frameworks',
+        'Practice considering innovative alternatives',
+        'Work on long-term strategic thinking',
+        'Build skills in analytical evaluation',
+        'Learn to balance practicality with innovation'
+      ];
+      insights.organizationalFit = [
+        'Ideal for: Operations, implementation, customer service, field management',
+        'Team contribution: Ensures practical execution and real-world viability',
+        'Leadership style: Results-oriented, pragmatic, grounded'
+      ];
+      insights.continuousReview = [
+        'Monitor: Openness to innovative approaches and new methods',
+        'Develop: Strategic thinking and analytical capabilities',
+        'Leverage: Practical skills in operational excellence'
+      ];
+      break;
+
+    case 'Reflective':
+      insights.strengths = [
+        'Excellent at thorough analysis and careful consideration',
+        'Strong at evaluating multiple perspectives and alternatives',
+        'Good at avoiding biases through systematic thinking',
+        'Skilled at complex problem-solving and planning',
+        'Effective at making well-reasoned, defensible decisions'
+      ];
+      insights.weaknesses = [
+        'May struggle in high-pressure, time-sensitive situations',
+        'Can overthink and suffer from analysis paralysis',
+        'Might miss fleeting opportunities',
+        'May appear indecisive to action-oriented colleagues',
+        'Can demand too much information before deciding'
+      ];
+      insights.improvements = [
+        'Set strict time limits for gathering information',
+        'Practice making lower-stakes decisions quickly',
+        'Develop trust in your initial intuitions',
+        'Learn to identify when a "good enough" decision is needed',
+        'Communicate your need for processing time clearly'
+      ];
+      insights.organizationalFit = [
+        'Ideal for: Strategic planning, research, risk management, policy development',
+        'Team contribution: Prevents rushed mistakes and ensures thoroughness',
+        'Leadership style: Thoughtful, deliberate, consensus-oriented'
+      ];
+      insights.continuousReview = [
+        'Monitor: Tendency to delay necessary actions',
+        'Develop: Comfort with making decisions on partial information',
+        'Leverage: Deep analytical thinking for long-term strategy'
+      ];
+      break;
+
+    default: // Balanced
+      insights.strengths = [
+        'Highly adaptable across different thinking styles',
+        'Able to balance creativity, analysis, and practicality',
+        'Excellent team player who bridges gaps between different types of thinkers',
+        'Well-rounded approach to problem solving'
+      ];
+      insights.weaknesses = [
+        'May not naturally gravitate towards specialized roles',
+        'Can occasionally struggle when a singular extreme focus is required'
+      ];
+      insights.improvements = [
+        'Lean into specific thinking styles when the situation demands it',
+        'Act as a mediator in team settings',
+        'Leverage your versatility'
+      ];
+      insights.organizationalFit = [
+        'Ideal for: Leadership, general management, cross-functional roles',
+        'Team contribution: Acts as a bridge between specialized team members',
+        'Leadership style: Balanced, adaptable, comprehensive'
+      ];
+      insights.continuousReview = [
+        'Monitor: Ability to shift gears when needed',
+        'Develop: Deeper expertise in one specific style if desired',
+        'Leverage: Your natural versatility in complex projects'
+      ];
+      break;
+  }
+
+  return insights;
+}

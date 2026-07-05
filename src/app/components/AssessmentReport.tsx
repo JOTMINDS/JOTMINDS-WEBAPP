@@ -269,21 +269,29 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           description: 'Slow, deliberate, analytical decisions'
         },
       ];
-    } else if (assessment.type === 'child-thinking' || (assessment.type as any) === 'children-thinking') {
-      const scores = assessment.score['jhs-thinking']?.scores || assessment.score['shs-thinking']?.scores || assessment.score['children-thinking']?.scores || {};
+    } else if (
+      assessment.type === 'child-thinking' || 
+      (assessment.type as any) === 'children-thinking' ||
+      (assessment.type as any) === 'jhs-thinking' ||
+      (assessment.type as any) === 'shs-thinking' ||
+      (assessment.type as any) === 'adult-thinking'
+    ) {
+      const typeKey = assessment.type === 'child-thinking' ? 'children-thinking' : assessment.type;
+      let actualScores: any = {};
+      
+      if (assessment.score[typeKey] && assessment.score[typeKey].scores) {
+          actualScores = assessment.score[typeKey].scores;
+      } else if (assessment.score.creative !== undefined || assessment.score.analytical !== undefined || assessment.score.Creative !== undefined) {
+          actualScores = assessment.score;
+      } else if (assessment.score.scores) {
+          actualScores = assessment.score.scores;
+      }
+
       return [
-        { name: 'Creative', value: scores.creative || 0, color: 'hsl(var(--chart-1))' },
-        { name: 'Analytical', value: scores.analytical || 0, color: 'hsl(var(--chart-2))' },
-        { name: 'Practical', value: scores.practical || 0, color: 'hsl(var(--chart-3))' },
-        { name: 'Reflective', value: scores.reflective || 0, color: 'hsl(var(--chart-4))' }
-      ].filter(item => item.value > 0);
-    } else if (assessment.score['adult-thinking']) {
-      const scores = assessment.score['adult-thinking'].scores || {};
-      return [
-        { name: 'Creative', value: scores.creative || 0, color: 'hsl(var(--chart-1))' },
-        { name: 'Analytical', value: scores.analytical || 0, color: 'hsl(var(--chart-2))' },
-        { name: 'Practical', value: scores.practical || 0, color: 'hsl(var(--chart-3))' },
-        { name: 'Reflective', value: scores.reflective || 0, color: 'hsl(var(--chart-4))' }
+        { name: 'Creative', value: actualScores.creative || actualScores.Creative || 0, color: 'hsl(var(--chart-1))' },
+        { name: 'Analytical', value: actualScores.analytical || actualScores.Analytical || 0, color: 'hsl(var(--chart-2))' },
+        { name: 'Practical', value: actualScores.practical || actualScores.Practical || 0, color: 'hsl(var(--chart-3))' },
+        { name: 'Reflective', value: actualScores.reflective || actualScores.Reflective || 0, color: 'hsl(var(--chart-4))' }
       ].filter(item => item.value > 0);
     }
     return [];

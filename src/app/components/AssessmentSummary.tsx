@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { CheckCircle2, AlertCircle, Lightbulb, TrendingUp, ArrowRight, Download } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Lightbulb, TrendingUp, ArrowRight, Download, Share2 } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { FeedbackPrompt } from './FeedbackPrompt';
 import { exportReportToPDF } from '../utils/pdfGenerator';
@@ -106,7 +106,7 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
   };
 
   // 1. Extract percentages flat map safely
-  const rawPercentages = results?.percentages || (results?.scores ? results.percentages : results) || {};
+  const rawPercentages = results?.percentages || results?.scores || results || {};
   
   // 2. Map keys to user-friendly capitalized names
   const flatResults: { [key: string]: number } = {};
@@ -290,6 +290,31 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
             variant="outline"
           >
             <Download className="w-4 h-4 mr-2" /> Download PDF
+          </Button>
+          <Button
+            onClick={async () => {
+              const text = `I've completed my ${getAssessmentTitle()} on JotMinds. My primary style is ${dominantStyle}.`;
+              if (navigator.share && navigator.canShare) {
+                try {
+                  await navigator.share({ title: 'My JotMinds Profile', text });
+                  return;
+                } catch (e) {
+                  // Fallback
+                }
+              }
+              if (navigator.clipboard) {
+                try {
+                  await navigator.clipboard.writeText(text);
+                  toast.success('Summary copied to clipboard!');
+                } catch (e) {
+                  toast.error('Failed to copy');
+                }
+              }
+            }}
+            size="lg"
+            variant="outline"
+          >
+            <Share2 className="w-4 h-4 mr-2" /> Share Results
           </Button>
           {nextAssessment && onStartNextAssessment && (
             <Button

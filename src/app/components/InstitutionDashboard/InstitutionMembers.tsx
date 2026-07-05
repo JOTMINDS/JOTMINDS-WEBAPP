@@ -574,7 +574,21 @@ export function InstitutionMembers({
                               const latestAssessment = completedAssessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())[0];
                               toast.loading('Generating report...', { id: `pdf-${m.userId}` });
                               try {
-                                await generatePDF(latestAssessment, m.userName, null, m.role === 'teacher');
+                                let assignedTeacherName = null;
+                                const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
+                                if (studentProfile?.teacherId) {
+                                  const teacher = allPlatformUsers.find(u => u.id === studentProfile.teacherId);
+                                  if (teacher) assignedTeacherName = teacher.name;
+                                } else if (studentProfile?.classId) {
+                                  const classes = getAllClasses();
+                                  const studentClass = classes.find(c => c.id === studentProfile.classId);
+                                  if (studentClass?.classTeacherId) {
+                                    const teacher = allPlatformUsers.find(u => u.id === studentClass.classTeacherId);
+                                    if (teacher) assignedTeacherName = teacher.name;
+                                  }
+                                }
+                                
+                                await generatePDF(latestAssessment, m.userName, assignedTeacherName, m.role === 'teacher');
                                 toast.success('Report downloaded', { id: `pdf-${m.userId}` });
                               } catch (error) {
                                 console.error('PDF generation error:', error);
