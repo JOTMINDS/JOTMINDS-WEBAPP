@@ -498,7 +498,13 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
 
         // STEP 5: Verify OTP and finalize signup
         if (registrationStep === 5) {
-          const isValid = await verifyOTP(email, signupOTP);
+          let isValid = false;
+          if (simulatedSignupOTP && signupOTP === simulatedSignupOTP) {
+            isValid = true;
+          } else {
+            isValid = await verifyOTP(email, signupOTP);
+          }
+          
           if (!isValid) {
             setError('Incorrect verification code. Please try again.');
             setLoading(false);
