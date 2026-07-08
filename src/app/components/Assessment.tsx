@@ -162,7 +162,7 @@ export const Assessment: React.FC<AssessmentProps> = ({
       question: currentQuestion.question,
       selectedOption: selectedOptionData.text,
       selectedValue: selectedOptionData.value, // Likert scale value (1-5)
-      selectedStyle: currentQuestion.style // Style is on the question, not the option
+      selectedStyle: currentQuestion.style || selectedOptionData.style // Style is on the question (backend) or option (local fallback)
     };
 
     console.log('[Assessment] New answers array:', newAnswers);

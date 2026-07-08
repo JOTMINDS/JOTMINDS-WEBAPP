@@ -332,10 +332,10 @@ export const normalizeServerResults = (rawResults: any[]): any[] => {
       const totalQ = res.totalQuestions || 12;
       const maxPerStyle = (totalQ / 4) * 5; // e.g. 15 for 12 questions
 
-      const diverging = rawScores.Diverging || rawScores.diverging || 0;
-      const accommodating = rawScores.Accommodating || rawScores.accommodating || 0;
-      const assimilating = rawScores.Assimilating || rawScores.assimilating || 0;
-      const converging = rawScores.Converging || rawScores.converging || 0;
+      const diverging = rawScores.Diverging || rawScores.diverging || rawScores.Visual || rawScores.visual || 0;
+      const accommodating = rawScores.Accommodating || rawScores.accommodating || rawScores.Kinesthetic || rawScores.kinesthetic || 0;
+      const assimilating = rawScores.Assimilating || rawScores.assimilating || rawScores.Auditory || rawScores.auditory || 0;
+      const converging = rawScores.Converging || rawScores.converging || rawScores['Reading/Writing'] || rawScores['reading/writing'] || 0;
 
       const ce = rawScores.CE !== undefined ? rawScores.CE : Math.round(((diverging + accommodating) / (maxPerStyle * 2)) * 48);
       const ro = rawScores.RO !== undefined ? rawScores.RO : Math.round(((diverging + assimilating) / (maxPerStyle * 2)) * 48);
@@ -358,11 +358,15 @@ export const normalizeServerResults = (rawResults: any[]): any[] => {
       };
     } else if (type === 'dual-process') {
       const style = capitalize(res.dominantStyle || res.style || 'Unknown');
+      
+      const sys1Fallback = (rawScores.intuitive || rawScores.Intuitive || 0) + (rawScores.spontaneous || rawScores.Spontaneous || 0);
+      const sys2Fallback = (rawScores.reflective || rawScores.Reflective || 0) + (rawScores['data-driven'] || rawScores['Data-Driven'] || rawScores.collaborative || rawScores.Collaborative || 0);
+      
       scoreObj.dualProcess = {
         style,
         scores: {
-          system1: rawScores.system1 !== undefined ? rawScores.system1 : (rawScores.System1 || rawScores.intuitive || rawScores.Intuitive || 0),
-          system2: rawScores.system2 !== undefined ? rawScores.system2 : (rawScores.System2 || rawScores.reflective || rawScores.Reflective || 0),
+          system1: rawScores.system1 !== undefined ? rawScores.system1 : (rawScores.System1 !== undefined ? rawScores.System1 : sys1Fallback),
+          system2: rawScores.system2 !== undefined ? rawScores.system2 : (rawScores.System2 !== undefined ? rawScores.System2 : sys2Fallback),
         },
       };
     } else {

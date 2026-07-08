@@ -612,9 +612,10 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
         const instName = (institution.name || '').trim();
         
         // Use JSONB queries to find matching users instead of scanning all users in memory
-        const [ {data: orgUsers}, {data: schoolUsers} ] = await Promise.all([
+        const [ {data: orgUsers}, {data: schoolUsers}, {data: codeUsers} ] = await Promise.all([
           instName.length > 0 ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>organizationName', instName) : Promise.resolve({ data: [] }),
-          instName.length > 0 ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>school', instName) : Promise.resolve({ data: [] })
+          instName.length > 0 ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>school', instName) : Promise.resolve({ data: [] }),
+          institution.code ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>organizationCode', institution.code) : Promise.resolve({ data: [] })
         ]);
         
         let teacherUsers: any[] = [];
@@ -624,7 +625,7 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
            teacherUsers = data || [];
         }
         
-        const rawUsers = [...(orgUsers || []), ...(schoolUsers || []), ...teacherUsers];
+        const rawUsers = [...(orgUsers || []), ...(schoolUsers || []), ...(codeUsers || []), ...teacherUsers];
         
         const uniqueUsersMap = new Map();
         for (const item of rawUsers) {
@@ -647,8 +648,9 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
           const instNameLower = instName.toLowerCase();
           const matchesName = userOrg === instNameLower && userOrg.length > 0;
           const matchesTeacher = u.role === 'student' && u.teacherId && institutionTeacherIds.has(u.teacherId);
+          const matchesCode = institution.code && u.organizationCode && u.organizationCode.toLowerCase() === institution.code.toLowerCase();
           
-          if ((matchesName || matchesTeacher) && (u.role === 'teacher' || u.role === 'student')) {
+          if ((matchesName || matchesTeacher || matchesCode) && ['teacher', 'student', 'professional', 'educator'].includes(u.role)) {
             if (!currentMemberIds.has(u.id)) {
               console.log(`[Auto-sync] Adding ${u.email} to institution ${institution.name}`);
               ops.push(supabase.from('institution_members').upsert({
