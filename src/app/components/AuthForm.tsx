@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader, AlertCircle, CheckCircle2, 
 import { PhoneInput } from './PhoneInput';
 import { useState, useEffect } from 'react';
 import { createClient } from '../utils/supabase/client';
-import { authenticateAdmin, createAdminUser } from '../utils/storage';
+import { isTeacherDomain } from '../utils/storage';
 import { setAuthToken } from '../utils/api';
 import { signup } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -323,53 +323,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
 
     try {
       if (isLogin) {
-        // Check for admin login first using the multi-admin system
-        console.log('[AuthForm] Checking if admin login...');
-        
-        if (authenticateAdmin(email, password)) {
-          console.log('[AuthForm] ✓ ADMIN LOGIN DETECTED');
-          
-          // Admin login - bypass Supabase using multi-admin system
-          const adminUser = createAdminUser(email);
-          
-          // Create a mock session for admin
-          const adminToken = 'admin-token-' + Date.now();
-          console.log('[AuthForm] Generated admin token:', adminToken);
-          
-          // Store admin user and token in localStorage
-          console.log('[AuthForm] Saving to localStorage...');
-          localStorage.setItem('admin_user', JSON.stringify(adminUser));
-          localStorage.setItem('admin_token', adminToken);
-          
-          // Verify it was saved
-          const savedUser = localStorage.getItem('admin_user');
-          const savedToken = localStorage.getItem('admin_token');
-          console.log('[AuthForm] Verification - Saved user:', savedUser);
-          console.log('[AuthForm] Verification - Saved token:', savedToken);
-          
-          if (!savedUser || !savedToken) {
-            console.error('[AuthForm] ❌ CRITICAL: Failed to save admin credentials to localStorage!');
-            setError('Failed to save admin session. Please try again.');
-            setLoading(false);
-            return;
-          }
-          
-          console.log('[AuthForm] Calling setAuthToken...');
-          setAuthToken(adminToken);
-          
-          console.log('[AuthForm] Waiting 100ms for token to propagate...');
-          // Give the token time to propagate through the system
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          console.log('[AuthForm] Calling onLogin...');
-          onLogin();
-          
-          setLoading(false);
-          console.log('[AuthForm] ✓ ADMIN LOGIN COMPLETE');
-          return;
-        }
-
-        console.log('[AuthForm] Not admin login, using Supabase...');
+        console.log('[AuthForm] Using Supabase Auth...');
         const supabase = createClient();
         
         if (loginMethod === 'otp') {

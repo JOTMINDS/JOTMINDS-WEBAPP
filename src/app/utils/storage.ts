@@ -169,49 +169,9 @@ export function findUserByEmail(email: string): User | undefined {
   return users.find(u => u.email === email);
 }
 
-// Admin authentication - Multi-admin support using environment variables
-// SECURITY FIX: Removed hardcoded plaintext credentials from client bundle
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-const ADMIN_NAME = import.meta.env.VITE_ADMIN_NAME || 'Admin';
-const ADMIN_ID = import.meta.env.VITE_ADMIN_ID || 'admin_001';
+// Admin authentication has been migrated to Supabase Auth.
+// Users with user_metadata.role === 'admin' are considered admins.
 
-const ADMIN_CREDENTIALS = [
-  {
-    email: ADMIN_EMAIL,
-    password: ADMIN_PASSWORD,
-    name: ADMIN_NAME,
-    id: ADMIN_ID
-  },
-  // Add more admins here as needed
-];
-
-export function authenticateAdmin(email: string, password: string): boolean {
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-    console.warn("Admin authentication is disabled because environment variables are not set.");
-    return false;
-  }
-  return ADMIN_CREDENTIALS.some(
-    admin => admin.email?.toLowerCase() === email?.toLowerCase().trim() && admin.password === password
-  );
-}
-
-export function createAdminUser(email: string): User {
-  const adminCred = ADMIN_CREDENTIALS.find(admin => admin.email?.toLowerCase() === email?.toLowerCase().trim());
-  
-  if (!adminCred) {
-    throw new Error('Admin credentials not found');
-  }
-  
-  return {
-    id: adminCred.id,
-    email: adminCred.email,
-    name: adminCred.name,
-    phone: '0248838540',
-    role: 'admin' as any, // Cast to bypass type checking for admin role
-    createdAt: new Date().toISOString(),
-  };
-}
 
 // School mapping - Get all students from a specific school
 export function getStudentsBySchool(schoolName: string): User[] {

@@ -223,21 +223,7 @@ function AppContent() {
         }
       }
       
-      // Check for admin session first - don't override with Supabase session
-      const adminToken = localStorage.getItem('admin_token');
-      const adminUser = localStorage.getItem('admin_user');
-      
-      console.log('[App] Checking localStorage...');
-      console.log('[App] admin_token:', adminToken ? adminToken.substring(0, 30) + '...' : 'NOT FOUND');
-      console.log('[App] admin_user:', adminUser ? 'FOUND' : 'NOT FOUND');
-      
-      if (adminToken) {
-        console.log('[App] ✓ Admin token found in localStorage, using it');
-        setAuthToken(adminToken);
-        return;
-      }
-
-      console.log('[App] No admin token, checking Supabase session...');
+      console.log('[App] Checking Supabase session...');
       console.log('[App] Supabase session:', session ? 'FOUND' : 'NOT FOUND');
       
       if (session?.access_token) {
@@ -286,30 +272,6 @@ function AppContent() {
 
   const handleAuthSuccess = async () => {
     console.log('[App] ===== handleAuthSuccess CALLED =====');
-    
-    // Check if admin user logged in FIRST, before refreshing
-    const adminToken = localStorage.getItem('admin_token');
-    const adminUser = localStorage.getItem('admin_user');
-    
-    console.log('[App] Checking admin credentials in handleAuthSuccess...');
-    console.log('[App] admin_token:', adminToken ? adminToken.substring(0, 30) + '...' : 'NOT FOUND');
-    console.log('[App] admin_user:', adminUser ? 'FOUND' : 'NOT FOUND');
-    
-    if (adminUser && adminToken) {
-      const user = JSON.parse(adminUser);
-      console.log('[App] Admin user detected:', user);
-      if (user.role === 'admin') {
-        console.log('[App] ✓ Setting auth token before navigating to admin panel...');
-        setAuthToken(adminToken);
-        console.log('[App] ✓ Refreshing user to load admin into state...');
-        // Refresh user to ensure admin is loaded into state before navigating
-        await refreshUser();
-        console.log('[App] ✓ Navigating to admin panel...');
-        setCurrentView('admin');
-        console.log('[App] ===== Admin login flow complete =====');
-        return;
-      }
-    }
     
     console.log('[App] Regular user login, refreshing user data...');
     // Refresh user first to get the latest user data
@@ -498,21 +460,9 @@ function AppContent() {
   };
 
   const handleViewAdmin = () => {
-    // Ensure admin token is set before navigating to admin panel
-    const adminToken = localStorage.getItem('admin_token');
-    const adminUser = localStorage.getItem('admin_user');
-    
     console.log('[App] handleViewAdmin called');
-    console.log('[App] admin_token in localStorage:', adminToken ? adminToken.substring(0, 30) + '...' : 'NOT FOUND');
-    console.log('[App] admin_user in localStorage:', adminUser ? 'FOUND' : 'NOT FOUND');
     
-    if (adminToken) {
-      console.log('[App] Setting admin token in API before navigating to admin panel');
-      setAuthToken(adminToken);
-    } else {
-      console.error('[App] ⚠️  CRITICAL: No admin token found when trying to view admin panel!');
-      console.error('[App] User should be logged in as admin first');
-    }
+    // We don't check localStorage for admin_token anymore, AuthContext handles it.
     
     setCurrentView('admin');
   };

@@ -4,41 +4,9 @@ const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-serv
 
 let authToken: string | null = null;
 
-// Initialize auth token from localStorage synchronously on module load
-const initializeToken = () => {
-  try {
-    const adminToken = localStorage.getItem('admin_token');
-    if (adminToken) {
-      authToken = adminToken;
-      console.log('[API] Initialized with admin token from localStorage:', adminToken.substring(0, 30) + '...');
-    }
-  } catch (error) {
-    console.error('[API] Error initializing token from localStorage:', error);
-  }
-};
-
-// Call initialization immediately
-if (typeof window !== 'undefined') {
-  initializeToken();
-}
-
 export const setAuthToken = (token: string | null) => {
   console.log('[API] setAuthToken called with:', token ? `${token.substring(0, 30)}...` : 'null');
-  
-  // CRITICAL: Don't allow clearing admin token unless explicitly done
-  if (token === null) {
-    const adminToken = localStorage.getItem('admin_token');
-    if (adminToken) {
-      console.log('[API] ⚠️  Attempted to set token to null, but admin token exists in localStorage');
-      console.log('[API] 🛡️  Protecting admin token from being cleared');
-      console.log('[API] Stack trace:', new Error().stack);
-      authToken = adminToken;
-      return;
-    }
-  }
-  
   authToken = token;
-  console.log('[API] ✓ Token set to:', authToken ? `${authToken.substring(0, 30)}...` : 'null');
 };
 
 export const clearAuthToken = () => {
@@ -48,61 +16,21 @@ export const clearAuthToken = () => {
 };
 
 export const getAuthToken = () => {
-  console.log('[API] getAuthToken called, current token:', authToken ? `${authToken.substring(0, 30)}...` : 'null');
-  
-  // If token is null, check localStorage as a fallback
-  if (!authToken) {
-    const adminToken = localStorage.getItem('admin_token');
-    if (adminToken) {
-      console.log('[API] ⚙️ Token was null, but found admin token in localStorage, restoring...');
-      authToken = adminToken;
-      console.log('[API] ✓ Token restored from localStorage');
-    }
-  }
-  
   return authToken;
 };
 
 const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
-  // For admin endpoints, always re-check localStorage for admin token
-  if (endpoint.startsWith('/admin/')) {
-    const adminToken = localStorage.getItem('admin_token');
-    console.log('[API] Admin endpoint detected, localStorage admin_token:', adminToken ? adminToken.substring(0, 30) + '...' : 'NOT FOUND');
-    if (adminToken) {
-      console.log('[API] Setting admin token from localStorage for admin endpoint');
-      authToken = adminToken;
-    } else {
-      console.error('[API] ⚠️ CRITICAL: Admin endpoint accessed but no admin_token in localStorage!');
-      console.error('[API] This will result in 401 Unauthorized error');
-      console.error('[API] Stack trace:', new Error().stack);
-    }
-  }
-  
   const token = authToken || publicAnonKey;
-  const isAdminToken = token?.startsWith('admin-token-');
-  const isAnonKey = token === publicAnonKey;
   
   console.log(`[API] Making request to ${endpoint}`);
   console.log(`[API] Current authToken variable:`, authToken ? authToken.substring(0, 30) + '...' : 'NULL');
   console.log(`[API] Token to use:`, token?.substring(0, 30) + '...');
-  console.log(`[API] Token type: ${isAdminToken ? 'ADMIN TOKEN' : isAnonKey ? 'ANON KEY (FALLBACK)' : 'SUPABASE JWT'}`);
   
-  // Use custom header for admin tokens to bypass Supabase JWT validation
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
     ...options.headers,
   };
-  
-  if (isAdminToken) {
-    // Admin token goes in custom header to bypass Supabase validation
-    headers['X-Admin-Token'] = token;
-    // Still send anon key in Authorization so Supabase lets the request through
-    headers['Authorization'] = `Bearer ${publicAnonKey}`;
-    console.log('[API] Using X-Admin-Token header for admin authentication');
-  } else {
-    // Regular Supabase JWT in Authorization header
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {

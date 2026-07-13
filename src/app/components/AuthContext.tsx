@@ -45,28 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('[AuthContext] ===== REFRESH USER STARTED =====');
       
-      // Check for admin session first
-      const adminUser = localStorage.getItem('admin_user');
-      const adminToken = localStorage.getItem('admin_token');
-      
-      console.log('[AuthContext] Admin user in localStorage:', adminUser ? 'FOUND' : 'NOT FOUND');
-      console.log('[AuthContext] Admin token in localStorage:', adminToken ? adminToken.substring(0, 30) + '...' : 'NOT FOUND');
-      
-      if (adminUser && adminToken) {
-        const parsedUser = JSON.parse(adminUser);
-        const enrichedUser = enrichUserWithAge(parsedUser);
-        console.log('[AuthContext] ✓ Setting admin user:', enrichedUser);
-        setUser(enrichedUser);
-        
-        console.log('[AuthContext] Calling setAuthToken with admin token...');
-        setAuthToken(adminToken);
-        console.log('[AuthContext] ✓ Admin user session established');
-        
-        setLoading(false);
-        return enrichedUser;
-      }
 
-      console.log('[AuthContext] No admin session, checking Supabase...');
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -137,20 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[AuthContext] Event:', _event);
       console.log('[AuthContext] Session:', session ? 'EXISTS' : 'NULL');
       
-      // Don't update if we have an admin session
-      const adminUser = localStorage.getItem('admin_user');
-      const adminToken = localStorage.getItem('admin_token');
-      
-      console.log('[AuthContext] Admin user in localStorage:', adminUser ? 'FOUND' : 'NOT FOUND');
-      console.log('[AuthContext] Admin token in localStorage:', adminToken ? 'FOUND' : 'NOT FOUND');
-      
-      if (adminUser && adminToken) {
-        console.log('[AuthContext] 🛡️  Admin session active - ignoring Supabase auth state change');
-        // Keep admin session active - don't let Supabase override it
-        return;
-      }
-      
-      console.log('[AuthContext] No admin session, processing Supabase auth change...');
+      console.log('[AuthContext] Processing Supabase auth change...');
       if (session?.access_token) {
         console.log('[AuthContext] Setting Supabase token from auth change');
         setAuthToken(session.access_token);
@@ -168,10 +134,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
-    // Clear admin user from localStorage
-    localStorage.removeItem('admin_user');
-    localStorage.removeItem('admin_token');
-    
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);

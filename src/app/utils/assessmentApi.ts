@@ -22,23 +22,13 @@ const getFrameworkName = (type: string): string => {
   }
 };
 
-// Helper for authorized headers that supports admin token bypass
 const getHeaders = (): Record<string, string> => {
   const token = getAuthToken();
-  const isAdminToken = token?.startsWith('admin-token-');
   
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json'
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token || publicAnonKey}`
   };
-  
-  if (isAdminToken) {
-    headers['X-Admin-Token'] = token;
-    headers['Authorization'] = `Bearer ${publicAnonKey}`;
-  } else {
-    headers['Authorization'] = `Bearer ${token || publicAnonKey}`;
-  }
-  
-  return headers;
 };
 
 /**

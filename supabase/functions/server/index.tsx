@@ -1070,24 +1070,6 @@ const verifyAuth = async (request: Request) => {
   // Log all auth-related headers for debugging
   console.log('[verifyAuth] === Authentication Debug ===');
   console.log('[verifyAuth] All headers:', Object.fromEntries(request.headers.entries()));
-  
-  // Check for admin token in custom header first (bypasses Supabase JWT validation)
-  const adminToken = request.headers.get('X-Admin-Token');
-  console.log(`[verifyAuth] X-Admin-Token header:`, adminToken?.substring(0, 30) + '...' || 'NOT PRESENT');
-  
-  if (adminToken && adminToken.startsWith('admin-token-')) {
-    console.log(`[verifyAuth] ✓ Admin token detected in X-Admin-Token header, returning admin user`);
-    // Return admin user
-    return {
-      id: 'admin-001',
-      email: 'Alex.Attachey@gmail.com',
-      user_metadata: {
-        name: 'Admin',
-        role: 'admin'
-      }
-    };
-  }
-  
   // Check Authorization header for regular Supabase JWTs
   const accessToken = request.headers.get('Authorization')?.split(' ')[1];
   console.log(`[verifyAuth] Authorization token:`, accessToken?.substring(0, 30) + '...' || 'NOT PRESENT');
@@ -1095,19 +1077,6 @@ const verifyAuth = async (request: Request) => {
   if (!accessToken) {
     console.log(`[verifyAuth] ✗ No access token provided`);
     return null;
-  }
-  
-  // Check for admin token in Authorization header (legacy support)
-  if (accessToken.startsWith('admin-token-')) {
-    console.log(`[verifyAuth] ✓ Admin token detected in Authorization header, returning admin user`);
-    return {
-      id: 'admin-001',
-      email: 'Alex.Attachey@gmail.com',
-      user_metadata: {
-        name: 'Admin',
-        role: 'admin'
-      }
-    };
   }
   
   console.log(`[verifyAuth] Verifying Supabase JWT...`);
@@ -1602,7 +1571,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     }
 
     // If admin, add to admin list
-    if (email === 'Alex.Attachey@gmail.com') {
+    if (role === 'admin') {
       await kv.set('admin:user', data.user.id);
     }
 
@@ -1677,6 +1646,10 @@ app.post('/make-server-fc8eb847/signin', async (c) => {
       ...data.user.user_metadata,
       ...profile
     };
+    
+    if (data.user.user_metadata?.role === 'admin') {
+      userData.role = 'admin';
+    }
 
     // Check if their organization is active
     if (userData.organizationCode) {
@@ -1717,13 +1690,18 @@ app.get('/make-server-fc8eb847/session', async (c) => {
     console.log('[Session] User metadata:', user.user_metadata);
     console.log('[Session] KV profile:', profile);
     
-    // Build user data - KV store profile takes precedence over user_metadata
+    // Build user data - KV store profile takes precedence over user_metadata, EXCEPT for admin role
     const userData = {
       id: user.id,
       email: user.email,
       ...user.user_metadata,
       ...profile // Profile from KV store overrides metadata
     };
+    
+    // Admin role in user_metadata should always take precedence
+    if (user.user_metadata?.role === 'admin') {
+      userData.role = 'admin';
+    }
     
     // Check if their organization is active
     if (userData.organizationCode) {
@@ -2113,7 +2091,7 @@ app.get('/make-server-fc8eb847/admin/users', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -2135,7 +2113,7 @@ app.get('/make-server-fc8eb847/admin/stats', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -2195,7 +2173,7 @@ app.get('/make-server-fc8eb847/admin/user/:userId', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -3867,7 +3845,7 @@ app.post('/make-server-fc8eb847/admin/fix-professional-org-code', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -4188,7 +4166,7 @@ app.get('/make-server-fc8eb847/observation/parent/:parentId', async (c) => {
     const parentId = c.req.param('parentId');
     
     // Security: Only allow users to access their own observations or admin access
-    if (user.id !== parentId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.id !== parentId && user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -4250,7 +4228,7 @@ app.post('/make-server-fc8eb847/consent', async (c) => {
     }
 
     // Security: Only the child can grant/revoke consent for themselves
-    if (user.id !== consent.childId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.id !== consent.childId && user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden - Only the child can manage consent' }, 403);
     }
 
@@ -4343,7 +4321,7 @@ app.get('/make-server-fc8eb847/consent/child/:childId', async (c) => {
     const childId = c.req.param('childId');
     
     // Security: Only the child or admin can view their consents
-    if (user.id !== childId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.id !== childId && user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -4405,7 +4383,7 @@ app.get('/make-server-fc8eb847/review/professional/:professionalId', async (c) =
     const professionalId = c.req.param('professionalId');
     
     // Security: Only the professional themselves or admin can view reviews
-    if (user.id !== professionalId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.id !== professionalId && user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -4435,7 +4413,7 @@ app.get('/make-server-fc8eb847/review/supervisor/:supervisorId', async (c) => {
     const supervisorId = c.req.param('supervisorId');
     
     // Security: Only the supervisor themselves or admin can view their submitted reviews
-    if (user.id !== supervisorId && user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.id !== supervisorId && user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -4465,7 +4443,7 @@ app.post('/make-server-fc8eb847/admin/create-organization', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -4706,7 +4684,7 @@ app.get('/make-server-fc8eb847/admin/list-organizations', async (c) => {
     }
 
     // Check if user is admin
-    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -4735,7 +4713,7 @@ app.delete('/make-server-fc8eb847/admin/delete-organization/:code', async (c) =>
     }
 
     // Check if user is admin
-    if (user.email?.toLowerCase() !== 'alex.attachey@gmail.com') {
+    if (user.user_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 

@@ -24,22 +24,7 @@ const getSupabaseClient = (serviceRole = false) => {
 
 // Helper to verify authentication
 const verifyAuth = async (request: Request) => {
-  // Check for admin token in custom header first
-  const adminToken = request.headers.get('X-Admin-Token');
-  
-  if (adminToken && adminToken.startsWith('admin-token-')) {
-    // Return admin user
-    return {
-      id: 'admin-001',
-      email: 'admin@jotminds.com',
-      user_metadata: {
-        name: 'Admin User',
-        role: 'admin'
-      }
-    };
-  }
-  
-  // Otherwise verify Supabase JWT
+  // Verify Supabase JWT
   const authHeader = request.headers.get('Authorization');
   if (!authHeader) {
     return null;

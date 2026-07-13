@@ -17,12 +17,7 @@ export function useAdminData() {
       setLoading(true);
       setError(null);
       
-      const adminToken = localStorage.getItem('admin_token');
-      const adminUser = localStorage.getItem('admin_user');
-      
-      if (!adminToken || !adminUser) {
-        throw new Error('Admin session expired. Please log in again.');
-      }
+
 
       // 1. Fetch from Supabase
       const { data: usersData, error: usersError } = await supabase.from('users').select('*') as { data: any[], error: any };

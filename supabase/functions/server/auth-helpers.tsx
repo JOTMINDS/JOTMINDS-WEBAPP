@@ -12,10 +12,7 @@ export const getSupabaseClient = (serviceRole = false) =>
  * the same data-isolation guarantees instead of trusting a body/param userId.
  */
 export const verifyAuth = async (request: Request) => {
-  const adminToken = request.headers.get('X-Admin-Token');
-  if (adminToken && adminToken.startsWith('admin-token-')) {
-    return { id: 'admin-001', email: 'admin@jotminds.com', user_metadata: { role: 'admin' } };
-  }
+
 
   const authHeader = request.headers.get('Authorization');
   if (!authHeader) return null;
