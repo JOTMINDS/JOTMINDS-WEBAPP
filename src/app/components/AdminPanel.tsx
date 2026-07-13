@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { AdminDashboardLayout } from './AdminPortal/AdminDashboardLayout';
-import { OverviewMetrics } from './AdminPortal/OverviewMetrics';
-import { UserManagementTable } from './AdminPortal/UserManagementTable';
+import { SuperAdminLayout } from './SuperAdminPortal/SuperAdminLayout';
+import { SuperAdminTab } from './SuperAdminPortal/Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
-import { OrganizationManager } from './OrganizationManager';
-import { QuestionBankAudit } from './QuestionBankAudit';
-import { QuestionSeeder } from './QuestionSeeder';
-import { AdminDiagnostic } from './AdminDiagnostic';
-import { AdminSettings } from './AdminPortal/AdminSettings';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Loader, AlertCircle } from 'lucide-react';
+
+// Modules
+import { DashboardView } from './SuperAdminPortal/modules/DashboardView';
+import { UsersView } from './SuperAdminPortal/modules/UsersView';
+import { InstitutionsView } from './SuperAdminPortal/modules/InstitutionsView';
+import { OrganizationsView } from './SuperAdminPortal/modules/OrganizationsView';
+import { AssessmentEngineView } from './SuperAdminPortal/modules/AssessmentEngineView';
+import { AnalyticsView } from './SuperAdminPortal/modules/AnalyticsView';
+import { PlaceholderView } from './SuperAdminPortal/modules/PlaceholderView';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -22,15 +25,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onLogout,
   onViewUserDashboard
 }) => {
-  const [activeTab, setActiveTab] = useState('platform');
+  const [activeTab, setActiveTab] = useState<SuperAdminTab>('dashboard');
   const { users, stats, loading, error, toggleUserActivation, updateSubscription } = useAdminData();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-4">
           <Loader className="w-12 h-12 text-indigo-600 animate-spin" />
-          <h3 className="text-xl font-medium text-slate-700">Loading Admin Portal...</h3>
+          <h3 className="text-xl font-medium text-slate-700 dark:text-slate-300">Loading Command Center...</h3>
         </div>
       </div>
     );
@@ -38,7 +41,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6">
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error Loading Portal</AlertTitle>
@@ -57,44 +60,52 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'platform':
-        return <OverviewMetrics stats={stats} />;
+      case 'dashboard':
+        return <DashboardView stats={stats} />;
       case 'users':
-        return (
-          <UserManagementTable 
-            users={users} 
-            toggleUserActivation={toggleUserActivation}
-            updateSubscription={updateSubscription}
-            onViewUserDashboard={onViewUserDashboard}
-          />
-        );
+        return <UsersView users={users} toggleUserActivation={toggleUserActivation} />;
+      case 'institutions':
+        return <InstitutionsView />;
       case 'organizations':
-        return <OrganizationManager />;
+        return <OrganizationsView />;
+      case 'assessment':
+        return <AssessmentEngineView />;
+      case 'ai':
+        return <PlaceholderView title="AI Management" description="Monitor AI tokens, latency, cost tracking, and failures." />;
       case 'content':
-        return (
-          <div className="space-y-8">
-             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <QuestionBankAudit />
-                <QuestionSeeder />
-             </div>
-             <AdminDiagnostic onClose={() => {}} />
-          </div>
-        );
+        return <PlaceholderView title="Content Management" description="Manage career databases, scholarships, and resources." />;
+      case 'gamification':
+        return <PlaceholderView title="Gamification" description="Configure levels, XP, and seasonal events." />;
+      case 'analytics':
+        return <AnalyticsView />;
+      case 'billing':
+        return <PlaceholderView title="Billing" description="SaaS subscriptions, invoices, and MRR." />;
+      case 'communications':
+        return <PlaceholderView title="Communication Center" description="Send broadcast emails and notifications." />;
+      case 'support':
+        return <PlaceholderView title="Support Center" description="View user feedback and support tickets." />;
+      case 'security':
+        return <PlaceholderView title="Security Center" description="Monitor sessions, API keys, and rate limits." />;
       case 'settings':
-        return <AdminSettings />;
+        return <PlaceholderView title="Platform Settings" description="Global variables, branding, and localization." />;
+      case 'audit-logs':
+        return <PlaceholderView title="Audit Logs" description="Review all actions performed by Super Admins." />;
+      case 'developer':
+        return <PlaceholderView title="Developer Console" description="Database explorer and edge function logs." />;
+      case 'backup':
+        return <PlaceholderView title="Backup & Recovery" description="Database snapshots and disaster recovery." />;
       default:
-        return <OverviewMetrics stats={stats} />;
+        return <DashboardView stats={stats} />;
     }
   };
 
   return (
-    <AdminDashboardLayout 
-      onBack={onBack} 
+    <SuperAdminLayout 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab} 
       onLogout={onLogout}
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
     >
       {renderContent()}
-    </AdminDashboardLayout>
+    </SuperAdminLayout>
   );
 };

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Users, ClipboardList, TrendingUp, ShieldCheck } from 'lucide-react';
+import { Users, ClipboardList, TrendingUp, ShieldCheck, GraduationCap, Building2, Briefcase, UserCheck, Bot } from 'lucide-react';
 import { DataExport } from './DataExport';
 
 interface OverviewMetricsProps {
@@ -13,70 +13,107 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
     'Teacher': '#7B61FF',
     'Parent': '#10B981',
     'Professional': '#FF715B',
-    'Organization': '#8B5CF6'
+    'Organization': '#8B5CF6',
+    'Admin': '#E11D48'
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* High-level metrics grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Users</CardTitle>
-              <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
-                <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              </div>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Users</CardTitle>
+              <Users className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-slate-800 dark:text-white">{stats?.totalUsers || 0}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats?.totalUsers || 0}</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">Assessments Taken</CardTitle>
-              <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
-                <ClipboardList className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Assessments</CardTitle>
+              <ClipboardList className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-slate-800 dark:text-white">{stats?.totalAssessments || 0}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats?.totalAssessments || 0}</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Students</CardTitle>
-              <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg">
-                <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Students</CardTitle>
+              <GraduationCap className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-slate-800 dark:text-white">
-              {stats?.usersByRole?.Student || 0}
-            </p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats?.usersByRole?.Student || 0}</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">Organizations</CardTitle>
-              <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-              </div>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Teachers</CardTitle>
+              <UserCheck className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-slate-800 dark:text-white">
-              {stats?.usersByRole?.['Organization'] || 0}
-            </p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats?.usersByRole?.Teacher || 0}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Parents</CardTitle>
+              <Users className="w-4 h-4 text-slate-400" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats?.usersByRole?.Parent || 0}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Professionals</CardTitle>
+              <Briefcase className="w-4 h-4 text-slate-400" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats?.usersByRole?.Professional || 0}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Organizations & Schools</CardTitle>
+              <Building2 className="w-4 h-4 text-slate-400" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats?.usersByRole?.Organization || 0}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Platform Admins</CardTitle>
+              <ShieldCheck className="w-4 h-4 text-slate-400" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats?.usersByRole?.Admin || 0}</p>
           </CardContent>
         </Card>
       </div>

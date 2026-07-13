@@ -220,8 +220,17 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {onViewUserDashboard && (
-                            <Button variant="ghost" size="sm" onClick={() => onViewUserDashboard(user.id)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
-                                <LayoutDashboard className="w-4 h-4" />
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                if (window.confirm(`⚠️ SECURITY WARNING\n\nYou are about to initiate an Audited Support Session for ${user.email}.\n\nAccording to the JOTMINDS Data Privacy Policy:\n- Your access will be permanently logged.\n- You may not view private cognitive data or assessments.\n- This session must be for active support purposes only.\n\nProceed?`)) {
+                                  onViewUserDashboard(user.id);
+                                }
+                              }} 
+                              className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-900/30 font-medium"
+                            >
+                                Support Access
                             </Button>
                         )}
                         <Button
