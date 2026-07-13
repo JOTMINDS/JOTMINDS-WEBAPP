@@ -485,11 +485,17 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
             setError('');
           } catch (err: any) {
             console.error('Signup OTP Send Error:', err);
-            // Fallback for local testing
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            setSimulatedSignupOTP(otp);
-            setRegistrationStep(5);
-            setError('Could not connect to verification server. Using simulated OTP for dev mode.');
+            
+            // Only fallback to simulated OTP for network failures in local dev
+            if (err.message === 'Failed to fetch' || err.message.includes('Network error')) {
+              const otp = Math.floor(100000 + Math.random() * 900000).toString();
+              setSimulatedSignupOTP(otp);
+              setRegistrationStep(5);
+              setError('Could not connect to verification server. Using simulated OTP for dev mode.');
+            } else {
+              // Real server error (like rate limit or Resend failure)
+              setError(err.message || 'Failed to send verification code. Please try again later.');
+            }
           } finally {
             setLoading(false);
           }

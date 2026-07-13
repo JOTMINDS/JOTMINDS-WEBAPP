@@ -623,20 +623,24 @@ export async function generateOTP(contact: string): Promise<string> {
   
   const token = await getAuthToken();
   // Call server to securely record OTP (and dispatch if email)
-  const response = await fetch(`${BASE_URL}/send-otp`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token || publicAnonKey}` 
-    },
-    body: JSON.stringify({ email: contact, otp })
-  });
+  try {
+    const response = await fetch(`${BASE_URL}/send-otp`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token || publicAnonKey}` 
+      },
+      body: JSON.stringify({ email: contact, otp })
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to send verification code');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to send verification code');
+    }
+    return otp;
+  } catch (error: any) {
+    throw new Error(error.message || 'Network error while sending verification code');
   }
-
-  return otp;
 }
 
 export async function verifyOTP(contact: string, entered: string): Promise<boolean> {
