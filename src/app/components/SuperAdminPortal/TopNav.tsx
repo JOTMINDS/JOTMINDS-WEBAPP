@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../AuthContext';
 import { Menu, Search, Bell, Moon, Sun, User, LogOut } from 'lucide-react';
 import { Button } from '../ui/button';
-import { useTheme } from '../ui/theme-provider';
+import { useTheme } from "next-themes";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -10,7 +10,7 @@ import {
   Gamepad2, 
   BarChart3, 
   CreditCard, 
-  MessageSquareBroadcast, 
+  Megaphone, 
   LifeBuoy, 
   ShieldCheck, 
   Settings, 
@@ -18,7 +18,7 @@ import {
   TerminalSquare, 
   DatabaseBackup 
 } from 'lucide-react';
-import { cn } from '../../utils/utils';
+import { cn } from "../ui/utils";
 
 export type SuperAdminTab = 
   | 'dashboard' 
@@ -55,7 +55,7 @@ const navItems = [
   { id: 'gamification', label: 'Gamification', icon: Gamepad2 },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'billing', label: 'Billing', icon: CreditCard },
-  { id: 'communications', label: 'Communication Center', icon: MessageSquareBroadcast },
+  { id: 'communications', label: 'Communication Center', icon: Megaphone },
   { id: 'support', label: 'Support Center', icon: LifeBuoy },
   { id: 'security', label: 'Security Center', icon: ShieldCheck },
   { id: 'settings', label: 'Platform Settings', icon: Settings },
