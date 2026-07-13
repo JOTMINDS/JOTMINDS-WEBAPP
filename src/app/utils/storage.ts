@@ -192,12 +192,12 @@ export function authenticateAdmin(email: string, password: string): boolean {
     return false;
   }
   return ADMIN_CREDENTIALS.some(
-    admin => admin.email === email && admin.password === password
+    admin => admin.email?.toLowerCase() === email?.toLowerCase().trim() && admin.password === password
   );
 }
 
 export function createAdminUser(email: string): User {
-  const adminCred = ADMIN_CREDENTIALS.find(admin => admin.email === email);
+  const adminCred = ADMIN_CREDENTIALS.find(admin => admin.email?.toLowerCase() === email?.toLowerCase().trim());
   
   if (!adminCred) {
     throw new Error('Admin credentials not found');
