@@ -90,7 +90,7 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
     classes.filter(c => c.classTeacherId === teacher.id).forEach(c => teacherClassIds.add(c.id));
     assignments.forEach(a => teacherClassIds.add(a.classId));
     
-    const localStudents = all.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
+    const localStudents = all.filter(u => u.role === 'student' && ((u.classId && teacherClassIds.has(u.classId)) || u.teacherId === teacher.id));
 
     // 3. Merge avoiding duplicates (server takes precedence)
     const mergedMap = new Map();

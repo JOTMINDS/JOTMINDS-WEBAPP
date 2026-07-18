@@ -3,8 +3,7 @@ import html2canvas from 'html2canvas';
 import { Assessment, GhanaMapping } from '../types';
 import { getStyleDescription } from './scoring';
 import { getAssessmentInsights } from './insights';
-import { poppinsBase64 } from './poppinsFont';
-import { poppinsBoldBase64 } from './poppinsFontBold';
+import { registerPoppins } from './pdfFonts';
 
 // ── JotMinds brand palette (RGB) ──────────────────────────────────────────────
 const BRAND = {
@@ -49,11 +48,7 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   let yPos = 20;
 
   // Load fonts
-  doc.addFileToVFS('Poppins-Regular.ttf', poppinsBase64);
-  doc.addFont('Poppins-Regular.ttf', 'Poppins', 'normal');
-  doc.addFileToVFS('Poppins-Bold.ttf', poppinsBoldBase64);
-  doc.addFont('Poppins-Bold.ttf', 'Poppins', 'bold');
-  doc.setFont('Poppins', 'normal');
+  await registerPoppins(doc);
 
   const logo = await loadLogo();
 

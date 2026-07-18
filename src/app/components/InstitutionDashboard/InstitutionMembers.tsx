@@ -23,6 +23,7 @@ import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeach
 interface InstitutionMembersProps {
   institution: Institution;
   members: InstitutionMember[];
+  assessments?: any[];
   institutionInvitations: InstitutionInvitation[];
   allPlatformUsers: any[];
   onRefresh: () => Promise<void>;
@@ -52,7 +53,8 @@ export function InstitutionMembers({
   isPrimaryAdmin,
   onPromoteMember,
   onDemoteMember,
-  onViewTeacherStyles
+  onViewTeacherStyles,
+  assessments = []
 }: InstitutionMembersProps) {
   // Member search
   const [memberSearch, setMemberSearch] = useState('');
@@ -523,20 +525,21 @@ export function InstitutionMembers({
                       </div>
                     </div>
 
-                    {m.role === 'student' && (
-                      <div className="hidden md:flex flex-col items-center justify-center bg-indigo-50/50 rounded-lg px-5 py-2 border border-indigo-100/50">
+                    {(m.role === 'student' || m.role === 'teacher' || m.role === 'admin') && (
+                      <div className="flex flex-col items-center justify-center bg-indigo-50/50 rounded-lg px-5 py-2 border border-indigo-100/50 mt-2 md:mt-0">
                           <span className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider mb-1">Assessments</span>
                           <div className="flex gap-2">
                             <Badge variant="secondary" className="bg-white text-indigo-700 border-indigo-200 font-bold shadow-sm">
-                                {getAssessmentsByUserId(m.userId).filter(a => a.completedAt).length} Completed
+                                {(assessments.length > 0 ? assessments.filter(a => a.userId === m.userId) : getAssessmentsByUserId(m.userId)).filter((a: any) => a.completedAt).length} Completed
                             </Badge>
                             <Badge variant="outline" className="bg-white text-slate-600 border-slate-200 shadow-sm" title="Assessment Frequency">
                                 {(() => {
-                                  const assessments = getAssessmentsByUserId(m.userId).filter(a => a.completedAt);
-                                  if (assessments.length === 0) return 'No Tests';
+                                  const userAssessments = assessments.length > 0 ? assessments.filter(a => a.userId === m.userId) : getAssessmentsByUserId(m.userId);
+                                  const completedAssessments = userAssessments.filter((a: any) => a.completedAt);
+                                  if (completedAssessments.length === 0) return 'No Tests';
                                   
-                                  assessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
-                                  const lastTest = new Date(assessments[0].completedAt);
+                                  completedAssessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+                                  const lastTest = new Date(completedAssessments[0].completedAt);
                                   const daysSince = Math.floor((Date.now() - lastTest.getTime()) / (1000 * 3600 * 24));
                                   
                                   if (assessments.length >= 2) {

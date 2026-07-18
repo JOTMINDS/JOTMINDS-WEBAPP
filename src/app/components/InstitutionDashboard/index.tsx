@@ -18,13 +18,13 @@ import {
   saveInstitution,
   isCodeExpired,
   getDaysUntilExpiry,
-  getCodeExpiryDate,
   getInstitutionForMember,
   createInstitution,
   promoteMember,
   demoteMember
 } from '../../utils/institution';
 import { getAllUsers } from '../../utils/storage';
+import { getAllAssessmentResults } from '../../utils/api';
 
 // Child components
 import { InstitutionOverview } from './InstitutionOverview';
@@ -66,6 +66,7 @@ export function InstitutionDashboard({
   const [members, setMembers] = useState<InstitutionMember[]>([]);
   const [institutionInvitations, setInstitutionInvitations] = useState<InstitutionInvitation[]>([]);
   const [allPlatformUsers, setAllPlatformUsers] = useState<any[]>([]);
+  const [memberAssessments, setMemberAssessments] = useState<any[]>([]);
 
   // Modal active states
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -147,6 +148,54 @@ export function InstitutionDashboard({
         }
       });
       setAllPlatformUsers(mergedUsers);
+
+      // Fetch assessments for all members and store in state
+      let fetchedAssessments: any[] = [];
+      if (updatedMembers.length > 0) {
+        const memberIds = updatedMembers.map(m => m.userId);
+        const chunkSize = 50;
+        for (let i = 0; i < memberIds.length; i += chunkSize) {
+          const chunk = memberIds.slice(i, i + chunkSize);
+          try {
+            const res = await getAllAssessmentResults(chunk);
+            const rawResults = res?.results || (Array.isArray(res) ? res : []);
+            rawResults.forEach((r: any) => {
+              const assessmentType = r.assessmentType || r.type || 'unknown';
+              const rawScores = r.results || r.score || {};
+              let score: any = {};
+              if (r.type && r.score) {
+                score = r.score;
+              } else if (assessmentType === 'kolb') {
+                score.kolb = { style: rawScores.style || '', scores: rawScores };
+              } else if (assessmentType === 'sternberg') {
+                score.sternberg = { style: rawScores.style || '', scores: rawScores };
+              } else if (assessmentType === 'dual-process') {
+                score.dualProcess = { style: rawScores.style || '', scores: rawScores };
+              } else {
+                score[assessmentType] = rawScores;
+              }
+              let userId = r.userId;
+              if (!userId && r.id) {
+                const parts = r.id.split(':');
+                if (parts.length >= 2) userId = parts[1];
+              }
+              if (r.completedAt) {
+                fetchedAssessments.push({
+                  id: r.id || `${assessmentType}-${userId}`,
+                  userId,
+                  type: assessmentType,
+                  completed: true,
+                  completedAt: r.completedAt,
+                  score
+                });
+              }
+            });
+          } catch (e) {
+            console.error('Failed to fetch member assessments:', e);
+          }
+        }
+      }
+      setMemberAssessments(fetchedAssessments);
 
       if (user.role === 'teacher') {
         const teacherStudents = updatedMembers.filter(m => {
@@ -359,6 +408,7 @@ export function InstitutionDashboard({
           <InstitutionMembers
             institution={institution}
             members={members}
+            assessments={memberAssessments}
             institutionInvitations={institutionInvitations}
             allPlatformUsers={allPlatformUsers}
             isPrimaryAdmin={isPrimaryAdmin}

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ArrowLeft, RefreshCw, Briefcase, Target, Share2, Copy, Check, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { getCognitiveProfile, generateCognitiveProfile, CognitiveProfile, createShareLink } from '../utils/cognitiveProfileApi';
+import { registerPoppins } from '../utils/pdfFonts';
 import { CognitiveFingerprint } from './CognitiveFingerprint';
 import { toast } from 'sonner';
 import { recordProfileShare, recordProfileCompletion } from '../utils/gamification';
@@ -130,7 +131,7 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!profile) return;
 
     setExportingPDF(true);
@@ -140,28 +141,65 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
       const margin = 20;
       let yPosition = margin;
 
+      // Register Poppins font
+      await registerPoppins(doc);
+
       // Helper function to add text with word wrap
       const addText = (text: string, x: number, y: number, maxWidth: number, fontSize = 12, isBold = false) => {
         doc.setFontSize(fontSize);
         if (isBold) {
-          doc.setFont('helvetica', 'bold');
+          doc.setFont('Poppins', 'bold');
         } else {
-          doc.setFont('helvetica', 'normal');
+          doc.setFont('Poppins', 'normal');
         }
         const lines = doc.splitTextToSize(text, maxWidth);
         doc.text(lines, x, y);
         return y + (lines.length * fontSize * 0.5);
       };
 
-      // Title
-      doc.setFillColor(44, 46, 131); // JotMinds brand color
-      doc.rect(0, 0, pageWidth, 40, 'F');
+      // Load logo
+      const logo = await new Promise<HTMLImageElement | null>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = '/logo.png';
+      });
+
+      // Branded header band
+      const bandHeight = 40;
+      doc.setFillColor(91, 125, 177); // #5B7DB1 JotMinds primary
+      doc.rect(0, 0, pageWidth, bandHeight, 'F');
+      doc.setFillColor(255, 113, 91); // coral accent strip
+      doc.rect(0, bandHeight, pageWidth, 1.5, 'F');
+
+      let logoRight = margin;
+      if (logo && logo.naturalWidth > 0) {
+        const logoH = 20;
+        const logoW = (logo.naturalWidth / logo.naturalHeight) * logoH;
+        doc.addImage(logo, 'PNG', margin, (bandHeight - logoH) / 2, logoW, logoH);
+        logoRight = margin + logoW + 6;
+      }
+
       doc.setTextColor(255, 255, 255);
-      yPosition = addText('JotMinds Cognitive Profile', margin, 25, pageWidth - 2 * margin, 20, true);
+      doc.setFont('Poppins', 'bold');
+      doc.setFontSize(22);
+      doc.text('JotMinds', logoRight, 19);
+      doc.setFont('Poppins', 'normal');
+      doc.setFontSize(9);
+      doc.text('Discover How You Think', logoRight, 26);
+
+      // Report label on the right
+      doc.setFont('Poppins', 'bold');
+      doc.setFontSize(10);
+      doc.text('COGNITIVE PROFILE', pageWidth - margin, 17, { align: 'right' });
+      doc.setFont('Poppins', 'normal');
+      doc.setFontSize(9);
+      doc.text('Assessment Report', pageWidth - margin, 23, { align: 'right' });
 
       // Reset text color
       doc.setTextColor(0, 0, 0);
-      yPosition = 55;
+      yPosition = bandHeight + 12;
 
       // Profile Completeness
       yPosition = addText(`Profile Completeness: ${(profile as any).profileCompleteness}%`, margin, yPosition, pageWidth - 2 * margin, 14, true);

@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { ParentObservationAssessment, User } from '../types';
+import { registerPoppins } from './pdfFonts';
 
 // ── JotMinds brand palette (RGB) ──────────────────────────────────────────────
 const BRAND = {
@@ -49,6 +50,9 @@ export async function generateParentObservationPDF(
   const margin = 16;
   const contentWidth = pageWidth - margin * 2;
 
+  // Register Poppins font
+  await registerPoppins(doc);
+
   const logo = await loadLogo();
 
   // ── Header band ─────────────────────────────────────────────────────────────
@@ -68,18 +72,18 @@ export async function generateParentObservationPDF(
   }
 
   doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Poppins', 'bold');
   doc.setFontSize(22);
   doc.text('JotMinds', logoRight, 19);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Poppins', 'normal');
   doc.setFontSize(9);
   doc.text('Discover How You Think', logoRight, 26);
 
   // Report label on the right of the band
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Poppins', 'bold');
   doc.setFontSize(10);
   doc.text('PARENT OBSERVATION', pageWidth - margin, 17, { align: 'right' });
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Poppins', 'normal');
   doc.setFontSize(9);
   doc.text('Assessment Report', pageWidth - margin, 23, { align: 'right' });
 
@@ -87,13 +91,13 @@ export async function generateParentObservationPDF(
 
   // ── Subject / meta line ──────────────────────────────────────────────────────
   doc.setTextColor(...BRAND.dark);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Poppins', 'bold');
   doc.setFontSize(15);
   doc.text(childName, margin, yPos);
   yPos += 6;
 
   doc.setTextColor(...BRAND.muted);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Poppins', 'normal');
   doc.setFontSize(9.5);
   doc.text(
     `Observed by ${parentName}  ·  ${new Date(assessment.completedAt).toLocaleDateString(undefined, {
@@ -127,11 +131,11 @@ export async function generateParentObservationPDF(
     doc.roundedRect(margin, yPos, 2.5, cardH, 1.2, 1.2, 'F');
 
     doc.setTextColor(...BRAND.dark);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Poppins', 'bold');
     doc.setFontSize(11);
     doc.text('Overall Summary', margin + 8, yPos + 8);
     doc.setTextColor(...BRAND.ink);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Poppins', 'normal');
     doc.setFontSize(9.5);
     doc.text(summaryLines, margin + 8, yPos + 14);
     yPos += cardH + 8;
@@ -170,14 +174,14 @@ export async function generateParentObservationPDF(
     doc.rect(margin, yPos + 5, contentWidth, 4, 'F'); // square off bottom of strip
 
     doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Poppins', 'bold');
     doc.setFontSize(10.5);
     doc.text(title, margin + 6, yPos + 6);
 
     // Style + score row
     let innerY = yPos + 16;
     doc.setTextColor(...color);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Poppins', 'bold');
     doc.setFontSize(11);
     doc.text(data.style || '—', margin + 6, innerY);
 
@@ -192,7 +196,7 @@ export async function generateParentObservationPDF(
 
     innerY += 6;
     doc.setTextColor(...BRAND.ink);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Poppins', 'normal');
     doc.setFontSize(9.5);
     doc.text(interpLines, margin + 6, innerY);
     innerY += interpLines.length * 4.6;
@@ -200,7 +204,7 @@ export async function generateParentObservationPDF(
     if (insightLines.length) {
       innerY += 2;
       doc.setTextColor(...BRAND.muted);
-      doc.setFont('helvetica', 'italic');
+      doc.setFont('Poppins', 'normal');
       doc.setFontSize(8.8);
       doc.text(insightLines, margin + 6, innerY);
       innerY += insightLines.length * 4.4;
@@ -210,7 +214,7 @@ export async function generateParentObservationPDF(
     if (hasTags) {
       innerY += 4;
       let tagX = margin + 6;
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('Poppins', 'normal');
       doc.setFontSize(8);
       data.tags.forEach((tag) => {
         const tagW = doc.getTextWidth(tag) + 7;
@@ -246,10 +250,10 @@ export async function generateParentObservationPDF(
     doc.roundedRect(margin, yPos, contentWidth, cardH, 2.5, 2.5, 'FD');
 
     doc.setTextColor(...BRAND.dark);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Poppins', 'bold');
     doc.setFontSize(11);
     doc.text('Parent–Child Alignment', margin + 8, yPos + 9);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Poppins', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...BRAND.purple);
     doc.text(`${harmony}%`, pageWidth - margin - 8, yPos + 9, { align: 'right' });
@@ -264,7 +268,7 @@ export async function generateParentObservationPDF(
     doc.roundedRect(barX, barY, Math.max(2, (barW * Math.min(100, Math.max(0, harmony))) / 100), 3.5, 1.75, 1.75, 'F');
 
     doc.setTextColor(...BRAND.ink);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Poppins', 'normal');
     doc.setFontSize(9.5);
     doc.text(interpLines, margin + 8, barY + 9);
     yPos += cardH + 6;
@@ -277,12 +281,12 @@ export async function generateParentObservationPDF(
     const fy = pageHeight - 12;
     doc.setDrawColor(...BRAND.hairline);
     doc.line(margin, fy - 3, pageWidth - margin, fy - 3);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Poppins', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...BRAND.muted);
     doc.text('Generated by JotMinds · Discover How You Think', margin, fy + 1);
     doc.setTextColor(...BRAND.indigo);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Poppins', 'bold');
     doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, fy + 1, { align: 'right' });
   }
 

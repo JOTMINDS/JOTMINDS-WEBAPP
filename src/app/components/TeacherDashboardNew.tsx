@@ -123,7 +123,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         classes.filter(c => c.classTeacherId === user.id).forEach(c => teacherClassIds.add(c.id));
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
-        studentUsers = allUsers.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
+        studentUsers = allUsers.filter(u => u.role === 'student' && ((u.classId && teacherClassIds.has(u.classId)) || u.teacherId === user.id));
         
         // Fetch assessments for the teacher's students (not the teacher themselves)
         if (studentUsers.length > 0) {
@@ -240,7 +240,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         classes.filter(c => c.classTeacherId === user.id).forEach(c => teacherClassIds.add(c.id));
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
-        localStudents = allUsers.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
+        localStudents = allUsers.filter(u => u.role === 'student' && ((u.classId && teacherClassIds.has(u.classId)) || u.teacherId === user.id));
         
         // Scope local assessments to only this teacher's students
         const localStudentIds = new Set(localStudents.map(s => s.id));
