@@ -503,7 +503,9 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           console.error('[AuthForm] Signup error:', signupError);
           
           // Provide user-friendly error messages for signup errors
-          if (signupError.message?.includes('already registered')) {
+          if (signupError.message?.includes('phone number is already registered')) {
+            setError(signupError.message);
+          } else if (signupError.message?.includes('already registered')) {
             setError('This email is already registered. Please login instead or use a different email.');
           } else if (signupError.message?.includes('invalid email')) {
             setError('Please enter a valid email address.');
