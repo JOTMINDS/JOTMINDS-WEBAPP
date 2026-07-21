@@ -51,7 +51,7 @@ interface InstitutionDashboardProps {
   onProfileUpdate?: () => void;
 }
 
-type Tab = 'overview' | 'code' | 'members' | 'classes' | 'analytics' | 'reports' | 'settings' | 'profile' | 'teacher_styles';
+type Tab = 'overview' | 'code' | 'members' | 'manage_students' | 'classes' | 'analytics' | 'reports' | 'settings' | 'profile' | 'teacher_styles';
 
 export function InstitutionDashboard({
   user,
@@ -304,11 +304,11 @@ export function InstitutionDashboard({
   
   let availableTabs: Tab[];
   if (isPrimaryAdmin) {
-    availableTabs = ['overview', 'code', 'members', 'classes', 'analytics', 'reports', 'teacher_styles', 'settings', 'profile'];
+    availableTabs = ['overview', 'code', 'members', 'manage_students', 'classes', 'analytics', 'reports', 'teacher_styles', 'settings', 'profile'];
   } else if (isCoAdmin) {
-    availableTabs = ['overview', 'members', 'classes', 'analytics', 'reports', 'teacher_styles', 'profile'];
+    availableTabs = ['overview', 'members', 'manage_students', 'classes', 'analytics', 'reports', 'teacher_styles', 'profile'];
   } else {
-    availableTabs = ['overview', 'members', 'analytics', 'reports', 'teacher_styles', 'profile'];
+    availableTabs = ['overview', 'members', 'manage_students', 'analytics', 'reports', 'teacher_styles', 'profile'];
   }
 
   return (
@@ -357,6 +357,7 @@ export function InstitutionDashboard({
                 {t === 'overview' && <Building2 className="h-4 w-4" />}
                 {t === 'code' && <QrCode className="h-4 w-4" />}
                 {t === 'members' && <Users className="h-4 w-4" />}
+                {t === 'manage_students' && <Users className="h-4 w-4" />}
                 {t === 'classes' && <Building2 className="h-4 w-4" />}
                 {t === 'analytics' && <BarChart3 className="h-4 w-4" />}
                 {t === 'reports' && <Download className="h-4 w-4" />}
@@ -365,6 +366,7 @@ export function InstitutionDashboard({
                 {t === 'profile' && <Shield className="h-4 w-4" />}
                 <span className="capitalize">
                   {t === 'analytics' ? 'Assessment Analytics' : 
+                   t === 'manage_students' ? 'Manage Students' :
                    t === 'settings' ? 'School Settings' :
                    t === 'profile' ? 'My Profile' :
                    t.replace('_', ' ')}
@@ -428,6 +430,14 @@ export function InstitutionDashboard({
               setTransferTargetName(name);
             }}
             onOpenTeacherManagement={setPerformanceTargetId}
+          />
+        )}
+
+        {tab === 'manage_students' && (
+          <TeacherStudentManagement 
+            teacher={user} 
+            isInstitutionAdmin={true}
+            institutionStudents={allPlatformUsers.filter(u => u.role === 'student' && members.some(m => m.userId === u.id))}
           />
         )}
 

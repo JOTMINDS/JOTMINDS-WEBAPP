@@ -1,5 +1,5 @@
-import { getAllUsers, saveUser, getAllClasses, saveClass } from './storage';
-import { v4 as uuidv4 } from 'uuid';
+import { getAllUsers, saveUser, getAllClasses, saveClass, generateId } from './storage';
+
 
 const MIGRATION_KEY = 'ts_class_migration_run';
 
@@ -22,7 +22,7 @@ export function runClassMigration() {
     const hasStudents = students.some(s => s.teacherId === teacher.id || (s.linkedTeachers && s.linkedTeachers.includes(teacher.id)));
     
     if (hasStudents) {
-      const classId = uuidv4();
+      const classId = generateId();
       const newClass = {
         id: classId,
         name: `${teacher.name}'s Class`,

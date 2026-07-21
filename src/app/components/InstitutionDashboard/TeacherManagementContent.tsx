@@ -5,6 +5,7 @@ import { BarChart3, Users, User as UserIcon, Save, CheckCircle2, ClipboardList, 
 import { toast } from 'sonner';
 import { updateMemberDetails } from '../../utils/institution';
 import { getAllAssessmentResults } from '../../utils/api';
+import { normalizeServerResults } from '../../utils/assessmentApi';
 import { generatePDF } from '../../utils/pdfGenerator';
 import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../../utils/storage';
 import { User } from '../../types';
@@ -31,7 +32,17 @@ export function TeacherManagementContent({
   classes.filter(c => c.classTeacherId === teacher.id).forEach(c => teacherClassIds.add(c.id));
   assignments.forEach(a => teacherClassIds.add(a.classId));
   
-  const students = allPlatformUsers.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
+  // Find students assigned to this teacher via class assignments, teacherId link, or institution membership
+  const students = allPlatformUsers.filter(u => {
+    if (u.role !== 'student') return false;
+    // Match via class assignment (localStorage classes)
+    if (u.classId && teacherClassIds.has(u.classId)) return true;
+    // Match via direct teacher link
+    if (u.teacherId === teacher.id) return true;
+    // Match via linked teachers
+    if (u.linkedTeachers && Array.isArray(u.linkedTeachers) && u.linkedTeachers.includes(teacher.id)) return true;
+    return false;
+  });
 
   const [editName, setEditName] = useState(teacher.name || '');
   const [editPhone, setEditPhone] = useState(teacher.phone || '');
@@ -53,9 +64,12 @@ export function TeacherManagementContent({
       try {
         const response = await getAllAssessmentResults([teacher.id]);
         if (response && Array.isArray(response.results)) {
-          setTeacherAssessments(response.results);
+          // Normalize raw API records so that `type` and `score` fields match the expected shape
+          const normalized = normalizeServerResults(response.results);
+          setTeacherAssessments(normalized);
         } else if (Array.isArray(response)) {
-          setTeacherAssessments(response);
+          const normalized = normalizeServerResults(response);
+          setTeacherAssessments(normalized);
         } else {
           setTeacherAssessments(getAssessmentsByUserId(teacher.id) || []);
         }

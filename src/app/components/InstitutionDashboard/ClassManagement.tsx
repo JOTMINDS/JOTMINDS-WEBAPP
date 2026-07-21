@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Class, User, TeacherClassAssignment } from '../../types';
 import { InstitutionMember } from '../../utils/institution';
-import { getAllClasses, saveClass, deleteClass, getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment } from '../../utils/storage';
+import { getAllClasses, saveClass, deleteClass, getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment, generateId } from '../../utils/storage';
 import { inviteStudentToClass } from '../../utils/api';
-import { v4 as uuidv4 } from 'uuid';
 
 interface ClassManagementProps {
   institutionMembers?: InstitutionMember[];
@@ -64,7 +63,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     if (!currentClass.name || !currentClass.academicYear) return;
     
     const classToSave: Class = {
-      id: currentClass.id || uuidv4(),
+      id: currentClass.id || generateId(),
       name: currentClass.name,
       academicYear: currentClass.academicYear,
       classTeacherId: currentClass.classTeacherId,
@@ -88,7 +87,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     if (!activeClassId || !selectedSubjectTeacher || !newSubject) return;
 
     const newAssignment: TeacherClassAssignment = {
-      id: uuidv4(),
+      id: generateId(),
       teacherId: selectedSubjectTeacher,
       classId: activeClassId,
       subjectId: newSubject,

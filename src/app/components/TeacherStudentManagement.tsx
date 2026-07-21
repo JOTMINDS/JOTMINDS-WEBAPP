@@ -19,9 +19,11 @@ import { toast } from 'sonner';
 interface TeacherStudentManagementProps {
   teacher: User;
   onViewReport?: (studentId: string) => void;
+  isInstitutionAdmin?: boolean;
+  institutionStudents?: User[];
 }
 
-export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStudentManagementProps) {
+export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionAdmin, institutionStudents }: TeacherStudentManagementProps) {
   const [students, setStudents] = useState<User[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -73,6 +75,11 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
   }, [teacher.id]);
 
   const loadStudents = async () => {
+    if (isInstitutionAdmin && institutionStudents) {
+      setStudents(institutionStudents);
+      return;
+    }
+
     // 1. Fetch from server
     let serverStudents: User[] = [];
     try {
@@ -126,9 +133,9 @@ export function TeacherStudentManagement({ teacher, onViewReport }: TeacherStude
       await inviteStudentToClass({
           email: formData.email,
           studentName: formData.name,
-          teacherName: teacher.name,
+          teacherName: isInstitutionAdmin ? (teacher.organizationName || 'School Admin') : teacher.name,
           schoolName: teacher.organizationName || '',
-          teacherId: teacher.id,
+          teacherId: isInstitutionAdmin ? '' : teacher.id,
           institutionId: institutionId || undefined
       });
 

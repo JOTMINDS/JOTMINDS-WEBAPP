@@ -67,9 +67,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Handle all errors gracefully - could be network issues, 401, or server not ready
           console.log('[AuthContext] Could not fetch session from backend:', sessionError.message);
           
-          // If it's just unauthorized, that's expected
           if (sessionError.message === 'Unauthorized' || sessionError.message?.includes('401')) {
-            console.log('[AuthContext] Session fetch returned 401 - no active session (expected for logged out users)');
+            console.log('[AuthContext] Session fetch returned 401 - backend verifyAuth may be failing. Falling back to local session user.');
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (authUser) {
+              const basicUser = {
+                id: authUser.id,
+                email: authUser.email,
+                ...(authUser.user_metadata || {})
+              } as User;
+              const enrichedUser = enrichUserWithAge(basicUser);
+              setUser(enrichedUser);
+              return enrichedUser;
+            }
           } else if (sessionError.message === 'Failed to fetch' || sessionError.message?.includes('fetch')) {
             // Network error - server might not be ready yet, but don't sign out
             console.log('[AuthContext] Network error connecting to server - will retry later');
@@ -81,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('[AuthContext] ✗ Error fetching session from backend:', sessionError);
           }
           
-          if (!sessionError.message?.includes('fetch')) {
+          if (!sessionError.message?.includes('fetch') && !sessionError.message?.includes('401') && sessionError.message !== 'Unauthorized') {
             console.log('[AuthContext] Clearing invalid session...');
             await supabase.auth.signOut();
           }
