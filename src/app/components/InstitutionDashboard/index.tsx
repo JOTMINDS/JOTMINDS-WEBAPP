@@ -161,7 +161,17 @@ export function InstitutionDashboard({
             const res = await getAllAssessmentResults(chunk);
             const rawResults = res?.results || (Array.isArray(res) ? res : []);
             rawResults.forEach((r: any) => {
-              const assessmentType = r.assessmentType || r.type || 'unknown';
+              let assessmentType = r.assessmentType || r.type;
+              
+              if (!assessmentType && r.id && typeof r.id === 'string') {
+                const parts = r.id.split(':');
+                if (parts.length >= 3) {
+                  assessmentType = parts[2];
+                }
+              }
+              
+              if (!assessmentType) assessmentType = 'unknown';
+
               const rawScores = r.results || r.score || {};
               let score: any = {};
               if (r.type && r.score) {

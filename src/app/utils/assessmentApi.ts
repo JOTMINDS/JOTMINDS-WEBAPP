@@ -286,6 +286,17 @@ export const normalizeServerResults = (rawResults: any[]): any[] => {
 
   return rawResults.map((r: any) => {
     let type = r.assessmentType || r.type;
+    
+    // Extract type from ID if missing (format: result:USERID:TYPE)
+    if (!type && r.id && typeof r.id === 'string') {
+      const parts = r.id.split(':');
+      if (parts.length >= 3) {
+        type = parts[2];
+      }
+    }
+
+    if (!type) type = 'unknown';
+
     if (type === 'learning') type = 'kolb';
     else if (type === 'thinking') type = 'sternberg';
     else if (type === 'decision') type = 'dual-process';
