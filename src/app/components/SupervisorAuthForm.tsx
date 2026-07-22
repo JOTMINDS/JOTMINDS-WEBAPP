@@ -42,13 +42,14 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
       const supabase = createClient();
 
       if (isLogin) {
+        const cleanEmail = email.trim().toLowerCase();
         let authData: any = null;
         let authSession: any = null;
 
         if (loginMethod === 'otp') {
           if (!otpSent) {
             console.log('[SupervisorAuth] Requesting OTP...');
-            const { error } = await supabase.auth.signInWithOtp({ email });
+            const { error } = await supabase.auth.signInWithOtp({ email: cleanEmail });
             if (error) {
               console.error('[SupervisorAuth] OTP request error:', error.message);
               setError(error.message);
@@ -60,7 +61,7 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
             return;
           } else {
             console.log('[SupervisorAuth] Verifying OTP...');
-            const { data, error } = await supabase.auth.verifyOtp({ email, token: otpToken, type: 'email' });
+            const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: otpToken, type: 'email' });
             if (error) {
               console.error('[SupervisorAuth] OTP verification error:', error.message);
               setError(error.message);
@@ -73,9 +74,9 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
           }
         } else {
           // Sign in using Supabase client
-          console.log('[SupervisorAuth] Signing in with email:', email);
+          console.log('[SupervisorAuth] Signing in with email:', cleanEmail);
           const { data, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
+            email: cleanEmail,
             password
           });
           

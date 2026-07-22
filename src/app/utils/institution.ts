@@ -280,20 +280,23 @@ export async function regenerateCode(institutionId: string, expiryDays: number |
   return mapDBInstitutionToLocal(data);
 }
 
-export function isCodeExpired(institution: Institution): boolean {
-  if (!institution.codeExpiryDays) return false;
+export function isCodeExpired(institution?: Partial<Institution> | null): boolean {
+  if (!institution || !institution.codeExpiryDays || !institution.codeGeneratedAt) return false;
   const generated = new Date(institution.codeGeneratedAt).getTime();
+  if (isNaN(generated)) return false;
   const expiresAt = generated + institution.codeExpiryDays * 24 * 60 * 60 * 1000;
   return Date.now() > expiresAt;
 }
 
-export function getCodeExpiryDate(institution: Institution): Date | null {
-  if (!institution.codeExpiryDays) return null;
+export function getCodeExpiryDate(institution?: Partial<Institution> | null): Date | null {
+  if (!institution || !institution.codeExpiryDays || !institution.codeGeneratedAt) return null;
   const generated = new Date(institution.codeGeneratedAt).getTime();
+  if (isNaN(generated)) return null;
   return new Date(generated + institution.codeExpiryDays * 24 * 60 * 60 * 1000);
 }
 
-export function getDaysUntilExpiry(institution: Institution): number | null {
+export function getDaysUntilExpiry(institution?: Partial<Institution> | null): number | null {
+  if (!institution) return null;
   const expiry = getCodeExpiryDate(institution);
   if (!expiry) return null;
   return Math.max(0, Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));

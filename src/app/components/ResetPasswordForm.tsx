@@ -26,15 +26,32 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    // Check if we have a valid password recovery session
+    // Check if we have a valid password recovery session or token
     const checkSession = async () => {
       try {
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
         
-        // Check if this is a password recovery session
-        if (session?.user) {
-          console.log('[ResetPassword] Valid session found for user:', session.user.email);
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const token = searchParams.get('token') || hashParams.get('access_token');
+
+        if (token && !session?.user) {
+          console.log('[ResetPassword] Attempting token verification...');
+          const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'recovery'
+          });
+          if (!verifyError && verifyData?.session) {
+            console.log('[ResetPassword] Token verified successfully!');
+            setValidSession(true);
+            return;
+          }
+        }
+
+        // Check if this is a password recovery session or token is present
+        if (session?.user || token) {
+          console.log('[ResetPassword] Valid session or token found for reset');
           setValidSession(true);
         } else {
           console.warn('[ResetPassword] No active session found during recovery flow');

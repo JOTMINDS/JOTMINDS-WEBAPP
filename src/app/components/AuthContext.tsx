@@ -67,30 +67,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Handle all errors gracefully - could be network issues, 401, or server not ready
           console.log('[AuthContext] Could not fetch session from backend:', sessionError.message);
           
-          if (sessionError.message === 'Unauthorized' || sessionError.message?.includes('401')) {
-            console.log('[AuthContext] Session fetch returned 401 - backend verifyAuth may be failing. Falling back to local session user.');
+          // Fallback to user metadata from active Supabase session
+          try {
             const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (authUser) {
+            const fallbackAuthUser = authUser || session.user;
+            if (fallbackAuthUser) {
+              console.log('[AuthContext] Session endpoint error - using fallback user from Supabase auth session');
               const basicUser = {
-                id: authUser.id,
-                email: authUser.email,
-                ...(authUser.user_metadata || {})
+                id: fallbackAuthUser.id,
+                email: fallbackAuthUser.email,
+                ...(fallbackAuthUser.user_metadata || {})
               } as User;
+              if (basicUser.role) {
+                basicUser.role = basicUser.role === 'Professional/Organization' ? 'professional' : basicUser.role.toLowerCase();
+              }
               const enrichedUser = enrichUserWithAge(basicUser);
               setUser(enrichedUser);
               return enrichedUser;
             }
-          } else if (sessionError.message === 'Failed to fetch' || sessionError.message?.includes('fetch')) {
-            // Network error - server might not be ready yet, but don't sign out
-            console.log('[AuthContext] Network error connecting to server - will retry later');
-            // Don't sign out, just set user to null and keep trying
-            setUser(null);
-            setLoading(false);
-            return;
-          } else {
-            console.error('[AuthContext] ✗ Error fetching session from backend:', sessionError);
+          } catch (fallbackErr) {
+            console.error('[AuthContext] Error getting fallback auth user:', fallbackErr);
           }
-          
+
           if (!sessionError.message?.includes('fetch') && !sessionError.message?.includes('401') && sessionError.message !== 'Unauthorized') {
             console.log('[AuthContext] Clearing invalid session...');
             await supabase.auth.signOut();

@@ -178,22 +178,19 @@ function AppContent() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Check for password recovery in the URL hash or path
+      // Check for password recovery in the URL hash, search query, or path
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const type = hashParams.get('type');
+      const searchParams = new URLSearchParams(window.location.search);
+      const type = hashParams.get('type') || searchParams.get('type');
+      const resetToken = searchParams.get('token');
       const path = window.location.pathname;
 
-      if (type === 'recovery' || path === '/reset-password') {
-        console.log('[App] Password recovery detected, showing reset password page');
+      if (type === 'recovery' || path === '/reset-password' || path.includes('reset-password') || resetToken) {
+        console.log('[App] Password recovery/reset detected, showing reset password page');
         setCurrentView('reset-password');
-        // If we want to clean the URL without refreshing
-        if (path === '/reset-password') {
-          window.history.replaceState({}, document.title, window.location.origin + window.location.hash);
-        }
         return;
       }
 
-      const searchParams = new URLSearchParams(window.location.search);
       const mode = searchParams.get('mode');
       const inviteToken = searchParams.get('inviteToken');
       

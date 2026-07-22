@@ -232,6 +232,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
   const processLogin = async () => {
     setError('');
     setLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
 
     try {
       const supabase = createClient();
@@ -239,7 +240,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
       if (loginOTPMode) {
         if (!loginOTPSent) {
           console.log('[OrganizationAuth] Requesting OTP...');
-          const { error } = await supabase.auth.signInWithOtp({ email });
+          const { error } = await supabase.auth.signInWithOtp({ email: cleanEmail });
           if (error) {
             console.error('[OrganizationAuth] OTP request error:', error.message);
             setError(error.message);
@@ -251,7 +252,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
           return;
         } else {
           console.log('[OrganizationAuth] Verifying OTP...');
-          const { data, error } = await supabase.auth.verifyOtp({ email, token: loginOTP, type: 'email' });
+          const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: loginOTP, type: 'email' });
           if (error) {
             console.error('[OrganizationAuth] OTP verification error:', error.message);
             setError(error.message);
@@ -265,9 +266,9 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
         }
       }
 
-      console.log('[OrganizationAuth] Signing in with email:', email);
+      console.log('[OrganizationAuth] Signing in with email:', cleanEmail);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: cleanEmail,
         password
       });
       

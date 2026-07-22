@@ -316,9 +316,11 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
     setError('');
     setLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+
     console.log('[AuthForm] ===== SUBMIT STARTED =====');
     console.log('[AuthForm] isLogin:', isLogin);
-    console.log('[AuthForm] Email:', email);
+    console.log('[AuthForm] Email:', cleanEmail);
     console.log('[AuthForm] Password length:', password.length);
 
     try {
@@ -329,7 +331,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         if (loginMethod === 'otp') {
           if (!otpSent) {
             console.log('[AuthForm] Requesting OTP...');
-            const { error } = await supabase.auth.signInWithOtp({ email });
+            const { error } = await supabase.auth.signInWithOtp({ email: cleanEmail });
             if (error) {
               console.error('[AuthForm] OTP request error:', error.message);
               setError(error.message);
@@ -341,7 +343,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
             return;
           } else {
             console.log('[AuthForm] Verifying OTP...');
-            const { data, error } = await supabase.auth.verifyOtp({ email, token: otpToken, type: 'email' });
+            const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: otpToken, type: 'email' });
             if (error) {
               console.error('[AuthForm] OTP verification error:', error.message);
               setError(error.message);
@@ -361,7 +363,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         // Regular sign in through Supabase
         console.log('[AuthForm] Attempting Supabase signInWithPassword...');
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: cleanEmail,
           password,
         });
         console.log('[AuthForm] Supabase response - data:', !!data, 'error:', error?.message || 'none');
@@ -473,7 +475,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         }
         
         const signupData = {
-          email,
+          email: cleanEmail,
           password,
           name,
           role: role,
@@ -522,7 +524,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         console.log('[AuthForm] Signup complete, attempting auto-login...');
         const supabase = createClient();
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: cleanEmail,
           password,
         });
 

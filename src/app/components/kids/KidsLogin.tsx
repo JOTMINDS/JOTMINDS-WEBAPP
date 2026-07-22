@@ -28,7 +28,7 @@ export function KidsLogin({ onLogin, onParentMode, onBack }: KidsLoginProps) {
     setError('');
 
     try {
-      await onLogin(email, password);
+      await onLogin(email.trim().toLowerCase(), password);
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again!');
     } finally {

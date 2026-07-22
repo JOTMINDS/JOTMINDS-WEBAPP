@@ -32,9 +32,10 @@ export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormPro
         return;
       }
 
+      const cleanEmail = email.trim().toLowerCase();
       const supabase = createClient();
       
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail);
 
       if (resetError) {
         console.error('[ForgotPassword] Error:', resetError);
