@@ -467,3 +467,18 @@ export const deleteRoleProfile = async (profileId: string) => {
 export const getRoleFitScores = async (roleId: string) => {
   return makeRequest(`/role-profiles/${roleId}/fit-scores`);
 };
+
+// Class Assignment Sync
+export const assignMemberToClass = async (payload: { userId: string; classId: string; className: string; role: string; institutionId?: string; teacherId?: string }) => {
+  return makeRequest('/institutions/members/assign-class', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+export const sendClassAssignmentEmail = async (payload: { email: string; role: string; className: string; classCode?: string; inviterName: string }) => {
+  return makeRequest('/send-class-assignment', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};

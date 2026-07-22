@@ -2623,6 +2623,107 @@ app.get('/make-server-fc8eb847/parent/linked-children', async (c) => {
   }
 });
 
+// Assign a user (student/teacher) to a class
+app.post('/make-server-fc8eb847/institutions/members/assign-class', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const { userId, classId, className, role, institutionId, teacherId } = await c.req.json();
+    if (!userId || !classId) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+    
+    // Verify caller is admin/teacher
+    const callerProfile = await kv.get(`user:${user.id}`);
+    if (callerProfile?.role !== 'teacher' && callerProfile?.role !== 'admin' && user.id !== 'admin-001') {
+      return c.json({ error: 'Forbidden' }, 403);
+    }
+
+    // Update target user profile in KV store
+    const targetProfile = await kv.get(`user:${userId}`);
+    if (!targetProfile) {
+      return c.json({ error: 'User not found in KV' }, 404);
+    }
+
+    // Assign classId
+    targetProfile.classId = classId;
+    targetProfile.className = className;
+    if (teacherId && targetProfile.role === 'student') {
+      targetProfile.teacherId = teacherId;
+    }
+    await kv.set(`user:${userId}`, targetProfile);
+
+    // Also try updating the postgres users table
+    const supabaseAdmin = getSupabaseClient(true);
+    await supabaseAdmin.from('users').update({ class_id: classId }).eq('id', userId);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error assigning class:', error);
+    return c.json({ error: 'Failed to assign class' }, 500);
+  }
+});
+
+// Send class assignment email
+app.post('/make-server-fc8eb847/send-class-assignment', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const { email, role, className, classCode, inviterName } = await c.req.json();
+    if (!email || !className) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+    
+    // Create Brevo email payload
+    const apiKey = Deno.env.get('BREVO_API_KEY');
+    if (!apiKey) {
+      console.warn('BREVO_API_KEY not set. Cannot send assignment email.');
+      return c.json({ success: true, warning: 'Email not sent (no API key)' });
+    }
+
+    const payload = {
+      sender: { name: 'JotMinds', email: 'no-reply@jotminds.com' },
+      to: [{ email }],
+      subject: `You have been assigned to ${className} on JotMinds`,
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Class Assignment</h2>
+          <p>Hello,</p>
+          <p>You have been assigned to the class <strong>${className}</strong> on JotMinds by ${inviterName || 'an administrator'}.</p>
+          ${classCode ? `<p>The class code is: <strong>${classCode}</strong></p>` : ''}
+          <p>Log in to your account to view your new class assignments and materials.</p>
+          <br/>
+          <p>The JotMinds Team</p>
+        </div>
+      `
+    };
+
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Brevo API error:', errText);
+      return c.json({ error: 'Failed to send email via Brevo' }, 500);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error sending class assignment email:', error);
+    return c.json({ error: 'Failed to send email' }, 500);
+  }
+});
+
 // Get students for a teacher (based on school)
 app.get('/make-server-fc8eb847/teacher/students', async (c) => {
   try {

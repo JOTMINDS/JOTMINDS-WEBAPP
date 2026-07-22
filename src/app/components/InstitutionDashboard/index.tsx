@@ -453,7 +453,11 @@ export function InstitutionDashboard({
         )}
 
         {tab === 'classes' && (
-          <ClassManagement institutionMembers={members} allPlatformUsers={allPlatformUsers} />
+          <ClassManagement 
+            institutionMembers={members} 
+            allPlatformUsers={allPlatformUsers} 
+            institutionId={institution?.id} 
+          />
         )}
 
         {tab === 'analytics' && (

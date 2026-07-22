@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Class, User, TeacherClassAssignment } from '../../types';
 import { InstitutionMember, getInstitutionClasses, createInstitutionClass, deleteInstitutionClass, generateNewClassCode } from '../../utils/institution';
 import { getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment, generateId } from '../../utils/storage';
-import { inviteStudentToClass } from '../../utils/api';
+import { assignMemberToClass, sendClassAssignmentEmail } from '../../utils/api';
 
 interface ClassManagementProps {
   institutionMembers?: InstitutionMember[];
@@ -74,6 +74,9 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   const handleSaveClass = async () => {
     if (!currentClass.name || !currentClass.academicYear || !institutionId) return;
     
+    const isNew = !currentClass.id;
+    const previousClass = !isNew ? classes.find(c => c.id === currentClass.id) : null;
+    
     const classToSave: Class = {
       id: currentClass.id || `cls_${Date.now()}`,
       name: currentClass.name,
@@ -85,6 +88,30 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     
     try {
       await createInstitutionClass(classToSave);
+      
+      // If a class teacher was assigned (and it changed from previous)
+      if (classToSave.classTeacherId && classToSave.classTeacherId !== previousClass?.classTeacherId) {
+        // Sync to backend KV store
+        await assignMemberToClass({
+          userId: classToSave.classTeacherId,
+          classId: classToSave.id,
+          className: classToSave.name,
+          role: 'teacher',
+          institutionId
+        });
+        
+        // Send email
+        const teacher = teachers.find(t => t.id === classToSave.classTeacherId);
+        if (teacher && teacher.email) {
+          await sendClassAssignmentEmail({
+            email: teacher.email,
+            className: classToSave.name,
+            role: 'Class Teacher',
+            inviterName: 'Your School Administrator'
+          });
+        }
+      }
+      
       setIsModalOpen(false);
       loadData();
     } catch (err) {
@@ -116,21 +143,49 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   };
 
 
-  const handleSaveSubjectAssignment = () => {
+  const handleSaveTeacherAssignment = async () => {
     if (!activeClassId || !selectedSubjectTeacher || !newSubject) return;
-
+    
     const newAssignment: TeacherClassAssignment = {
-      id: generateId(),
+      id: `ta_${Date.now()}`,
       teacherId: selectedSubjectTeacher,
       classId: activeClassId,
       subjectId: newSubject,
       role: 'subject_teacher'
     };
-
-    saveTeacherAssignment(newAssignment);
-    setNewSubject('');
-    setSelectedSubjectTeacher('');
-    loadData();
+    
+    try {
+      saveTeacherAssignment(newAssignment);
+      
+      const activeClassObj = classes.find(c => c.id === activeClassId);
+      if (activeClassObj) {
+        // Sync to backend KV store
+        await assignMemberToClass({
+          userId: selectedSubjectTeacher,
+          classId: activeClassId,
+          className: activeClassObj.name,
+          role: 'teacher',
+          institutionId
+        });
+        
+        // Send Email
+        const teacher = teachers.find(t => t.id === selectedSubjectTeacher);
+        if (teacher && teacher.email) {
+          await sendClassAssignmentEmail({
+            email: teacher.email,
+            className: activeClassObj.name,
+            role: `Subject Teacher (${newSubject})`,
+            inviterName: 'Your School Administrator'
+          });
+        }
+      }
+      
+      setNewSubject('');
+      setSelectedSubjectTeacher('');
+      loadData();
+    } catch (err) {
+      console.error("Failed to save teacher assignment", err);
+    }
   };
 
   const handleDeleteAssignment = (assignmentId: string) => {
@@ -145,30 +200,45 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     setIsStudentModalOpen(true);
   };
 
-  const handleSaveStudents = () => {
+  const handleSaveStudents = async () => {
+    if (!activeStudentClassId) return;
+
     const activeClass = classes.find(c => c.id === activeStudentClassId);
+    const className = activeClass ? activeClass.name : 'your class';
+    const classCode = activeClass ? activeClass.classCode : undefined;
+
     const classTeacher = teachers.find(t => t.id === activeClass?.classTeacherId);
     const teacherName = classTeacher ? classTeacher.name : 'Your School Administrator';
-    const teacherId = classTeacher ? classTeacher.id : 'admin';
 
-    students.forEach(student => {
+    for (const student of students) {
       const isSelected = selectedStudents.has(student.id);
       if (isSelected && student.classId !== activeStudentClassId) {
         saveUser({ ...student, classId: activeStudentClassId });
         
-        // Send email notification that they were added to the class
-        inviteStudentToClass({
-          email: student.email,
-          studentName: student.name,
-          teacherName: teacherName,
-          schoolName: student.organizationName || 'Your School',
-          teacherId: teacherId,
-          institutionId: institutionId
-        }).catch(err => console.error("Failed to send class assignment email", err));
+        try {
+          await assignMemberToClass({
+            userId: student.id,
+            classId: activeStudentClassId,
+            className: className,
+            role: 'student',
+            institutionId: institutionId
+          });
+
+          // Send email notification that they were added to the class
+          await sendClassAssignmentEmail({
+            email: student.email,
+            role: 'student',
+            className: className,
+            classCode: classCode,
+            inviterName: teacherName
+          });
+        } catch (err) {
+          console.error("Failed to sync student assignment to backend", err);
+        }
       } else if (!isSelected && student.classId === activeStudentClassId) {
         saveUser({ ...student, classId: undefined });
       }
-    });
+    }
     setIsStudentModalOpen(false);
     loadData();
   };

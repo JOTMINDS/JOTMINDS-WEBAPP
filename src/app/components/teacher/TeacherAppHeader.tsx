@@ -45,6 +45,11 @@ export function TeacherAppHeader({ user, onLogout, onViewAnalytics, onViewPrivac
               {user.school && (
                 <p className="text-sm text-muted-foreground">{user.school}</p>
               )}
+              {user.className && (
+                <div className="mt-1 inline-block px-2 py-1 bg-[#1E8A6E]/10 text-[#1E8A6E] rounded-md text-xs font-medium">
+                  {user.className}
+                </div>
+              )}
             </div>
             <div className="pt-4 border-t space-y-2">
               {onViewInstitutionDashboard && (

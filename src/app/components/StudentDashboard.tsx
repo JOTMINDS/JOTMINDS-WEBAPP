@@ -609,7 +609,10 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900 dark:text-white">{user.name}</p>
-                      <Badge variant="secondary" className="text-xs mt-1">Student</Badge>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="text-xs">Student</Badge>
+                        {user.className && <Badge variant="outline" className="text-xs border-[#1E8A6E] text-[#1E8A6E]">{user.className}</Badge>}
+                      </div>
                     </div>
                   </div>
                   
@@ -658,7 +661,14 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
             
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-[#6B4C9A] via-[#7B61FF] to-[#5B7DB1] bg-clip-text text-transparent">JotMinds</h1>
-              <p className="text-sm text-muted-foreground hidden sm:block">Welcome, {user.name}!</p>
+              <div className="hidden sm:flex items-center gap-2 mt-1">
+                <p className="text-sm text-muted-foreground">Welcome, {user.name}!</p>
+                {user.className && (
+                  <span className="px-2 py-0.5 bg-[#1E8A6E]/10 text-[#1E8A6E] rounded-full text-[10px] font-medium uppercase tracking-wider">
+                    {user.className}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           
