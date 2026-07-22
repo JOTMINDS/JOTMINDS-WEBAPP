@@ -36,6 +36,7 @@ export interface Class {
   classTeacherId?: string; // Optional primary teacher
   studentCount?: number;
   institutionId?: string;
+  classCode?: string;
   createdAt: string;
 }
 

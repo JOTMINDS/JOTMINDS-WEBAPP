@@ -783,3 +783,86 @@ export const GHANA_REGIONS = [
   'North East', 'Upper East', 'Upper West',
 ];
 
+// -----------------------------------------
+// Class Management API (Supabase)
+// -----------------------------------------
+
+import { Class } from '../types';
+
+export async function getInstitutionClasses(institutionId: string): Promise<Class[]> {
+  const { data, error } = await (supabase as any)
+    .from('classes')
+    .select('*')
+    .eq('institution_id', institutionId);
+
+  if (error) {
+    console.error('Error fetching classes:', error);
+    return [];
+  }
+
+  return (data || []).map((dbClass: any) => ({
+    id: dbClass.id,
+    name: dbClass.name,
+    academicYear: dbClass.academic_year,
+    classTeacherId: dbClass.class_teacher_id || undefined,
+    institutionId: dbClass.institution_id,
+    studentCount: dbClass.student_count || 0,
+    classCode: dbClass.class_code,
+    createdAt: dbClass.created_at
+  }));
+}
+
+export async function createInstitutionClass(classData: Class): Promise<Class> {
+  // Use existing ID or let DB generate it (if it was uuid, but here it's text)
+  const classId = classData.id || `cls_${Date.now()}`;
+  const classCode = classData.classCode || generateInstitutionCode().replace('JOTM-', 'CLS-');
+
+  const { data, error } = await (supabase as any)
+    .from('classes')
+    .insert({
+      id: classId,
+      name: classData.name,
+      academic_year: classData.academicYear,
+      class_teacher_id: classData.classTeacherId || null,
+      institution_id: classData.institutionId,
+      student_count: classData.studentCount || 0,
+      class_code: classCode,
+      created_at: classData.createdAt || new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    name: data.name,
+    academicYear: data.academic_year,
+    classTeacherId: data.class_teacher_id || undefined,
+    institutionId: data.institution_id,
+    studentCount: data.student_count || 0,
+    classCode: data.class_code,
+    createdAt: data.created_at
+  };
+}
+
+export async function deleteInstitutionClass(classId: string): Promise<void> {
+  const { error } = await (supabase as any)
+    .from('classes')
+    .delete()
+    .eq('id', classId);
+
+  if (error) throw error;
+}
+
+export async function generateNewClassCode(classId: string): Promise<string> {
+  const classCode = generateInstitutionCode().replace('JOTM-', 'CLS-');
+  const { error } = await (supabase as any)
+    .from('classes')
+    .update({ class_code: classCode })
+    .eq('id', classId);
+
+  if (error) throw error;
+  
+  return classCode;
+}

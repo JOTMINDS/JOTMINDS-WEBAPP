@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Class, User, TeacherClassAssignment } from '../../types';
-import { InstitutionMember } from '../../utils/institution';
-import { getAllClasses, saveClass, deleteClass, getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment, generateId } from '../../utils/storage';
+import { InstitutionMember, getInstitutionClasses, createInstitutionClass, deleteInstitutionClass, generateNewClassCode } from '../../utils/institution';
+import { getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment, generateId } from '../../utils/storage';
 import { inviteStudentToClass } from '../../utils/api';
 
 interface ClassManagementProps {
@@ -17,6 +17,11 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   const [assignments, setAssignments] = useState<TeacherClassAssignment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentClass, setCurrentClass] = useState<Partial<Class>>({});
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
+
+  // Class Details Overlay
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [activeClass, setActiveClass] = useState<Class | null>(null);
   
   // Subject Assignments
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
@@ -33,12 +38,19 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     loadData();
   }, [institutionMembers, allPlatformUsers, institutionId]);
 
-  const loadData = () => {
-    let allClasses = getAllClasses();
+  const loadData = async () => {
     if (institutionId) {
-      allClasses = allClasses.filter(c => c.institutionId === institutionId || !c.institutionId);
+      setIsLoadingClasses(true);
+      try {
+        const dbClasses = await getInstitutionClasses(institutionId);
+        setClasses(dbClasses);
+      } catch (err) {
+        console.error("Failed to load classes", err);
+      } finally {
+        setIsLoadingClasses(false);
+      }
     }
-    setClasses(allClasses);
+
     
     // Build a set of member user IDs belonging to THIS institution
     const memberIds = new Set(institutionMembers.map(m => m.userId));
@@ -59,11 +71,11 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     setAssignments(getAllTeacherAssignments());
   };
 
-  const handleSaveClass = () => {
-    if (!currentClass.name || !currentClass.academicYear) return;
+  const handleSaveClass = async () => {
+    if (!currentClass.name || !currentClass.academicYear || !institutionId) return;
     
     const classToSave: Class = {
-      id: currentClass.id || generateId(),
+      id: currentClass.id || `cls_${Date.now()}`,
       name: currentClass.name,
       academicYear: currentClass.academicYear,
       classTeacherId: currentClass.classTeacherId,
@@ -71,17 +83,38 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       createdAt: currentClass.createdAt || new Date().toISOString(),
     };
     
-    saveClass(classToSave);
-    setIsModalOpen(false);
-    loadData();
-  };
-
-  const handleDeleteClass = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this class? This will orphan any assigned students.')) {
-      deleteClass(id);
+    try {
+      await createInstitutionClass(classToSave);
+      setIsModalOpen(false);
       loadData();
+    } catch (err) {
+      console.error("Failed to save class", err);
     }
   };
+
+  const handleDeleteClass = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this class? This will orphan any assigned students.')) {
+      try {
+        await deleteInstitutionClass(id);
+        loadData();
+      } catch (err) {
+        console.error("Failed to delete class", err);
+      }
+    }
+  };
+
+  const handleGenerateCode = async (classId: string) => {
+    try {
+      const code = await generateNewClassCode(classId);
+      if (activeClass && activeClass.id === classId) {
+        setActiveClass({ ...activeClass, classCode: code });
+      }
+      loadData();
+    } catch (err) {
+      console.error("Failed to generate code", err);
+    }
+  };
+
 
   const handleSaveSubjectAssignment = () => {
     if (!activeClassId || !selectedSubjectTeacher || !newSubject) return;
@@ -203,6 +236,12 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                     </div>
                   </td>
                   <td className="p-4">
+                    <button 
+                      onClick={() => { setActiveClass(cls); setIsDetailsModalOpen(true); }}
+                      className="text-[#1E8A6E] hover:underline mr-3 font-medium bg-green-50 px-3 py-1 rounded"
+                    >
+                      View Details
+                    </button>
                     <button 
                       onClick={() => handleManageStudents(cls.id)}
                       className="text-[#1E8A6E] hover:underline mr-3"
@@ -404,6 +443,116 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                 Save Assignments
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isDetailsModalOpen && activeClass && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">{activeClass.name}</h3>
+                <p className="text-gray-500">Academic Year: {activeClass.academicYear}</p>
+              </div>
+              <button onClick={() => setIsDetailsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <h4 className="text-sm font-semibold text-blue-800 uppercase tracking-wider mb-2">Class Code</h4>
+                {activeClass.classCode ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-mono text-blue-900 font-bold bg-white px-3 py-1 rounded border border-blue-200">
+                      {activeClass.classCode}
+                    </span>
+                    <button 
+                      onClick={() => navigator.clipboard.writeText(activeClass.classCode!)}
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">No class code generated yet.</p>
+                    <button 
+                      onClick={() => handleGenerateCode(activeClass.id)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
+                    >
+                      Generate Code
+                    </button>
+                  </div>
+                )}
+                <p className="text-xs text-blue-700/70 mt-2">Share this code with students so they can join this class.</p>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-2">Class Teacher</h4>
+                {activeClass.classTeacherId ? (
+                  <div>
+                    <p className="font-medium text-gray-900">{teachers.find(t => t.id === activeClass.classTeacherId)?.name}</p>
+                    <p className="text-sm text-gray-500">{teachers.find(t => t.id === activeClass.classTeacherId)?.email}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">No class teacher assigned.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-lg font-bold text-gray-800 mb-3 border-b pb-2">Subject Teachers</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {assignments.filter(a => a.classId === activeClass.id).length > 0 ? (
+                  assignments.filter(a => a.classId === activeClass.id).map(a => {
+                    const teacher = teachers.find(t => t.id === a.teacherId);
+                    return (
+                      <div key={a.id} className="flex justify-between items-center bg-gray-50 p-3 rounded border border-gray-100">
+                        <div>
+                          <p className="font-medium text-gray-800">{a.subjectId}</p>
+                          <p className="text-sm text-gray-500">{teacher?.name}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-gray-500 italic col-span-2">No subject teachers assigned yet.</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-3 border-b pb-2">
+                <h4 className="text-lg font-bold text-gray-800">Students ({students.filter(s => s.classId === activeClass.id).length})</h4>
+                <button 
+                  onClick={() => { setIsDetailsModalOpen(false); handleManageStudents(activeClass.id); }}
+                  className="text-sm text-[#1E8A6E] hover:underline"
+                >
+                  Manage Students
+                </button>
+              </div>
+              <div className="bg-gray-50 rounded border border-gray-200 overflow-hidden">
+                {students.filter(s => s.classId === activeClass.id).length > 0 ? (
+                  <ul className="divide-y divide-gray-200">
+                    {students.filter(s => s.classId === activeClass.id).map(student => (
+                      <li key={student.id} className="p-3 hover:bg-gray-100 flex justify-between items-center">
+                        <span className="font-medium text-gray-700">{student.name}</span>
+                        <span className="text-sm text-gray-500">{student.email}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    No students are currently assigned to this class.
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
       )}
