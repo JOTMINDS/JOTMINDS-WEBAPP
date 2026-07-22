@@ -817,9 +817,9 @@ export async function createInstitutionClass(classData: Class): Promise<Class> {
   const classId = classData.id || `cls_${Date.now()}`;
   const classCode = classData.classCode || generateInstitutionCode().replace('JOTM-', 'CLS-');
 
-  const { data, error } = await (supabase as any)
+  let result = await (supabase as any)
     .from('classes')
-    .insert({
+    .upsert({
       id: classId,
       name: classData.name,
       academic_year: classData.academicYear,
@@ -832,17 +832,38 @@ export async function createInstitutionClass(classData: Class): Promise<Class> {
     .select()
     .single();
 
-  if (error) throw error;
+  // If the remote database hasn't had the class_code migration applied, it will throw an error (PGRST204)
+  if (result.error && result.error.message?.includes("class_code")) {
+    console.warn("Retrying class creation without class_code due to missing database column");
+    result = await (supabase as any)
+      .from('classes')
+      .upsert({
+        id: classId,
+        name: classData.name,
+        academic_year: classData.academicYear,
+        class_teacher_id: classData.classTeacherId || null,
+        institution_id: classData.institutionId,
+        student_count: classData.studentCount || 0,
+        created_at: classData.createdAt || new Date().toISOString()
+      })
+      .select()
+      .single();
+  }
+
+  if (result.error) {
+    alert("Failed to save class: " + result.error.message);
+    throw result.error;
+  }
 
   return {
-    id: data.id,
-    name: data.name,
-    academicYear: data.academic_year,
-    classTeacherId: data.class_teacher_id || undefined,
-    institutionId: data.institution_id,
-    studentCount: data.student_count || 0,
-    classCode: data.class_code,
-    createdAt: data.created_at
+    id: result.data.id,
+    name: result.data.name,
+    academicYear: result.data.academic_year,
+    classTeacherId: result.data.class_teacher_id || undefined,
+    institutionId: result.data.institution_id,
+    studentCount: result.data.student_count || 0,
+    classCode: result.data.class_code || classCode, // Provide fallback classCode if DB doesn't have it
+    createdAt: result.data.created_at
   };
 }
 
