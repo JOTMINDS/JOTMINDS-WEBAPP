@@ -297,29 +297,31 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
       )}
 
       {/* Teacher Class Code Banner */}
-      <Card className="border-blue-200 bg-blue-50/50">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-blue-600" />
-              <CardTitle className="text-lg text-blue-800">Your Class Code</CardTitle>
+      {!isInstitutionAdmin && (
+        <Card className="border-blue-200 bg-blue-50/50 mb-6">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                <CardTitle className="text-lg text-blue-800">Your Class Code</CardTitle>
+              </div>
+              {teacher.classCode && (
+                <Badge variant="outline" className="text-lg px-3 py-1 font-mono bg-white text-blue-700 border-blue-200">
+                  {teacher.classCode}
+                </Badge>
+              )}
             </div>
-            {teacher.classCode && (
-              <Badge variant="outline" className="text-lg px-3 py-1 font-mono bg-white text-blue-700 border-blue-200">
-                {teacher.classCode}
-              </Badge>
-            )}
-          </div>
-          <CardDescription className="text-blue-700/80">
-            Give this code to your students during signup. They will automatically be linked to your class{teacher.organizationName ? ` at ${teacher.organizationName}` : ''}.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+            <CardDescription className="text-blue-700/80">
+              Give this code to your students during signup. They will automatically be linked to your class{teacher.organizationName ? ` at ${teacher.organizationName}` : ''}.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold">My Students</h2>
-          <p className="text-muted-foreground">Manage your assigned students</p>
+          <h2 className="text-xl font-bold">{isInstitutionAdmin ? 'All Students' : 'My Students'}</h2>
+          <p className="text-muted-foreground">{isInstitutionAdmin ? 'Manage all students in the institution' : 'Manage your assigned students'}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setIsBulkModalOpen(true)}>
