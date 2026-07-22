@@ -37,7 +37,7 @@ import { TransferMemberModal } from './TransferMemberModal';
 import { BulkUploadModal } from './BulkUploadModal';
 import { TeacherManagementModal } from './TeacherManagementModal';
 import ClassManagement from './ClassManagement';
-
+import { TeacherStudentManagement } from '../TeacherStudentManagement';
 // Shared siblings
 import { SchoolAnalyticsDashboard } from '../SchoolAnalyticsDashboard';
 import { InstitutionReporting } from '../InstitutionReporting';
