@@ -2,7 +2,6 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader, AlertCircle, CheckCircle2, 
 import { PhoneInput } from './PhoneInput';
 import { useState, useEffect } from 'react';
 import { createClient } from '../utils/supabase/client';
-import { isTeacherDomain } from '../utils/storage';
 import { setAuthToken } from '../utils/api';
 import { signup } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';

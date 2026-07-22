@@ -325,8 +325,9 @@ export const generateDetailedStrengths = (
   }
   
   // Strength 6: Specific score insight
-  const totalScore = Object.values(scores).reduce((sum: any, score: any) => sum + (score as number), 0 as any);
-  const avgScore = (totalScore as any) / Object.keys(scores).length;
+  const scoreData = results.scores || results.percentages || {};
+  const totalScore = Object.values(scoreData).reduce((sum: any, score: any) => sum + (score as number), 0 as any);
+  const avgScore = (totalScore as any) / (Object.keys(scoreData).length || 1);
   
   if (avgScore > 0) {
     const engagementLevel = dominantPercentage >= 45 ? 'highly consistent' : 'moderately consistent';
