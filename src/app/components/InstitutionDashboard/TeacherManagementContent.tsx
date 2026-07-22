@@ -304,8 +304,34 @@ export function TeacherManagementContent({
                             <div><span className="text-gray-500">Secondary:</span> {assmt.score['teaching-style']?.secondaryStyle || 'N/A'}</div>
                           </div>
                         ) : (
-                          <div>
-                            <span className="text-gray-500">Score:</span> {JSON.stringify(assmt.score)}
+                          <div className="space-y-1">
+                            {(() => {
+                              const scoreData = assmt.score[assmt.type] || assmt.score;
+                              const dominantStyle = scoreData?.dominantStyle || scoreData?.style || scoreData?.primaryStyle;
+                              const percentages = scoreData?.percentages || scoreData?.scores;
+                              
+                              return (
+                                <>
+                                  {dominantStyle && (
+                                    <div><span className="text-gray-500">Dominant Style:</span> <span className="capitalize font-medium">{dominantStyle}</span></div>
+                                  )}
+                                  {percentages && typeof percentages === 'object' && Object.keys(percentages).length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {Object.entries(percentages).map(([k, v]) => (
+                                        typeof v === 'number' && !k.toLowerCase().includes('timestamp') ? (
+                                          <span key={k} className="text-xs bg-white border border-gray-200 shadow-sm px-2 py-1 rounded capitalize text-gray-700">
+                                            {k}: {v}{k === 'timestamp' ? '' : (scoreData?.percentages ? '%' : '')}
+                                          </span>
+                                        ) : null
+                                      ))}
+                                    </div>
+                                  )}
+                                  {!dominantStyle && (!percentages || typeof percentages !== 'object' || Object.keys(percentages).length === 0) && (
+                                    <div className="text-gray-500 italic">Scores recorded. Click 'Export PDF' for full details.</div>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>
