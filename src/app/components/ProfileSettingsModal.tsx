@@ -251,17 +251,206 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
           {error && <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm border border-red-200">{error}</div>}
           {success && <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm border border-green-200">{success}</div>}
 
-          <Tabs defaultValue="personal" className="w-full">
-            {isOrg && (
+          {isOrg ? (
+            <Tabs defaultValue="personal" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="personal" className="flex items-center gap-2"><User size={16}/> Personal</TabsTrigger>
                 <TabsTrigger value="institution" className="flex items-center gap-2"><Building2 size={16}/> Institution</TabsTrigger>
               </TabsList>
-            )}
 
-            <TabsContent value="personal">
+              <TabsContent value="personal">
+                <form id="profile-form" onSubmit={handlePersonalSave} className="space-y-5">
+                  <div className="flex flex-col items-center gap-3 mb-6">
+                    <div className="w-24 h-24 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800/50 relative group">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="Profile Photo" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="h-10 w-10 text-slate-400" />
+                      )}
+                      <div 
+                        className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={() => avatarInputRef.current?.click()}
+                      >
+                        <Upload className="h-6 w-6 text-white mb-1" />
+                        <span className="text-[10px] text-white font-medium">Upload</span>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" className="hidden" ref={avatarInputRef} onChange={handleAvatarUpload} />
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Primary Contact</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Full Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" className="pl-10" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="email" type="email" value={email} disabled className="pl-10 bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed" />
+                      </div>
+                      
+                      {!isVerified && (
+                        <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
+                          <div className="flex items-start gap-3">
+                            <ShieldCheck className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5" />
+                            <div className="flex-1">
+                              <h4 className="text-sm font-medium text-amber-900 dark:text-amber-300">Email Verification Required</h4>
+                              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 mb-3">
+                                Please verify your email address to secure your account. Unverified accounts may be deleted after 48 hours.
+                              </p>
+                              
+                              {!otpSent ? (
+                                <Button 
+                                  type="button" 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="bg-white hover:bg-slate-50 text-amber-700 border-amber-200"
+                                  onClick={handleSendVerification}
+                                  disabled={isVerifying}
+                                >
+                                  {isVerifying ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                                  Send Verification Code
+                                </Button>
+                              ) : (
+                                <div className="flex flex-col gap-2 mt-2">
+                                  <Label htmlFor="otp" className="text-xs text-amber-800">Enter Code</Label>
+                                  <div className="flex gap-2">
+                                    <Input 
+                                      id="otp" 
+                                      type="text" 
+                                      value={otpCode} 
+                                      onChange={(e) => setOtpCode(e.target.value)} 
+                                      placeholder="6-digit code" 
+                                      className="bg-white max-w-[150px]"
+                                    />
+                                    <Button 
+                                      type="button" 
+                                      size="sm" 
+                                      onClick={handleVerifyOTP}
+                                      disabled={isVerifying || !otpCode}
+                                    >
+                                      {isVerifying ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                                      Verify
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <PhoneInput id="phone" value={phone} onChange={setPhone} label="Phone Number" />
+                    
+                    {user?.role === 'student' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="parentName">Parent/Guardian Name</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input id="parentName" type="text" value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="Parent/Guardian Name" className="pl-10" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Secondary Contact</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="secondaryEmail">Secondary Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="secondaryEmail" type="email" value={secondaryEmail} onChange={(e) => setSecondaryEmail(e.target.value)} placeholder="reports@yourdomain.com" className="pl-10" />
+                      </div>
+                    </div>
+                    <PhoneInput id="secondaryPhone" value={secondaryPhone} onChange={setSecondaryPhone} label="Secondary Phone" />
+                  </div>
+                  <div className="flex justify-end pt-4">
+                    <Button type="submit" disabled={isLoading}>
+                      {isLoading ? <><Loader className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Personal Info</>}
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="institution" className="space-y-8">
+                <form id="institution-form" onSubmit={handleInstitutionSave} className="space-y-5">
+                  <div className="flex items-start gap-6">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800/50 relative group">
+                        {logoUrl ? (
+                          <img src={logoUrl} alt="Institution Logo" className="w-full h-full object-cover" />
+                        ) : (
+                          <Building2 className="h-8 w-8 text-slate-400" />
+                        )}
+                        <div 
+                          className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Upload className="h-6 w-6 text-white mb-1" />
+                          <span className="text-[10px] text-white font-medium">Upload File</span>
+                        </div>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleLogoUpload} />
+                    </div>
+
+                    <div className="flex-1 space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="orgName">Institution Name</Label>
+                        <Input id="orgName" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="e.g. Springfield High" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="logoUrl">Or paste Logo URL</Label>
+                        <div className="relative">
+                          <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input id="logoUrl" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className="pl-10" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div>
+                      <h4 className="font-medium text-slate-900 dark:text-slate-100">Institution Status</h4>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {isActive ? "Account is active. Users can log in." : "Account paused. Users are blocked."}
+                      </p>
+                    </div>
+                    <Switch checked={isActive} onCheckedChange={setIsActive} className={isActive ? 'bg-green-500' : 'bg-slate-300'} />
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button type="submit" disabled={isLoading || isUploading}>
+                      {isLoading ? <><Loader className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Institution Profile</>}
+                    </Button>
+                  </div>
+                </form>
+
+                <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
+                  <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4" /> {roleTitleText}
+                  </h3>
+                  <form onSubmit={handleAssignAdmin} className="flex items-end gap-3">
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="adminEmail">User Email Address</Label>
+                      <Input id="adminEmail" type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder={rolePlaceholderText} required />
+                    </div>
+                    <Button type="submit" variant="secondary" disabled={isAssigning || !adminEmail}>
+                      {isAssigning ? <Loader className="h-4 w-4 animate-spin" /> : 'Assign Role'}
+                    </Button>
+                  </form>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {roleDescriptionText}
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="w-full">
               <form id="profile-form" onSubmit={handlePersonalSave} className="space-y-5">
-                
                 <div className="flex flex-col items-center gap-3 mb-6">
                   <div className="w-24 h-24 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800/50 relative group">
                     {avatarUrl ? (
@@ -359,101 +548,14 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                     </div>
                   )}
                 </div>
-                {isOrg && (
-                  <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                    <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Secondary Contact</h3>
-                    <div className="space-y-2">
-                      <Label htmlFor="secondaryEmail">Secondary Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="secondaryEmail" type="email" value={secondaryEmail} onChange={(e) => setSecondaryEmail(e.target.value)} placeholder="reports@yourdomain.com" className="pl-10" />
-                      </div>
-                    </div>
-                    <PhoneInput id="secondaryPhone" value={secondaryPhone} onChange={setSecondaryPhone} label="Secondary Phone" />
-                  </div>
-                )}
                 <div className="flex justify-end pt-4">
                   <Button type="submit" disabled={isLoading}>
                     {isLoading ? <><Loader className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Personal Info</>}
                   </Button>
                 </div>
               </form>
-            </TabsContent>
-
-            {isOrg && (
-              <TabsContent value="institution" className="space-y-8">
-                <form id="institution-form" onSubmit={handleInstitutionSave} className="space-y-5">
-                  <div className="flex items-start gap-6">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800/50 relative group">
-                        {logoUrl ? (
-                          <img src={logoUrl} alt="Institution Logo" className="w-full h-full object-cover" />
-                        ) : (
-                          <Building2 className="h-8 w-8 text-slate-400" />
-                        )}
-                        <div 
-                          className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <Upload className="h-6 w-6 text-white mb-1" />
-                          <span className="text-[10px] text-white font-medium">Upload File</span>
-                        </div>
-                      </div>
-                      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleLogoUpload} />
-                    </div>
-
-                    <div className="flex-1 space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="orgName">Institution Name</Label>
-                        <Input id="orgName" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="e.g. Springfield High" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="logoUrl">Or paste Logo URL</Label>
-                        <div className="relative">
-                          <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="logoUrl" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className="pl-10" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <div>
-                      <h4 className="font-medium text-slate-900 dark:text-slate-100">Institution Status</h4>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {isActive ? "Account is active. Users can log in." : "Account paused. Users are blocked."}
-                      </p>
-                    </div>
-                    <Switch checked={isActive} onCheckedChange={setIsActive} className={isActive ? 'bg-green-500' : 'bg-slate-300'} />
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <Button type="submit" disabled={isLoading || isUploading}>
-                      {isLoading ? <><Loader className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Institution Profile</>}
-                    </Button>
-                  </div>
-                </form>
-
-                <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
-                  <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4" /> {roleTitleText}
-                  </h3>
-                  <form onSubmit={handleAssignAdmin} className="flex items-end gap-3">
-                    <div className="flex-1 space-y-2">
-                      <Label htmlFor="adminEmail">User Email Address</Label>
-                      <Input id="adminEmail" type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder={rolePlaceholderText} required />
-                    </div>
-                    <Button type="submit" variant="secondary" disabled={isAssigning || !adminEmail}>
-                      {isAssigning ? <Loader className="h-4 w-4 animate-spin" /> : 'Assign Role'}
-                    </Button>
-                  </form>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {roleDescriptionText}
-                  </p>
-                </div>
-              </TabsContent>
-            )}
-          </Tabs>
+            </div>
+          )}
         </div>
       </div>
     </div>
