@@ -137,7 +137,7 @@ export const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({
                       : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-gray-800"
                   )}
                 >
-                  {React.cloneElement(item.icon as React.ReactElement, {
+                  {React.cloneElement(item.icon as React.ReactElement<any>, {
                      className: cn("w-4 h-4", activeTab === item.id ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400")
                   })}
                   {item.label}

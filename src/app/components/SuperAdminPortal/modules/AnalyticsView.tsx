@@ -29,7 +29,7 @@ export function AnalyticsView() {
         // Process into monthly data safely
         const monthlyData: Record<string, number> = {};
         if (usersData) {
-          usersData.forEach(u => {
+          usersData.forEach((u: any) => {
             if (u.created_at) {
               const date = new Date(u.created_at);
               const monthYear = date.toLocaleString('default', { month: 'short', year: 'numeric' });

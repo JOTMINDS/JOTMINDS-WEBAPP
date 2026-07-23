@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { updateUserProfile, updateInstitutionProfile, assignInstitutionAdmin, Organization } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getAuthToken } from '../utils/api';
+import { generateOTP, verifyOTP } from '../utils/institution';
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
@@ -42,6 +43,12 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
   const [isAssigning, setIsAssigning] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Verification State
+  const isVerified = user?.isVerified === true;
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
   
   const isOrg = user?.role === 'organization' || user?.role === 'supervisor' || user?.role === 'Supervisor';
 
@@ -101,6 +108,45 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
       setError(err.message || 'Failed to update profile.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSendVerification = async () => {
+    setIsVerifying(true);
+    setError('');
+    setSuccess('');
+    try {
+      await generateOTP(email);
+      setOtpSent(true);
+      setSuccess('Verification code sent to your email.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send verification code.');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otpCode) {
+      setError('Please enter the verification code.');
+      return;
+    }
+    setIsVerifying(true);
+    setError('');
+    setSuccess('');
+    try {
+      await verifyOTP(email, otpCode);
+      const updatedUser = { ...user, isVerified: true };
+      onProfileUpdate(updatedUser);
+      setOtpSent(false);
+      setOtpCode('');
+      setSuccess('Email verified successfully!');
+      // Update the user profile on the backend
+      await updateUserProfile({ isVerified: true });
+    } catch (err: any) {
+      setError(err.message || 'Invalid verification code.');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -249,6 +295,57 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input id="email" type="email" value={email} disabled className="pl-10 bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed" />
                     </div>
+                    
+                    {!isVerified && (
+                      <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
+                        <div className="flex items-start gap-3">
+                          <ShieldCheck className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5" />
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-amber-900 dark:text-amber-300">Email Verification Required</h4>
+                            <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 mb-3">
+                              Please verify your email address to secure your account. Unverified accounts may be deleted after 48 hours.
+                            </p>
+                            
+                            {!otpSent ? (
+                              <Button 
+                                type="button" 
+                                size="sm" 
+                                variant="outline" 
+                                className="bg-white hover:bg-slate-50 text-amber-700 border-amber-200"
+                                onClick={handleSendVerification}
+                                disabled={isVerifying}
+                              >
+                                {isVerifying ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                                Send Verification Code
+                              </Button>
+                            ) : (
+                              <div className="flex flex-col gap-2 mt-2">
+                                <Label htmlFor="otp" className="text-xs text-amber-800">Enter Code</Label>
+                                <div className="flex gap-2">
+                                  <Input 
+                                    id="otp" 
+                                    type="text" 
+                                    value={otpCode} 
+                                    onChange={(e) => setOtpCode(e.target.value)} 
+                                    placeholder="6-digit code" 
+                                    className="bg-white max-w-[150px]"
+                                  />
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    onClick={handleVerifyOTP}
+                                    disabled={isVerifying || !otpCode}
+                                  >
+                                    {isVerifying ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                                    Verify
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <PhoneInput id="phone" value={phone} onChange={setPhone} label="Phone Number" />
                   

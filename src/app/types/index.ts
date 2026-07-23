@@ -76,6 +76,12 @@ export interface User {
   parentPin?: string; // PIN for Kids Mode parental controls (hashed)
   jotsCode?: string; // legacy alias — use organizationCode instead
   organizationCode?: string; // the actual code the user registered with
+  organizationId?: string; // Added to resolve TS errors
+  uid?: string; // Added to resolve TS errors
+  isVerified?: boolean; // Tracking if email has been verified
+  firstName?: string; // Added to resolve TS errors
+  lastName?: string; // Added to resolve TS errors
+  className?: string; // Added to resolve TS errors
   createdAt?: string;
   consentVersion?: string;
   assessments?: Assessment[]; // Full assessment objects (legacy)

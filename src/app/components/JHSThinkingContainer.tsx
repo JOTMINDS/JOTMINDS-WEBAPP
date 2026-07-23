@@ -65,9 +65,9 @@ export function JHSThinkingContainer({
         type: 'jhs-thinking',
         responses: [],
         score: {
-          practical: assessmentResults.practical,
-          analytical: assessmentResults.analytical,
-          creative: assessmentResults.creative,
+          practical: assessmentResults.scores.practical,
+          analytical: assessmentResults.scores.analytical,
+          creative: assessmentResults.scores.creative,
         },
         completedAt: new Date().toISOString()
       } as any);

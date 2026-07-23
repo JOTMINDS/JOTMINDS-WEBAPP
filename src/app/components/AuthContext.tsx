@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ...(fallbackAuthUser.user_metadata || {})
               } as User;
               if (basicUser.role) {
-                basicUser.role = basicUser.role === 'Professional/Organization' ? 'professional' : basicUser.role.toLowerCase();
+                basicUser.role = ((basicUser.role as string) === 'Professional/Organization' ? 'professional' : (basicUser.role as string).toLowerCase()) as User['role'];
               }
               const enrichedUser = enrichUserWithAge(basicUser);
               setUser(enrichedUser);

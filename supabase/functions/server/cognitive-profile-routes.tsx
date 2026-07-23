@@ -45,54 +45,67 @@ async function generateUnifiedProfile(userId: string) {
     dualProcessResult ? 'dual-process' : null,
   ].filter(Boolean) as string[];
 
-  if (completedAssessments.length === 0) {
-    // Fallback: check if they have a unified thinking assessment (Adult/SHS/JHS)
-    const adultResult = await kv.get(`result:${userId}:adult-thinking`);
-    const shsResult = await kv.get(`result:${userId}:shs-thinking`);
-    const jhsResult = await kv.get(`result:${userId}:jhs-thinking`);
+  // Fetch fallback thinking assessments
+  const adultResult = await kv.get(`result:${userId}:adult-thinking`);
+  const shsResult = await kv.get(`result:${userId}:shs-thinking`);
+  const jhsResult = await kv.get(`result:${userId}:jhs-thinking`);
+  const fallbackThinkingResult = adultResult || shsResult || jhsResult;
 
-    const fallbackResult = adultResult || shsResult || jhsResult;
+  if (completedAssessments.length === 0 && fallbackThinkingResult) {
+    // Fallback: no core assessments, but they have a unified thinking assessment (Adult/SHS/JHS)
+    const type = fallbackThinkingResult.assessmentType || 'thinking';
+    const scores = fallbackThinkingResult.results?.percentages || fallbackThinkingResult.results?.scores || {};
     
-    if (fallbackResult) {
-      const type = fallbackResult.assessmentType || 'thinking';
-      const scores = fallbackResult.results?.percentages || fallbackResult.results?.scores || {};
+    return {
+      // Core Dimensions
+      learningAgility: scores.reflective || 50, 
+      analyticalDepth: scores.analytical || 0,
+      creativeCapacity: scores.creative || 0,
+      practicalExecution: scores.practical || 0,
+      intuitiveSpeed: scores.creative || 0,
+      reflectiveDepth: scores.reflective || 0,
       
-      return {
-        // Core Dimensions
-        learningAgility: scores.reflective || 50, 
-        analyticalDepth: scores.analytical || 0,
-        creativeCapacity: scores.creative || 0,
-        practicalExecution: scores.practical || 0,
-        intuitiveSpeed: scores.creative || 0,
-        reflectiveDepth: scores.reflective || 0,
-        
-        // Derived Meta-Dimensions
-        cognitiveFlexibility: 50, 
-        innovationPotential: Math.round(((scores.creative || 0) + (scores.analytical || 0)) / 2),
-        executionCapability: Math.round(((scores.practical || 0) + (scores.analytical || 0)) / 2),
-        metacognitiveAwareness: 50,
+      // Derived Meta-Dimensions
+      cognitiveFlexibility: 50, 
+      innovationPotential: Math.round(((scores.creative || 0) + (scores.analytical || 0)) / 2),
+      executionCapability: Math.round(((scores.practical || 0) + (scores.analytical || 0)) / 2),
+      metacognitiveAwareness: 50,
 
-        // Summary Stats
-        completedAssessments: [type],
-        profileCompleteness: 100, 
-        dominantStyle: fallbackResult.results?.dominantStyle || fallbackResult.results?.primaryStyle || 'Balanced',
-        cognitiveArchetype: fallbackResult.results?.professionalProfile || fallbackResult.results?.personalityType || 'Balanced Learner',
+      // Summary Stats
+      completedAssessments: [type],
+      profileCompleteness: 100, 
+      dominantStyle: fallbackThinkingResult.results?.dominantStyle || fallbackThinkingResult.results?.primaryStyle || 'Balanced',
+      cognitiveArchetype: fallbackThinkingResult.results?.professionalProfile || fallbackThinkingResult.results?.personalityType || 'Balanced Learner',
 
-        // Metadata
-        generatedAt: new Date().toISOString(),
-        sourceResults: {
-          [type]: fallbackResult.id || null
-        }
-      };
-    }
+      // Metadata
+      generatedAt: new Date().toISOString(),
+      sourceResults: {
+        [type]: fallbackThinkingResult.id || null
+      }
+    };
+  }
 
+  if (completedAssessments.length === 0) {
     return null; // No assessments completed at all
   }
 
   // Extract scores with safe defaults
   const kolbScores = kolbResult?.results?.percentages || {};
-  const sternbergScores = sternbergResult?.results?.percentages || {};
+  let sternbergScores = sternbergResult?.results?.percentages || {};
   const dualProcessScores = dualProcessResult?.results?.percentages || {};
+
+  // If Sternberg is missing, try to use the fallback thinking assessment to populate scores
+  let sourceSternberg = sternbergResult?.id || null;
+  if (!sternbergResult && fallbackThinkingResult) {
+    const fbScores = fallbackThinkingResult.results?.percentages || fallbackThinkingResult.results?.scores || {};
+    sternbergScores = {
+      Analytical: fbScores.analytical || 0,
+      Creative: fbScores.creative || 0,
+      Practical: fbScores.practical || 0
+    };
+    sourceSternberg = fallbackThinkingResult.id;
+    completedAssessments.push(fallbackThinkingResult.assessmentType || 'thinking');
+  }
 
   // Calculate unified dimensions (normalized 0-100 scale)
   const profile = {
@@ -116,7 +129,7 @@ async function generateUnifiedProfile(userId: string) {
 
     // Summary Stats
     completedAssessments,
-    profileCompleteness: (completedAssessments.length / 3) * 100,
+    profileCompleteness: Math.min(100, (completedAssessments.length / 3) * 100),
     dominantStyle: identifyDominantStyle(kolbScores, sternbergScores, dualProcessScores),
     cognitiveArchetype: identifyCognitiveArchetype(kolbScores, sternbergScores, dualProcessScores),
 
@@ -124,7 +137,7 @@ async function generateUnifiedProfile(userId: string) {
     generatedAt: new Date().toISOString(),
     sourceResults: {
       kolb: kolbResult?.id || null,
-      sternberg: sternbergResult?.id || null,
+      sternberg: sourceSternberg,
       dualProcess: dualProcessResult?.id || null,
     }
   };

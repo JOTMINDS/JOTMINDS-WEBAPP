@@ -625,20 +625,24 @@ export async function generateOTP(contact: string): Promise<string> {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   
   const token = await getAuthToken();
+  const isEmail = contact.includes('@');
+
   // Call server to securely record OTP (and dispatch if email)
   try {
-    const response = await fetch(`${BASE_URL}/send-otp`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token || publicAnonKey}` 
-      },
-      body: JSON.stringify({ email: contact, otp })
-    });
+    if (isEmail) {
+      const response = await fetch(`${BASE_URL}/send-otp`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token || publicAnonKey}` 
+        },
+        body: JSON.stringify({ email: contact, otp })
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to send verification code');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to send verification code');
+      }
     }
     return otp;
   } catch (error: any) {
@@ -788,83 +792,103 @@ export const GHANA_REGIONS = [
 // -----------------------------------------
 
 import { Class } from '../types';
+import { getAllClasses, saveClass } from './storage';
 
 export async function getInstitutionClasses(institutionId: string): Promise<Class[]> {
-  const { data, error } = await (supabase as any)
-    .from('classes')
-    .select('*')
-    .eq('institution_id', institutionId);
+  let remoteClasses: Class[] = [];
+  
+  try {
+    const { data, error } = await (supabase as any)
+      .from('classes')
+      .select('*')
+      .eq('institution_id', institutionId);
 
-  if (error) {
-    console.error('Error fetching classes:', error);
-    return [];
+    if (error) {
+      console.warn('Error fetching classes from Supabase, falling back to local storage:', error);
+    } else {
+      remoteClasses = (data || []).map((dbClass: any) => ({
+        id: dbClass.id,
+        name: dbClass.name,
+        academicYear: dbClass.academic_year,
+        classTeacherId: dbClass.class_teacher_id || undefined,
+        institutionId: dbClass.institution_id,
+        studentCount: dbClass.student_count || 0,
+        classCode: dbClass.class_code,
+        createdAt: dbClass.created_at
+      }));
+    }
+  } catch (e) {
+    console.warn('Exception fetching classes from Supabase:', e);
   }
 
-  return (data || []).map((dbClass: any) => ({
-    id: dbClass.id,
-    name: dbClass.name,
-    academicYear: dbClass.academic_year,
-    classTeacherId: dbClass.class_teacher_id || undefined,
-    institutionId: dbClass.institution_id,
-    studentCount: dbClass.student_count || 0,
-    classCode: dbClass.class_code,
-    createdAt: dbClass.created_at
-  }));
+  // Merge with local storage classes
+  const localClasses = getAllClasses().filter(c => c.institutionId === institutionId);
+  
+  // Deduplicate by ID, preferring remote classes if they exist
+  const mergedMap = new Map<string, Class>();
+  localClasses.forEach(c => mergedMap.set(c.id, c));
+  remoteClasses.forEach(c => mergedMap.set(c.id, c));
+  
+  return Array.from(mergedMap.values());
 }
 
 export async function createInstitutionClass(classData: Class): Promise<Class> {
   // Use existing ID or let DB generate it (if it was uuid, but here it's text)
   const classId = classData.id || `cls_${Date.now()}`;
   const classCode = classData.classCode || generateInstitutionCode().replace('JOTM-', 'CLS-');
+  
+  const classToSave = {
+    ...classData,
+    id: classId,
+    classCode: classCode,
+    createdAt: classData.createdAt || new Date().toISOString()
+  };
 
-  let result = await (supabase as any)
-    .from('classes')
-    .upsert({
-      id: classId,
-      name: classData.name,
-      academic_year: classData.academicYear,
-      class_teacher_id: classData.classTeacherId || null,
-      institution_id: classData.institutionId,
-      student_count: classData.studentCount || 0,
-      class_code: classCode,
-      created_at: classData.createdAt || new Date().toISOString()
-    })
-    .select()
-    .single();
+  // 1. Always save to local storage first so the UI works immediately
+  saveClass(classToSave);
 
-  // If the remote database hasn't had the class_code migration applied, it will throw an error (PGRST204)
-  if (result.error && result.error.message?.includes("class_code")) {
-    console.warn("Retrying class creation without class_code due to missing database column");
-    result = await (supabase as any)
+  try {
+    let result = await (supabase as any)
       .from('classes')
       .upsert({
         id: classId,
-        name: classData.name,
-        academic_year: classData.academicYear,
-        class_teacher_id: classData.classTeacherId || null,
-        institution_id: classData.institutionId,
-        student_count: classData.studentCount || 0,
-        created_at: classData.createdAt || new Date().toISOString()
+        name: classToSave.name,
+        academic_year: classToSave.academicYear,
+        class_teacher_id: classToSave.classTeacherId || null,
+        institution_id: classToSave.institutionId,
+        student_count: classToSave.studentCount || 0,
+        class_code: classToSave.classCode,
+        created_at: classToSave.createdAt
       })
       .select()
       .single();
+
+    // If the remote database hasn't had the class_code migration applied, it will throw an error (PGRST204)
+    if (result.error && result.error.message?.includes("class_code")) {
+      console.warn("Retrying class creation without class_code due to missing database column");
+      result = await (supabase as any)
+        .from('classes')
+        .upsert({
+          id: classId,
+          name: classToSave.name,
+          academic_year: classToSave.academicYear,
+          class_teacher_id: classToSave.classTeacherId || null,
+          institution_id: classToSave.institutionId,
+          student_count: classToSave.studentCount || 0,
+          created_at: classToSave.createdAt
+        })
+        .select()
+        .single();
+    }
+
+    if (result.error) {
+      console.warn("Failed to sync class to Supabase (might need database migration):", result.error.message);
+    }
+  } catch (e) {
+    console.warn("Exception syncing class to Supabase:", e);
   }
 
-  if (result.error) {
-    alert("Failed to save class: " + result.error.message);
-    throw result.error;
-  }
-
-  return {
-    id: result.data.id,
-    name: result.data.name,
-    academicYear: result.data.academic_year,
-    classTeacherId: result.data.class_teacher_id || undefined,
-    institutionId: result.data.institution_id,
-    studentCount: result.data.student_count || 0,
-    classCode: result.data.class_code || classCode, // Provide fallback classCode if DB doesn't have it
-    createdAt: result.data.created_at
-  };
+  return classToSave;
 }
 
 export async function deleteInstitutionClass(classId: string): Promise<void> {

@@ -139,6 +139,7 @@ export const updateUserProfile = async (updates: Partial<{
   secondaryPhone: string;
   classCode: string;
   avatarUrl: string;
+  isVerified: boolean;
 }>) => {
   return makeRequest('/user/profile', {
     method: 'PATCH',

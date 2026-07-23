@@ -112,7 +112,7 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
       sends: (existing && now - windowStart < 60 * 60 * 1000 ? (existing.sends ?? 0) : 0) + 1,
     });
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -192,7 +192,7 @@ app.post('/make-server-fc8eb847/send-login-alert', async (c) => {
       return c.json({ error: 'Email required' }, 400);
     }
     
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -244,7 +244,7 @@ app.post('/make-server-fc8eb847/send-org-code', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
     
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -313,7 +313,7 @@ app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
     }
     
     const signupLink = `https://jotminds.com/auth?inviteToken=${token}&role=teacher`;
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -407,7 +407,7 @@ app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
     }
 
     const signupLink = `https://jotminds.com/auth?inviteToken=${token}&role=student`;
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -458,7 +458,7 @@ app.post('/make-server-fc8eb847/send-professional-invite', async (c) => {
     }
 
     const signupLink = `https://jotminds.com/auth?code=${organizationCode}&role=professional`;
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -506,7 +506,7 @@ app.post('/make-server-fc8eb847/send-reminder', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -1256,6 +1256,13 @@ function generateWelcomeEmailHtml(name: string, role: string, email: string, org
                 ${orgCodeSection}
               </div>
 
+              <!-- Verification Warning -->
+              <div style="background-color: #FEF2F2; border-left: 4px solid #EF4444; border-radius: 4px; padding: 16px; margin: 25px 0;">
+                <p style="margin: 0; font-size: 15px; color: #991B1B;">
+                  <strong>Action Required:</strong> Please log in to your account and verify your email address within <strong>48 hours (2 days)</strong>. Unverified accounts will be automatically deleted after this period to ensure community safety.
+                </p>
+              </div>
+
               <!-- Next Steps section -->
               <h3 style="font-size: 16px; color: #1E293B; margin-top: 30px; margin-bottom: 15px;">Here's how to get started:</h3>
               <ul style="padding-left: 20px; margin-bottom: 30px; font-size: 15px; color: #475569;">
@@ -1475,7 +1482,8 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         consentType, 
         consentDate,
         teacherId: finalTeacherId,
-        teacherName: resolvedTeacherName
+        teacherName: resolvedTeacherName,
+        isVerified: false
       }
     });
 
@@ -1578,7 +1586,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     // Send welcome email via Resend HTTP API (avoids SMTP port-blocking in serverless runtime)
     try {
       console.log(`[signup] Triggering welcome email for ${email}`);
-      const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+      const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
       if (resendApiKey) {
         const welcomeHtml = generateWelcomeEmailHtml(name, role, email, finalOrgCode);
         const response = await fetch('https://api.resend.com/emails', {
@@ -2678,18 +2686,13 @@ app.post('/make-server-fc8eb847/send-class-assignment', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
     
-    // Create Brevo email payload
-    const apiKey = Deno.env.get('BREVO_API_KEY');
-    if (!apiKey) {
-      console.warn('BREVO_API_KEY not set. Cannot send assignment email.');
-      return c.json({ success: true, warning: 'Email not sent (no API key)' });
-    }
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
 
     const payload = {
-      sender: { name: 'JotMinds', email: 'no-reply@jotminds.com' },
-      to: [{ email }],
+      from: 'JotMinds <service@jotminds.com>',
+      to: [email],
       subject: `You have been assigned to ${className} on JotMinds`,
-      htmlContent: `
+      html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>Class Assignment</h2>
           <p>Hello,</p>
@@ -2702,10 +2705,10 @@ app.post('/make-server-fc8eb847/send-class-assignment', async (c) => {
       `
     };
 
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'api-key': apiKey,
+        'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload)
@@ -2713,8 +2716,8 @@ app.post('/make-server-fc8eb847/send-class-assignment', async (c) => {
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error('Brevo API error:', errText);
-      return c.json({ error: 'Failed to send email via Brevo' }, 500);
+      console.error('Resend API error:', errText);
+      return c.json({ error: 'Failed to send email via Resend' }, 500);
     }
 
     return c.json({ success: true });
@@ -5190,9 +5193,64 @@ app.post('/make-server-fc8eb847/gamification/update', async (c) => {
     return c.json({ error: 'Failed to update gamification profile' }, 500);
   }
 });
+// ==========================================
+// CRON JOBS
+// ==========================================
 
+app.post('/make-server-fc8eb847/cron/cleanup-unverified-users', async (c) => {
+  try {
+    const cronSecret = c.req.header('x-cron-secret');
+    if (cronSecret !== (Deno.env.get('CRON_SECRET') || 'jotminds-cron-secret')) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
 
+    let page = 1;
+    let allUsers: any[] = [];
+    while (true) {
+      const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+      if (error) throw error;
+      if (!data.users || data.users.length === 0) break;
+      allUsers = [...allUsers, ...data.users];
+      if (data.users.length < 1000) break;
+      page++;
+    }
 
+    const now = Date.now();
+    const fortyEightHours = 48 * 60 * 60 * 1000;
+    const deletedUserIds = [];
+
+    for (const user of allUsers) {
+      const createdAt = new Date(user.created_at).getTime();
+      const age = now - createdAt;
+      
+      // Delete users older than 48 hours who are NOT verified
+      if (age > fortyEightHours) {
+        let isVerified = false;
+        
+        if (user.user_metadata?.isVerified === true) {
+          isVerified = true;
+        } else {
+          const profile = await kv.get(`user:${user.id}`);
+          if (profile?.isVerified === true) {
+            isVerified = true;
+          }
+        }
+        
+        if (!isVerified) {
+          console.log(`[cron] Deleting unverified user: ${user.id} (${user.email}) created at ${user.created_at}`);
+          await supabase.auth.admin.deleteUser(user.id);
+          await kv.del(`user:${user.id}`);
+          deletedUserIds.push(user.id);
+        }
+      }
+    }
+
+    return c.json({ success: true, message: `Cleaned up ${deletedUserIds.length} unverified users.`, deleted: deletedUserIds });
+  } catch (error) {
+    console.error('[cron] cleanup error:', error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
+});
 
 Deno.serve((req) => {
   const url = new URL(req.url);

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
-import { Assessment, UserRole } from '../types';
+import { Assessment, UserRole, AssessmentScore } from '../types';
 import { saveReflection, getAllReflections, generateId } from '../utils/storage';
 import { getGhanaMapping, getStyleDescription } from '../utils/scoring';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -279,12 +279,12 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
       const typeKey = assessment.type === 'child-thinking' ? 'children-thinking' : assessment.type;
       let actualScores: any = {};
       
-      if (assessment.score[typeKey] && assessment.score[typeKey].scores) {
-          actualScores = assessment.score[typeKey].scores;
-      } else if (assessment.score.creative !== undefined || assessment.score.analytical !== undefined || assessment.score.Creative !== undefined) {
+      if (assessment.score[typeKey as keyof AssessmentScore] && (assessment.score[typeKey as keyof AssessmentScore] as any).scores) {
+          actualScores = (assessment.score[typeKey as keyof AssessmentScore] as any).scores;
+      } else if ((assessment.score as any).creative !== undefined || (assessment.score as any).analytical !== undefined || (assessment.score as any).Creative !== undefined) {
           actualScores = assessment.score;
-      } else if (assessment.score.scores) {
-          actualScores = assessment.score.scores;
+      } else if ((assessment.score as any).scores) {
+          actualScores = (assessment.score as any).scores;
       }
 
       return [

@@ -442,7 +442,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                 Cancel
               </button>
               <button 
-                onClick={() => { handleSaveSubjectAssignment(); setIsSubjectModalOpen(false); }}
+                onClick={() => { handleSaveTeacherAssignment(); setIsSubjectModalOpen(false); }}
                 className="px-4 py-2 bg-[#1E8A6E] text-white rounded-lg hover:bg-[#156e57]"
               >
                 Assign

@@ -64,9 +64,9 @@ export function AdultThinkingContainer({
         type: 'adult-thinking',
         responses: [],
         score: {
-          analytical: assessmentResults.analytical,
-          creative: assessmentResults.creative,
-          practical: assessmentResults.practical,
+          analytical: assessmentResults.scores.analytical,
+          creative: assessmentResults.scores.creative,
+          practical: assessmentResults.scores.practical,
         },
         completedAt: new Date().toISOString()
       } as any);

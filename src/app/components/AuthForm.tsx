@@ -431,47 +431,20 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           return;
         }
         
-        // STEP 4 -> 5: Send OTP before finalizing signup
+        // STEP 4 -> 5: Send OTP before finalizing signup (BYPASSED)
+        // We now allow users to sign up immediately and verify their email within 48 hours.
+        /* 
         if (registrationStep === 4) {
-          try {
-            setLoading(true);
-            await generateOTP(email);
-            setRegistrationStep(5);
-            setError('');
-          } catch (err: any) {
-            console.error('Signup OTP Send Error:', err);
-            
-            // Only fallback to simulated OTP for network failures in local dev
-            if (err.message === 'Failed to fetch' || err.message.includes('Network error')) {
-              const otp = Math.floor(100000 + Math.random() * 900000).toString();
-              setSimulatedSignupOTP(otp);
-              setRegistrationStep(5);
-              setError('Could not connect to verification server. Using simulated OTP for dev mode.');
-            } else {
-              // Real server error (like rate limit or Resend failure)
-              setError(err.message || 'Failed to send verification code. Please try again later.');
-            }
-          } finally {
-            setLoading(false);
-          }
-          return;
+          ...
         }
+        */
 
-        // STEP 5: Verify OTP and finalize signup
+        // STEP 5: Verify OTP and finalize signup (BYPASSED)
+        /*
         if (registrationStep === 5) {
-          let isValid = false;
-          if (simulatedSignupOTP && signupOTP === simulatedSignupOTP) {
-            isValid = true;
-          } else {
-            isValid = await verifyOTP(email, signupOTP);
-          }
-          
-          if (!isValid) {
-            setError('Incorrect verification code. Please try again.');
-            setLoading(false);
-            return;
-          }
+          ...
         }
+        */
         
         const signupData = {
           email: cleanEmail,
@@ -1250,7 +1223,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                       className="flex-1"
                       disabled={loading || !hasConsented}
                     >
-                      {loading ? <Loader className="h-4 w-4 animate-spin" /> : 'Continue'}
+                      {loading ? <Loader className="h-4 w-4 animate-spin" /> : 'Complete Registration'}
                     </Button>
                   )}
                 </div>
