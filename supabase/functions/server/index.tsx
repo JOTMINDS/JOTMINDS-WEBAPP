@@ -112,7 +112,7 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
       sends: (existing && now - windowStart < 60 * 60 * 1000 ? (existing.sends ?? 0) : 0) + 1,
     });
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -192,7 +192,7 @@ app.post('/make-server-fc8eb847/send-login-alert', async (c) => {
       return c.json({ error: 'Email required' }, 400);
     }
     
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -244,7 +244,7 @@ app.post('/make-server-fc8eb847/send-org-code', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
     
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -313,7 +313,7 @@ app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
     }
     
     const signupLink = `https://jotminds.com/auth?inviteToken=${token}&role=teacher`;
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -407,7 +407,7 @@ app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
     }
 
     const signupLink = `https://jotminds.com/auth?inviteToken=${token}&role=student`;
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -458,7 +458,7 @@ app.post('/make-server-fc8eb847/send-professional-invite', async (c) => {
     }
 
     const signupLink = `https://jotminds.com/auth?code=${organizationCode}&role=professional`;
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -506,7 +506,7 @@ app.post('/make-server-fc8eb847/send-reminder', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -1586,7 +1586,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     // Send welcome email via Resend HTTP API (avoids SMTP port-blocking in serverless runtime)
     try {
       console.log(`[signup] Triggering welcome email for ${email}`);
-      const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
+      const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
       if (resendApiKey) {
         const welcomeHtml = generateWelcomeEmailHtml(name, role, email, finalOrgCode);
         const response = await fetch('https://api.resend.com/emails', {
@@ -2686,7 +2686,7 @@ app.post('/make-server-fc8eb847/send-class-assignment', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
     
-    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_E6zB5Xan_6a1ieLLUC9FpfBb595SatPQP';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
 
     const payload = {
       from: 'JotMinds <service@jotminds.com>',
