@@ -168,7 +168,7 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
 
       // Branded header band
       const bandHeight = 40;
-      doc.setFillColor(91, 125, 177); // #5B7DB1 JotMinds primary
+      doc.setFillColor(44, 46, 131); // #2C2E83 Deep Indigo primary
       doc.rect(0, 0, pageWidth, bandHeight, 'F');
       doc.setFillColor(255, 113, 91); // coral accent strip
       doc.rect(0, bandHeight, pageWidth, 1.5, 'F');
@@ -188,14 +188,6 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
       doc.setFont('Poppins', 'normal');
       doc.setFontSize(9);
       doc.text('Discover How You Think', logoRight, 26);
-
-      // Report label on the right
-      doc.setFont('Poppins', 'bold');
-      doc.setFontSize(10);
-      doc.text('COGNITIVE PROFILE', pageWidth - margin, 17, { align: 'right' });
-      doc.setFont('Poppins', 'normal');
-      doc.setFontSize(9);
-      doc.text('Assessment Report', pageWidth - margin, 23, { align: 'right' });
 
       // Reset text color
       doc.setTextColor(0, 0, 0);

@@ -4,11 +4,12 @@ import { registerPoppins } from './pdfFonts';
 
 // ── JotMinds brand palette (RGB) ──────────────────────────────────────────────
 const BRAND = {
-  indigo: [91, 125, 177] as [number, number, number],   // #5B7DB1 primary
-  dark: [35, 32, 99] as [number, number, number],        // #232063 deep
-  purple: [107, 76, 154] as [number, number, number],    // #6B4C9A secondary
-  coral: [255, 113, 91] as [number, number, number],     // #FF715B accent
-  violet: [123, 97, 255] as [number, number, number],    // #7B61FF accent
+  indigo: [44, 46, 131] as [number, number, number],     // #2C2E83 Deep Indigo primary
+  dark: [44, 46, 131] as [number, number, number],       // #2C2E83 Deep Indigo
+  purple: [123, 97, 255] as [number, number, number],    // #7B61FF Violet secondary
+  coral: [255, 113, 91] as [number, number, number],     // #FF715B Coral accent
+  violet: [123, 97, 255] as [number, number, number],    // #7B61FF Violet accent
+  aqua: [31, 200, 225] as [number, number, number],      // #1FC8E1 Aqua Blue accent
   ink: [33, 37, 41] as [number, number, number],         // body text
   muted: [108, 117, 125] as [number, number, number],    // secondary text
   hairline: [225, 228, 235] as [number, number, number], // borders
@@ -78,14 +79,6 @@ export async function generateParentObservationPDF(
   doc.setFont('Poppins', 'normal');
   doc.setFontSize(9);
   doc.text('Discover How You Think', logoRight, 26);
-
-  // Report label on the right of the band
-  doc.setFont('Poppins', 'bold');
-  doc.setFontSize(10);
-  doc.text('PARENT OBSERVATION', pageWidth - margin, 17, { align: 'right' });
-  doc.setFont('Poppins', 'normal');
-  doc.setFontSize(9);
-  doc.text('Assessment Report', pageWidth - margin, 23, { align: 'right' });
 
   let yPos = bandHeight + 12;
 
