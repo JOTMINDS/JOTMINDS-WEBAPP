@@ -304,6 +304,18 @@ export const unlinkChild = async (childId: string) => {
   });
 };
 
+export const sendUnlinkEmailNotification = async (parentEmail: string, parentName: string, childName: string) => {
+  try {
+    return await makeRequest('/parent/unlink-notification', {
+      method: 'POST',
+      body: JSON.stringify({ parentEmail, parentName, childName }),
+    });
+  } catch (err) {
+    console.error('Failed to send unlink email notification:', err);
+    return { success: false };
+  }
+};
+
 export const getChildrenAssessments = async () => {
   return makeRequest('/parent/children/assessments');
 };

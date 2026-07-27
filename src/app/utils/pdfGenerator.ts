@@ -75,7 +75,7 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   doc.text('JotMinds', logoRight, 19);
   doc.setFont('Poppins', 'normal');
   doc.setFontSize(9);
-  doc.text('Discover How You Think', logoRight, 26);
+  doc.text('Your brain has a manual, we built it', logoRight, 26);
 
   yPos = bandHeight + 12;
 

@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import { 
   Users, UserPlus, Search, MoreVertical, Edit2, Trash2, 
   Mail, Phone, BookOpen, Star, AlertCircle, Loader, Shield, Lock,
-  Plus, Upload, FileText, Download, Building2, Edit
+  Plus, Upload, FileText, Download, Building2, Edit, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,6 +31,11 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
   const [bulkClassId, setBulkClassId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [institutionId, setInstitutionId] = useState<string | null>(null);
+
+  // Teacher Observation State
+  const [observationStudent, setObservationStudent] = useState<User | null>(null);
+  const [observationCategory, setObservationCategory] = useState<'Behavioral' | 'Academic' | 'Emotional' | 'Attention'>('Behavioral');
+  const [observationNote, setObservationNote] = useState('');
 
   // Join Institution State
   const [joinCode, setJoinCode] = useState('');
@@ -364,13 +369,26 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
               <CardDescription>{student.email}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-between items-center mt-2">
+              <div className="flex justify-between items-center mt-2 flex-wrap gap-2">
                 <Badge variant="outline">
                   {getAssessmentsByUserId(student.id).filter(a => a.completedAt).length} Assessments
                 </Badge>
-                <Button variant="link" className="text-[#6B4C9A] p-0 h-auto" onClick={() => onViewReport?.(student.id)}>
-                  View Reports
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-[#2C2E83] border-[#2C2E83]/30 hover:bg-[#2C2E83]/10 h-7 text-xs"
+                    onClick={() => {
+                      setObservationStudent(student);
+                      setObservationNote('');
+                    }}
+                  >
+                    <MessageSquare className="w-3 h-3 mr-1" /> Log Concern
+                  </Button>
+                  <Button variant="link" className="text-[#6B4C9A] p-0 h-auto text-xs" onClick={() => onViewReport?.(student.id)}>
+                    View Reports
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -537,6 +555,75 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
 
             <div className="flex justify-end gap-2 pt-6">
               <Button type="button" variant="ghost" onClick={() => setIsBulkModalOpen(false)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Teacher Observation Modal */}
+      {observationStudent && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-[#2C2E83]">Log Concern / Observation</h3>
+                <p className="text-xs text-gray-500">Student: {observationStudent.name}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setObservationStudent(null)}>✕</Button>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-700 block mb-1">Category</label>
+              <select
+                className="w-full border rounded-md p-2 text-sm bg-white"
+                value={observationCategory}
+                onChange={e => setObservationCategory(e.target.value as any)}
+              >
+                <option value="Behavioral">Behavioral</option>
+                <option value="Academic">Academic</option>
+                <option value="Emotional">Emotional</option>
+                <option value="Attention">Attention / Focus</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-700 block mb-1">Observation Details</label>
+              <textarea
+                className="w-full border rounded-md p-2 text-sm min-h-[100px]"
+                placeholder="Describe your classroom observation or concern for the parent..."
+                value={observationNote}
+                onChange={e => setObservationNote(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setObservationStudent(null)}>Cancel</Button>
+              <Button
+                className="bg-[#2C2E83] hover:bg-[#2C2E83]/90 text-white"
+                disabled={!observationNote.trim()}
+                onClick={() => {
+                  try {
+                    const existing = JSON.parse(localStorage.getItem('jm_teacher_observations') || '[]');
+                    const newObs = {
+                      id: `obs_${Date.now()}`,
+                      teacherId: teacher.id,
+                      teacherName: teacher.name,
+                      studentId: observationStudent.id,
+                      studentName: observationStudent.name,
+                      category: observationCategory,
+                      note: observationNote,
+                      createdAt: new Date().toISOString(),
+                    };
+                    localStorage.setItem('jm_teacher_observations', JSON.stringify([newObs, ...existing]));
+                    toast.success(`Observation logged for ${observationStudent.name}!`);
+                    setObservationStudent(null);
+                  } catch (e) {
+                    console.error('Error saving observation', e);
+                    toast.error('Failed to log observation.');
+                  }
+                }}
+              >
+                Submit Observation
+              </Button>
             </div>
           </div>
         </div>
