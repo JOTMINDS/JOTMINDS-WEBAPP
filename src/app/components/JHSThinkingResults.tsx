@@ -18,6 +18,7 @@ import {
   GraduationCap,
   Briefcase
 } from 'lucide-react';
+import { useAuth } from './AuthContext';
 import { JHSResults } from '../utils/jhsScoring';
 import { THINKING_STYLES, SHS_PROGRAMS, MOTIVATION_MESSAGES, CAREER_PATHS, Career } from '../utils/jhsThinkingData';
 import {
@@ -50,6 +51,7 @@ export function JHSThinkingResults({
   onReturnToDashboard,
   onShareWithParent 
 }: JHSThinkingResultsProps) {
+  const { user } = useAuth();
   const [selectedProgram, setSelectedProgram] = useState<any>(null);
   const [openChallenges, setOpenChallenges] = useState<{[key: number]: boolean}>({});
   const [showCareerExplorer, setShowCareerExplorer] = useState(false);
@@ -583,7 +585,7 @@ export function JHSThinkingResults({
                 Return to Dashboard
               </Button>
               
-              {onShareWithParent && (
+              {onShareWithParent && (user?.role === 'student' || user?.role === 'child') && (
                 <Button 
                   onClick={onShareWithParent}
                   variant="outline"

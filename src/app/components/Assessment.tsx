@@ -412,8 +412,8 @@ export const Assessment: React.FC<AssessmentProps> = ({
                 </div>
               </RadioGroup>
 
-              {/* Parent Consent Checkbox (shown only on last question when ready to submit) */}
-              {isLastQuestion && currentQuestionAnswered && (
+              {/* Parent Consent Checkbox (shown only on last question when ready to submit for student/child roles) */}
+              {isLastQuestion && currentQuestionAnswered && (user?.role === 'student' || user?.role === 'child') && (
                 <div className="flex items-start space-x-2 mt-6 p-4 border rounded-md bg-slate-50 dark:bg-slate-900">
                   <Checkbox 
                     id="parent-consent" 

@@ -10,6 +10,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend 
 } from 'recharts';
 import { Home, Share2, TrendingUp, Lightbulb, GraduationCap, Briefcase, Building2 } from 'lucide-react';
+import { useAuth } from './AuthContext';
 
 interface SHSThinkingResultsProps {
   results: SHSResults;
@@ -24,6 +25,7 @@ export function SHSThinkingResults({
   onReturnToDashboard,
   onShareWithParent
 }: SHSThinkingResultsProps) {
+  const { user } = useAuth();
   const { percentages, dominantStyle, personalityType, topPrograms } = results;
   const insights = getSHSInsights(results);
 
@@ -287,14 +289,16 @@ export function SHSThinkingResults({
             <Home className="mr-2 h-5 w-5" />
             Return to Dashboard
           </Button>
-          <Button
-            onClick={onShareWithParent}
-            variant="outline"
-            className="flex-1 border-2 border-indigo-300 hover:bg-indigo-50 py-6 text-base"
-          >
-            <Share2 className="mr-2 h-5 w-5" />
-            Share with Parent/Guardian
-          </Button>
+          {(user?.role === 'student' || user?.role === 'child') && (
+            <Button
+              onClick={onShareWithParent}
+              variant="outline"
+              className="flex-1 border-2 border-indigo-300 hover:bg-indigo-50 py-6 text-base"
+            >
+              <Share2 className="mr-2 h-5 w-5" />
+              Share with Parent/Guardian
+            </Button>
+          )}
         </div>
       </div>
     </div>
