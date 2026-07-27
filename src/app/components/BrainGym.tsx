@@ -165,7 +165,7 @@ const dailyChallenges = {
       question: 'Choosing between two job offers:',
       options: [
         { text: '💡 Pick the one that feels right', value: 2, skill: 'intuitive', emoji: '✨' },
-        { text: '📊 Compare salary, benefits, growth', value: 4, skill: 'analytical', emoji: '📈' },
+        { text: '📊 Compare benefits, culture, growth', value: 4, skill: 'analytical', emoji: '📈' },
         { text: '👥 Ask mentors for their opinion', value: 3, skill: 'consultative', emoji: '🎓' },
         { text: '⚖️ List pros/cons systematically', value: 4, skill: 'systematic', emoji: '📋' },
       ],

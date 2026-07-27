@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Briefcase, ExternalLink, BookOpen, Target, Sparkles, TrendingUp, Clock, DollarSign, Lightbulb, Calendar, Link as LinkIcon, Search, Filter, Heart, X } from 'lucide-react';
+import { Briefcase, ExternalLink, BookOpen, Target, Sparkles, TrendingUp, Clock, Lightbulb, Calendar, Link as LinkIcon, Search, Filter, Heart, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
@@ -1085,17 +1085,6 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
 
                 {/* Career Info Grid */}
                 <div className="grid md:grid-cols-2 gap-4">
-                  {selectedCareer.typicalSalaryRange && (
-                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <DollarSign className="w-5 h-5 text-orange-600" />
-                        <h4 className="font-semibold">Typical Salary in Ghana</h4>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {selectedCareer.typicalSalaryRange}
-                      </p>
-                    </div>
-                  )}
 
                   {selectedCareer.careerGrowth && (
                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">

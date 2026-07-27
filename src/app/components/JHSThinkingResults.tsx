@@ -16,8 +16,7 @@ import {
   Compass,
   X,
   GraduationCap,
-  Briefcase,
-  DollarSign
+  Briefcase
 } from 'lucide-react';
 import { JHSResults } from '../utils/jhsScoring';
 import { THINKING_STYLES, SHS_PROGRAMS, MOTIVATION_MESSAGES, CAREER_PATHS, Career } from '../utils/jhsThinkingData';
@@ -781,21 +780,6 @@ export function JHSThinkingResults({
                 </CardContent>
               </Card>
 
-              {/* Salary Range */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" style={{ color: primaryStyle.color }} />
-                    Potential Earnings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-gray-800 font-semibold">{selectedCareer.salaryRange}</p>
-                    <p className="text-xs text-gray-600 mt-1">* Actual salaries vary based on experience, location, and employer</p>
-                  </div>
-                </CardContent>
-              </Card>
 
               {/* Fun Fact */}
               <Card className="bg-gradient-to-r from-yellow-50 to-orange-50">

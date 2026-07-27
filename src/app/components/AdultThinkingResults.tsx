@@ -9,7 +9,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip 
 } from 'recharts';
-import { Home, Share2, TrendingUp, Lightbulb, Briefcase, Building2, DollarSign, Target, Award } from 'lucide-react';
+import { Home, Share2, TrendingUp, Lightbulb, Briefcase, Building2, Target, Award } from 'lucide-react';
 
 interface AdultThinkingResultsProps {
   results: AdultResults;
@@ -206,15 +206,6 @@ export function AdultThinkingResults({
                         </Badge>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Salary Range */}
-                  <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
-                    <h4 className="font-semibold text-slate-900 mb-1 flex items-center gap-2 text-sm">
-                      <DollarSign className="h-4 w-4 text-emerald-600" />
-                      Average Salary Range:
-                    </h4>
-                    <p className="text-emerald-800 font-bold">{career.averageSalaryRange}</p>
                   </div>
 
                   {/* Key Skills */}
