@@ -39,19 +39,16 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   }, [institutionMembers, allPlatformUsers, institutionId]);
 
   const loadData = async () => {
-    if (institutionId) {
-      setIsLoadingClasses(true);
-      try {
-        const dbClasses = await getInstitutionClasses(institutionId);
-        setClasses(dbClasses);
-      } catch (err) {
-        console.error("Failed to load classes", err);
-      } finally {
-        setIsLoadingClasses(false);
-      }
+    setIsLoadingClasses(true);
+    try {
+      const dbClasses = await getInstitutionClasses(institutionId || '');
+      setClasses(dbClasses);
+    } catch (err) {
+      console.error("Failed to load classes", err);
+    } finally {
+      setIsLoadingClasses(false);
     }
 
-    
     // Build a set of member user IDs belonging to THIS institution
     const memberIds = new Set(institutionMembers.map(m => m.userId));
     
@@ -72,7 +69,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   };
 
   const handleSaveClass = async () => {
-    if (!currentClass.name || !currentClass.academicYear || !institutionId) return;
+    if (!currentClass.name || !currentClass.academicYear) return;
     
     const isNew = !currentClass.id;
     const previousClass = !isNew ? classes.find(c => c.id === currentClass.id) : null;
@@ -82,7 +79,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       name: currentClass.name,
       academicYear: currentClass.academicYear,
       classTeacherId: currentClass.classTeacherId,
-      institutionId: institutionId,
+      institutionId: institutionId || '',
       createdAt: currentClass.createdAt || new Date().toISOString(),
     };
     

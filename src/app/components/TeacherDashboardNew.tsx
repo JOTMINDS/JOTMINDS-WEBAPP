@@ -61,7 +61,12 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   useEffect(() => {
     const initClasses = async () => {
       try {
-        await getInstitutionClasses(user.institutionId || '');
+        let instId = user.institutionId || '';
+        if (!instId) {
+          const inst = await getInstitutionForMember(user.id);
+          if (inst) instId = inst.id;
+        }
+        await getInstitutionClasses(instId);
       } catch (e) {
         console.warn('Failed to sync classes from server:', e);
       }

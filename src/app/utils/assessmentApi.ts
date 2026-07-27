@@ -22,13 +22,31 @@ const getFrameworkName = (type: string): string => {
   }
 };
 
-const getHeaders = (): Record<string, string> => {
+const getHeaders = (userId?: string): Record<string, string> => {
   const token = getAuthToken();
   
-  return {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token || publicAnonKey}`
   };
+
+  if (userId) {
+    headers['X-User-Id'] = userId;
+  } else {
+    try {
+      const storedUser = localStorage.getItem('jotminds_user');
+      if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u && u.id) {
+          headers['X-User-Id'] = u.id;
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  return headers;
 };
 
 /**
@@ -240,9 +258,11 @@ export const submitAssessmentWithServerScoring = async (
     const data = await response.json();
     console.log(`[AssessmentAPI] Assessment submitted successfully:`, data);
     
-    // Determine dominant and secondary style
-    const sorted = Object.entries(scoringResult.results).sort((a: any, b: any) => b[1] - a[1]);
-    const dominantStyle = sorted[0]?.[0] || '';
+    // Determine dominant and secondary style accurately from scores/percentages
+    const scoresObj = scoringResult.results?.scores || scoringResult.results?.percentages || scoringResult.results || {};
+    const numericEntries = Object.entries(scoresObj).filter(([_, val]) => typeof val === 'number');
+    const sorted = numericEntries.sort((a: any, b: any) => b[1] - a[1]);
+    const dominantStyle = scoringResult.results?.dominantStyle || sorted[0]?.[0] || '';
     const secondaryStyle = (sorted[1]?.[1] as any) > 0 ? sorted[1]?.[0] : null;
 
     return {

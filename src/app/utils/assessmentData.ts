@@ -580,6 +580,74 @@ export const generateInsights = (results: { [key: string]: number }, assessmentT
           'Use lists, definitions, and written explanations',
           'Keep a learning journal to reflect on new concepts'
         ]
+      },
+      'Accommodating': {
+        strengths: [
+          'Strong hands-on and experiential learning',
+          'Adaptable to new situations and challenges',
+          'Excellent at learning from real-world trial and error'
+        ],
+        weaknesses: [
+          'May spend less time on theoretical reading',
+          'Could prefer action over prolonged planning',
+          'Might rely heavily on trial and error'
+        ],
+        recommendations: [
+          'Incorporate hands-on projects into your study routine',
+          'Engage in group discussions and practical experiments',
+          'Balance experiential learning with reflective reading'
+        ]
+      },
+      'Diverging': {
+        strengths: [
+          'Imaginative and creative problem-solving',
+          'Strong ability to see situations from multiple perspectives',
+          'Excellent listening and empathy skills'
+        ],
+        weaknesses: [
+          'May hesitate to make quick decisions',
+          'Could get overwhelmed by too many options',
+          'Might avoid conflict in group settings'
+        ],
+        recommendations: [
+          'Use brainstorming and mind-mapping techniques',
+          'Collaborate in study groups to share diverse viewpoints',
+          'Set clear timelines for moving from brainstorming to action'
+        ]
+      },
+      'Assimilating': {
+        strengths: [
+          'Excellent logical and theoretical reasoning',
+          'Strong ability to synthesize complex information',
+          'Effective at organizing and structuring knowledge'
+        ],
+        weaknesses: [
+          'May focus more on abstract ideas than practical application',
+          'Could spend too much time perfecting theories',
+          'Might overlook emotional or interpersonal factors'
+        ],
+        recommendations: [
+          'Connect theoretical concepts to practical, real-world examples',
+          'Create structured notes, diagrams, and models',
+          'Practice explaining complex ideas in simple terms'
+        ]
+      },
+      'Converging': {
+        strengths: [
+          'Strong practical application of ideas and theories',
+          'Excellent problem-solving and decision-making skills',
+          'Effective at finding workable solutions quickly'
+        ],
+        weaknesses: [
+          'May dismiss ambiguous or open-ended ideas',
+          'Could focus too narrowly on a single solution',
+          'Might prefer technical tasks over interpersonal discussions'
+        ],
+        recommendations: [
+          'Test theories through experiments and practical exercises',
+          'Explore alternative solutions before settling on one',
+          'Engage in collaborative problem-solving with peers'
+        ]
       }
     },
     'thinking': {
@@ -598,7 +666,7 @@ export const generateInsights = (results: { [key: string]: number }, assessmentT
           'Balance detailed analysis with holistic thinking',
           'Set time limits for decision-making to avoid overthinking',
           'Practice considering emotional and intuitive factors',
-          'Collaborate with creative thinkers for balanced perspectives'
+          'Collaborate with creative thinkers for fresh perspectives'
         ]
       },
       'Holistic': {
@@ -621,20 +689,20 @@ export const generateInsights = (results: { [key: string]: number }, assessmentT
       },
       'Creative': {
         strengths: [
-          'Excellent at generating innovative ideas',
-          'Strong imagination and original thinking',
-          'Effective at finding unique solutions'
+          'Highly innovative and original thinking',
+          'Strong ability to generate novel ideas and solutions',
+          'Comfortable with ambiguity and unconventional approaches'
         ],
         weaknesses: [
-          'May struggle with conventional methods',
-          'Could have difficulty with routine tasks',
-          'Might need help with practical implementation'
+          'May struggle with practical implementation and details',
+          'Could resist structure and routine',
+          'Might generate ideas without assessing feasibility'
         ],
         recommendations: [
-          'Balance creativity with practical constraints',
-          'Seek feedback to refine innovative ideas',
-          'Partner with practical thinkers for execution',
-          'Document your creative process for future reference'
+          'Partner with practical thinkers to execute your ideas',
+          'Develop systems to capture and organize your creative insights',
+          'Practice evaluating the feasibility of your innovations',
+          'Create balance between ideation and execution'
         ]
       },
       'Practical': {
@@ -664,33 +732,15 @@ export const generateInsights = (results: { [key: string]: number }, assessmentT
           'Minimizes bias through evidence-based approach'
         ],
         weaknesses: [
-          'May delay decisions waiting for perfect information',
-          'Could overlook intuition and emotional factors',
-          'Might struggle when data is unavailable or ambiguous'
+          'May experience analysis paralysis when data is incomplete',
+          'Could undervalue intuition and qualitative factors',
+          'Might take too long to make time-sensitive decisions'
         ],
         recommendations: [
-          'Set deadlines for data gathering to avoid analysis paralysis',
-          'Consider qualitative factors alongside quantitative data',
-          'Practice making decisions with incomplete information',
-          'Balance data analysis with stakeholder input'
-        ]
-      },
-      'Intuitive': {
-        strengths: [
-          'Quick decision-making based on experience',
-          'Strong pattern recognition and insight',
-          'Effective in ambiguous or novel situations'
-        ],
-        weaknesses: [
-          'May be influenced by unconscious biases',
-          'Could struggle to justify decisions to others',
-          'Might overlook important factual information'
-        ],
-        recommendations: [
-          'Validate intuitions with data when possible',
-          'Reflect on past decisions to understand your intuition',
-          'Document your reasoning process for transparency',
-          'Seek diverse perspectives to challenge assumptions'
+          'Practice making decisions with partial information',
+          'Acknowledge the role of intuition alongside data',
+          'Set clear time limits for data gathering',
+          'Consider emotional and interpersonal impacts of decisions'
         ]
       },
       'Collaborative': {
@@ -728,6 +778,40 @@ export const generateInsights = (results: { [key: string]: number }, assessmentT
           'Balance spontaneity with strategic planning',
           'Communicate changes clearly to those affected'
         ]
+      },
+      'Intuitive': {
+        strengths: [
+          'Fast and decisive in dynamic situations',
+          'Strong ability to recognize patterns quickly',
+          'Comfortable trusting instinct and experience'
+        ],
+        weaknesses: [
+          'May overlook critical details or underlying data',
+          'Could be susceptible to cognitive biases',
+          'Might struggle to explain the rationale behind choices'
+        ],
+        recommendations: [
+          'Pause briefly to check instincts against factual evidence',
+          'Document the reasoning behind important decisions',
+          'Seek input from reflective thinkers on complex problems'
+        ]
+      },
+      'Reflective': {
+        strengths: [
+          'Deliberate and systematic analysis of problems',
+          'Thorough evaluation of risks and alternatives',
+          'High precision and evidence-based reasoning'
+        ],
+        weaknesses: [
+          'May hesitate when quick action is required',
+          'Could feel uncomfortable with incomplete information',
+          'Might spend excessive time on minor decisions'
+        ],
+        recommendations: [
+          'Set clear deadlines for reaching conclusions',
+          'Practice making low-stakes decisions more quickly',
+          'Trust experienced intuition when data is sufficient'
+        ]
       }
     }
   };
@@ -735,7 +819,13 @@ export const generateInsights = (results: { [key: string]: number }, assessmentT
   const typeKey = assessmentType === 'learning' ? 'learning' : 
                   assessmentType === 'thinking' ? 'thinking' : 'decision';
   
-  const dominantInsights = insights[typeKey][dominant];
+  const defaultInsights = {
+    strengths: ['Demonstrates active engagement in learning and problem solving'],
+    weaknesses: ['Can benefit from exploring diverse strategies and approaches'],
+    recommendations: ['Continue practicing and reflecting on your preferred styles']
+  };
+
+  const dominantInsights = (insights[typeKey] && insights[typeKey][dominant]) || defaultInsights;
   
   return {
     strengths: dominantInsights.strengths,

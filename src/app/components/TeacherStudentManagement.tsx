@@ -40,7 +40,7 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
   const [formData, setFormData] = useState({ id: '', name: '', email: '', phone: '', dateOfBirth: '', classId: '' });
   const classes = getAllClasses();
   const assignments = getAssignmentsForTeacher(teacher.id);
-  const myClasses = classes.filter(c => !c.classTeacherId || c.classTeacherId === teacher.id || c.classTeacherId === teacher.email || c.id === teacher.classId || c.name === teacher.className || assignments.some(a => a.classId === c.id) || teacher.role === 'teacher');
+  const myClasses = classes;
 
   useEffect(() => {
     loadStudents();

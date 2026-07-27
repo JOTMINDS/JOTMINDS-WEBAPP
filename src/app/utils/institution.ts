@@ -838,8 +838,8 @@ export async function getInstitutionClasses(institutionId: string): Promise<Clas
     console.warn('Exception fetching classes from Supabase:', e);
   }
 
-  // Merge with local storage classes (allow matching institutionId or unscoped classes)
-  const localClasses = getAllClasses().filter(c => !c.institutionId || c.institutionId === institutionId);
+  // Merge with local storage classes (allow matching institutionId, unscoped classes, or when institutionId is empty)
+  const localClasses = getAllClasses().filter(c => !institutionId || !c.institutionId || c.institutionId === institutionId);
   
   // Deduplicate by ID, preferring remote classes if they exist
   const mergedMap = new Map<string, Class>();
