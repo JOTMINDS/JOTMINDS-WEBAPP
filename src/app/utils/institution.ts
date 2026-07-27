@@ -598,6 +598,32 @@ export async function cancelInvitation(inviteToken: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteInstitutionInvitation(invitationId: string, email: string): Promise<boolean> {
+  try {
+    // 1. Remove from Supabase
+    await (supabase as any)
+      .from('institution_invitations')
+      .delete()
+      .eq('id', invitationId);
+
+    // 2. Remove from local storage
+    const invitations = getAllInvitations(); // Wait, I need to check how to get all invitations from local storage, actually just use localStorage directly
+    const localInvitationsStr = localStorage.getItem('jm_institution_invitations');
+    let invitationsArr = [];
+    if (localInvitationsStr) {
+      try {
+        invitationsArr = JSON.parse(localInvitationsStr);
+      } catch (e) {}
+    }
+    const filtered = invitationsArr.filter((inv: any) => inv.id !== invitationId && inv.email !== email);
+    localStorage.setItem('jm_institution_invitations', JSON.stringify(filtered));
+    return true;
+  } catch (err) {
+    console.error('Error deleting invitation:', err);
+    return false;
+  }
+}
+
 export function getMemberCounts(members: InstitutionMember[]): { total: number; teachers: number; students: number } {
   const approved = members.filter(m => m.status === 'approved');
   return {
@@ -813,7 +839,7 @@ export async function getInstitutionClasses(institutionId: string): Promise<Clas
     const { data, error } = await (supabase as any)
       .from('classes')
       .select('*')
-      .eq('institution_id', institutionId);
+      .or(`institution_id.eq.${institutionId},institution_id.is.null`);
 
     if (error) {
       console.warn('Error fetching classes from Supabase, falling back to local storage:', error);

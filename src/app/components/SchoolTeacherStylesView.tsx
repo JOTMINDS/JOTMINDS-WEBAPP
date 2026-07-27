@@ -802,22 +802,58 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
 
           {/* School recommendations */}
           {fullProfiles.filter(x => x.profile).length >= 1 && (
-            <Card className="bg-blue-50 border-blue-200">
-              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Info className="w-4 h-4 text-blue-600" />School Recommendations</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-md">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2 text-blue-900">
+                  <Info className="w-5 h-5 text-blue-600" />
+                  💡 Clear Actionable Teaching Recommendations
+                </CardTitle>
+                <CardDescription className="text-xs text-blue-700">
+                  Practical steps for school leaders to support teachers and maximize classroom impact
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
                 {(() => {
-                  const recs: string[] = [];
+                  const recs: { title: string; desc: string; category: string }[] = [];
                   const lowAligned = fullProfiles.filter(x => x.profile && x.profile.overallScore < 55);
                   const noCreative = !teachers.some(t => t.thinking?.style === 'Creative');
                   const incomplete = teachers.filter(t => t.completedCount < 4);
-                  if (lowAligned.length) recs.push(`${lowAligned.length} teacher(s) show notable tension across their 4 assessments — consider personalised CPD: ${lowAligned.map(x => x.teacher.user.name).join(', ')}.`);
-                  if (noCreative) recs.push('No Creative thinkers identified among assessed staff. Introducing imaginative teaching approaches would benefit diverging learners.');
-                  if (incomplete.length) recs.push(`${incomplete.length} teacher(s) have incomplete profiles (${incomplete.map(t => t.user.name).join(', ')}). Full profiles unlock all 4 alignment dimensions.`);
-                  if (!recs.length) recs.push('All assessed teachers show healthy alignment. Focus on peer observation and collaborative planning to sustain this.');
+
+                  if (lowAligned.length) {
+                    recs.push({
+                      category: '🔥 Priority Support',
+                      title: 'Support High-Tension Educators',
+                      desc: `${lowAligned.length} teacher(s) (${lowAligned.map(x => x.teacher.user.name).join(', ')}) show high instructional tension. Provide them with flexible lesson templates and co-teaching support.`
+                    });
+                  }
+                  if (noCreative) {
+                    recs.push({
+                      category: '🎨 Instructional Balance',
+                      title: 'Incorporate Creative & Imaginative Strategies',
+                      desc: 'No primary Creative thinkers were identified among staff. Introduce project-based learning and open-ended design challenges to engage creative students.'
+                    });
+                  }
+                  if (incomplete.length) {
+                    recs.push({
+                      category: '📋 Complete Assessment Profiles',
+                      title: 'Unlock Full Multi-Dimensional Insights',
+                      desc: `${incomplete.length} teacher(s) (${incomplete.map(t => t.user.name).join(', ')}) have incomplete profiles. Completing all 4 assessments enables complete alignment metrics.`
+                    });
+                  }
+                  if (!recs.length) {
+                    recs.push({
+                      category: '🌟 Peer Leadership',
+                      title: 'Sustain Strong Pedagogy Alignment',
+                      desc: 'All assessed staff show excellent pedagogical alignment! Pair experienced teachers with junior staff for peer observations and mentoring.'
+                    });
+                  }
                   return recs.map((r, i) => (
-                    <div key={i} className="flex items-start gap-2 p-3 bg-white rounded-lg border border-blue-100">
-                      <span className="text-blue-500 shrink-0 mt-0.5">→</span>
-                      <p className="text-xs text-gray-700">{r}</p>
+                    <div key={i} className="p-4 bg-white rounded-xl border border-blue-100 shadow-sm space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wide">{r.category}</span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900">{r.title}</p>
+                      <p className="text-xs text-gray-600 leading-relaxed">{r.desc}</p>
                     </div>
                   ));
                 })()}

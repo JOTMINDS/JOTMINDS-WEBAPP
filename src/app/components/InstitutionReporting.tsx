@@ -9,6 +9,21 @@ import { getAllAssessmentResults } from '../utils/api';
 import { getAllUsers, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { InstitutionMember } from '../utils/institution';
 
+export const formatAssessmentType = (type: string) => {
+  if (!type || type === 'unknown') return 'Cognitive Profile';
+  const map: Record<string, string> = {
+    'kolb': 'Kolb Learning Style',
+    'sternberg': 'Sternberg Thinking Style',
+    'dual-process': 'Dual Process Decision Style',
+    'jhs-thinking': 'JHS Thinking Style',
+    'shs-thinking': 'SHS Thinking Style',
+    'adult-thinking': 'Adult Thinking Style',
+    'children-thinking': 'Children Thinking Style',
+    'teaching-style': 'Teaching Style Assessment',
+  };
+  return map[type] || type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
 interface InstitutionReportingProps {
   institutionId: string;
   institutionName: string;
@@ -208,7 +223,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
         studentClass?.name || 'Unassigned',
         teacher?.userName || teacher?.userEmail || 'Unassigned',
         a.id,
-        a.type,
+        formatAssessmentType(a.type),
         a.completedAt || '',
         typeof a.score === 'number' ? a.score : (a.score?.overall || '')
       ];
@@ -313,7 +328,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
                         <td className="p-3 font-medium text-gray-900">{student?.name || 'Unknown Student'}</td>
                         <td className="p-3 text-gray-600">{studentClass?.name || 'Unassigned'}</td>
                         <td className="p-3 text-gray-600">{teacher?.userName || teacher?.userEmail || 'Unassigned'}</td>
-                        <td className="p-3 text-gray-600 capitalize">{a.type?.replace(/-/g, ' ') || 'Unknown'}</td>
+                        <td className="p-3 font-medium text-[#2C2E83]">{formatAssessmentType(a.type)}</td>
                       </tr>
                     );
                   })}
