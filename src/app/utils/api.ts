@@ -483,3 +483,22 @@ export const sendClassAssignmentEmail = async (payload: { email: string; role: s
     body: JSON.stringify(payload),
   });
 };
+
+// Institution Classes API
+export const fetchInstitutionClassesAPI = async (institutionId?: string) => {
+  const query = institutionId ? `?institutionId=${encodeURIComponent(institutionId)}` : '';
+  return makeRequest(`/institutions/classes${query}`);
+};
+
+export const saveInstitutionClassAPI = async (payload: any) => {
+  return makeRequest('/institutions/classes', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+export const deleteInstitutionClassAPI = async (classId: string) => {
+  return makeRequest(`/institutions/classes/${encodeURIComponent(classId)}`, {
+    method: 'DELETE',
+  });
+};

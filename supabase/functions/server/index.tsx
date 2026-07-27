@@ -2631,6 +2631,131 @@ app.get('/make-server-fc8eb847/parent/linked-children', async (c) => {
   }
 });
 
+// Get all classes for institution/school
+app.get('/make-server-fc8eb847/institutions/classes', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const url = new URL(c.req.url);
+    const institutionId = url.searchParams.get('institutionId');
+
+    const supabaseAdmin = getSupabaseClient(true);
+    const { data: rawData } = await supabaseAdmin.from('kv_store_fc8eb847').select('key, value').like('key', 'class:%');
+    let classes = (rawData || []).map((d: any) => d.value).filter(Boolean);
+
+    if (institutionId) {
+      classes = classes.filter((cls: any) => !cls.institutionId || cls.institutionId === institutionId);
+    }
+
+    // Also try fetching from postgres classes table
+    try {
+      let query = supabaseAdmin.from('classes').select('*');
+      if (institutionId) {
+        query = query.eq('institution_id', institutionId);
+      }
+      const { data: dbClasses } = await query;
+      if (dbClasses && dbClasses.length > 0) {
+        const merged = new Map();
+        classes.forEach((c: any) => merged.set(c.id, c));
+        dbClasses.forEach((dbClass: any) => {
+          const formatted = {
+            id: dbClass.id,
+            name: dbClass.name,
+            academicYear: dbClass.academic_year,
+            classTeacherId: dbClass.class_teacher_id || undefined,
+            institutionId: dbClass.institution_id,
+            studentCount: dbClass.student_count || 0,
+            classCode: dbClass.class_code,
+            createdAt: dbClass.created_at
+          };
+          merged.set(formatted.id, formatted);
+        });
+        classes = Array.from(merged.values());
+      }
+    } catch (e) {
+      console.log('Postgres classes table check fallback:', e);
+    }
+
+    return c.json({ success: true, classes });
+  } catch (error) {
+    console.error('Error fetching institution classes:', error);
+    return c.json({ error: 'Failed to fetch classes' }, 500);
+  }
+});
+
+// Save or update an institution class
+app.post('/make-server-fc8eb847/institutions/classes', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const classData = await c.req.json();
+    if (!classData || !classData.name) {
+      return c.json({ error: 'Missing required class data' }, 400);
+    }
+    const classId = classData.id || `cls_${Date.now()}`;
+    const toSave = {
+      ...classData,
+      id: classId,
+      createdAt: classData.createdAt || new Date().toISOString()
+    };
+
+    await kv.set(`class:${classId}`, toSave);
+
+    // Also try saving to postgres classes table
+    try {
+      const supabaseAdmin = getSupabaseClient(true);
+      await supabaseAdmin.from('classes').upsert({
+        id: classId,
+        name: toSave.name,
+        academic_year: toSave.academicYear || '',
+        class_teacher_id: toSave.classTeacherId || null,
+        institution_id: toSave.institutionId || null,
+        student_count: toSave.studentCount || 0,
+        class_code: toSave.classCode || null,
+        created_at: toSave.createdAt
+      });
+    } catch (err) {
+      console.log('Postgres class upsert error fallback:', err);
+    }
+
+    return c.json({ success: true, class: toSave });
+  } catch (error) {
+    console.error('Error saving institution class:', error);
+    return c.json({ error: 'Failed to save class' }, 500);
+  }
+});
+
+// Delete an institution class
+app.delete('/make-server-fc8eb847/institutions/classes/:id', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const classId = c.req.param('id');
+    if (!classId) {
+      return c.json({ error: 'Missing class ID' }, 400);
+    }
+    await kv.delete(`class:${classId}`);
+
+    try {
+      const supabaseAdmin = getSupabaseClient(true);
+      await supabaseAdmin.from('classes').delete().eq('id', classId);
+    } catch (err) {
+      console.log('Postgres class delete error fallback:', err);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting institution class:', error);
+    return c.json({ error: 'Failed to delete class' }, 500);
+  }
+});
+
 // Assign a user (student/teacher) to a class
 app.post('/make-server-fc8eb847/institutions/members/assign-class', async (c) => {
   try {
@@ -2997,7 +3122,13 @@ app.get('/make-server-fc8eb847/school/roster', async (c) => {
       classes: t.classes || []
     }));
 
-    return c.json({ success: true, students, teachers });
+    const { data: rawClassData } = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'class:%');
+    const allKvClasses = (rawClassData || []).map((d: any) => d.value).filter(Boolean);
+    const classes = allKvClasses.filter((cls: any) => 
+      !cls.schoolName || cls.schoolName === schoolName || !cls.institutionId || cls.institutionId === userProfile?.institutionId || cls.institutionId === user.institutionId
+    );
+
+    return c.json({ success: true, students, teachers, classes });
   } catch (error) {
     console.error('[Backend] Error fetching school roster:', error);
     return c.json({ error: 'Failed to fetch school roster' }, 500);

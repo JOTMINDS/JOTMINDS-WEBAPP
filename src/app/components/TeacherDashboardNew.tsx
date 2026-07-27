@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
 import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
+import { getInstitutionClasses } from '../utils/institution';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download } from 'lucide-react';
@@ -58,7 +59,15 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const [serverAssessments, setServerAssessments] = useState<any[]>([]);
 
   useEffect(() => {
-    loadClassData();
+    const initClasses = async () => {
+      try {
+        await getInstitutionClasses(user.institutionId || '');
+      } catch (e) {
+        console.warn('Failed to sync classes from server:', e);
+      }
+      loadClassData();
+    };
+    initClasses();
     loadMyAssessments();
     loadServerAssessments();
   }, [user.id, impersonatedUser]);
@@ -120,7 +129,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         const classes = getAllClasses();
         const assignments = getAssignmentsForTeacher(user.id);
         const teacherClassIds = new Set<string>();
-        classes.filter(c => c.classTeacherId === user.id).forEach(c => teacherClassIds.add(c.id));
+        classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className || user.role === 'teacher').forEach(c => teacherClassIds.add(c.id));
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
         studentUsers = allUsers.filter(u => u.role === 'student' && ((u.classId && teacherClassIds.has(u.classId)) || u.teacherId === user.id));
@@ -237,7 +246,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         const classes = getAllClasses();
         const assignments = getAssignmentsForTeacher(user.id);
         const teacherClassIds = new Set<string>();
-        classes.filter(c => c.classTeacherId === user.id).forEach(c => teacherClassIds.add(c.id));
+        classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className || user.role === 'teacher').forEach(c => teacherClassIds.add(c.id));
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
         localStudents = allUsers.filter(u => u.role === 'student' && ((u.classId && teacherClassIds.has(u.classId)) || u.teacherId === user.id));

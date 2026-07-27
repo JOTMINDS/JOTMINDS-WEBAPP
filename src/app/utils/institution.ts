@@ -793,10 +793,22 @@ export const GHANA_REGIONS = [
 
 import { Class } from '../types';
 import { getAllClasses, saveClass } from './storage';
+import { fetchInstitutionClassesAPI, saveInstitutionClassAPI, deleteInstitutionClassAPI } from './api';
 
 export async function getInstitutionClasses(institutionId: string): Promise<Class[]> {
   let remoteClasses: Class[] = [];
   
+  // 1. Try fetching from Backend KV store API
+  try {
+    const res = await fetchInstitutionClassesAPI(institutionId);
+    if (res && res.success && Array.isArray(res.classes)) {
+      remoteClasses = res.classes;
+    }
+  } catch (e) {
+    console.warn('Exception fetching classes from backend API:', e);
+  }
+
+  // 2. Also try fetching from Supabase Postgres table
   try {
     const { data, error } = await (supabase as any)
       .from('classes')
@@ -806,7 +818,7 @@ export async function getInstitutionClasses(institutionId: string): Promise<Clas
     if (error) {
       console.warn('Error fetching classes from Supabase, falling back to local storage:', error);
     } else {
-      remoteClasses = (data || []).map((dbClass: any) => ({
+      const dbClasses = (data || []).map((dbClass: any) => ({
         id: dbClass.id,
         name: dbClass.name,
         academicYear: dbClass.academic_year,
@@ -816,20 +828,29 @@ export async function getInstitutionClasses(institutionId: string): Promise<Clas
         classCode: dbClass.class_code,
         createdAt: dbClass.created_at
       }));
+      // Combine with remoteClasses from API
+      const rMap = new Map();
+      remoteClasses.forEach(c => rMap.set(c.id, c));
+      dbClasses.forEach(c => rMap.set(c.id, c));
+      remoteClasses = Array.from(rMap.values());
     }
   } catch (e) {
     console.warn('Exception fetching classes from Supabase:', e);
   }
 
-  // Merge with local storage classes
-  const localClasses = getAllClasses().filter(c => c.institutionId === institutionId);
+  // Merge with local storage classes (allow matching institutionId or unscoped classes)
+  const localClasses = getAllClasses().filter(c => !c.institutionId || c.institutionId === institutionId);
   
   // Deduplicate by ID, preferring remote classes if they exist
   const mergedMap = new Map<string, Class>();
   localClasses.forEach(c => mergedMap.set(c.id, c));
   remoteClasses.forEach(c => mergedMap.set(c.id, c));
   
-  return Array.from(mergedMap.values());
+  const finalClasses = Array.from(mergedMap.values());
+  // Save merged classes back to local storage so other components (Teacher/School tabs) see them immediately
+  finalClasses.forEach(c => saveClass(c));
+
+  return finalClasses;
 }
 
 export async function createInstitutionClass(classData: Class): Promise<Class> {
@@ -888,16 +909,28 @@ export async function createInstitutionClass(classData: Class): Promise<Class> {
     console.warn("Exception syncing class to Supabase:", e);
   }
 
+  try {
+    await saveInstitutionClassAPI(classToSave);
+  } catch (e) {
+    console.warn("Exception saving class to Backend API:", e);
+  }
+
   return classToSave;
 }
 
 export async function deleteInstitutionClass(classId: string): Promise<void> {
+  try {
+    await deleteInstitutionClassAPI(classId);
+  } catch (e) {
+    console.warn("Failed to delete class from Backend API:", e);
+  }
+
   const { error } = await (supabase as any)
     .from('classes')
     .delete()
     .eq('id', classId);
 
-  if (error) throw error;
+  if (error) console.warn("Failed deleting from Supabase:", error);
 }
 
 export async function generateNewClassCode(classId: string): Promise<string> {

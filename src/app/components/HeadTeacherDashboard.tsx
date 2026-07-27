@@ -32,6 +32,7 @@ import {
 } from '../utils/schoolAnalytics';
 import { getSchoolRosterAPI, getAllAssessmentResults } from '../utils/api';
 import { normalizeServerResults } from '../utils/assessmentApi';
+import { getAllClasses } from '../utils/storage';
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { SchoolTeacherStylesView } from './SchoolTeacherStylesView';
 import { StudentDetailView } from './StudentDetailView';
@@ -96,15 +97,30 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
           setTeachers(response.teachers || []);
           // Generate pseudo-classes if none exist from the backend
           if (!response.classes || response.classes.length === 0) {
-             const mappedClasses = (response.teachers || []).map((t: any) => ({
-               id: `class-${t.id}`,
-               name: `${t.name}'s Class`,
-               grade: 'Unknown',
-               teacherId: t.id
-             }));
-             setClasses(mappedClasses);
+             const localClasses = getAllClasses();
+             if (localClasses.length > 0) {
+               setClasses(localClasses.map((c: any) => ({
+                 id: c.id,
+                 name: c.name,
+                 grade: c.academicYear || 'General',
+                 teacherId: c.classTeacherId || ''
+               })));
+             } else {
+               const mappedClasses = (response.teachers || []).map((t: any) => ({
+                 id: `class-${t.id}`,
+                 name: `${t.name}'s Class`,
+                 grade: 'Unknown',
+                 teacherId: t.id
+               }));
+               setClasses(mappedClasses);
+             }
           } else {
-             setClasses(response.classes);
+             setClasses(response.classes.map((c: any) => ({
+               id: c.id,
+               name: c.name,
+               grade: c.grade || c.academicYear || 'General',
+               teacherId: c.teacherId || c.classTeacherId || ''
+             })));
           }
         }
       }
