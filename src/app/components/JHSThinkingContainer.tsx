@@ -12,13 +12,15 @@ interface JHSThinkingContainerProps {
   userName: string;
   onComplete: () => void;
   onCancel: () => void;
+  onViewCognitiveProfile?: () => void;
 }
 
 export function JHSThinkingContainer({ 
   userId, 
   userName,
   onComplete,
-  onCancel 
+  onCancel,
+  onViewCognitiveProfile
 }: JHSThinkingContainerProps) {
   const [results, setResults] = useState<JHSResults | null>(null);
   const [loading, setLoading] = useState(false);
@@ -145,6 +147,7 @@ export function JHSThinkingContainer({
         userName={userName}
         onReturnToDashboard={handleReturnToDashboard}
         onShareWithParent={handleShareWithParent}
+        onViewCognitiveProfile={onViewCognitiveProfile}
       />
     );
   }

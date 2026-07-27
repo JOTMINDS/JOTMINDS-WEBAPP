@@ -9,8 +9,9 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend 
 } from 'recharts';
-import { Home, Share2, TrendingUp, Lightbulb, GraduationCap, Briefcase, Building2 } from 'lucide-react';
+import { Home, Share2, TrendingUp, Lightbulb, GraduationCap, Briefcase, Building2, Download, HelpCircle } from 'lucide-react';
 import { useAuth } from './AuthContext';
+import { toast } from 'sonner';
 
 interface SHSThinkingResultsProps {
   results: SHSResults;
@@ -280,18 +281,88 @@ export function SHSThinkingResults({
           </CardContent>
         </Card>
 
+        {/* Score Explanation */}
+        <Card className="border-2 border-[#2C2E83]/20 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-[#2C2E83]">
+              <HelpCircle className="h-5 w-5" />
+              How Your Score is Calculated
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-gray-600">
+              Your thinking style scores are based on how consistently you responded to questions in each category.
+              Each style is scored from 0–100% based on weighted responses across all assessment questions.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Object.entries(percentages).map(([style, pct]) => {
+                const info = shsThinkingStyles[style as keyof typeof shsThinkingStyles];
+                if (!info) return null;
+                return (
+                  <div key={style} className="bg-gray-50 rounded-lg p-3 text-center border">
+                    <div className="text-2xl mb-1">{info.emoji}</div>
+                    <div className="text-sm font-semibold text-gray-800">{info.name}</div>
+                    <div className="text-xl font-bold mt-1" style={{ color: info.color }}>{Math.round(pct)}%</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {pct >= 70 ? 'Dominant' : pct >= 50 ? 'Strong' : pct >= 35 ? 'Moderate' : 'Developing'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-gray-400 italic">
+              Note: Scores above 70% indicate a dominant style. Multiple strong styles mean you are cognitively flexible.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Action Buttons */}
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-3">
           <Button
             onClick={onReturnToDashboard}
-            className="flex-1 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-lg py-6 text-base"
+            className="flex-1 bg-gradient-to-r from-[#2C2E83] to-[#7B61FF] hover:from-[#2C2E83]/90 hover:to-[#7B61FF]/90 text-white shadow-lg py-6 text-base"
           >
             <Home className="mr-2 h-5 w-5" />
             Return to Dashboard
           </Button>
+          <Button
+            variant="outline"
+            className="flex-1 border-2 border-[#1FC8E1] text-[#1FC8E1] hover:bg-[#1FC8E1]/10 py-6 text-base"
+            onClick={() => {
+              // Save results summary to localStorage
+              try {
+                localStorage.setItem(`shs_results_${Date.now()}`, JSON.stringify({
+                  savedAt: new Date().toISOString(),
+                  dominantStyle,
+                  personalityType,
+                  percentages,
+                }));
+              } catch (e) { /* ignore */ }
+              toast.success('Your results have been saved! ⭐');
+            }}
+          >
+            <Download className="mr-2 h-5 w-5" />
+            Save My Results
+          </Button>
           {(user?.role === 'student' || user?.role === 'child') && (
             <Button
-              onClick={onShareWithParent}
+              onClick={() => {
+                // Build a meaningful share text with actual scores
+                const scoreText = Object.entries(percentages)
+                  .map(([style, pct]) => `${style.charAt(0).toUpperCase() + style.slice(1)}: ${Math.round(pct)}%`)
+                  .join(', ');
+                const shareText = `🌟 My JotMinds Thinking Style: ${personalityType}\n\nMy scores: ${scoreText}\n\nDiscover your thinking style at JotMinds!`;
+                if (navigator.share) {
+                  navigator.share({ title: 'My Thinking Style', text: shareText }).catch(() => {
+                    navigator.clipboard.writeText(shareText);
+                    toast.success('Results copied to clipboard!');
+                  });
+                } else {
+                  navigator.clipboard.writeText(shareText);
+                  toast.success('Results copied to clipboard!');
+                }
+                onShareWithParent();
+              }}
               variant="outline"
               className="flex-1 border-2 border-indigo-300 hover:bg-indigo-50 py-6 text-base"
             >

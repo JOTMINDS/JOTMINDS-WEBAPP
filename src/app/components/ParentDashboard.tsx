@@ -698,7 +698,13 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                           <div className="flex items-center justify-between">
                             <div>
                               <CardTitle className="flex items-center gap-2">
-                                <UserIcon className="h-5 w-5" />
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#2C2E83] to-[#7B61FF] flex items-center justify-center text-white text-lg font-bold overflow-hidden">
+                                  {child.avatarUrl ? (
+                                    <img src={child.avatarUrl} alt={`${child.name}'s photo`} className="w-full h-full object-cover" />
+                                  ) : (
+                                    child.name.charAt(0).toUpperCase()
+                                  )}
+                                </div>
                                 {child.name}'s Profile
                               </CardTitle>
                               <CardDescription>

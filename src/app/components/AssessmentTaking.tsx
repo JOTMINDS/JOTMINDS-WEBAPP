@@ -19,7 +19,6 @@ import { toast } from 'sonner';
 
 interface QuestionResponse {
   value: number;           // Likert 1-5
-  confidence: number;      // Confidence 1-5
   responseTime: number;    // milliseconds
   timestamp: string;       // ISO timestamp
 }
@@ -63,11 +62,11 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
   // Ages 15-18 automatically receive questions from the expanded teen question bank (300 questions)
   const [questions, setQuestions] = useState(() => getPersonalizedQuestions(assessmentType, userId, isOrganizational, userAge, true)); // randomize=true
   const [showIntro, setShowIntro] = useState(true);
+  const [honorCodeAccepted, setHonorCodeAccepted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [responses, setResponses] = useState<QuestionResponse[]>(
     new Array(questions.length).fill(null).map(() => ({
       value: 0,
-      confidence: 3, // Default to neutral confidence
       responseTime: 0,
       timestamp: ''
     }))
@@ -279,19 +278,9 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
     console.log('Response recorded:', {
       question: currentQuestion,
       value: parseInt(value),
-      confidence: newResponses[currentQuestion].confidence,
       responseTime,
       total: newResponses.filter(r => r.value > 0).length
     });
-  };
-
-  const handleConfidenceChange = (conf: number[]) => {
-    const newResponses = [...responses];
-    newResponses[currentQuestion] = {
-      ...newResponses[currentQuestion],
-      confidence: conf[0]
-    };
-    setResponses(newResponses);
   };
 
   const handleNext = () => {
@@ -701,6 +690,51 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
     );
   }
 
+  if (!honorCodeAccepted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-lg w-full bg-white rounded-2xl shadow-xl border-2 border-[#2C2E83]/20 overflow-hidden">
+          <div className="bg-[#2C2E83] p-6 text-white text-center">
+            <div className="text-4xl mb-3">📜</div>
+            <h2 className="text-2xl font-bold">Honor Code</h2>
+            <p className="text-white/80 text-sm mt-1">Before you begin your assessment</p>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="text-gray-700 text-base leading-relaxed">
+              To ensure the most accurate and helpful results for your cognitive profile, please agree to the following:
+            </p>
+            <ul className="space-y-3">
+              {[
+                '✅ I will answer each question honestly and to the best of my ability',
+                '✅ I will not look up answers or consult others during this assessment',
+                '✅ I understand that my results are for my personal growth and development',
+                '✅ I will take my time and reflect carefully on each question',
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <div className="pt-2 flex flex-col gap-3">
+              <Button
+                className="w-full bg-[#2C2E83] hover:bg-[#2C2E83]/90 text-white font-semibold py-3 text-base"
+                onClick={() => setHonorCodeAccepted(true)}
+              >
+                I Agree — Begin Assessment
+              </Button>
+              <button
+                className="text-sm text-gray-400 hover:text-gray-600 text-center"
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-2 sm:p-4">
       <div className="max-w-2xl mx-auto py-4 sm:py-8">
@@ -865,48 +899,6 @@ export function AssessmentTaking({ userId, assessmentType, onComplete, onCancel,
                   </Label>
                 </div>
               </RadioGroup>
-
-              {/* Confidence Slider - NEW FEATURE */}
-              {responses[currentQuestion].value > 0 && (
-                <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-700">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="h-5 w-5 text-purple-600" />
-                    <Label className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                      How confident are you in this answer?
-                    </Label>
-                  </div>
-                  <div className="space-y-3">
-                    <Slider
-                      value={[responses[currentQuestion].confidence]}
-                      onValueChange={handleConfidenceChange}
-                      min={1}
-                      max={5}
-                      step={1}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground px-1">
-                      <span className={responses[currentQuestion].confidence === 1 ? 'font-bold text-purple-600' : ''}>
-                        1 - Guessing
-                      </span>
-                      <span className={responses[currentQuestion].confidence === 2 ? 'font-bold text-purple-600' : ''}>
-                        2 - Unsure
-                      </span>
-                      <span className={responses[currentQuestion].confidence === 3 ? 'font-bold text-purple-600' : ''}>
-                        3 - Neutral
-                      </span>
-                      <span className={responses[currentQuestion].confidence === 4 ? 'font-bold text-purple-600' : ''}>
-                        4 - Confident
-                      </span>
-                      <span className={responses[currentQuestion].confidence === 5 ? 'font-bold text-purple-600' : ''}>
-                        5 - Very Sure
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2 italic">
-                    💡 Your confidence helps us better understand your self-awareness
-                  </p>
-                </div>
-              )}
             </div>
 
             <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-4">

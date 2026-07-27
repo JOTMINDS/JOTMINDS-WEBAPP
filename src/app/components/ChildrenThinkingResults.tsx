@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Sparkles, Download, Share2, Home, Trophy, Star } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ChildrenThinkingResultsProps {
   results: {
@@ -312,8 +313,20 @@ export function ChildrenThinkingResults({ results, userName, onBackToDashboard, 
           <Button
             variant="outline"
             size="lg"
-            className="text-lg flex-1"
-            onClick={() => window.print()}
+            className="text-lg flex-1 border-purple-400 text-purple-700 hover:bg-purple-50"
+            onClick={() => {
+              // Save results to localStorage as backup
+              try {
+                const savedKey = `children_results_${Date.now()}`;
+                localStorage.setItem(savedKey, JSON.stringify({
+                  savedAt: new Date().toISOString(),
+                  results
+                }));
+              } catch (e) {
+                console.error('Could not save to localStorage', e);
+              }
+              toast.success('Your results have been saved! ⭐ Great job!');
+            }}
           >
             <Download className="mr-2 h-5 w-5" />
             Save My Results

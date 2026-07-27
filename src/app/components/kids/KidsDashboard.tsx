@@ -5,7 +5,7 @@ import { KidsButton, KidsIconButton } from './KidsButton';
 import { KidsCard, ProgressCard, RewardCard } from './KidsCard';
 import { AudioNarration, NarratedText } from './AudioNarration';
 import { Confetti, Badge } from './Confetti';
-import { LogOut, Trophy, Star, Book, Play, Settings, User as UserIcon } from 'lucide-react';
+import { LogOut, Trophy, Star, Book, Play, Settings, User as UserIcon, Volume2, VolumeX } from 'lucide-react';
 import { User } from '../../types/index';
 import { soundManager } from './SoundFeedback';
 
@@ -35,6 +35,14 @@ export function KidsDashboard({
 }: KidsDashboardProps) {
   const [showRewardAnimation, setShowRewardAnimation] = useState(!!newlyCompletedAssessment);
   const [rewardData, setRewardData] = useState(newlyCompletedAssessment);
+  const [isMuted, setIsMuted] = useState(() => {
+    try { return localStorage.getItem('kids_sound_muted') === 'true'; } catch { return false; }
+  });
+
+  // Apply saved mute preference on mount
+  useEffect(() => {
+    soundManager.setEnabled(!isMuted);
+  }, []);
 
   // Play welcome audio on mount
   useEffect(() => {
@@ -117,6 +125,13 @@ export function KidsDashboard({
       // Fallback to logout if no parent access handler
       onLogout();
     }
+  };
+
+  const handleToggleMute = () => {
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+    soundManager.setEnabled(!newMuted);
+    try { localStorage.setItem('kids_sound_muted', String(newMuted)); } catch { /* ignore */ }
   };
 
   return (
@@ -296,6 +311,35 @@ export function KidsDashboard({
       )}
 
       <div className="max-w-5xl w-full">
+        {/* Top Controls Bar */}
+        <div className="flex justify-between items-center mb-6">
+          <button
+            onClick={handleToggleMute}
+            className="flex items-center gap-2 bg-white/80 hover:bg-white text-purple-900 px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
+            title={isMuted ? "Unmute sound" : "Mute sound"}
+          >
+            {isMuted ? (
+              <>
+                <VolumeX className="w-6 h-6 text-red-500" />
+                <span>Sound OFF</span>
+              </>
+            ) : (
+              <>
+                <Volume2 className="w-6 h-6 text-green-600" />
+                <span>Sound ON</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleParentClick}
+            className="flex items-center gap-2 bg-white/80 hover:bg-white text-purple-900 px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
+          >
+            <Settings className="w-5 h-5 text-purple-600" />
+            <span>Parent Gate</span>
+          </button>
+        </div>
+
         {/* Large Mascot at Top */}
         <motion.div
           className="text-center mb-12"

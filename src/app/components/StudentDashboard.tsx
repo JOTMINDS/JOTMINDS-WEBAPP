@@ -514,6 +514,10 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
           setShowJHSAssessment(false);
         }}
         onCancel={() => setShowJHSAssessment(false)}
+        onViewCognitiveProfile={() => {
+          setShowJHSAssessment(false);
+          setShowingCognitiveProfile(true);
+        }}
       />
     );
   }

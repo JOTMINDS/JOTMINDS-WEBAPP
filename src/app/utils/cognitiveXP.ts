@@ -192,24 +192,76 @@ export function extractDimensionScores(assessment: any): { name: string; score: 
   const result: { name: string; score: number }[] = [];
   const s = assessment?.score;
   if (!s) return result;
+
+  // Kolb learning style
   if (s.kolb?.scores) {
     const k = s.kolb.scores;
-    if (k.CE != null) result.push({ name: 'CE', score: k.CE });
-    if (k.RO != null) result.push({ name: 'RO', score: k.RO });
-    if (k.AC != null) result.push({ name: 'AC', score: k.AC });
-    if (k.AE != null) result.push({ name: 'AE', score: k.AE });
+    if (k.CE != null) result.push({ name: 'Concrete Experience', score: k.CE });
+    if (k.RO != null) result.push({ name: 'Reflective Observation', score: k.RO });
+    if (k.AC != null) result.push({ name: 'Abstract Conceptualization', score: k.AC });
+    if (k.AE != null) result.push({ name: 'Active Experimentation', score: k.AE });
   }
+
+  // Sternberg thinking style
   if (s.sternberg?.scores) {
     const st = s.sternberg.scores;
     if (st.analytical != null) result.push({ name: 'Analytical', score: st.analytical });
     if (st.creative != null) result.push({ name: 'Creative', score: st.creative });
     if (st.practical != null) result.push({ name: 'Practical', score: st.practical });
   }
+
+  // Dual process (stores as system1/system2, not intuitive/reflective)
   if (s.dualProcess?.scores) {
     const d = s.dualProcess.scores;
-    if (d.intuitive != null) result.push({ name: 'Intuitive', score: d.intuitive });
-    if (d.reflective != null) result.push({ name: 'Reflective', score: d.reflective });
+    // Handle both naming conventions
+    const intuitiveScore = d.system1 ?? d.intuitive;
+    const reflectiveScore = d.system2 ?? d.reflective;
+    if (intuitiveScore != null) result.push({ name: 'Intuitive', score: intuitiveScore });
+    if (reflectiveScore != null) result.push({ name: 'Reflective', score: reflectiveScore });
   }
+
+  // JHS thinking style
+  if (s['jhs-thinking']) {
+    const jhs = s['jhs-thinking'];
+    if (jhs.practical != null) result.push({ name: 'Practical', score: jhs.practical });
+    if (jhs.analytical != null) result.push({ name: 'Analytical', score: jhs.analytical });
+    if (jhs.creative != null) result.push({ name: 'Creative', score: jhs.creative });
+    if (jhs.social != null) result.push({ name: 'Social', score: jhs.social });
+  }
+
+  // SHS thinking style
+  if (s['shs-thinking']) {
+    const shs = s['shs-thinking'];
+    if (shs.analytical != null) result.push({ name: 'Analytical', score: shs.analytical });
+    if (shs.creative != null) result.push({ name: 'Creative', score: shs.creative });
+    if (shs.practical != null) result.push({ name: 'Practical', score: shs.practical });
+    if (shs.social != null) result.push({ name: 'Social', score: shs.social });
+  }
+
+  // Adult thinking style
+  if (s['adult-thinking']) {
+    const adult = s['adult-thinking'];
+    if (adult.analytical != null) result.push({ name: 'Analytical', score: adult.analytical });
+    if (adult.creative != null) result.push({ name: 'Creative', score: adult.creative });
+    if (adult.practical != null) result.push({ name: 'Practical', score: adult.practical });
+  }
+
+  // Children thinking style
+  if (s['children-thinking']) {
+    const kids = s['children-thinking'];
+    if (kids.creative != null) result.push({ name: 'Creative', score: kids.creative });
+    if (kids.analytical != null) result.push({ name: 'Analytical', score: kids.analytical });
+    if (kids.practical != null) result.push({ name: 'Practical', score: kids.practical });
+    if (kids.reflective != null) result.push({ name: 'Reflective', score: kids.reflective });
+  }
+
+  // Teaching style
+  if (s['teaching-style']) {
+    const ts = s['teaching-style'];
+    if (ts.primaryScore != null) result.push({ name: 'Primary Style', score: ts.primaryScore });
+    if (ts.secondaryScore != null) result.push({ name: 'Secondary Style', score: ts.secondaryScore });
+  }
+
   return result;
 }
 

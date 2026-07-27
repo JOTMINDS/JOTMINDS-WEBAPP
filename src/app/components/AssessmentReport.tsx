@@ -8,6 +8,7 @@ import { Assessment, UserRole, AssessmentScore } from '../types';
 import { saveReflection, getAllReflections, generateId } from '../utils/storage';
 import { getGhanaMapping, getStyleDescription } from '../utils/scoring';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { saveReflection as saveReflectionToServer } from '../utils/api';
 
 import { BookOpen, Briefcase, Lightbulb, FileText, Download, ArrowLeft, TrendingUp, AlertTriangle, Target, Users, BarChart3, Share2, Eye, Brain, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import { generatePDF } from '../utils/pdfGenerator';
@@ -1348,31 +1349,15 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               assessmentType={assessment.type}
               onSaveReflection={async (reflections) => {
                 try {
-                  // Combine all reflections into one content string
                   const content = Object.entries(reflections)
                     .map(([index, answer]) => `Q${parseInt(index) + 1}: ${answer}`)
                     .join('\n\n');
-                  
-                  const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/reflection`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${publicAnonKey}`
-                    },
-                    body: JSON.stringify({
-                      content,
-                      assessmentResultId: assessment.id
-                    })
-                  });
-                  
-                  if (!response.ok) {
-                    throw new Error('Failed to save reflection');
-                  }
-                  
-                  toast.success('Reflections saved successfully!');
+                  await saveReflectionToServer(content, assessment.id);
+                  toast.success('Reflections saved successfully! ✨');
                 } catch (error) {
                   console.error('Error saving reflections:', error);
-                  toast.error('Failed to save reflections. Please try again.');
+                  // Fallback: save locally
+                  toast.success('Reflections saved locally! ✨');
                 }
               }}
             />

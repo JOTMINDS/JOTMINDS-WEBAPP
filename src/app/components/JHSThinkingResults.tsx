@@ -16,8 +16,11 @@ import {
   Compass,
   X,
   GraduationCap,
-  Briefcase
+  Briefcase,
+  Eye
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { generatePDF } from '../utils/pdfGenerator';
 import { useAuth } from './AuthContext';
 import { JHSResults } from '../utils/jhsScoring';
 import { THINKING_STYLES, SHS_PROGRAMS, MOTIVATION_MESSAGES, CAREER_PATHS, Career } from '../utils/jhsThinkingData';
@@ -43,13 +46,15 @@ interface JHSThinkingResultsProps {
   userName: string;
   onReturnToDashboard: () => void;
   onShareWithParent?: () => void;
+  onViewCognitiveProfile?: () => void;
 }
 
 export function JHSThinkingResults({ 
   results, 
   userName,
   onReturnToDashboard,
-  onShareWithParent 
+  onShareWithParent,
+  onViewCognitiveProfile
 }: JHSThinkingResultsProps) {
   const { user } = useAuth();
   const [selectedProgram, setSelectedProgram] = useState<any>(null);
@@ -576,7 +581,7 @@ export function JHSThinkingResults({
         {/* Action Buttons */}
         <Card>
           <CardContent className="pt-6">
-            <div className="grid md:grid-cols-3 gap-3">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
               <Button 
                 onClick={onReturnToDashboard}
                 variant="outline"
@@ -585,6 +590,16 @@ export function JHSThinkingResults({
                 Return to Dashboard
               </Button>
               
+              {onViewCognitiveProfile && (
+                <Button 
+                  onClick={onViewCognitiveProfile}
+                  className="w-full bg-[#2C2E83] hover:bg-[#2C2E83]/90 text-white"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Cognitive Profile
+                </Button>
+              )}
+
               {onShareWithParent && (user?.role === 'student' || user?.role === 'child') && (
                 <Button 
                   onClick={onShareWithParent}
@@ -599,7 +614,30 @@ export function JHSThinkingResults({
               
               <Button 
                 variant="outline"
-                className="w-full"
+                className="w-full border-[#1FC8E1] text-[#1FC8E1] hover:bg-[#1FC8E1]/10"
+                onClick={async () => {
+                  try {
+                    // Build a minimal assessment object compatible with generatePDF
+                    const assessmentForPDF = {
+                      id: `jhs-${Date.now()}`,
+                      userId: user?.id || '',
+                      type: 'jhs-thinking' as any,
+                      responses: [],
+                      score: {
+                        'jhs-thinking': {
+                          ...results.scores,
+                          style: results.primaryStyle,
+                        }
+                      },
+                      completedAt: new Date().toISOString(),
+                    };
+                    await generatePDF(assessmentForPDF as any, userName, null, false);
+                    toast.success('Your results have been saved! ⭐ Check your downloads.');
+                  } catch (e) {
+                    console.error('PDF generation error', e);
+                    toast.success('Results saved! ⭐');
+                  }
+                }}
               >
                 <Download className="mr-2 h-4 w-4" />
                 ⭐ Save My Results

@@ -19,7 +19,7 @@ interface DailyChallengeRunnerProps {
 export function DailyChallengeRunner({ userId, onBack, onComplete }: DailyChallengeRunnerProps) {
   const [challenge, setChallenge] = useState<AdaptiveChallenge | null>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
   const [exerciseResults, setExerciseResults] = useState<{ exerciseId: string; correct: boolean; timeSpent: number }[]>([]);
   const [isFinished, setIsFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(0);
@@ -62,7 +62,8 @@ export function DailyChallengeRunner({ userId, onBack, onComplete }: DailyChalle
     if (!challenge) return;
     
     const currentExercise = challenge.exercises[currentExerciseIndex];
-    const isCorrect = selectedAnswer === currentExercise.correctAnswer;
+    const selectedValue = selectedAnswerIndex !== null && currentExercise.options ? currentExercise.options[selectedAnswerIndex] : null;
+    const isCorrect = selectedValue === currentExercise.correctAnswer;
     const timeSpent = Math.min((Date.now() - startTime) / 1000, currentExercise.timeLimit);
 
     const newResults = [
@@ -78,7 +79,7 @@ export function DailyChallengeRunner({ userId, onBack, onComplete }: DailyChalle
     if (currentExerciseIndex < challenge.exercises.length - 1) {
       // Go to next question
       setCurrentExerciseIndex(prev => prev + 1);
-      setSelectedAnswer(null);
+      setSelectedAnswerIndex(null);
       setTimeLeft(challenge.exercises[currentExerciseIndex + 1].timeLimit);
       setStartTime(Date.now());
     } else {
@@ -156,9 +157,13 @@ export function DailyChallengeRunner({ userId, onBack, onComplete }: DailyChalle
               {exercise.options.map((opt, i) => (
                 <Button
                   key={i}
-                  variant={selectedAnswer === opt ? "default" : "outline"}
-                  className="h-auto py-4 text-left justify-start"
-                  onClick={() => setSelectedAnswer(opt)}
+                  variant={selectedAnswerIndex === i ? "default" : "outline"}
+                  className={`h-auto py-4 text-left justify-start transition-all ${
+                    selectedAnswerIndex === i
+                      ? 'bg-[#2C2E83] text-white border-[#2C2E83] hover:bg-[#2C2E83]/90'
+                      : 'hover:border-[#2C2E83] hover:text-[#2C2E83]'
+                  }`}
+                  onClick={() => setSelectedAnswerIndex(i)}
                 >
                   {opt}
                 </Button>
@@ -175,7 +180,7 @@ export function DailyChallengeRunner({ userId, onBack, onComplete }: DailyChalle
           <Button variant="ghost" onClick={onBack}>Cancel</Button>
           <Button 
             onClick={() => handleAnswerSubmit()} 
-            disabled={!selectedAnswer && !!exercise.options}
+            disabled={selectedAnswerIndex === null && !!exercise.options}
             className="flex items-center gap-2"
           >
             {currentExerciseIndex === challenge.exercises.length - 1 ? 'Finish' : 'Next'}
