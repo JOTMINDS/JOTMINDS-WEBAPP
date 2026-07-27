@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { BarChart3, Users, User as UserIcon, Save, CheckCircle2, ClipboardList, Download } from 'lucide-react';
+import { BarChart3, Users, User as UserIcon, Save, CheckCircle2, ClipboardList, Download, ChevronRight, Mail, Shield, MoreVertical, X } from 'lucide-react';
+import { formatAssessmentType } from '../InstitutionReporting';
 import { toast } from 'sonner';
 import { updateMemberDetails } from '../../utils/institution';
 import { getAllAssessmentResults } from '../../utils/api';
@@ -265,7 +266,7 @@ export function TeacherManagementContent({
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h5 className="font-semibold text-gray-900 capitalize">
-                          {assmt.type?.replace('-', ' ') || 'Unknown'}
+                          {formatAssessmentType(assmt.type)}
                         </h5>
                         <p className="text-xs text-gray-500">
                           {assmt.completedAt ? new Date(assmt.completedAt).toLocaleDateString() : 'Unknown Date'}

@@ -328,7 +328,7 @@ export function InstitutionReporting({ institutionId, institutionName, members =
                         <td className="p-3 font-medium text-gray-900">{student?.name || 'Unknown Student'}</td>
                         <td className="p-3 text-gray-600">{studentClass?.name || 'Unassigned'}</td>
                         <td className="p-3 text-gray-600">{teacher?.userName || teacher?.userEmail || 'Unassigned'}</td>
-                        <td className="p-3 font-medium text-[#2C2E83]">{formatAssessmentType(a.type)}</td>
+                        <td className="p-3 text-gray-600">{formatAssessmentType(a.type)}</td>
                       </tr>
                     );
                   })}

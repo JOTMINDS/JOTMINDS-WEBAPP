@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Class, User, TeacherClassAssignment } from '../../types';
 import { InstitutionMember, getInstitutionClasses, createInstitutionClass, deleteInstitutionClass, generateNewClassCode } from '../../utils/institution';
-import { getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment, generateId } from '../../utils/storage';
+import { getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment, generateId, saveClass } from '../../utils/storage';
 import { assignMemberToClass, sendClassAssignmentEmail } from '../../utils/api';
 
 interface ClassManagementProps {
@@ -85,6 +85,8 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     
     try {
       await createInstitutionClass(classToSave);
+      // Save locally to storage immediately
+      saveClass(classToSave);
       
       // If a class teacher was assigned (and it changed from previous)
       if (classToSave.classTeacherId && classToSave.classTeacherId !== previousClass?.classTeacherId) {
@@ -110,7 +112,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       }
       
       setIsModalOpen(false);
-      loadData();
+      await loadData();
     } catch (err) {
       console.error("Failed to save class", err);
     }

@@ -526,14 +526,79 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                         <li><strong>Climate:</strong> Strict, high-pressure spaces vs. emotionally secure environments.</li>
                       </ul>
                     </div>
-                    <div>
-                      <strong className="text-blue-900 block mb-1">Common Teaching Archetypes</strong>
-                      <ul className="space-y-1 text-blue-800 list-disc pl-4">
-                        <li><strong style={{ color: '#DC2626' }}>Authoritative Instructor:</strong> Highly structured, focused on direct knowledge transmission.</li>
-                        <li><strong style={{ color: '#1E8A6E' }}>Facilitator Coach:</strong> Guides students to discover concepts independently.</li>
-                        <li><strong style={{ color: '#6B4C9A' }}>Learning Architect:</strong> Designs comprehensive environments for active knowledge construction.</li>
-                        <li><strong style={{ color: '#E0A020' }}>Engagement Driver:</strong> Highly motivating, driving active student participation.</li>
-                      </ul>
+                    <div className="col-span-1 md:col-span-2 mt-2 pt-4 border-t border-blue-200">
+                      <strong className="text-blue-900 block mb-3 text-sm">Teaching Style Recommendations & Insights</strong>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
+                          <strong style={{ color: '#DC2626' }} className="flex items-center gap-1.5 mb-1.5">
+                            Authoritative Instructor
+                          </strong>
+                          <ul className="space-y-1.5 pl-1">
+                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Clear instruction and structured expectations.</span></li>
+                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Pair with open-ended reflection activities to boost student independence.</span></li>
+                          </ul>
+                        </div>
+                        
+                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
+                          <strong style={{ color: '#5B7DB1' }} className="flex items-center gap-1.5 mb-1.5">
+                            Structured Educator
+                          </strong>
+                          <ul className="space-y-1.5 pl-1">
+                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Organized lesson planning and clear assessment criteria.</span></li>
+                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Incorporate collaborative group discussions.</span></li>
+                          </ul>
+                        </div>
+                        
+                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
+                          <strong style={{ color: '#1E8A6E' }} className="flex items-center gap-1.5 mb-1.5">
+                            Facilitator Coach
+                          </strong>
+                          <ul className="space-y-1.5 pl-1">
+                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Student-centered guidance and supportive climate.</span></li>
+                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Provide structured rubrics to keep self-directed learning on track.</span></li>
+                          </ul>
+                        </div>
+                        
+                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
+                          <strong style={{ color: '#E0A020' }} className="flex items-center gap-1.5 mb-1.5">
+                            Engagement Driver
+                          </strong>
+                          <ul className="space-y-1.5 pl-1">
+                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>High energy and motivation.</span></li>
+                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Balance interactive activities with quiet individual focus time.</span></li>
+                          </ul>
+                        </div>
+
+                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
+                          <strong style={{ color: '#6B4C9A' }} className="flex items-center gap-1.5 mb-1.5">
+                            Learning Architect
+                          </strong>
+                          <ul className="space-y-1.5 pl-1">
+                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Deep conceptual building.</span></li>
+                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Use real-world application projects.</span></li>
+                          </ul>
+                        </div>
+
+                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
+                          <strong style={{ color: '#ec4899' }} className="flex items-center gap-1.5 mb-1.5">
+                            Innovation Leader
+                          </strong>
+                          <ul className="space-y-1.5 pl-1">
+                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Creative problem solving.</span></li>
+                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Ensure core fundamentals remain grounded while experimenting.</span></li>
+                          </ul>
+                        </div>
+                        
+                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
+                          <strong style={{ color: '#06b6d4' }} className="flex items-center gap-1.5 mb-1.5">
+                            Student-Centered Mentor
+                          </strong>
+                          <ul className="space-y-1.5 pl-1">
+                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Supportive and personalized growth.</span></li>
+                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Set clear progress milestones for accountability.</span></li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

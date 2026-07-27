@@ -8,6 +8,7 @@ import {
   Users, Upload, UserPlus, AlertCircle, CheckCircle2, Trash2, Mail, Clock, RefreshCw, Loader, BarChart3, Crown, ShieldMinus, Brain, Download
 } from 'lucide-react';
 import { generatePDF } from '../../utils/pdfGenerator';
+import { formatAssessmentType } from '../InstitutionReporting';
 import {
   Institution,
   InstitutionMember,
@@ -16,7 +17,8 @@ import {
   approveMember,
   rejectMember,
   removeMember,
-  getInstitutionMembers
+  getInstitutionMembers,
+  deleteInstitutionInvitation
 } from '../../utils/institution';
 import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../../utils/storage';
 
@@ -432,14 +434,30 @@ export function InstitutionMembers({
                           </div>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-blue-600 hover:text-blue-700"
-                        onClick={() => onOpenInviteModal(inv.email, inv.role)}
-                      >
-                        <RefreshCw className="w-3.5 h-3.5 mr-1" /> Resend
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-blue-600 hover:text-blue-700"
+                          onClick={() => onOpenInviteModal(inv.email, inv.role)}
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 mr-1" /> Resend
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={async () => {
+                            if (window.confirm(`Are you sure you want to cancel the invitation for ${inv.email}?`)) {
+                              await deleteInstitutionInvitation(inv.id, inv.email);
+                              toast.success(`Invitation for ${inv.email} cancelled.`);
+                              if (onRefresh) onRefresh();
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" /> Cancel
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -554,13 +572,22 @@ export function InstitutionMembers({
                                     return 'Sporadic';
                                   }
                                   
-                                  if (daysSince <= 7) return 'Active (New)';
-                                  if (daysSince > 30) return 'Inactive';
-                                  return `${daysSince}d ago`;
-                                })()}
-                            </Badge>
-                          </div>
-                      </div>
+                                    if (daysSince <= 7) return 'Active (New)';
+                                    if (daysSince > 30) return 'Inactive';
+                                    return `${daysSince}d ago`;
+                                  })()}
+                              </Badge>
+                              {(() => {
+                                const userAssessments = assessments.length > 0 ? assessments.filter(a => a.userId === m.userId) : getAssessmentsByUserId(m.userId);
+                                const completedAssessments = userAssessments.filter((a: any) => a.completedAt);
+                                return completedAssessments.map((a: any, i: number) => (
+                                  <Badge key={`badge-${m.userId}-${i}`} variant="outline" className="bg-white text-[#6B4C9A] border-[#6B4C9A]/30 text-[10px]">
+                                    {formatAssessmentType(a.type)}
+                                  </Badge>
+                                ));
+                              })()}
+                            </div>
+                        </div>
                     )}
 
                     {/* Export Report button for members with completed assessments */}
