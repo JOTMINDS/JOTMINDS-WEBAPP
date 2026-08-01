@@ -19,6 +19,7 @@ import { getGamificationProfile } from '../utils/gamification';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { getAllAssessmentResults } from '../utils/api';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
 
 import { InstitutionMember } from '../utils/institution';
 
@@ -414,6 +415,36 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
     if (stats.riskCounts.unassessed > 5) list.push({ type: 'info', title: `${stats.riskCounts.unassessed} students not yet assessed`, body: 'These students have no cognitive assessment data yet.' });
     return list;
   }, [stats]);
+
+  const [aiSchoolReport, setAiSchoolReport] = useState<SchoolAIInsightsResponse | null>(null);
+  const [isGeneratingAiReport, setIsGeneratingAiReport] = useState(false);
+
+  const triggerSchoolAIAnalysis = () => {
+    setIsGeneratingAiReport(true);
+    generateSchoolAIInsights({
+      schoolName: user.school || user.organizationName || 'School',
+      role: 'school_admin',
+      metrics: {
+        totalStudents: stats.total,
+        assessed: stats.assessed,
+        averageEngagement: stats.avgEng,
+        riskCounts: stats.riskCounts,
+        typeCompletion: stats.typeCompletion
+      },
+      algorithmicGuidance: {
+        ruleBasedInsights: insights
+      }
+    }).then(res => {
+      if (res) setAiSchoolReport(res);
+    }).catch(err => console.error('School AI report error:', err))
+      .finally(() => setIsGeneratingAiReport(false));
+  };
+
+  useEffect(() => {
+    if (stats.total > 0 && !aiSchoolReport && !isGeneratingAiReport) {
+      triggerSchoolAIAnalysis();
+    }
+  }, [stats.total]);
 
   return (
     <TooltipProvider>
@@ -1106,6 +1137,109 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         </>)}
 
         {tab === 'insights' && (<>
+          {/* AI School Executive Advisor Card */}
+          <Card className="border-2 border-indigo-200 bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-blue-50/80 shadow-md mb-6">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-600" />
+                <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds AI School Executive Advisor</CardTitle>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={triggerSchoolAIAnalysis} 
+                disabled={isGeneratingAiReport}
+                className="bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200 text-xs"
+              >
+                {isGeneratingAiReport ? 'Generating AI Variation...' : 'Refresh AI Analysis'}
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isGeneratingAiReport ? (
+                <div className="py-8 text-center text-indigo-600 text-sm animate-pulse font-medium">
+                  Analyzing whole-school cognitive distributions & engagement heuristics...
+                </div>
+              ) : aiSchoolReport ? (
+                <>
+                  <div className="p-3 bg-white/80 rounded-lg border border-indigo-100">
+                    <p className="text-sm text-gray-800 leading-relaxed font-medium">{aiSchoolReport.executiveSummary}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-3 bg-white/90 rounded-lg border border-green-100">
+                      <h4 className="text-xs font-bold text-green-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <CheckCircle className="w-3.5 h-3.5 text-green-600" /> Institutional Strengths
+                      </h4>
+                      <ul className="space-y-1.5 text-xs text-gray-700">
+                        {aiSchoolReport.keyStrengths.map((str, idx) => (
+                          <li key={idx} className="flex items-start gap-1.5">
+                            <span className="text-green-500 font-bold">•</span>
+                            <span>{str}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="p-3 bg-white/90 rounded-lg border border-amber-100">
+                      <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Strategic Alerts & Risks
+                      </h4>
+                      <ul className="space-y-1.5 text-xs text-gray-700">
+                        {aiSchoolReport.strategicAlerts.map((alt, idx) => (
+                          <li key={idx} className="flex items-start gap-1.5">
+                            <span className="text-amber-500 font-bold">•</span>
+                            <span>{alt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {aiSchoolReport.pedagogicalAlignment && (
+                    <div className="p-3 bg-indigo-100/50 rounded-lg border border-indigo-200">
+                      <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <Target className="w-3.5 h-3.5 text-indigo-700" /> Whole-School Pedagogical Alignment
+                      </h4>
+                      <p className="text-xs text-indigo-950 leading-relaxed">{aiSchoolReport.pedagogicalAlignment}</p>
+                    </div>
+                  )}
+
+                  {aiSchoolReport.actionableInterventions?.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-blue-600" /> Actionable Institutional Interventions
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {aiSchoolReport.actionableInterventions.map((item, idx) => (
+                          <div key={idx} className="p-2.5 bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-gray-900">{item.area}</span>
+                                <Badge className={`text-[10px] ${item.priority === 'urgent' ? 'bg-red-100 text-red-800' : item.priority === 'high' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                                  {item.priority}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-gray-600 mb-2">{item.strategy}</p>
+                            </div>
+                            <span className="text-[10px] font-medium text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded self-start">
+                              Target: {item.targetGroup}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="py-4 text-center">
+                  <Button onClick={triggerSchoolAIAnalysis} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    Generate Whole-School AI Analysis
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {insights.map((ins, i) => (
             <Card key={i} className={`border-l-4 ${ins.type === 'warning' ? 'border-l-amber-400 bg-amber-50' : ins.type === 'success' ? 'border-l-green-500 bg-green-50' : 'border-l-blue-400 bg-blue-50'}`}>
               <CardContent className="pt-4 flex items-start gap-3">

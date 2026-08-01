@@ -280,12 +280,13 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
       const typeKey = assessment.type === 'child-thinking' ? 'children-thinking' : assessment.type;
       let actualScores: any = {};
       
-      if (assessment.score[typeKey as keyof AssessmentScore] && (assessment.score[typeKey as keyof AssessmentScore] as any).scores) {
-          actualScores = (assessment.score[typeKey as keyof AssessmentScore] as any).scores;
-      } else if ((assessment.score as any).creative !== undefined || (assessment.score as any).analytical !== undefined || (assessment.score as any).Creative !== undefined) {
-          actualScores = assessment.score;
-      } else if ((assessment.score as any).scores) {
-          actualScores = (assessment.score as any).scores;
+      const scoreAny = assessment.score as any;
+      if (scoreAny[typeKey] && scoreAny[typeKey].scores) {
+          actualScores = scoreAny[typeKey].scores;
+      } else if (scoreAny.creative !== undefined || scoreAny.analytical !== undefined || scoreAny.Creative !== undefined) {
+          actualScores = scoreAny;
+      } else if (scoreAny.scores) {
+          actualScores = scoreAny.scores;
       }
 
       return [
@@ -344,14 +345,18 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
   useEffect(() => {
     async function fetchInsights() {
       setIsGeneratingAI(true);
-      const generated = await generateAIInsights(assessment.score);
+      const generated = await generateAIInsights({
+        scores: assessment.score,
+        role: assessment.type || 'individual',
+        algorithmicGuidance: fallbackInsights
+      });
       if (generated) {
         setAiInsights(generated);
       }
       setIsGeneratingAI(false);
     }
     fetchInsights();
-  }, [assessment.score]);
+  }, [assessment.score, assessment.type]);
 
   // Use AI insights if available, otherwise fallback
   const insights = aiInsights || fallbackInsights;

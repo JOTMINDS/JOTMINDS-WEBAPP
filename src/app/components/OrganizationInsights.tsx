@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { User } from '../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Brain, Lightbulb, Scale, BookOpen, Info, TrendingUp, Users, Search, ChevronRight, Zap } from 'lucide-react';
+import { Brain, Lightbulb, Scale, BookOpen, Info, TrendingUp, Users, Search, ChevronRight, Zap, Sparkles, CheckCircle, AlertTriangle, Target } from 'lucide-react';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, 
   BarChart, Bar, XAxis, YAxis, CartesianGrid
@@ -13,6 +14,7 @@ import {
 import { getAssessmentsByUserId } from '../utils/storage';
 import { ScrollArea } from './ui/scroll-area';
 import { TeamSynergy } from './TeamSynergy';
+import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
 
 interface OrganizationInsightsProps {
   professionals: User[];
@@ -134,6 +136,35 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
     );
   }
 
+  const [aiOrgReport, setAiOrgReport] = useState<SchoolAIInsightsResponse | null>(null);
+  const [isGeneratingOrgAi, setIsGeneratingOrgAi] = useState(false);
+
+  const triggerOrgAIAnalysis = () => {
+    setIsGeneratingOrgAi(true);
+    generateSchoolAIInsights({
+      schoolName: organizationName || 'Organization',
+      role: 'executive_leader',
+      metrics: {
+        totalProfessionals: professionals.length,
+        sternbergDistribution: stats.sternberg,
+        kolbDistribution: stats.kolb,
+        totals: stats.totals
+      },
+      algorithmicGuidance: {
+        ruleBasedInsights: stats.insights.map(i => ({ title: i.title, desc: i.desc }))
+      }
+    }).then(res => {
+      if (res) setAiOrgReport(res);
+    }).catch(err => console.error('Org AI report error:', err))
+      .finally(() => setIsGeneratingOrgAi(false));
+  };
+
+  useEffect(() => {
+    if (professionals.length > 0 && !aiOrgReport && !isGeneratingOrgAi) {
+      triggerOrgAIAnalysis();
+    }
+  }, [professionals.length]);
+
   return (
     <div className="space-y-6">
       {departments.length > 0 && (
@@ -150,6 +181,83 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
           </select>
         </div>
       )}
+
+      {/* AI Organization Executive Advisor Card */}
+      <Card className="border-2 border-indigo-200 bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-blue-50/80 shadow-md">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-indigo-600" />
+            <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds AI Organization Executive Advisor</CardTitle>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={triggerOrgAIAnalysis} 
+            disabled={isGeneratingOrgAi}
+            className="bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200 text-xs"
+          >
+            {isGeneratingOrgAi ? 'Generating AI Variation...' : 'Refresh AI Analysis'}
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isGeneratingOrgAi ? (
+            <div className="py-8 text-center text-indigo-600 text-sm animate-pulse font-medium">
+              Analyzing organizational cognitive diversity & leadership synergies...
+            </div>
+          ) : aiOrgReport ? (
+            <>
+              <div className="p-3 bg-white/80 rounded-lg border border-indigo-100">
+                <p className="text-sm text-gray-800 leading-relaxed font-medium">{aiOrgReport.executiveSummary}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 bg-white/90 rounded-lg border border-green-100">
+                  <h4 className="text-xs font-bold text-green-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-green-600" /> Organizational Synergies
+                  </h4>
+                  <ul className="space-y-1.5 text-xs text-gray-700">
+                    {aiOrgReport.keyStrengths.map((str, idx) => (
+                      <li key={idx} className="flex items-start gap-1.5">
+                        <span className="text-green-500 font-bold">•</span>
+                        <span>{str}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="p-3 bg-white/90 rounded-lg border border-amber-100">
+                  <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Strategic Alerts & Growth Areas
+                  </h4>
+                  <ul className="space-y-1.5 text-xs text-gray-700">
+                    {aiOrgReport.strategicAlerts.map((alt, idx) => (
+                      <li key={idx} className="flex items-start gap-1.5">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span>{alt}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {aiOrgReport.pedagogicalAlignment && (
+                <div className="p-3 bg-indigo-100/50 rounded-lg border border-indigo-200">
+                  <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5 text-indigo-700" /> Executive Leadership & Workplace Strategy
+                  </h4>
+                  <p className="text-xs text-indigo-950 leading-relaxed">{aiOrgReport.pedagogicalAlignment}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="py-4 text-center">
+              <Button onClick={triggerOrgAIAnalysis} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                Generate Organizational AI Analysis
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* High Level Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

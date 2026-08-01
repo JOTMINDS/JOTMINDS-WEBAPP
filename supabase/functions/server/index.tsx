@@ -2288,7 +2288,7 @@ app.post('/make-server-fc8eb847/parent/link-child', async (c) => {
 
     if (!child) {
       // Increment rate limit on failure
-      await kv.set(rlKey, { count: rlData.count + 1 }, { expireIn: 3600000 }); // 1 hour TTL
+      await kv.set(rlKey, { count: rlData.count + 1 }); // 1 hour TTL (unsupported in kv_store)
       return c.json({ error: 'Student not found. Please check the email address.' }, 404);
     }
 
@@ -2334,7 +2334,7 @@ app.post('/make-server-fc8eb847/parent/link-child', async (c) => {
           pendingAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           reason: 'Explicit consent required - child is 11 years or older'
-        }, { expireIn: 604800000 }); // 7 days TTL
+        }); // 7 days TTL (unsupported in kv_store)
         console.log(`Pending consent created for child (age ${childAge}): ${consentKey}`);
       }
     } else {
@@ -2347,7 +2347,7 @@ app.post('/make-server-fc8eb847/parent/link-child', async (c) => {
         pendingAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         reason: 'Age unknown - explicit consent required'
-      }, { expireIn: 604800000 }); // 7 days TTL
+      }); // 7 days TTL (unsupported in kv_store)
       console.log(`Pending consent created (age unknown): ${consentKey}`);
     }
 

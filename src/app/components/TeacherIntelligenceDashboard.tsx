@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import {
   ArrowLeft, Brain, Users, TrendingUp, AlertTriangle, CheckCircle,
   Lightbulb, Target, BarChart3, Eye, Star, ChevronDown, ChevronUp,
-  Zap, BookOpen, Activity
+  Zap, BookOpen, Activity, Sparkles
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTip,
@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId } from '../utils/storage';
 import { extractDimensionScores } from '../utils/cognitiveXP';
+import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
 
 interface TeacherIntelligenceDashboardProps {
   user: User;
@@ -215,6 +216,39 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
   );
 
   const heatmapDimensions = DIMENSION_GROUPS[heatmapGroup] ?? [];
+
+  const [aiClassroomReport, setAiClassroomReport] = useState<SchoolAIInsightsResponse | null>(null);
+  const [isGeneratingClassAi, setIsGeneratingClassAi] = useState(false);
+
+  const triggerClassroomAIAnalysis = () => {
+    setIsGeneratingClassAi(true);
+    generateSchoolAIInsights({
+      schoolName: user.school || user.organizationName || 'Classroom',
+      role: 'teacher',
+      metrics: {
+        totalStudents: stats.total,
+        assessed: stats.assessed,
+        riskCounts: stats.riskCounts,
+        styleDistribution: stats.styleDistribution
+      },
+      algorithmicGuidance: {
+        ruleBasedInterventions: interventions.slice(0, 5).map(i => ({
+          studentName: i.profile.user.name,
+          priority: i.intervention.priority,
+          strategy: i.intervention.focus
+        }))
+      }
+    }).then(res => {
+      if (res) setAiClassroomReport(res);
+    }).catch(err => console.error('Classroom AI report error:', err))
+      .finally(() => setIsGeneratingClassAi(false));
+  };
+
+  useEffect(() => {
+    if (stats.total > 0 && !aiClassroomReport && !isGeneratingClassAi) {
+      triggerClassroomAIAnalysis();
+    }
+  }, [stats.total]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -472,6 +506,83 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
         {/* ─── INTERVENTIONS TAB ─── */}
         {tab === 'interventions' && (
           <>
+            {/* AI Classroom Pedagogical Advisor Card */}
+            <Card className="border-2 border-indigo-200 bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-blue-50/80 shadow-md mb-4">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                  <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds AI Classroom Pedagogical Advisor</CardTitle>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={triggerClassroomAIAnalysis} 
+                  disabled={isGeneratingClassAi}
+                  className="bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200 text-xs"
+                >
+                  {isGeneratingClassAi ? 'Generating AI Variation...' : 'Refresh Classroom AI'}
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isGeneratingClassAi ? (
+                  <div className="py-8 text-center text-indigo-600 text-sm animate-pulse font-medium">
+                    Analyzing classroom cognitive styles & generating differentiated pedagogy...
+                  </div>
+                ) : aiClassroomReport ? (
+                  <>
+                    <div className="p-3 bg-white/80 rounded-lg border border-indigo-100">
+                      <p className="text-sm text-gray-800 leading-relaxed font-medium">{aiClassroomReport.executiveSummary}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-3 bg-white/90 rounded-lg border border-green-100">
+                        <h4 className="text-xs font-bold text-green-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5 text-green-600" /> Classroom Synergies
+                        </h4>
+                        <ul className="space-y-1.5 text-xs text-gray-700">
+                          {aiClassroomReport.keyStrengths.map((str, idx) => (
+                            <li key={idx} className="flex items-start gap-1.5">
+                              <span className="text-green-500 font-bold">•</span>
+                              <span>{str}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="p-3 bg-white/90 rounded-lg border border-amber-100">
+                        <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Pedagogical Alerts
+                        </h4>
+                        <ul className="space-y-1.5 text-xs text-gray-700">
+                          {aiClassroomReport.strategicAlerts.map((alt, idx) => (
+                            <li key={idx} className="flex items-start gap-1.5">
+                              <span className="text-amber-500 font-bold">•</span>
+                              <span>{alt}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    {aiClassroomReport.pedagogicalAlignment && (
+                      <div className="p-3 bg-indigo-100/50 rounded-lg border border-indigo-200">
+                        <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                          <Target className="w-3.5 h-3.5 text-indigo-700" /> Differentiated Instruction Strategy
+                        </h4>
+                        <p className="text-xs text-indigo-950 leading-relaxed">{aiClassroomReport.pedagogicalAlignment}</p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="py-4 text-center">
+                    <Button onClick={triggerClassroomAIAnalysis} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                      Generate Classroom AI Analysis
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <Card className="border-amber-200 bg-amber-50">
               <CardContent className="pt-4">
                 <div className="flex items-start gap-3">

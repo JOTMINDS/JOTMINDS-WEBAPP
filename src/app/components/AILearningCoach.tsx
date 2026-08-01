@@ -47,6 +47,7 @@ import {
   SmartReminder
 } from '../utils/aiRecommendations';
 import { getAllAssessmentResults } from '../utils/api';
+import { generateAIInsights } from '../utils/aiService';
 
 interface AILearningCoachProps {
   userId: string;
@@ -170,6 +171,27 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
           strugglingAreas: []
         });
         setCoachInsights(insights);
+
+        // Guide OpenAI with our algorithm's computed results to generate dynamic, varied AI insights across roles
+        generateAIInsights({
+          scores: profile.assessmentScores as any,
+          role: profile.role || 'learner',
+          algorithmicGuidance: {
+            archetype: arc?.name,
+            algorithmicStrengths: interpretation.strengths.map(s => s.area),
+            algorithmicDevelopmentAreas: interpretation.developmentAreas.map(d => d.area),
+            baselineCoachMessage: insights.message
+          }
+        }).then((aiRes) => {
+          if (aiRes) {
+            setCoachInsights(prev => prev ? {
+              ...prev,
+              message: aiRes.summary || prev.message,
+              encouragement: aiRes.strengths?.[0] ? `Key asset: ${aiRes.strengths[0]}` : prev.encouragement,
+              insights: aiRes.improvements?.length ? aiRes.improvements : prev.insights
+            } : prev);
+          }
+        }).catch(err => console.log('AI dynamic variation fallback:', err));
       }
     } catch (error) {
       console.error('Failed to load user profile for coach:', error);
