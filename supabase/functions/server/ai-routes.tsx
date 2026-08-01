@@ -251,4 +251,154 @@ You must respond with valid JSON matching exactly this structure:
   }
 });
 
+aiRoutes.post('/generate-jtia-insights', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { report } = body;
+    
+    if (!report) {
+      return c.json({ error: 'JTIA report is required' }, 400);
+    }
+
+    const systemPrompt = `You are the JotMinds Teacher Intelligence Assessment (JTIA) AI Engine — a specialized educational AI designed to evaluate cognitive, instructional, leadership, relational, and professional intelligence in teachers.
+
+IMPORTANT ARCHITECTURAL RULES:
+1. ALGORITHMIC GUIDANCE (GROUNDING):
+You are guided by the teacher's proprietary algorithmic JTIA data:
+- Overall Score: ${report.overallScore || 'N/A'}
+- Domain Scores: ${JSON.stringify(report.domainScores || {})}
+- Strengths: ${JSON.stringify(report.strengths || [])}
+- Growth Areas: ${JSON.stringify(report.growthOpportunities || [])}
+You MUST use these algorithmically computed scores, strengths, and growth opportunities as your authoritative foundation so that your recommendations are mathematically faithful to the JotMinds scoring engine.
+
+2. AI-GENERATED VARIATIONS & PERSONALIZATION:
+Do NOT return generic boilerplate or canned text. You must generate fresh, uniquely articulated, varied, and personalized professional development recommendations every time. Provide distinct phrasing, varied natural language, and tailored nuance so we get variations in results.
+
+3. RESPONSE FORMAT (JSON OBJECT):
+You must respond with valid JSON matching exactly this structure:
+{
+  "resources": ["4 distinct, varied professional books, research toolkits, or interactive guides tailored to their profile"],
+  "activities": ["4 specific, highly actionable classroom activities or instructional routines tailored to their profile"],
+  "coaching": ["4 mentoring, peer observation, or feedback routines tailored to their growth opportunities"],
+  "pathways": ["4 long-term leadership, action research, or curriculum innovation pathways"]
+}`;
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Generate dynamic AI professional development recommendations for this teacher based on their algorithmic JTIA profile: ${JSON.stringify(report)}` }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.82
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('OpenAI JTIA Insights Error:', err);
+      return c.json({ error: 'Failed to generate JTIA insights from AI provider' }, 500);
+    }
+
+    const data = await response.json();
+    const aiText = data.choices?.[0]?.message?.content;
+    
+    if (!aiText) {
+       return c.json({ error: 'Invalid response from AI provider' }, 500);
+    }
+
+    const insightsJson = JSON.parse(aiText);
+    return c.json(insightsJson);
+
+  } catch (error) {
+    console.error('AI JTIA Generation Error:', error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
+});
+
+aiRoutes.post('/generate-school-jtia-insights', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { schoolInsights, schoolName } = body;
+    
+    if (!schoolInsights) {
+      return c.json({ error: 'School JTIA insights are required' }, 400);
+    }
+
+    const institutionName = schoolName || 'Educational Institution';
+
+    const systemPrompt = `You are the JotMinds JTIA School Intelligence Advisor — an AI specializing in whole-school teacher intelligence analytics, institutional professional development, and pedagogical alignment.
+
+IMPORTANT ARCHITECTURAL RULES:
+1. ALGORITHMIC GUIDANCE (GROUNDING):
+You are guided by the school's aggregated JTIA algorithmic data:
+- School Name: ${institutionName}
+- Total Teachers Assessed: ${schoolInsights.totalTeachersAssessed || 0}
+- Overall School Intelligence: ${schoolInsights.overallSchoolIntelligence || 0}
+- Domain Averages: ${JSON.stringify(schoolInsights.domainAverages || {})}
+- Algorithmic Priorities: ${JSON.stringify(schoolInsights.pdPriorities || [])}
+You MUST use these algorithmically computed school statistics and lowest subcompetencies as your authoritative foundation.
+
+2. AI-GENERATED VARIATIONS & PERSONALIZATION:
+Do NOT return generic boilerplate or canned institutional text. Provide fresh, uniquely phrased, executive-ready professional development priorities and interventions tailored to ${institutionName}. Generate varied, actionable strategies that school leaders can apply immediately.
+
+3. RESPONSE FORMAT (JSON OBJECT):
+You must respond with valid JSON matching exactly this structure:
+{
+  "pdPriorities": [
+    {
+      "title": "Subcompetency Name (from algorithmic priorities)",
+      "domain": "Domain Name",
+      "averageScore": number,
+      "recommendedProgram": "AI-generated tailored workshop or PD program title with unique variation",
+      "impactArea": "AI-generated actionable description of institutional impact"
+    }
+  ]
+}`;
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Generate dynamic AI institutional professional development priorities for ${institutionName} based on these algorithmic school metrics: ${JSON.stringify(schoolInsights)}` }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.82
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('OpenAI School JTIA Insights Error:', err);
+      return c.json({ error: 'Failed to generate school JTIA insights from AI provider' }, 500);
+    }
+
+    const data = await response.json();
+    const aiText = data.choices?.[0]?.message?.content;
+    
+    if (!aiText) {
+       return c.json({ error: 'Invalid response from AI provider' }, 500);
+    }
+
+    const insightsJson = JSON.parse(aiText);
+    return c.json(insightsJson);
+
+  } catch (error) {
+    console.error('AI School JTIA Generation Error:', error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
+});
+
 export default aiRoutes;

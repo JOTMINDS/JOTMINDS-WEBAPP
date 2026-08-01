@@ -15,6 +15,7 @@ import {
   autoSaveProgress, 
   submitAssessmentWithServerScoring 
 } from '../utils/assessmentApi';
+import { saveAssessment } from '../utils/storage';
 
 interface AssessmentProps {
   type: 'learning' | 'thinking' | 'decision';
@@ -237,7 +238,6 @@ export const Assessment: React.FC<AssessmentProps> = ({
         
         // Fallback local scoring
         const { calculateResults, generateInsights } = await import('../utils/assessmentData');
-        const { saveAssessment } = await import('../utils/storage');
         
         const calculatedScore = calculateResults(answers, type);
         const localInsights = generateInsights(calculatedScore, type);

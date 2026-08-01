@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import {
   Brain, BookOpen, Users, HeartHandshake, Award,
   Sparkles, ShieldCheck, TrendingUp, BarChart2,
-  Download, Printer, Filter, ChevronRight, Layers, Target, CheckCircle2
+  Download, Printer, Filter, ChevronRight, Layers, Target, CheckCircle2,
+  RefreshCw, Loader2
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -14,6 +15,7 @@ import {
 } from 'recharts';
 import { JTIASchoolAggregatedInsights, generateSchoolJTIAInsights, JTIAReportData } from '../utils/jtiaScoring';
 import { JTIADomain } from '../utils/jtiaQuestions';
+import { generateSchoolJTIAAIInsights } from '../utils/aiService';
 
 interface JTIASchoolDashboardProps {
   reports?: JTIAReportData[];
@@ -23,12 +25,29 @@ interface JTIASchoolDashboardProps {
 
 export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
   reports = [],
-  schoolName = 'Partner Educational Institution',
+  schoolName = 'Our Institution',
   onBack
 }) => {
   const [selectedDomain, setSelectedDomain] = useState<JTIADomain | 'ALL'>('ALL');
-
   const insights: JTIASchoolAggregatedInsights = generateSchoolJTIAInsights(reports);
+
+  const [aiPdPriorities, setAiPdPriorities] = useState<JTIASchoolAggregatedInsights['pdPriorities'] | null>(null);
+  const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
+
+  const fetchAiSchoolInsights = async () => {
+    setIsLoadingAi(true);
+    const aiRes = await generateSchoolJTIAAIInsights(insights, schoolName);
+    if (aiRes && aiRes.length > 0) {
+      setAiPdPriorities(aiRes);
+    }
+    setIsLoadingAi(false);
+  };
+
+  useEffect(() => {
+    fetchAiSchoolInsights();
+  }, [insights.totalTeachersAssessed, schoolName]);
+
+  const displayedPdPriorities = aiPdPriorities || insights.pdPriorities;
 
   const filteredHeatmap = selectedDomain === 'ALL'
     ? insights.competencyHeatmap
@@ -158,7 +177,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
             <div>
               <span className="text-xs text-slate-500 font-semibold uppercase">PD Priority Count</span>
               <div className="text-3xl font-black text-amber-600 dark:text-amber-400 mt-1">
-                {insights.pdPriorities.length}
+                {displayedPdPriorities.length}
               </div>
               <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">Targeted Growth Workshops</span>
             </div>
@@ -169,24 +188,25 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
         </Card>
       </div>
 
-      {/* ─── Domain Trends & Radar Overview ─────────────────────────────── */}
+      {/* ─── School Capability Radar & Priority Action Plan ──────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Radar Chart */}
         <Card className="lg:col-span-5 shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader>
             <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <BarChart2 className="w-5 h-5 text-indigo-600" />
-              Intelligence Domain Trends
+              <BarChart2 className="w-5 h-5 text-emerald-600" />
+              Institutional Intelligence Map
             </CardTitle>
             <CardDescription>
-              Average proficiency across the 5 core domains across the school.
+              Average across 5 core pedagogical intelligence domains
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-[320px] flex items-center justify-center">
+          <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                <PolarGrid stroke="rgba(148, 163, 184, 0.3)" />
-                <PolarAngleAxis dataKey="domain" stroke="#64748B" tick={{ fontSize: 12, fontWeight: 600 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#94A3B8" />
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="#94A3B8" strokeOpacity={0.4} />
+                <PolarAngleAxis dataKey="domain" stroke="#64748B" fontSize={11} />
+                <PolarRadiusAxis domain={[0, 100]} stroke="#64748B" fontSize={10} />
                 <Radar name="School Average" dataKey="score" stroke="#10B981" fill="#10B981" fillOpacity={0.35} />
                 <RechartsTip formatter={(val: number) => [`${val} / 100`, 'Average Score']} />
               </RadarChart>
@@ -196,17 +216,34 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
 
         {/* Professional Development Priorities */}
         <Card className="lg:col-span-7 shadow-sm border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <Target className="w-5 h-5 text-amber-600" />
-              Evidence-Based PD Priorities
-            </CardTitle>
-            <CardDescription>
-              Recommended school-wide professional development programmes based on aggregated capability gaps.
-            </CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between flex-wrap gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <Target className="w-5 h-5 text-amber-600" />
+                  Evidence-Based PD Priorities
+                </CardTitle>
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 text-xs">
+                  {aiPdPriorities ? 'Live AI School Strategy' : 'Algorithmic Priorities'}
+                </Badge>
+              </div>
+              <CardDescription className="mt-1">
+                Recommended school-wide professional development programmes based on aggregated capability gaps.
+              </CardDescription>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={fetchAiSchoolInsights}
+              disabled={isLoadingAi}
+              className="gap-1.5 text-xs"
+            >
+              {isLoadingAi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              {isLoadingAi ? 'Generating...' : 'AI Variations'}
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {insights.pdPriorities.map((pd, idx) => (
+            {displayedPdPriorities.map((pd, idx) => (
               <div
                 key={pd.title}
                 className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100/50 transition-colors"

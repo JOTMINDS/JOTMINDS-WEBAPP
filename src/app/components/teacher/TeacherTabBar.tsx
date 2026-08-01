@@ -41,7 +41,7 @@ export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
             }
           `}
         >
-          My Teaching Style
+          Teacher Intelligence (JTIA)
         </button>
         <button
           onClick={() => onTabChange('my-style')}

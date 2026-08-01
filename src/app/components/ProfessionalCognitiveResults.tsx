@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { Download, ArrowLeft, CheckCircle2, Target, TrendingUp, Briefcase, MessageSquare, ExternalLink, Brain, Lightbulb, Scale } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
+import { getRoleProfiles } from '../utils/api';
 
 interface ProfessionalCognitiveResultsProps {
   profile: ProfessionalCognitiveProfile;
@@ -16,7 +17,7 @@ interface ProfessionalCognitiveResultsProps {
   userPosition?: string;
   userLocation?: string;
   supervisorId?: string;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export function ProfessionalCognitiveResults({ 
@@ -34,15 +35,13 @@ export function ProfessionalCognitiveResults({
 
   React.useEffect(() => {
     if (supervisorId) {
-      import('../utils/api').then(({ getRoleProfiles }) => {
-        getRoleProfiles(supervisorId)
-          .then(res => {
-            if (res.success && res.profiles) {
-              setRoleProfiles(res.profiles);
-            }
-          })
-          .catch(console.error);
-      }).catch(console.error);
+      getRoleProfiles(supervisorId)
+        .then(res => {
+          if (res.success && res.profiles) {
+            setRoleProfiles(res.profiles);
+          }
+        })
+        .catch(console.error);
     }
   }, [supervisorId]);
   

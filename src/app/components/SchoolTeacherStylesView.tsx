@@ -17,6 +17,7 @@ import { getSchoolTeachers, getUserJotsCode } from '../utils/jotsCode';
 import { getAssessmentsByUserId } from '../utils/storage';
 import { getAllAssessmentResults } from '../utils/api';
 import { normalizeServerResults } from '../utils/assessmentApi';
+import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 
 interface SchoolTeacherStylesViewProps {
   admin: User;
@@ -330,6 +331,19 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
     return Object.entries(d).map(([name, value]) => ({ name, value }));
   }, [teachers]);
 
+  const jtiaReports = useMemo(() => {
+    const list: any[] = [];
+    allTeachers.forEach(t => {
+      const server = serverByUser[t.id] || [];
+      const local = getAssessmentsByUserId(t.id) || [];
+      const jtia = [...server, ...local].find(a => a?.type === 'jtia');
+      if (jtia?.results || jtia?.report) {
+        list.push(jtia.report || jtia.results);
+      }
+    });
+    return list;
+  }, [allTeachers, serverByUser]);
+
   const fullProfiles = useMemo(() => teachers.map(t => ({ teacher: t, profile: generateFullProfile(t) })), [teachers]);
   const avgOverall = useMemo(() => {
     const scored = fullProfiles.filter(x => x.profile);
@@ -368,7 +382,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
         <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-0 overflow-x-auto">
           {([
             ['overview', Layers, 'Overview'],
-            ['teaching', BookOpen, 'Teaching Style'],
+            ['teaching', BookOpen, 'Teacher Intelligence (JTIA)'],
             ['cognitive', Brain, 'Cognitive Profile'],
             ['analysis', TrendingUp, 'Full Analysis'],
           ] as const).map(([t, Icon, label]) => (
@@ -501,150 +515,13 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
           </Card>
         </>)}
 
-        {/* ── TEACHING STYLE ── */}
-        {tab === 'teaching' && (<>
-          {/* TEACHING STYLE EXPLANATION CARD */}
-          <Card className="border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 mb-6">
-            <CardContent className="pt-4">
-              <div className="flex items-start gap-3">
-                <BookOpen className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-blue-900 mb-1">Understanding Teaching Styles</h3>
-                  <p className="text-sm text-blue-800 mb-3">
-                    The JotMinds Teaching Style Assessment measures 6 key dimensions of instructional practice. By understanding your teachers' dominant styles, you can better assign them to students with matching learning needs.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mt-4 text-xs">
-                    <div>
-                      <strong className="text-blue-900 block mb-1">Teaching Dimensions (Radar Chart)</strong>
-                      <ul className="space-y-1 text-blue-800 list-disc pl-4">
-                        <li><strong>Authority vs. Facilitation:</strong> Directing learning vs. guiding it.</li>
-                        <li><strong>Transmission vs. Construction:</strong> Giving knowledge directly vs. having students build it.</li>
-                        <li><strong>Motivation:</strong> External rewards vs. fostering internal drive.</li>
-                        <li><strong>Assessment:</strong> Grading for evaluation vs. grading for improvement.</li>
-                        <li><strong>Adaptability:</strong> Sticking to a rigid plan vs. adjusting to student needs.</li>
-                        <li><strong>Climate:</strong> Strict, high-pressure spaces vs. emotionally secure environments.</li>
-                      </ul>
-                    </div>
-                    <div className="col-span-1 md:col-span-2 mt-2 pt-4 border-t border-blue-200">
-                      <strong className="text-blue-900 block mb-3 text-sm">Teaching Style Recommendations & Insights</strong>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
-                          <strong style={{ color: '#DC2626' }} className="flex items-center gap-1.5 mb-1.5">
-                            Authoritative Instructor
-                          </strong>
-                          <ul className="space-y-1.5 pl-1">
-                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Clear instruction and structured expectations.</span></li>
-                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Pair with open-ended reflection activities to boost student independence.</span></li>
-                          </ul>
-                        </div>
-                        
-                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
-                          <strong style={{ color: '#5B7DB1' }} className="flex items-center gap-1.5 mb-1.5">
-                            Structured Educator
-                          </strong>
-                          <ul className="space-y-1.5 pl-1">
-                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Organized lesson planning and clear assessment criteria.</span></li>
-                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Incorporate collaborative group discussions.</span></li>
-                          </ul>
-                        </div>
-                        
-                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
-                          <strong style={{ color: '#1E8A6E' }} className="flex items-center gap-1.5 mb-1.5">
-                            Facilitator Coach
-                          </strong>
-                          <ul className="space-y-1.5 pl-1">
-                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Student-centered guidance and supportive climate.</span></li>
-                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Provide structured rubrics to keep self-directed learning on track.</span></li>
-                          </ul>
-                        </div>
-                        
-                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
-                          <strong style={{ color: '#E0A020' }} className="flex items-center gap-1.5 mb-1.5">
-                            Engagement Driver
-                          </strong>
-                          <ul className="space-y-1.5 pl-1">
-                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>High energy and motivation.</span></li>
-                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Balance interactive activities with quiet individual focus time.</span></li>
-                          </ul>
-                        </div>
-
-                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
-                          <strong style={{ color: '#6B4C9A' }} className="flex items-center gap-1.5 mb-1.5">
-                            Learning Architect
-                          </strong>
-                          <ul className="space-y-1.5 pl-1">
-                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Deep conceptual building.</span></li>
-                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Use real-world application projects.</span></li>
-                          </ul>
-                        </div>
-
-                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
-                          <strong style={{ color: '#ec4899' }} className="flex items-center gap-1.5 mb-1.5">
-                            Innovation Leader
-                          </strong>
-                          <ul className="space-y-1.5 pl-1">
-                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Creative problem solving.</span></li>
-                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Ensure core fundamentals remain grounded while experimenting.</span></li>
-                          </ul>
-                        </div>
-                        
-                        <div className="bg-white/60 p-3 rounded-lg border border-blue-100">
-                          <strong style={{ color: '#06b6d4' }} className="flex items-center gap-1.5 mb-1.5">
-                            Student-Centered Mentor
-                          </strong>
-                          <ul className="space-y-1.5 pl-1">
-                            <li className="flex items-start gap-1.5 text-blue-900"><span className="shrink-0">✓</span> <span>Supportive and personalized growth.</span></li>
-                            <li className="flex items-start gap-1.5 text-blue-800"><span className="shrink-0">💡</span> <span><strong>Classroom Tip:</strong> Set clear progress milestones for accountability.</span></li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {!withTeaching.length && <Card className="mb-4"><CardContent className="py-14 text-center"><BookOpen className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">No teaching style assessments yet</p></CardContent></Card>}
-          {teachers.filter(t => !t.teaching).length > 0 && (
-            <Card className="border-blue-100 bg-blue-50"><CardContent className="pt-4 flex items-start gap-3">
-              <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-blue-700"><strong>{teachers.filter(t => !t.teaching).length}</strong> teacher(s) haven't completed the Teaching Style Assessment: {teachers.filter(t => !t.teaching).map(t => t.user.name).join(', ')}</p>
-            </CardContent></Card>
-          )}
-          {teachers.map(t => (
-            <Card key={t.user.id} className={!t.teaching ? 'opacity-50' : ''}>
-              <CardContent className="pt-4">
-                <button className="w-full flex items-start justify-between gap-3 text-left" onClick={() => toggle(`ts-${t.user.id}`)} disabled={!t.teaching}>
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm shrink-0" style={{ backgroundColor: t.teaching ? styleColor(t.teaching.primaryStyle) : '#d1d5db' }}>{t.user.name.charAt(0)}</div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{t.user.name}</p>
-                      <p className="text-xs text-gray-500">{t.user.phone || t.user.email}</p>
-                      {t.teaching ? <div className="flex gap-1.5 mt-1"><Badge style={{ backgroundColor: styleColor(t.teaching.primaryStyle) + '20', color: styleColor(t.teaching.primaryStyle) }} className="text-[10px]">{t.teaching.primaryStyle}</Badge>{t.teaching.secondaryStyle !== '—' && <Badge className="bg-gray-100 text-gray-600 text-[10px]">+{t.teaching.secondaryStyle}</Badge>}</div>
-                        : <Badge className="bg-gray-100 text-gray-400 text-[10px] mt-1">Not assessed</Badge>}
-                    </div>
-                  </div>
-                  {t.teaching && (expanded === `ts-${t.user.id}` ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 mt-1" />)}
-                </button>
-                {expanded === `ts-${t.user.id}` && t.teaching && (
-                  <div className="mt-4 border-t pt-4 grid md:grid-cols-2 gap-4">
-                    <div className="h-[190px]"><ResponsiveContainer width="100%" height="100%"><RadarChart data={TEACHING_AXES.map((ax, i) => ({ axis: RADAR_LABELS[i], value: t.teaching!.axes[ax.key] ?? 50 }))}>
-                      <PolarGrid key="pg" /><PolarAngleAxis key="paa" dataKey="axis" tick={{ fontSize: 8 }} />
-                      <PolarRadiusAxis key="pra" domain={[0, 100]} tick={{ fontSize: 8 }} />
-                      <Radar key="r" dataKey="value" stroke={styleColor(t.teaching.primaryStyle)} fill={styleColor(t.teaching.primaryStyle)} fillOpacity={0.25} /><RechartsTip key="tip" />
-                    </RadarChart></ResponsiveContainer></div>
-                    <div className="space-y-2">{TEACHING_AXES.map(ax => { const v = t.teaching!.axes[ax.key] ?? 50; return (<div key={ax.key}>
-                      <div className="flex justify-between text-[10px] text-gray-500 mb-0.5"><span>{ax.low}</span><span>{ax.high}</span></div>
-                      <div className="relative w-full h-2 bg-gray-100 rounded-full"><div className="absolute left-0 h-2 rounded-full" style={{ width: `${v}%`, backgroundColor: styleColor(t.teaching!.primaryStyle) }} /><div className="absolute top-0 h-2 w-0.5 bg-gray-300" style={{ left: '50%' }} /></div>
-                    </div>); })}</div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </>)}
+        {/* ── TEACHER INTELLIGENCE (JTIA) ── */}
+        {tab === 'teaching' && (
+          <JTIASchoolDashboard 
+            reports={jtiaReports}
+            schoolName={admin.school || admin.organizationName || 'Partner Educational Institution'} 
+          />
+        )}
 
         {/* ── COGNITIVE PROFILE (all 3 core) ── */}
         {tab === 'cognitive' && (<>

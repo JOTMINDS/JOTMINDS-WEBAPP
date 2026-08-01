@@ -5,7 +5,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { User, OrganizationType } from '../types';
-import { signup } from '../utils/api';
+import { signup, setAuthToken } from '../utils/api';
 import { Alert, AlertDescription } from './ui/alert';
 import { AlertCircle, ShieldCheck, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { createClient } from '../utils/supabase/client';
@@ -99,9 +99,7 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
 
         console.log('[SupervisorAuth] Login successful');
         // Store auth token using the API utility
-        import('../utils/api').then(({ setAuthToken }) => {
-          setAuthToken(authSession.access_token);
-        });
+        setAuthToken(authSession.access_token);
         
         onLogin(authData?.user_metadata as any);
         

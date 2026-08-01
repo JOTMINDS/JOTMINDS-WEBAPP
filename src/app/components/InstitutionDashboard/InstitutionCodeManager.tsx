@@ -11,7 +11,8 @@ import {
   regenerateCode,
   deactivateInstitution,
   activateInstitution,
-  getInstitutionById
+  getInstitutionById,
+  saveInstitution
 } from '../../utils/institution';
 
 interface InstitutionCodeManagerProps {
@@ -94,8 +95,6 @@ export function InstitutionCodeManager({
   const handleSaveExpirySetting = async () => {
     // update codeExpiryDays on local and save
     const updatedInst = { ...institution, codeExpiryDays: expiryDays };
-    // wait, we have a saveInstitution database utility call. Let's see if we should import and await saveInstitution
-    const { saveInstitution } = await import('../../utils/institution');
     await saveInstitution(updatedInst);
     onInstitutionUpdate(updatedInst);
     setSaveSuccess(true);

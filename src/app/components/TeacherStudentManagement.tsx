@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
 import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { getStudentsForTeacher, updateUserProfile, inviteStudentToClass } from '../utils/api';
-import { getInstitutionForMember } from '../utils/institution';
+import { getInstitutionForMember, joinInstitution } from '../utils/institution';
 import { projectId } from '../utils/supabase/info';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -246,7 +246,6 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
     
     setIsJoining(true);
     try {
-      const { joinInstitution } = await import('../utils/institution');
       await joinInstitution(joinCode.toUpperCase(), {
         userId: teacher.id,
         userName: teacher.name,

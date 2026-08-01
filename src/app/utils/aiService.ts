@@ -1,5 +1,6 @@
 import { projectId, publicAnonKey } from './supabase/info';
 import { AssessmentScore } from '../types';
+import { JTIAAIRecommendations, JTIASchoolAggregatedInsights } from './jtiaScoring';
 
 // Use same BASE_URL strategy as api.ts
 const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
@@ -167,6 +168,57 @@ export async function generateSchoolAIInsights(
     return data;
   } catch (error) {
     console.error('Failed to generate real School AI insights:', error);
+    return null;
+  }
+}
+
+export async function generateJTIAAIRecommendations(
+  report: any
+): Promise<JTIAAIRecommendations | null> {
+  try {
+    const response = await fetch(`${getBaseUrl()}/ai/generate-jtia-insights`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${publicAnonKey}`
+      },
+      body: JSON.stringify({ report })
+    });
+
+    if (!response.ok) {
+      throw new Error(`JTIA AI API error: ${response.status}`);
+    }
+
+    const data: JTIAAIRecommendations = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Failed to generate real JTIA AI recommendations:', error);
+    return null;
+  }
+}
+
+export async function generateSchoolJTIAAIInsights(
+  schoolInsights: any,
+  schoolName?: string
+): Promise<JTIASchoolAggregatedInsights['pdPriorities'] | null> {
+  try {
+    const response = await fetch(`${getBaseUrl()}/ai/generate-school-jtia-insights`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${publicAnonKey}`
+      },
+      body: JSON.stringify({ schoolInsights, schoolName })
+    });
+
+    if (!response.ok) {
+      throw new Error(`School JTIA AI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.pdPriorities || null;
+  } catch (error) {
+    console.error('Failed to generate real School JTIA AI insights:', error);
     return null;
   }
 }

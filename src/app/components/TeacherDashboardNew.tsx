@@ -19,14 +19,13 @@ import {
   TeacherIndividualStudentView,
   TeacherAnalyticsComparison
 } from './teacher';
-import { TeachingStyleAssessment } from './TeachingStyleAssessment';
-import { TeachingStyleResults } from './TeachingStyleResults';
+import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
+import { JTIAReport } from './JTIAReport';
+import { JTIASchoolDashboard } from './JTIASchoolDashboard';
+import { calculateJTIAScore, JTIAReportData } from '../utils/jtiaScoring';
 import { TeacherStudentManagement } from './TeacherStudentManagement';
-import { calculateTeachingStyleScore } from '../utils/teachingStyleScoring';
 import { getUserJotsCode } from '../utils/jotsCode';
 import { AdultThinkingContainer } from './AdultThinkingContainer';
-import { teachingStyleQuestions } from '../utils/teachingStyleQuestions';
-import { generateDeepDiveQuestions } from '../utils/teachingStyleData';
 
 interface TeacherDashboardNewProps {
   user: User;
@@ -54,6 +53,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const [initialQuestions, setInitialQuestions] = useState<any[]>([]);
   const [initialPage, setInitialPage] = useState<number>(0);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+  const [jtiaSubTab, setJtiaSubTab] = useState<'profile' | 'school'>('profile');
   const [targetStudentId, setTargetStudentId] = useState<string | null>(null);
   const [showingThinkingAssessment, setShowingThinkingAssessment] = useState(false);
   const [serverAssessments, setServerAssessments] = useState<any[]>([]);
@@ -286,40 +286,41 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     }
   };
 
-  const handleAssessmentComplete = async (responses: number[]) => {
-    const score = calculateTeachingStyleScore(responses);
+  const handleAssessmentComplete = async (responses: number[], report?: JTIAReportData) => {
+    const jtiaReport = report || calculateJTIAScore(responses);
     
     const newAssessment: Assessment = {
       id: generateId(),
       userId: user.id,
-      type: 'teaching-style',
+      type: 'jtia',
       responses,
       score: {
-        'teaching-style': score
+        jtia: jtiaReport
       },
       completedAt: new Date().toISOString(),
       completed: true
     };
 
     saveAssessment(newAssessment);
+    clearAssessmentProgress(user.id, 'jtia', !!user.organizationName);
     clearAssessmentProgress(user.id, 'teaching-style', !!user.organizationName);
 
-    // Sync Teaching Style to the server KV store
+    // Sync JTIA to the server KV store
     try {
-      await submitTeachingStyleAssessment(responses, score);
-      console.log('[TeacherDashboardNew] Successfully synced teaching-style to server KV');
+      await submitTeachingStyleAssessment(responses, { jtia: jtiaReport } as any);
+      console.log('[TeacherDashboardNew] Successfully synced jtia to server KV');
     } catch (err) {
-      console.error('[TeacherDashboardNew] Failed to sync teaching-style to server KV:', err);
+      console.error('[TeacherDashboardNew] Failed to sync jtia to server KV:', err);
     }
 
     setMyAssessments([...myAssessments, newAssessment]);
     setIsTakingAssessment(false);
-    toast.success('Assessment completed successfully!');
+    toast.success('JTIA Assessment completed successfully!');
   };
 
   const teachingStyleAssessments = useMemo(() => 
     [...myAssessments, ...serverAssessments]
-      .filter(a => a.type === 'teaching-style')
+      .filter(a => a.type === 'jtia' || a.type === 'teaching-style')
       .sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()),
     [myAssessments, serverAssessments]
   );
@@ -402,14 +403,16 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   // If taking assessment, show it full screen or within layout
   if (activeTab === 'teaching-style' && isTakingAssessment) {
     return (
-      <TeachingStyleAssessment 
-        onComplete={handleAssessmentComplete}
-        onBack={() => setIsTakingAssessment(false)}
-        initialResponses={initialResponses}
-        initialQuestions={initialQuestions}
-        initialPage={initialPage}
-        onSaveProgress={handleSaveProgress}
-      />
+      <div className="min-h-screen bg-[#F5F7FF] py-8 px-4">
+        <JTIAAssessmentTaking
+          userId={user.id}
+          onComplete={(report, responses) => {
+            handleAssessmentComplete(responses, report);
+          }}
+          onCancel={() => setIsTakingAssessment(false)}
+          initialResponses={initialResponses}
+        />
+      </div>
     );
   }
 
@@ -654,112 +657,142 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       )}
 
       {activeTab === 'teaching-style' && (
-        <div className="max-w-4xl mx-auto p-4 lg:p-6 space-y-8">
-          {displayedAssessment ? (
+        <div className="max-w-6xl mx-auto p-4 lg:p-6 space-y-8">
+          {/* Sub-navigation inside JTIA tab: My Profile vs School Intelligence */}
+          <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-xl border shadow-2xs">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
+                JTIA • 5 Core Domains
+              </Badge>
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                <button
+                  onClick={() => setJtiaSubTab('profile')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    jtiaSubTab === 'profile'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  My JTIA Profile (5 Domains)
+                </button>
+                <button
+                  onClick={() => setJtiaSubTab('school')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    jtiaSubTab === 'school'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  School Intelligence Dashboard
+                </button>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setIsTakingAssessment(true)}
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm"
+              >
+                <RefreshCcw className="h-3.5 w-3.5 mr-1.5" />
+                {displayedAssessment ? 'Retake JTIA (120 Items)' : 'Start JTIA Assessment'}
+              </Button>
+            </div>
+          </div>
+
+          {jtiaSubTab === 'school' ? (
+            <JTIASchoolDashboard schoolName={user.school || user.organizationName || 'Partner Educational Institution'} />
+          ) : displayedAssessment ? (
             <div className="space-y-8">
-                {selectedHistoryId && (
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" onClick={() => setSelectedHistoryId(null)}>
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back to Latest Result
-                        </Button>
-                        <Badge variant="outline" className="text-sm">
-                            Viewing Historical Result: {new Date(displayedAssessment.completedAt || "").toLocaleDateString()}
-                        </Badge>
-                    </div>
-                )}
+              {selectedHistoryId && (
+                <div className="flex items-center gap-4">
+                  <Button variant="ghost" onClick={() => setSelectedHistoryId(null)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Latest Result
+                  </Button>
+                  <Badge variant="outline" className="text-sm">
+                    Viewing Historical Result: {new Date(displayedAssessment.completedAt || "").toLocaleDateString()}
+                  </Badge>
+                </div>
+              )}
 
-                <TeachingStyleResults 
-                    score={displayedAssessment.score['teaching-style']} 
-                    onDeepDive={
-                        // Only show Deep Dive for LATEST assessment and if incomplete
-                        (!selectedHistoryId && displayedAssessment.responses.filter(r => r > 0).length < 40)
-                        ? handleDeepDive
-                        : undefined
-                    }
-                    onContinue={() => setActiveTab('overview')}
-                />
-                
-                {!selectedHistoryId && (
-                    <div className="flex justify-center">
-                        <Button 
-                            onClick={handleRetakeAssessment} 
-                            size="lg" 
-                            variant="outline"
-                            className="gap-2 border-indigo-200 hover:bg-indigo-50 text-indigo-700"
-                        >
-                            <RefreshCcw className="h-4 w-4" />
-                            Retake Teaching Style Assessment
-                        </Button>
-                    </div>
-                )}
+              <JTIAReport
+                report={displayedAssessment.score?.jtia || calculateJTIAScore(displayedAssessment.responses)}
+                teacherName={user.name || 'Teacher Profile'}
+                onRetake={() => setIsTakingAssessment(true)}
+              />
 
-                {teachingStyleAssessments.length > 1 && !selectedHistoryId && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <History className="h-5 w-5 text-muted-foreground" />
-                                Assessment History
-                            </CardTitle>
-                            <CardDescription>
-                                Track how your teaching style has evolved over time.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {teachingStyleAssessments.slice(1).map((assessment) => (
-                                    <div key={assessment.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
-                                                <Calendar className="h-5 w-5 text-slate-500" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-slate-900">
-                                                    {assessment.score['teaching-style'].primaryStyle}
-                                                </p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Completed on {new Date(assessment.completedAt || "").toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="secondary">
-                                                {new Date(assessment.completedAt || "").toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                            </Badge>
-                                            <Button variant="ghost" size="sm" onClick={() => setSelectedHistoryId(assessment.id)}>
-                                                <Eye className="h-4 w-4 mr-2" />
-                                                View Report
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
+              {teachingStyleAssessments.length > 1 && !selectedHistoryId && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <History className="h-5 w-5 text-muted-foreground" />
+                      JTIA Assessment History
+                    </CardTitle>
+                    <CardDescription>
+                      Track how your Teacher Intelligence domains have evolved over time.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {teachingStyleAssessments.slice(1).map((assessment) => (
+                        <div key={assessment.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                              <Calendar className="h-5 w-5 text-slate-500" />
                             </div>
-                        </CardContent>
-                    </Card>
-                )}
+                            <div>
+                              <p className="font-medium text-slate-900">
+                                JTIA Profile — Overall Score: {assessment.score?.jtia?.overallScore || calculateJTIAScore(assessment.responses).overallScore}/100
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Completed on {new Date(assessment.completedAt || "").toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">
+                              {new Date(assessment.completedAt || "").toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </Badge>
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedHistoryId(assessment.id)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Report
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           ) : (
-             <div className="text-center py-12 bg-white rounded-xl shadow-sm border p-8">
-                <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-3xl">🎓</span>
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Discover Your Teaching Style</h2>
-                <p className="text-muted-foreground max-w-lg mx-auto mb-8">
-                    Take the JotMinds Teaching Style Assessment to uncover your dominant teaching engines, strengths, and areas for growth. This 64-question assessment maps your authority, motivation, and instructional preferences.
+            <div className="text-center py-12 bg-white rounded-xl shadow-sm border p-8">
+              <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🧠</span>
+              </div>
+              <Badge className="bg-indigo-100 text-indigo-800 mb-3">JTIA • 120 Scenario & Preference Items</Badge>
+              <h2 className="text-2xl font-bold mb-2">JotMinds Teacher Intelligence Assessment (JTIA)</h2>
+              <p className="text-muted-foreground max-w-lg mx-auto mb-6">
+                Unlike traditional assessments that focus on qualifications or compliance, JTIA evaluates the deeper cognitive and professional capabilities that drive effective teaching across 5 Core Domains: Cognitive Intelligence, Instructional Intelligence, Classroom Leadership, Relationship Intelligence, and Professional Intelligence.
+              </p>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 max-w-md mx-auto mb-8 text-left">
+                <p className="text-xs text-emerald-800">
+                  <strong>Designed for Development, Not Ranking:</strong> Your results are never used to rank or compare teachers against one another. Insights are dedicated entirely to personal self-awareness and professional growth.
                 </p>
-                <button 
-                    onClick={startAssessment}
-                    className="bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl"
-                >
-                    {getAssessmentProgress(user.id, 'teaching-style', !!user.organizationName) ? 'Resume Assessment' : 'Start Assessment'}
-                </button>
-             </div>
+              </div>
+              <button
+                onClick={() => setIsTakingAssessment(true)}
+                className="bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl cursor-pointer"
+              >
+                Start JTIA Assessment (120 Items)
+              </button>
+            </div>
           )}
 
-          {/* All Assessment History */}
-          <Card className="border-2 border-gray-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+      {/* All Assessment History */}
+      <Card className="border-2 border-gray-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5 text-indigo-600" />
                 Complete Assessment History
               </CardTitle>

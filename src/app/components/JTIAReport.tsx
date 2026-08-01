@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import {
   Brain, BookOpen, Users, HeartHandshake, Award,
   Sparkles, CheckCircle2, TrendingUp, Compass, Share2,
-  Printer, ArrowRight, ShieldCheck, HelpCircle, Layers, Lightbulb
+  Printer, ArrowRight, ShieldCheck, HelpCircle, Layers, Lightbulb,
+  RefreshCw, Loader2
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip as RechartsTip, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Cell
 } from 'recharts';
-import { JTIAReportData } from '../utils/jtiaScoring';
+import { JTIAReportData, JTIAAIRecommendations } from '../utils/jtiaScoring';
 import { jtiaDomainDescriptions, JTIADomain } from '../utils/jtiaQuestions';
+import { generateJTIAAIRecommendations } from '../utils/aiService';
 
 interface JTIAReportProps {
   report: JTIAReportData;
@@ -30,6 +32,23 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'strengths' | 'growth' | 'ai'>('overview');
   const [recommendationCategory, setRecommendationCategory] = useState<'resources' | 'activities' | 'coaching' | 'pathways'>('resources');
+  const [aiRecommendations, setAiRecommendations] = useState<JTIAAIRecommendations | null>(null);
+  const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
+
+  const fetchAiInsights = async () => {
+    setIsLoadingAi(true);
+    const aiRes = await generateJTIAAIRecommendations(report);
+    if (aiRes) {
+      setAiRecommendations(aiRes);
+    }
+    setIsLoadingAi(false);
+  };
+
+  useEffect(() => {
+    fetchAiInsights();
+  }, [report]);
+
+  const displayedRecommendations = aiRecommendations || report.recommendations;
 
   const domainScores = report.domainScores || {
     cognitive: 82,
@@ -350,19 +369,36 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
       {activeTab === 'ai' && (
         <div className="space-y-6 animate-in fade-in-50 duration-300">
           <div className="bg-gradient-to-r from-purple-900/40 via-indigo-900/40 to-slate-900/40 border border-purple-500/30 rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
-                <Sparkles className="w-6 h-6" />
+              <div className="flex items-center justify-between flex-wrap gap-4 mb-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-white">
+                        JotMinds AI Personalised Development Pathway
+                      </h3>
+                      <Badge variant="outline" className="bg-purple-500/20 text-purple-200 border-purple-500/30 text-xs">
+                        {aiRecommendations ? 'Live AI Variations' : 'Algorithmic Guidance'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-purple-200">
+                      Custom-curated learning resources, classroom activities, coaching suggestions, and career growth pathways based on your 120 JTIA responses.
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={fetchAiInsights} 
+                  disabled={isLoadingAi}
+                  className="bg-white/10 hover:bg-white/20 text-white border-purple-500/30 gap-1.5"
+                >
+                  {isLoadingAi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {isLoadingAi ? 'Generating...' : 'Generate Variations'}
+                </Button>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">
-                  JotMinds AI Personalised Development Pathway
-                </h3>
-                <p className="text-sm text-purple-200">
-                  Custom-curated learning resources, classroom activities, coaching suggestions, and career growth pathways based on your 120 JTIA responses.
-                </p>
-              </div>
-            </div>
 
             {/* Recommendation sub-tabs */}
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-purple-500/20">
@@ -375,7 +411,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                 }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                Learning Resources ({report.recommendations?.resources.length || 0})
+                Learning Resources ({displayedRecommendations?.resources?.length || 0})
               </button>
               <button
                 onClick={() => setRecommendationCategory('activities')}
@@ -386,7 +422,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                 }`}
               >
                 <Lightbulb className="w-3.5 h-3.5" />
-                Development Activities ({report.recommendations?.activities.length || 0})
+                Development Activities ({displayedRecommendations?.activities?.length || 0})
               </button>
               <button
                 onClick={() => setRecommendationCategory('coaching')}
@@ -397,7 +433,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
-                Coaching & Mentoring ({report.recommendations?.coaching.length || 0})
+                Coaching & Mentoring ({displayedRecommendations?.coaching?.length || 0})
               </button>
               <button
                 onClick={() => setRecommendationCategory('pathways')}
@@ -408,14 +444,14 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                 }`}
               >
                 <Award className="w-3.5 h-3.5" />
-                Growth Pathways ({report.recommendations?.pathways.length || 0})
+                Growth Pathways ({displayedRecommendations?.pathways?.length || 0})
               </button>
             </div>
           </div>
 
           {/* Render Active Recommendation List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(report.recommendations?.[recommendationCategory] || []).map((item, i) => (
+            {(displayedRecommendations?.[recommendationCategory] || []).map((item, i) => (
               <Card key={i} className="shadow-sm hover:shadow-md transition-shadow border-slate-200 dark:border-slate-800">
                 <CardContent className="p-5 flex items-start gap-4">
                   <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5">
