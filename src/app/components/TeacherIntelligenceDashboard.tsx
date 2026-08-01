@@ -16,13 +16,17 @@ import {
 import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId } from '../utils/storage';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
+import { JTIAReport } from './JTIAReport';
+import { JTIASchoolDashboard } from './JTIASchoolDashboard';
+import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
+import { calculateJTIAScore } from '../utils/jtiaScoring';
 
 interface TeacherIntelligenceDashboardProps {
   user: User;
   onBack: () => void;
 }
 
-type Tab = 'overview' | 'heatmap' | 'interventions' | 'trends';
+type Tab = 'overview' | 'heatmap' | 'interventions' | 'trends' | 'jtia-report' | 'jtia-school';
 
 interface StudentProfile {
   user: User;
@@ -167,6 +171,7 @@ const PIE_COLORS = ['#5B7DB1', '#6B4C9A', '#1E8A6E', '#E0A020', '#DC2626', '#06b
 
 export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligenceDashboardProps) {
   const [tab, setTab] = useState<Tab>('overview');
+  const [isTakingJTIA, setIsTakingJTIA] = useState<boolean>(false);
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [heatmapGroup, setHeatmapGroup] = useState<string>('Learning (Kolb)');
 
@@ -250,6 +255,21 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
     }
   }, [stats.total]);
 
+  if (isTakingJTIA) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <JTIAAssessmentTaking
+          userId={user.id}
+          onComplete={(report) => {
+            setIsTakingJTIA(false);
+            setTab('jtia-report');
+          }}
+          onCancel={() => setIsTakingJTIA(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -265,7 +285,17 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
             </h1>
             <p className="text-xs text-gray-500">{user.school ?? 'All students'} · {stats.total} students</p>
           </div>
-          <Badge className="bg-blue-50 text-blue-700">{stats.assessed}/{stats.total} assessed</Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setIsTakingJTIA(true)}
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Take JTIA (120 Items)
+            </Button>
+            <Badge className="bg-blue-50 text-blue-700">{stats.assessed}/{stats.total} assessed</Badge>
+          </div>
         </div>
         <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-0 overflow-x-auto">
           {([
@@ -273,6 +303,8 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
             ['heatmap', Activity, 'Heatmap'],
             ['interventions', Lightbulb, 'Interventions'],
             ['trends', TrendingUp, 'Class Trends'],
+            ['jtia-report', Brain, 'My JTIA Profile (5 Domains)'],
+            ['jtia-school', Users, 'School Intelligence (JTIA)'],
           ] as const).map(([t, Icon, label]) => (
             <button
               key={t}
@@ -733,6 +765,20 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
               </CardContent>
             </Card>
           </>
+        )}
+
+        {tab === 'jtia-report' && (
+          <JTIAReport
+            report={calculateJTIAScore()}
+            teacherName={user.name || 'Teacher Profile'}
+            onRetake={() => setIsTakingJTIA(true)}
+          />
+        )}
+
+        {tab === 'jtia-school' && (
+          <JTIASchoolDashboard
+            schoolName={user.school || 'Partner Educational Institution'}
+          />
         )}
       </div>
     </div>

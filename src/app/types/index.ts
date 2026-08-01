@@ -95,7 +95,7 @@ export interface User {
 export interface Assessment {
   id: string;
   userId: string;
-  type: 'kolb' | 'sternberg' | 'dual-process' | 'jhs-thinking' | 'shs-thinking' | 'adult-thinking' | 'child-thinking' | 'teaching-style';
+  type: 'kolb' | 'sternberg' | 'dual-process' | 'jhs-thinking' | 'shs-thinking' | 'adult-thinking' | 'child-thinking' | 'teaching-style' | 'jtia';
   responses: number[];
   questions?: Question[]; // Store the specific questions used for this assessment
   score: AssessmentScore;
@@ -181,6 +181,26 @@ export interface AssessmentScore {
     primaryStyle: string;
     scores: Record<string, number>;
   };
+  'jtia'?: {
+    domainScores: {
+      cognitive: number;
+      instructional: number;
+      leadership: number;
+      relationship: number;
+      professional: number;
+    };
+    subCompetencies: Record<string, number>;
+    strengths: Array<{ title: string; domain: string; score: number; description: string }>;
+    growthOpportunities: Array<{ title: string; domain: string; score: number; description: string }>;
+    recommendations: {
+      resources: string[];
+      activities: string[];
+      coaching: string[];
+      pathways: string[];
+    };
+    overallScore: number;
+    completedAt?: string;
+  };
 }
 
 export interface GhanaMapping {
@@ -206,7 +226,7 @@ export interface Question {
 
 export interface AssessmentProgress {
   userId: string;
-  assessmentType: 'kolb' | 'sternberg' | 'dual-process' | 'teaching-style';
+  assessmentType: 'kolb' | 'sternberg' | 'dual-process' | 'teaching-style' | 'jtia';
   isOrganizational: boolean;
   currentQuestion: number;
   responses: number[];
