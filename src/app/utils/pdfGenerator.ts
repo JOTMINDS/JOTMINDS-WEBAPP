@@ -484,9 +484,9 @@ export async function exportReportToPDF(elementId: string, filename: string = 'J
     pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
     heightLeft -= pdfHeight;
 
-    // Add new pages if the content is long
+    // Add new pages if the content is long without cutting off content
     while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
+      position -= pdfHeight;
       pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
       heightLeft -= pdfHeight;
