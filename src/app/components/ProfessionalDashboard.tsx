@@ -533,7 +533,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                       </div>
                       <Button 
                         onClick={() => setViewingReport(createCombinedAssessment())}
-                        className="bg-gradient-aqua-violet text-white hover:opacity-90"
+                        className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white font-bold shadow-md border border-purple-500/30"
                       >
                         <Eye className="mr-2 h-4 w-4" />
                         Full Report

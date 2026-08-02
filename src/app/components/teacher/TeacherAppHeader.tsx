@@ -18,7 +18,7 @@ interface TeacherAppHeaderProps {
 export function TeacherAppHeader({ user, onLogout, onViewAnalytics, onViewPrivacy, onViewEngagement, onViewTeacherIntelligence, onViewSettings, onViewInstitutionDashboard }: TeacherAppHeaderProps) {
   return (
     <header className="h-14 bg-white border-b border-border px-4 flex items-center justify-between sticky top-0 z-10">
-      {/* Left: Logo + Avatar */}
+      {/* Left: Logo + Avatar + Profile Settings */}
       <div className="flex items-center gap-3">
         {/* JotMinds Logo */}
         <Logo size="sm" />
@@ -27,6 +27,12 @@ export function TeacherAppHeader({ user, onLogout, onViewAnalytics, onViewPrivac
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2563EB] to-[#7C3AED] flex items-center justify-center text-white text-[13px] font-semibold">
           {user.name.charAt(0)}
         </div>
+
+        {onViewSettings && (
+          <Button variant="outline" size="sm" onClick={onViewSettings} className="hidden sm:flex items-center gap-1.5 text-xs font-semibold">
+            <Settings className="w-3.5 h-3.5 text-purple-600" /> Profile Settings
+          </Button>
+        )}
       </div>
 
       {/* Right: Menu Icon */}

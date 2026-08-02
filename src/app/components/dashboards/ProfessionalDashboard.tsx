@@ -232,7 +232,7 @@ export function ProfessionalDashboard({
                 <StrengthItem strength="Communication" level={82} />
               </div>
               
-              <button className="w-full mt-4 bg-white text-purple-700 border border-purple-300 py-2 rounded hover:bg-purple-50 transition-colors text-sm">
+              <button className="w-full mt-4 bg-gradient-to-r from-purple-700 to-indigo-700 text-white font-bold py-2.5 rounded-lg hover:from-purple-800 hover:to-indigo-800 transition-all shadow-md text-sm">
                 View Full Report →
               </button>
             </div>

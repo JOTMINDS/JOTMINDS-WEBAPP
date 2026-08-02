@@ -10,13 +10,14 @@ import { getGhanaMapping, getStyleDescription } from '../utils/scoring';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { saveReflection as saveReflectionToServer } from '../utils/api';
 
-import { BookOpen, Briefcase, Lightbulb, FileText, Download, ArrowLeft, TrendingUp, AlertTriangle, Target, Users, BarChart3, Share2, Eye, Brain, ChevronDown, ChevronUp, Printer } from 'lucide-react';
+import { BookOpen, Briefcase, Lightbulb, FileText, Download, ArrowLeft, TrendingUp, AlertTriangle, Target, Users, BarChart3, Share2, Eye, Brain, ChevronDown, ChevronUp, Printer, HelpCircle } from 'lucide-react';
 import { generatePDF } from '../utils/pdfGenerator';
 import { getAssessmentInsights, AssessmentInsights } from '../utils/insights';
 import { generateAIInsights, AIInsightsResponse } from '../utils/aiService';
 import { toast } from 'sonner';
 import { FeedbackPrompt } from './FeedbackPrompt';
 import { formatDateTime } from '../utils/dateFormat';
+import { ScoreOverviewModal } from './ScoreOverviewModal';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, LabelList, Tooltip as RechartsTooltip } from 'recharts';
 import { colors, componentSpacing } from '../utils/designTokens';
 import { RadarChartWidget, prepareKolbRadarData, prepareSternbergRadarData, prepareDualProcessRadarData } from './RadarChartWidget';
@@ -42,6 +43,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
   const [reflection, setReflection] = useState('');
   const [reflectionSaved, setReflectionSaved] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>('strengths');
+  const [showScoreModal, setShowScoreModal] = useState(false);
 
   // Add defensive check for assessment data
   if (!assessment || !assessment.score) {
@@ -473,10 +475,20 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
             </div>
 
             <div>
-              <h3 className="flex items-center gap-2 mb-6">
-                <BarChart3 className="h-5 w-5" />
-                Your Scores
-              </h3>
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+                <h3 className="flex items-center gap-2 text-lg font-bold">
+                  <BarChart3 className="h-5 w-5 text-indigo-600" /> Your Scores Overview
+                </h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowScoreModal(true)}
+                  className="text-xs font-semibold text-purple-700 border-purple-200 bg-purple-50/50 hover:bg-purple-100"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 mr-1 text-purple-600" /> How is this score calculated?
+                </Button>
+              </div>
+
               <div className="space-y-6">
                 {assessment.type === 'kolb' ? (
                   <>
@@ -1444,6 +1456,12 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           </div>
         </div>
       </div>
+
+      <ScoreOverviewModal
+        isOpen={showScoreModal}
+        onClose={() => setShowScoreModal(false)}
+        assessmentType={assessment.type}
+      />
     </div>
   );
 }

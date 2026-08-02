@@ -7,8 +7,8 @@ import { registerPoppins } from './pdfFonts';
 
 // ── JotMinds brand palette (RGB) ──────────────────────────────────────────────
 const BRAND = {
-  indigo: [44, 46, 131] as [number, number, number],     // #2C2E83 Deep Indigo primary
-  dark: [44, 46, 131] as [number, number, number],       // #2C2E83 Deep Indigo
+  indigo: [107, 76, 154] as [number, number, number],     // #6B4C9A JotMinds Primary Purple
+  dark: [15, 23, 42] as [number, number, number],         // #0F172A Slate 900
   purple: [123, 97, 255] as [number, number, number],    // #7B61FF Violet secondary
   coral: [255, 113, 91] as [number, number, number],     // #FF715B Coral accent
   violet: [123, 97, 255] as [number, number, number],    // #7B61FF Violet accent

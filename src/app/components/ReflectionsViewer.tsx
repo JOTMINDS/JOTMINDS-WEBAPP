@@ -122,7 +122,8 @@ export function ReflectionsViewer({ userId, onViewAssessment }: ReflectionsViewe
                   <p className="text-3xl font-bold text-green-600">
                     {reflections.filter(r => {
                       const a = getAssessmentForReflection(r.assessmentId);
-                      return a?.type === 'kolb';
+                      const t = (a?.type || '') as string;
+                      return t === 'kolb' || t === 'learning' || t === 'teaching-style';
                     }).length}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Learning Style</p>
@@ -135,7 +136,8 @@ export function ReflectionsViewer({ userId, onViewAssessment }: ReflectionsViewe
                   <p className="text-3xl font-bold text-purple-600">
                     {reflections.filter(r => {
                       const a = getAssessmentForReflection(r.assessmentId);
-                      return a?.type === 'sternberg';
+                      const t = (a?.type || '') as string;
+                      return t === 'sternberg' || t === 'jhs-thinking' || t === 'shs-thinking' || t === 'adult-thinking' || t === 'children-thinking' || t === 'child-thinking';
                     }).length}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Thinking Style</p>
@@ -148,7 +150,8 @@ export function ReflectionsViewer({ userId, onViewAssessment }: ReflectionsViewe
                   <p className="text-3xl font-bold text-orange-600">
                     {reflections.filter(r => {
                       const a = getAssessmentForReflection(r.assessmentId);
-                      return a?.type === 'dual-process';
+                      const t = (a?.type || '') as string;
+                      return t === 'dual-process' || t === 'decision';
                     }).length}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Decision Style</p>
@@ -174,7 +177,7 @@ export function ReflectionsViewer({ userId, onViewAssessment }: ReflectionsViewe
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">All Reflections</SelectItem>
                 <SelectItem value="kolb">Learning Style</SelectItem>
                 <SelectItem value="sternberg">Thinking Style</SelectItem>
                 <SelectItem value="dual-process">Decision Style</SelectItem>
