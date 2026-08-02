@@ -44,8 +44,8 @@ export const PWAInstallPrompt: React.FC = () => {
   return (
     <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-96 z-50 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-indigo-500/40 flex items-center justify-between gap-3 animate-in slide-in-from-bottom duration-300">
       <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 shrink-0">
-          <Smartphone className="w-5 h-5" />
+        <div className="w-10 h-10 rounded-xl bg-slate-800 border border-indigo-500/40 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+          <img src="/logo.png" alt="JotMinds Logo" className="w-full h-full object-contain" />
         </div>
         <div>
           <div className="flex items-center gap-1.5">
