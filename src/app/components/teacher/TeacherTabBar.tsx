@@ -6,7 +6,7 @@ interface TeacherTabBarProps {
 export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
   return (
     <div className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 px-4 py-3 sticky top-14 z-10">
-      <div className="flex gap-3 max-w-[960px] mx-auto overflow-x-auto">
+      <div className="flex gap-2.5 max-w-[960px] mx-auto overflow-x-auto scrollbar-none pb-1 text-xs sm:text-sm">
         <button
           onClick={() => onTabChange('lesson-planner')}
           className={`

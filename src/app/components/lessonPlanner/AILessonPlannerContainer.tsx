@@ -127,7 +127,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
 
       {/* 10 Module Tabs Workspace */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-xl gap-1">
+        <TabsList className="flex overflow-x-auto scrollbar-none p-1.5 rounded-xl gap-1 bg-slate-100 dark:bg-slate-900 md:grid md:grid-cols-9">
           <TabsTrigger value="create" className="text-xs font-semibold">
             1. Creation
           </TabsTrigger>

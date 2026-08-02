@@ -127,7 +127,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
 
       {/* Tabs for Question Formats */}
       <Tabs defaultValue="mcqs" className="w-full">
-        <TabsList className="grid grid-cols-5 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+        <TabsList className="flex overflow-x-auto scrollbar-none p-1 rounded-xl bg-slate-100 dark:bg-slate-900 sm:grid sm:grid-cols-5">
           <TabsTrigger value="mcqs" className="text-xs font-semibold">
             MCQs ({assessment.mcqs.length})
           </TabsTrigger>
