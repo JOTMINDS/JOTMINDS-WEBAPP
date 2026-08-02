@@ -16,6 +16,8 @@ import { OrganizationApp } from './components/OrganizationApp';
 import { KidsModeWrapper } from './components/kids/KidsModeWrapper';
 import { AuthProvider, useAuth } from './components/AuthContext';
 import { Toaster } from './components/ui/sonner';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { OfflineBanner } from './components/OfflineBanner';
 import { createClient } from './utils/supabase/client';
 import { setAuthToken, getUserData } from './utils/api';
 import { UserConsentFlow } from './components/consent/UserConsentFlow';
@@ -969,7 +971,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
+      <OfflineBanner />
       <AppContent />
+      <PWAInstallPrompt />
       <Toaster />
     </AuthProvider>
   );

@@ -5,9 +5,19 @@
       
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>JotMinds</title>
-      <meta name="description" content="This web application enables supervisors to securely log in and manage organizational tasks, ensuring authenticated access to essential features and data." />
-      <meta name="robots" content="noindex, nofollow" />
+      <title>JotMinds — Cognitive & Educational Intelligence</title>
+      <meta name="description" content="AI-powered cognitive intelligence assessment, lesson planning, and educational analytics platform." />
+      
+      <!-- PWA Meta Tags & Manifest -->
+      <link rel="manifest" href="/manifest.json" />
+      <meta name="theme-color" content="#6b4c9a" />
+      <meta name="mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      <meta name="apple-mobile-web-app-title" content="JotMinds" />
+      <link rel="apple-touch-icon" href="/logo.png" />
+      <link rel="icon" type="image/png" href="/logo.png" />
+
       <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
 
       <!-- Google tag (gtag.js) -->
@@ -18,6 +28,19 @@
         gtag('js', new Date());
 
         gtag('config', 'G-S8X5F4Z598');
+      </script>
+
+      <!-- PWA Service Worker Registration -->
+      <script>
+        if ('serviceWorker' in navigator && window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js').then(function(registration) {
+              console.log('[JotMinds PWA] ServiceWorker registered with scope: ', registration.scope);
+            }, function(err) {
+              console.log('[JotMinds PWA] ServiceWorker registration failed: ', err);
+            });
+          });
+        }
       </script>
     </head>
 
