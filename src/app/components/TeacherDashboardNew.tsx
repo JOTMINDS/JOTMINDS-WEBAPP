@@ -4,7 +4,6 @@ import { useAuth } from './AuthContext';
 import { getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
 import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
-import { getInstitutionClasses } from '../utils/institution';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download } from 'lucide-react';
@@ -25,7 +24,10 @@ import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { calculateJTIAScore, JTIAReportData } from '../utils/jtiaScoring';
 import { TeacherStudentManagement } from './TeacherStudentManagement';
 import { getUserJotsCode } from '../utils/jotsCode';
+import { getInstitutionForMember, getInstitutionClasses } from '../utils/institution';
+import { generateDeepDiveQuestions } from '../utils/teachingStyleData';
 import { AdultThinkingContainer } from './AdultThinkingContainer';
+import { AILessonPlannerContainer } from './lessonPlanner/AILessonPlannerContainer';
 
 interface TeacherDashboardNewProps {
   user: User;
@@ -45,7 +47,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'teaching-style' | 'analytics-compare' | 'manage-class'>('individual');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'teaching-style' | 'lesson-planner' | 'analytics-compare' | 'manage-class'>('lesson-planner');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -853,6 +855,10 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {activeTab === 'lesson-planner' && (
+        <AILessonPlannerContainer />
       )}
 
       {activeTab === 'analytics-compare' && (

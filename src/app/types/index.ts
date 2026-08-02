@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'teacher' | 'parent' | 'professional' | 'organization' | 'school_admin' | 'admin';
+export type UserRole = 'student' | 'child' | 'teacher' | 'parent' | 'professional' | 'organization' | 'school_admin' | 'admin';
 
 export type EducationLevel = 'Elementary' | 'JHS' | 'SHS' | 'Tertiary';
 
@@ -54,6 +54,7 @@ export interface User {
   name: string;
   phone?: string;
   school?: string; // Optional - not applicable for supervisors
+  institutionId?: string; // Optional - ID of school/organization institution
   role: UserRole;
   educationLevel?: EducationLevel;
   dateOfBirth?: string; // Changed from age to dateOfBirth (ISO format: YYYY-MM-DD)
@@ -221,7 +222,8 @@ export interface Reflection {
 export interface Question {
   id: number;
   text: string;
-  dimension: string;
+  dimension?: string;
+  domain?: string;
 }
 
 export interface AssessmentProgress {

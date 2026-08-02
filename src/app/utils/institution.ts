@@ -607,7 +607,6 @@ export async function deleteInstitutionInvitation(invitationId: string, email: s
       .eq('id', invitationId);
 
     // 2. Remove from local storage
-    const invitations = getAllInvitations(); // Wait, I need to check how to get all invitations from local storage, actually just use localStorage directly
     const localInvitationsStr = localStorage.getItem('jm_institution_invitations');
     let invitationsArr = [];
     if (localInvitationsStr) {

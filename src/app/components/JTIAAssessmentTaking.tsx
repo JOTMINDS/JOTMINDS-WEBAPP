@@ -8,7 +8,7 @@ import {
   ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck,
   Save, Sparkles, AlertCircle
 } from 'lucide-react';
-import { jtiaQuestions, JTIADomain, jtiaDomainDescriptions } from '../utils/jtiaQuestions';
+import { jtiaQuestions, JTIADomain, jtiaDomainDescriptions, getFullJTIAQuestionBank, getShuffledJTIAQuestionSet, JTIAQuestion } from '../utils/jtiaQuestions';
 import { calculateJTIAScore, JTIAReportData } from '../utils/jtiaScoring';
 import { toast } from 'sonner';
 
@@ -26,28 +26,47 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
   initialResponses = []
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const [sessionQuestions] = useState<JTIAQuestion[]>(() => {
+    const fullBank = getFullJTIAQuestionBank();
+    const savedIds = localStorage.getItem(`jtia_session_ids_${userId}`);
+    if (savedIds) {
+      try {
+        const parsedIds: number[] = JSON.parse(savedIds);
+        const restored = parsedIds
+          .map(id => fullBank.find(q => q.id === id))
+          .filter(Boolean) as JTIAQuestion[];
+        if (restored.length > 0) return restored;
+      } catch (e) {
+        console.error("Failed to restore saved JTIA session questions", e);
+      }
+    }
+    const freshSession = getShuffledJTIAQuestionSet({ countPerDomain: 24, useFullBank: true });
+    localStorage.setItem(`jtia_session_ids_${userId}`, JSON.stringify(freshSession.map(q => q.id)));
+    return freshSession;
+  });
+
   const [responses, setResponses] = useState<number[]>(() => {
-    // Attempt to load from localStorage or fallback to initialResponses/zeros
     const saved = localStorage.getItem(`jtia_progress_${userId}`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === jtiaQuestions.length) {
+        if (Array.isArray(parsed) && parsed.length === sessionQuestions.length) {
           return parsed;
         }
       } catch (e) {
         console.error("Failed to parse saved JTIA progress", e);
       }
     }
-    const arr = new Array(jtiaQuestions.length).fill(0);
+    const arr = new Array(sessionQuestions.length).fill(0);
     initialResponses.forEach((val, i) => {
       if (i < arr.length) arr[i] = val;
     });
     return arr;
   });
 
-  const currentQuestion = jtiaQuestions[currentIndex];
-  const totalQuestions = jtiaQuestions.length;
+  const currentQuestion = sessionQuestions[currentIndex] || sessionQuestions[0];
+  const totalQuestions = sessionQuestions.length;
   const answeredCount = responses.filter(r => r > 0).length;
   const progressPct = Math.round((answeredCount / totalQuestions) * 100);
 
@@ -87,8 +106,9 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
       toast.warning(`You have ${unanswered} unanswered items. Defaulting to proficient (4) for unrated items.`);
     }
 
-    const report = calculateJTIAScore(responses);
+    const report = calculateJTIAScore(responses, sessionQuestions);
     localStorage.removeItem(`jtia_progress_${userId}`);
+    localStorage.removeItem(`jtia_session_ids_${userId}`);
     toast.success("JTIA Assessment completed successfully!");
     onComplete(report, responses);
   };
@@ -123,6 +143,10 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-1 text-xs">
               {progressPct}% Completed
+            </Badge>
+            <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 px-3 py-1 text-xs flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              Full Bank Shuffled (240-Pool)
             </Badge>
           </div>
 
@@ -177,7 +201,7 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
           </div>
 
           <Badge variant="outline" className="text-xs">
-            {currentQuestion.type === 'scenario' ? 'Classroom Scenario' : 'Professional Preference'}
+            {currentQuestion.itemType === 'scenario' ? 'Classroom Scenario' : 'Professional Preference'}
           </Badge>
         </div>
 

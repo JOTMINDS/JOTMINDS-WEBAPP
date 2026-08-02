@@ -120,9 +120,9 @@ export function InstitutionOverview({
         <CardContent className="pt-5 pb-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">Teaching Styles Analytics</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Teacher Intelligence (JTIA) Analytics</h3>
               <p className="text-xs text-gray-600">
-                Compare teaching styles across your school's educators to optimize student placement and professional development.
+                Analyze teacher intelligence profiles and competency insights across your school's educators to optimize professional development.
               </p>
             </div>
             <Button 

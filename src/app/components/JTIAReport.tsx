@@ -466,6 +466,37 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
               </Card>
             ))}
           </div>
+
+          {/* Scientific Positioning & Research Grounding Card */}
+          <Card className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border-indigo-800/40 shadow-lg mt-6">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 text-xs px-2.5 py-0.5">
+                  Scientific Positioning
+                </Badge>
+                <CardTitle className="text-base font-bold text-white flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> Theoretical & Research Grounding
+                </CardTitle>
+              </div>
+              <CardDescription className="text-xs text-slate-300">
+                AI recommendations and JTIA competency mappings are grounded in peer-reviewed cognitive psychology and pedagogical research.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-0 text-xs text-slate-300">
+              <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                <p className="font-semibold text-indigo-200 mb-1">Pedagogical Content Knowledge (PCK)</p>
+                <p className="text-[11px] leading-relaxed text-slate-300">Grounds instructional intelligence in Shulman's framework linking domain expertise with effective teaching strategies.</p>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                <p className="font-semibold text-indigo-200 mb-1">Dual-Process Decision Making</p>
+                <p className="text-[11px] leading-relaxed text-slate-300">Grounded in Kahneman's System 1 (Intuitive) & System 2 (Analytical) cognitive decision processing under time pressure.</p>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                <p className="font-semibold text-indigo-200 mb-1">Visible Learning Research</p>
+                <p className="text-[11px] leading-relaxed text-slate-300">Incorporates Hattie's effect sizes for formative evaluation, metacognitive regulation (Flavell), and active learning.</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

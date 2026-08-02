@@ -1,4 +1,5 @@
 import { Question } from '../types';
+import { jtiaExpandedItemBank } from './jtiaExpandedItemBank';
 
 export type JTIADomain = 
   | 'Cognitive Intelligence'
@@ -971,3 +972,46 @@ export const jtiaDomainDescriptions: Record<JTIADomain, {
     ]
   }
 };
+
+/**
+ * Get the full master JTIA question bank (Core 120 + Expanded Item Bank 120 = 240 items)
+ */
+export function getFullJTIAQuestionBank(): JTIAQuestion[] {
+  return [...jtiaQuestions, ...jtiaExpandedItemBank];
+}
+
+/**
+ * Generate a randomized, domain-balanced JTIA assessment session.
+ * - Groups questions by domain (Cognitive, Instructional, Classroom Leadership, Relationship, Professional Intelligence)
+ * - Uses Fisher-Yates shuffle to randomize items within each domain
+ * - Selects an equal number of items per domain (default: 24 per domain = 120 questions)
+ */
+export function getShuffledJTIAQuestionSet(options?: {
+  countPerDomain?: number;
+  useFullBank?: boolean;
+}): JTIAQuestion[] {
+  const { countPerDomain = 24, useFullBank = true } = options || {};
+  const sourceBank = useFullBank ? getFullJTIAQuestionBank() : jtiaQuestions;
+
+  const domains: JTIADomain[] = [
+    "Cognitive Intelligence",
+    "Instructional Intelligence",
+    "Classroom Leadership",
+    "Relationship Intelligence",
+    "Professional Intelligence"
+  ];
+
+  const shuffledSession: JTIAQuestion[] = [];
+
+  domains.forEach(domain => {
+    const domainQuestions = sourceBank.filter(q => q.domain === domain);
+    const shuffled = [...domainQuestions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    shuffledSession.push(...shuffled.slice(0, countPerDomain));
+  });
+
+  return shuffledSession;
+}

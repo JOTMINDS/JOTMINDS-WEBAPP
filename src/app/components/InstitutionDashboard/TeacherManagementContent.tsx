@@ -190,7 +190,7 @@ export function TeacherManagementContent({
             {/* Teaching Style Profile */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teaching Style Profile
+                <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teacher Intelligence Profile (JTIA)
               </h4>
               {teachingStyleAssmt && teachingStyleAssmt.score && 'teaching-style' in teachingStyleAssmt.score ? (
                 <div className="grid grid-cols-2 gap-4">

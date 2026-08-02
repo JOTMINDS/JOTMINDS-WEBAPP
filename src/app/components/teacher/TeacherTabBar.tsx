@@ -1,12 +1,24 @@
 interface TeacherTabBarProps {
-  activeTab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'analytics-compare' | 'manage-class';
-  onTabChange: (tab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'analytics-compare' | 'manage-class') => void;
+  activeTab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'lesson-planner' | 'analytics-compare' | 'manage-class';
+  onTabChange: (tab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'lesson-planner' | 'analytics-compare' | 'manage-class') => void;
 }
 
 export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
   return (
     <div className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 px-4 py-3 sticky top-14 z-10">
       <div className="flex gap-3 max-w-[960px] mx-auto overflow-x-auto">
+        <button
+          onClick={() => onTabChange('lesson-planner')}
+          className={`
+            px-4 py-2 rounded-full text-[14px] font-semibold transition-all duration-200 whitespace-nowrap flex items-center gap-1.5
+            ${activeTab === 'lesson-planner'
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm font-bold'
+              : 'bg-indigo-100/70 text-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200 hover:bg-indigo-200'
+            }
+          `}
+        >
+          ✨ AI Lesson Planner
+        </button>
         <button
           onClick={() => onTabChange('individual')}
           className={`

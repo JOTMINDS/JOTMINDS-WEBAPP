@@ -14,7 +14,7 @@ import {
   XAxis, YAxis, CartesianGrid, Cell
 } from 'recharts';
 import { JTIASchoolAggregatedInsights, generateSchoolJTIAInsights, JTIAReportData } from '../utils/jtiaScoring';
-import { JTIADomain } from '../utils/jtiaQuestions';
+import { JTIADomain, jtiaDomainDescriptions } from '../utils/jtiaQuestions';
 import { generateSchoolJTIAAIInsights } from '../utils/aiService';
 
 interface JTIASchoolDashboardProps {

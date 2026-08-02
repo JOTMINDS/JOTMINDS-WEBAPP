@@ -1,4 +1,4 @@
-import { jtiaQuestions, JTIADomain, jtiaDomainDescriptions } from './jtiaQuestions';
+import { jtiaQuestions, JTIADomain, jtiaDomainDescriptions, JTIAQuestion } from './jtiaQuestions';
 
 export interface JTIACapabilityItem {
   title: string;
@@ -164,7 +164,7 @@ const SUBCOMPETENCY_EXPLANATIONS: Record<string, { strength: string; growth: str
 /**
  * Calculate complete JTIA report from numeric responses array (1 - 5 scale)
  */
-export function calculateJTIAScore(responses: number[] = []): JTIAReportData {
+export function calculateJTIAScore(responses: number[] = [], sessionQuestions: JTIAQuestion[] = jtiaQuestions): JTIAReportData {
   const domainTotals: Record<JTIADomain, { sum: number; count: number }> = {
     "Cognitive Intelligence": { sum: 0, count: 0 },
     "Instructional Intelligence": { sum: 0, count: 0 },
@@ -175,7 +175,7 @@ export function calculateJTIAScore(responses: number[] = []): JTIAReportData {
 
   const subCompetencyTotals: Record<string, { sum: number; count: number }> = {};
 
-  jtiaQuestions.forEach((q, idx) => {
+  sessionQuestions.forEach((q, idx) => {
     const rawVal = responses[idx] || 4; // default to proficient (4) if unrated
     const normalized = Math.min(100, Math.max(20, (rawVal / 5) * 100));
 
@@ -206,7 +206,7 @@ export function calculateJTIAScore(responses: number[] = []): JTIAReportData {
   const sortedSubs = Object.entries(subCompetencies).sort((a, b) => b[1] - a[1]);
 
   const strengths: JTIACapabilityItem[] = sortedSubs.slice(0, 5).map(([sub, score]) => {
-    const domain = jtiaQuestions.find(q => q.subCompetency === sub)?.domain || "Cognitive Intelligence";
+    const domain = sessionQuestions.find(q => q.subCompetency === sub)?.domain || "Cognitive Intelligence";
     const expl = SUBCOMPETENCY_EXPLANATIONS[sub]?.strength || `Consistently demonstrates high professional capability in ${sub}.`;
     return {
       title: sub,
@@ -217,7 +217,7 @@ export function calculateJTIAScore(responses: number[] = []): JTIAReportData {
   });
 
   const growthOpportunities: JTIACapabilityItem[] = sortedSubs.slice(-4).reverse().map(([sub, score]) => {
-    const domain = jtiaQuestions.find(q => q.subCompetency === sub)?.domain || "Cognitive Intelligence";
+    const domain = sessionQuestions.find(q => q.subCompetency === sub)?.domain || "Cognitive Intelligence";
     const expl = SUBCOMPETENCY_EXPLANATIONS[sub]?.growth || `Targeted professional development in ${sub} can elevate classroom impact and student learning outcomes.`;
     return {
       title: sub,

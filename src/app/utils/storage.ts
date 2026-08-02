@@ -372,7 +372,7 @@ export function saveAssessmentProgress(progress: AssessmentProgress) {
 
 export function getAssessmentProgress(
   userId: string, 
-  assessmentType: 'kolb' | 'sternberg' | 'dual-process' | 'teaching-style',
+  assessmentType: 'kolb' | 'sternberg' | 'dual-process' | 'teaching-style' | 'jtia',
   isOrganizational: boolean
 ): AssessmentProgress | null {
   const key = `${STORAGE_KEYS.ASSESSMENT_PROGRESS}_${userId}_${assessmentType}_${isOrganizational}`;
@@ -381,7 +381,7 @@ export function getAssessmentProgress(
 
 export function clearAssessmentProgress(
   userId: string, 
-  assessmentType: 'kolb' | 'sternberg' | 'dual-process' | 'teaching-style',
+  assessmentType: 'kolb' | 'sternberg' | 'dual-process' | 'teaching-style' | 'jtia',
   isOrganizational: boolean
 ) {
   const key = `${STORAGE_KEYS.ASSESSMENT_PROGRESS}_${userId}_${assessmentType}_${isOrganizational}`;

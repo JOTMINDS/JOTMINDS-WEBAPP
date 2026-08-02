@@ -2,8 +2,7 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader, AlertCircle, CheckCircle2, 
 import { PhoneInput } from './PhoneInput';
 import { useState, useEffect } from 'react';
 import { createClient } from '../utils/supabase/client';
-import { setAuthToken } from '../utils/api';
-import { signup } from '../utils/api';
+import { setAuthToken, signup, signin } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -374,7 +373,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           if (error.message.includes('Invalid login credentials')) {
             setError('Incorrect email or password. Please check your credentials and try again, or create a new account if you don\'t have one.');
           } else if (error.message.includes('Email not confirmed')) {
-            setError('Please confirm your email address before logging in.');
+            setError('Please confirm your email address before logging in. Enter the 6-digit verification code sent to your inbox.');
           } else {
             setError(error.message);
           }
@@ -431,20 +430,47 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           return;
         }
         
-        // STEP 4 -> 5: Send OTP before finalizing signup (BYPASSED)
-        // We now allow users to sign up immediately and verify their email within 48 hours.
-        /* 
+        // STEP 4 -> 5: Send 6-digit OTP to email before finalizing signup
         if (registrationStep === 4) {
-          ...
+          console.log('[AuthForm] Step 4 complete. Sending 6-digit OTP verification code to:', cleanEmail);
+          try {
+            const code = await generateOTP(cleanEmail);
+            if (code) {
+              setSimulatedSignupOTP(code);
+            }
+            setRegistrationStep(5);
+            setError('');
+          } catch (otpErr: any) {
+            console.error('[AuthForm] Failed to send OTP code:', otpErr);
+            setError(otpErr.message || 'Failed to send 6-digit verification code to your email. Please try again.');
+          }
+          setLoading(false);
+          return;
         }
-        */
 
-        // STEP 5: Verify OTP and finalize signup (BYPASSED)
-        /*
+        // STEP 5: Verify 6-digit OTP and finalize signup
         if (registrationStep === 5) {
-          ...
+          if (!signupOTP || signupOTP.length < 6) {
+            setError('Please enter the complete 6-digit verification code sent to your email.');
+            setLoading(false);
+            return;
+          }
+          
+          console.log('[AuthForm] Step 5: Verifying 6-digit OTP for email:', cleanEmail);
+          try {
+            const verified = await verifyOTP(cleanEmail, signupOTP);
+            if (!verified) {
+              setError('Invalid or expired 6-digit verification code. Please check and try again.');
+              setLoading(false);
+              return;
+            }
+          } catch (verifyErr: any) {
+            console.error('[AuthForm] OTP verification failed:', verifyErr);
+            setError(verifyErr.message || 'Invalid or expired 6-digit verification code.');
+            setLoading(false);
+            return;
+          }
         }
-        */
         
         const signupData = {
           email: cleanEmail,
@@ -911,7 +937,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                           </Alert>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          Enter the Jots Code (Organisation Code) provided by your head teacher. This links your account to the school — the head teacher can then view your <strong>Teaching Style</strong> and <strong>Thinking Style</strong> side by side and access your full combined professional profile. After signup, complete both assessments from your dashboard's <em>My Style</em> tab.
+                          Enter the Jots Code (Organisation Code) provided by your head teacher. This links your account to the school — the head teacher can then view your <strong>Teacher Intelligence (JTIA)</strong> and <strong>Thinking Style</strong> side by side and access your full combined professional profile. After signup, complete both assessments from your dashboard's <em>My Style</em> tab.
                         </p>
                       </div>
                     </>
@@ -1223,7 +1249,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                       className="flex-1"
                       disabled={loading || !hasConsented}
                     >
-                      {loading ? <Loader className="h-4 w-4 animate-spin" /> : 'Complete Registration'}
+                      {loading ? <Loader className="h-4 w-4 animate-spin" /> : 'Send Verification Code →'}
                     </Button>
                   )}
                 </div>

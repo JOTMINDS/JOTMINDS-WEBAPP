@@ -23,6 +23,64 @@ export interface AIInsightsRequest {
   type?: string;
   algorithmicGuidance?: Record<string, any>;
   context?: Record<string, any>;
+  scientificPositioning?: Record<string, any>;
+}
+
+export interface ScientificPositioningContext {
+  frameworks: Array<{
+    name: string;
+    author: string;
+    construct: string;
+    relevance: string;
+  }>;
+  scientificGroundingSummary: string;
+}
+
+/**
+ * Returns theoretical frameworks and scientific research grounding for AI positioning
+ */
+export function getScientificPositioningContext(assessmentType?: string): ScientificPositioningContext {
+  return {
+    frameworks: [
+      {
+        name: "Experiential Learning Theory",
+        author: "David Kolb",
+        construct: "Learning Modes (Concrete Experience, Reflective Observation, Abstract Conceptualization, Active Experimentation)",
+        relevance: "Grounds individual learning cycle preferences and experiential absorption."
+      },
+      {
+        name: "Triarchic Theory of Human Intelligence",
+        author: "Robert Sternberg",
+        construct: "Analytical, Creative, and Practical Intelligence",
+        relevance: "Grounds cognitive problem-solving, innovation, and contextual application."
+      },
+      {
+        name: "Dual-Process Theory of Cognition",
+        author: "Daniel Kahneman & Amos Tversky",
+        construct: "System 1 (Intuitive/Fast) vs. System 2 (Analytical/Deliberate) Decision Processing",
+        relevance: "Grounds real-time classroom decision making under ambiguity and time pressure."
+      },
+      {
+        name: "Pedagogical Content Knowledge (PCK)",
+        author: "Lee Shulman",
+        construct: "Intersection of Subject Matter Knowledge and Pedagogical Craft",
+        relevance: "Grounds teacher intelligence domains in instructional strategy and content delivery."
+      },
+      {
+        name: "Metacognition and Self-Regulation",
+        author: "John Flavell",
+        construct: "Metacognitive Knowledge & Regulation of Cognitive Activities",
+        relevance: "Grounds reflective practice, adaptive decision-making, and professional growth."
+      },
+      {
+        name: "Visible Learning & Evidence-Based Feedback",
+        author: "John Hattie",
+        construct: "Effect Sizes for Formative Evaluation, Active Learning, and Differentiated Instruction",
+        relevance: "Grounds growth opportunities in empirical educational research."
+      }
+    ],
+    scientificGroundingSummary: "JotMinds assessments are scientifically grounded in established cognitive psychology, experiential learning, dual-process decision theories, and evidence-based pedagogical frameworks."
+  };
 }
 
 export interface AIInsightsResponse {
@@ -52,8 +110,8 @@ export async function generateAIInsights(
       !('sternberg' in scoresOrRequest);
 
     const payload = isRequestObject
-      ? scoresOrRequest
-      : { scores: scoresOrRequest as AssessmentScore, ...options };
+      ? { ...scoresOrRequest, scientificPositioning: getScientificPositioningContext((scoresOrRequest as any).type) }
+      : { scores: scoresOrRequest as AssessmentScore, scientificPositioning: getScientificPositioningContext(options?.type), ...options };
 
     const response = await fetch(`${getBaseUrl()}/ai/generate-insights`, {
       method: 'POST',
@@ -106,7 +164,8 @@ export async function askAICoach(
         history,
         role: options?.role || profile?.role || profile?.userType,
         algorithmicGuidance: options?.algorithmicGuidance,
-        scores: options?.scores
+        scores: options?.scores,
+        scientificPositioning: getScientificPositioningContext(options?.role)
       })
     });
 
@@ -182,7 +241,10 @@ export async function generateJTIAAIRecommendations(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${publicAnonKey}`
       },
-      body: JSON.stringify({ report })
+      body: JSON.stringify({
+        report,
+        scientificPositioning: getScientificPositioningContext('jtia')
+      })
     });
 
     if (!response.ok) {
@@ -208,7 +270,11 @@ export async function generateSchoolJTIAAIInsights(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${publicAnonKey}`
       },
-      body: JSON.stringify({ schoolInsights, schoolName })
+      body: JSON.stringify({
+        schoolInsights,
+        schoolName,
+        scientificPositioning: getScientificPositioningContext('school-jtia')
+      })
     });
 
     if (!response.ok) {
@@ -222,6 +288,111 @@ export async function generateSchoolJTIAAIInsights(
     return null;
   }
 }
+
+// ─── AI LESSON PLANNER PROXY FUNCTIONS ──────────────────────────────────────────
+
+export async function generateAILessonPlan(payload: {
+  subject: string;
+  gradeClass: string;
+  topic: string;
+  durationMinutes: number;
+  classSummary?: any;
+}): Promise<any | null> {
+  try {
+    const response = await fetch(`${getBaseUrl()}/ai/generate-lesson-plan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${publicAnonKey}`
+      },
+      body: JSON.stringify({
+        ...payload,
+        scientificPositioning: getScientificPositioningContext('lesson-planner')
+      })
+    });
+    if (!response.ok) throw new Error(`Lesson Plan AI error: ${response.status}`);
+    return await response.json();
+  } catch (err) {
+    console.error('Failed to generate AI Lesson Plan:', err);
+    return null;
+  }
+}
+
+export async function generateAIDifferentiatedInstruction(payload: {
+  subject: string;
+  topic: string;
+  gradeClass: string;
+  classSummary?: any;
+}): Promise<any | null> {
+  try {
+    const response = await fetch(`${getBaseUrl()}/ai/generate-differentiated-instruction`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${publicAnonKey}`
+      },
+      body: JSON.stringify({
+        ...payload,
+        scientificPositioning: getScientificPositioningContext('differentiated-instruction')
+      })
+    });
+    if (!response.ok) throw new Error(`Differentiated Instruction AI error: ${response.status}`);
+    return await response.json();
+  } catch (err) {
+    console.error('Failed to generate Differentiated Instruction:', err);
+    return null;
+  }
+}
+
+export async function generateAILessonAssessment(payload: {
+  subject: string;
+  topic: string;
+  gradeClass: string;
+}): Promise<any | null> {
+  try {
+    const response = await fetch(`${getBaseUrl()}/ai/generate-lesson-assessment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${publicAnonKey}`
+      },
+      body: JSON.stringify({
+        ...payload,
+        scientificPositioning: getScientificPositioningContext('lesson-assessment')
+      })
+    });
+    if (!response.ok) throw new Error(`Lesson Assessment AI error: ${response.status}`);
+    return await response.json();
+  } catch (err) {
+    console.error('Failed to generate Lesson Assessment:', err);
+    return null;
+  }
+}
+
+export async function chatWithLessonCopilot(message: string, history: any[], context?: any): Promise<string | null> {
+  try {
+    const response = await fetch(`${getBaseUrl()}/ai/lesson-copilot-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${publicAnonKey}`
+      },
+      body: JSON.stringify({
+        message,
+        history,
+        context,
+        scientificPositioning: getScientificPositioningContext('lesson-copilot')
+      })
+    });
+    if (!response.ok) throw new Error(`Copilot AI error: ${response.status}`);
+    const data = await response.json();
+    return data.reply || null;
+  } catch (err) {
+    console.error('Failed to chat with Lesson Copilot:', err);
+    return null;
+  }
+}
+
 
 
 

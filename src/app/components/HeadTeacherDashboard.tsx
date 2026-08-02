@@ -383,7 +383,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                 className="bg-white text-[#5B7DB1] hover:bg-white/90"
                 onClick={() => setShowTeacherStyles(true)}
               >
-                View Teaching Styles →
+                View Teacher Intelligence (JTIA) →
               </Button>
               {onViewInstitutionDashboard && (
                 <Button
