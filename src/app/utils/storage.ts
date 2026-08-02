@@ -2,6 +2,7 @@ import { User, Assessment, Reflection, AssessmentProgress, SupervisorReviewData,
 import { createClient } from './supabase/client';
 import { projectId } from './supabase/info';
 import { calculateAge } from './dateUtils';
+import { enqueueOfflineAction } from './offlineSyncManager';
 
 const STORAGE_KEYS = {
   CURRENT_USER: 'ts_current_user',
@@ -313,7 +314,12 @@ export function saveAssessment(assessment: Assessment) {
   localStorage.setItem(STORAGE_KEYS.ASSESSMENTS, JSON.stringify(assessments));
   
   // Async background sync to Supabase
-  syncAssessmentToSupabase(assessment);
+  // Async background sync to Supabase or queue offline
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    enqueueOfflineAction('ASSESSMENT', assessment);
+  } else {
+    syncAssessmentToSupabase(assessment);
+  }
 }
 
 export function getUserAssessments(userId: string): Assessment[] {
@@ -335,6 +341,10 @@ export function saveReflection(reflection: Reflection) {
   const reflections = getAllReflections();
   reflections.push(reflection);
   localStorage.setItem(STORAGE_KEYS.REFLECTIONS, JSON.stringify(reflections));
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    enqueueOfflineAction('REFLECTION', reflection);
+  }
 }
 
 export function getUserReflections(userId: string): Reflection[] {
