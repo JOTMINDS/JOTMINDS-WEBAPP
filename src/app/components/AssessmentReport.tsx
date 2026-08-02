@@ -11,7 +11,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { saveReflection as saveReflectionToServer } from '../utils/api';
 
 import { BookOpen, Briefcase, Lightbulb, FileText, Download, ArrowLeft, TrendingUp, AlertTriangle, Target, Users, BarChart3, Share2, Eye, Brain, ChevronDown, ChevronUp, Printer, HelpCircle } from 'lucide-react';
-import { generatePDF } from '../utils/pdfGenerator';
+import { generatePDF, exportReportToPDF } from '../utils/pdfGenerator';
 import { getAssessmentInsights, AssessmentInsights } from '../utils/insights';
 import { generateAIInsights, AIInsightsResponse } from '../utils/aiService';
 import { toast } from 'sonner';
@@ -118,8 +118,25 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
   };
 
   const handleDownloadPDF = async () => {
-    await generatePDF(assessment, userName, ghanaMapping, isOrganizational);
-    toast.success('PDF downloaded successfully!');
+    try {
+      toast.info('Generating PDF report...');
+      const success = await generatePDF(assessment, userName, ghanaMapping, isOrganizational);
+      if (success !== false) {
+        toast.success('PDF downloaded successfully!');
+      } else {
+        const exported = await exportReportToPDF('assessment-report-content', `${userName}_JotMinds_Report.pdf`);
+        if (exported) {
+          toast.success('PDF downloaded successfully!');
+        } else {
+          toast.error('Unable to auto-generate PDF. Opening print view.');
+          window.print();
+        }
+      }
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      toast.error('Opening print view...');
+      window.print();
+    }
   };
 
   const handlePrint = () => {

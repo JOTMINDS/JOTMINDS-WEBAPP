@@ -5,9 +5,7 @@ import jsPDF from 'jspdf';
  *
  * Fetches the Poppins Regular and Bold TTF files from /fonts/ at runtime,
  * converts them to base64, registers them with jsPDF, and sets the default
- * font to Poppins.
- *
- * Call once per jsPDF document instance before rendering any text.
+ * font to Poppins. Returns true if registered, false if fallback is needed.
  */
 
 let cachedRegular: string | null = null;
@@ -15,6 +13,7 @@ let cachedBold: string | null = null;
 
 async function fetchFontAsBase64(url: string): Promise<string> {
   const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status} loading font ${url}`);
   const buffer = await response.arrayBuffer();
   const bytes = new Uint8Array(buffer);
   let binary = '';
@@ -27,8 +26,9 @@ async function fetchFontAsBase64(url: string): Promise<string> {
 /**
  * Register Poppins Regular + Bold with the given jsPDF doc and set it as
  * the active font. Font data is cached after the first call.
+ * Returns true if Poppins was registered successfully, false otherwise.
  */
-export async function registerPoppins(doc: jsPDF): Promise<void> {
+export async function registerPoppins(doc: jsPDF): Promise<boolean> {
   try {
     if (!cachedRegular) {
       cachedRegular = await fetchFontAsBase64('/fonts/Poppins-Regular.ttf');
@@ -44,8 +44,10 @@ export async function registerPoppins(doc: jsPDF): Promise<void> {
     doc.addFont('Poppins-Bold.ttf', 'Poppins', 'bold');
 
     doc.setFont('Poppins', 'normal');
+    return true;
   } catch (err) {
-    console.warn('Failed to load Poppins font, falling back to helvetica:', err);
-    // Graceful fallback – PDFs still generate, just with the default font.
+    console.warn('[PDF Generator] Falling back to standard helvetica font:', err);
+    doc.setFont('helvetica', 'normal');
+    return false;
   }
 }

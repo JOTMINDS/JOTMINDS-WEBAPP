@@ -41,64 +41,65 @@ function loadLogo(): Promise<HTMLImageElement | null> {
 }
 
 
-export async function generatePDF(assessment: Assessment, userName: string, ghanaMapping: GhanaMapping | null, isOrganizational: boolean = false) {
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 16;
-  const contentWidth = pageWidth - margin * 2;
-  let yPos = 20;
+export async function generatePDF(assessment: Assessment, userName: string, ghanaMapping: GhanaMapping | null, isOrganizational: boolean = false): Promise<boolean> {
+  try {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 16;
+    let yPos = 20;
 
-  // Load fonts
-  await registerPoppins(doc);
+    // Load fonts safely
+    const hasPoppins = await registerPoppins(doc);
+    const font = hasPoppins ? 'Poppins' : 'helvetica';
 
-  const logo = await loadLogo();
+    const logo = await loadLogo();
 
-  // ── Header band ─────────────────────────────────────────────────────────────
-  const bandHeight = 40;
-  doc.setFillColor(...BRAND.indigo);
-  doc.rect(0, 0, pageWidth, bandHeight, 'F');
-  // Thin accent strip under the band
-  doc.setFillColor(...BRAND.coral);
-  doc.rect(0, bandHeight, pageWidth, 1.5, 'F');
+    // ── Header band ─────────────────────────────────────────────────────────────
+    const bandHeight = 40;
+    doc.setFillColor(...BRAND.indigo);
+    doc.rect(0, 0, pageWidth, bandHeight, 'F');
+    // Thin accent strip under the band
+    doc.setFillColor(...BRAND.coral);
+    doc.rect(0, bandHeight, pageWidth, 1.5, 'F');
 
-  let logoRight = margin;
-  if (logo && logo.naturalWidth > 0) {
-    const logoH = 20;
-    const logoW = (logo.naturalWidth / logo.naturalHeight) * logoH;
-    doc.addImage(logo, 'PNG', margin, (bandHeight - logoH) / 2, logoW, logoH);
-    logoRight = margin + logoW + 6;
-  }
+    let logoRight = margin;
+    if (logo && logo.naturalWidth > 0) {
+      const logoH = 20;
+      const logoW = (logo.naturalWidth / logo.naturalHeight) * logoH;
+      doc.addImage(logo, 'PNG', margin, (bandHeight - logoH) / 2, logoW, logoH);
+      logoRight = margin + logoW + 6;
+    }
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('Poppins', 'bold');
-  doc.setFontSize(22);
-  doc.text('JotMinds', logoRight, 19);
-  doc.setFont('Poppins', 'normal');
-  doc.setFontSize(9);
-  doc.text('Your brain has a manual, we built it', logoRight, 26);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(font, 'bold');
+    doc.setFontSize(22);
+    doc.text('JotMinds', logoRight, 19);
+    doc.setFont(font, 'normal');
+    doc.setFontSize(9);
+    doc.text('Your brain has a manual, we built it', logoRight, 26);
 
-  yPos = bandHeight + 12;
+    yPos = bandHeight + 12;
 
-  // ── Subject / meta line ──────────────────────────────────────────────────────
-  doc.setTextColor(...BRAND.dark);
-  doc.setFont('Poppins', 'bold');
-  doc.setFontSize(15);
-  doc.text(userName || 'User', margin, yPos);
-  yPos += 6;
+    // ── Subject / meta line ──────────────────────────────────────────────────────
+    doc.setTextColor(...BRAND.dark);
+    doc.setFont(font, 'bold');
+    doc.setFontSize(15);
+    doc.text(userName || 'User', margin, yPos);
+    yPos += 6;
 
-  doc.setTextColor(...BRAND.muted);
-  doc.setFont('Poppins', 'normal');
-  doc.setFontSize(9.5);
-  doc.text(
-    `Completed on ${new Date(assessment.completedAt).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })}`,
-    margin,
-    yPos,
-  );
-  yPos += 12;
+    doc.setTextColor(...BRAND.muted);
+    doc.setFont(font, 'normal');
+    doc.setFontSize(9.5);
+    doc.text(
+      `Completed on ${new Date(assessment.completedAt).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })}`,
+      margin,
+      yPos,
+    );
+    yPos += 12;
   
   doc.setTextColor(...BRAND.ink);
 
@@ -394,16 +395,21 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
     doc.text(tipLines, 25, yPos);
   }
 
-  // Save
-  const safeUserName = userName || 'User';
-  const filename = isOrganizational 
-    ? `organizational-assessment-${safeUserName.replace(/\s+/g, '-')}.pdf`
-    : `thinking-styles-report-${safeUserName.replace(/\s+/g, '-')}.pdf`;
-  doc.save(filename);
+    // Save
+    const safeUserName = userName || 'User';
+    const filename = isOrganizational 
+      ? `organizational-assessment-${safeUserName.replace(/\s+/g, '-')}.pdf`
+      : `thinking-styles-report-${safeUserName.replace(/\s+/g, '-')}.pdf`;
+    doc.save(filename);
+    return true;
+  } catch (err) {
+    console.error('[PDF Generator] Error generating direct PDF:', err);
+    return false;
+  }
 }
 
-export async function exportReportToPDF(elementId: string, filename: string = 'Jotminds_Report.pdf') {
-  const element = document.getElementById(elementId);
+export async function exportReportToPDF(elementId: string, filename: string = 'Jotminds_Report.pdf'): Promise<boolean> {
+  const element = document.getElementById(elementId) || document.querySelector(elementId) || document.querySelector('.max-w-4xl') || document.body;
   if (!element) return false;
 
   try {
