@@ -12,6 +12,7 @@ import { Button } from './button';
 import { Badge } from './badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
 import { User } from '../../types';
+import { Logo } from '../Logo';
 
 export interface NavItem {
   id: string;
@@ -78,18 +79,13 @@ export function CollapsibleSidebar({
     <TooltipProvider delayDuration={200}>
       {/* Mobile Top Header */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg gradient-aqua-violet flex items-center justify-center text-white font-bold text-sm shadow-sm">
-            J
-          </div>
-          <div>
-            <h1 className="font-bold text-sm bg-gradient-to-r from-[#6B4C9A] via-[#7B61FF] to-[#5B7DB1] bg-clip-text text-transparent">
-              {brandTitle}
-            </h1>
-            {brandSubtitle && (
-              <p className="text-[10px] text-muted-foreground leading-none">{brandSubtitle}</p>
-            )}
-          </div>
+        <div className="flex items-center gap-2.5">
+          <Logo size="sm" />
+          {brandSubtitle && (
+            <span className="text-[11px] font-semibold text-muted-foreground border-l border-gray-300 dark:border-gray-700 pl-2 uppercase tracking-wider">
+              {brandSubtitle}
+            </span>
+          )}
         </div>
         <Button
           variant="ghost"
@@ -111,16 +107,13 @@ export function CollapsibleSidebar({
           />
           <div className="relative flex-1 max-w-xs w-full bg-white dark:bg-gray-950 flex flex-col h-full z-10 shadow-2xl border-r border-gray-200 dark:border-gray-800">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl gradient-aqua-violet flex items-center justify-center text-white font-bold text-base shadow">
-                  J
-                </div>
-                <div>
-                  <h2 className="font-bold text-base bg-gradient-to-r from-[#6B4C9A] to-[#7B61FF] bg-clip-text text-transparent">
-                    {brandTitle}
-                  </h2>
-                  {brandSubtitle && <p className="text-xs text-muted-foreground">{brandSubtitle}</p>}
-                </div>
+              <div className="flex items-center gap-2.5">
+                <Logo size="md" />
+                {brandSubtitle && (
+                  <span className="text-xs font-semibold text-muted-foreground border-l border-gray-300 dark:border-gray-700 pl-2.5 uppercase tracking-wider">
+                    {brandSubtitle}
+                  </span>
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -216,21 +209,12 @@ export function CollapsibleSidebar({
       >
         {/* Sidebar Header & Toggle */}
         <div className="h-16 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-xl gradient-aqua-violet flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-sm">
-              J
-            </div>
-            {!isCollapsed && (
-              <div className="overflow-hidden transition-opacity duration-200">
-                <h1 className="font-bold text-lg tracking-tight bg-gradient-to-r from-[#6B4C9A] via-[#7B61FF] to-[#5B7DB1] bg-clip-text text-transparent whitespace-nowrap">
-                  {brandTitle}
-                </h1>
-                {brandSubtitle && (
-                  <p className="text-[11px] text-muted-foreground truncate leading-none mt-0.5">
-                    {brandSubtitle}
-                  </p>
-                )}
-              </div>
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <Logo size={isCollapsed ? "sm" : "md"} className="flex-shrink-0" />
+            {!isCollapsed && brandSubtitle && (
+              <span className="text-[11px] font-semibold text-muted-foreground border-l border-gray-300 dark:border-gray-700 pl-2.5 truncate uppercase tracking-wider">
+                {brandSubtitle}
+              </span>
             )}
           </div>
 
