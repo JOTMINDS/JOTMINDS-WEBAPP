@@ -2919,8 +2919,16 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
             const studentId = m.user_id;
             const studentProfile = await kv.get(`user:${studentId}`);
 
-            // Only include students assigned to THIS teacher
-            if (studentProfile?.teacherId !== user.id && !(studentProfile?.linkedTeachers || []).includes(user.id)) {
+            // Include students assigned to THIS teacher OR in the same school/classCode
+            const classCode = teacherProfile?.classCode || teacherProfile?.organizationCode;
+            const isAssignedToTeacher =
+              studentProfile?.teacherId === user.id ||
+              (studentProfile?.linkedTeachers || []).includes(user.id) ||
+              (classCode && (studentProfile?.organizationCode === classCode || studentProfile?.classCode === classCode)) ||
+              (schoolName && (studentProfile?.school?.trim().toLowerCase() === schoolName.trim().toLowerCase() || studentProfile?.organizationName?.trim().toLowerCase() === schoolName.trim().toLowerCase())) ||
+              (!studentProfile?.teacherId && (!studentProfile?.linkedTeachers || studentProfile.linkedTeachers.length === 0));
+
+            if (!isAssignedToTeacher) {
               return null;
             }
 
@@ -2974,20 +2982,29 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
     }
 
     // ── Strategy 2: KV-based lookup (legacy / non-institution teachers) ──
-    if (!schoolName) {
-      return c.json({ success: true, students: [] });
-    }
-
     console.log(`[Backend] Fetching students for teacher ${user.id} at school: ${schoolName}`);
 
     // Get all students assigned to this teacher using targeted queries
     const supabase = getSupabaseClient(true);
-    const [ {data: primaryStudents}, {data: linkedStudents} ] = await Promise.all([
+    const queries: Promise<any>[] = [
       supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').eq('value->>teacherId', user.id),
       supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').contains('value', { linkedTeachers: [user.id] })
-    ]);
-    
-    const rawStudents = [...(primaryStudents || []), ...(linkedStudents || [])];
+    ];
+    if (schoolName) {
+      queries.push(
+        supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').ilike('value->>school', schoolName),
+        supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').ilike('value->>organizationName', schoolName)
+      );
+    }
+    const classCode = teacherProfile?.classCode || teacherProfile?.organizationCode;
+    if (classCode) {
+      queries.push(
+        supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').eq('value->>organizationCode', classCode),
+        supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').eq('value->>classCode', classCode)
+      );
+    }
+    const results = await Promise.all(queries);
+    const rawStudents = results.flatMap(r => r.data || []);
     
     const uniqueStudentsMap = new Map();
     for (const item of rawStudents) {

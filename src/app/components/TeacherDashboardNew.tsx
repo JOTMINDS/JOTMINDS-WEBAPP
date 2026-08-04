@@ -3,17 +3,15 @@ import { User, Assessment } from '../types';
 import { useAuth } from './AuthContext';
 import { getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
 import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
-import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
+import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher } from '../utils/storage';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
-import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download } from 'lucide-react';
+import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
 import { 
-  TeacherAppHeader, 
-  TeacherTabBar, 
   TeacherClassOverview, 
   TeacherIndividualStudentView,
   TeacherAnalyticsComparison
@@ -28,6 +26,8 @@ import { getInstitutionForMember, getInstitutionClasses } from '../utils/institu
 import { generateDeepDiveQuestions } from '../utils/teachingStyleData';
 import { AdultThinkingContainer } from './AdultThinkingContainer';
 import { AILessonPlannerContainer } from './lessonPlanner/AILessonPlannerContainer';
+import { DashboardLayout } from './ui/dashboard-layout';
+import { NavGroup } from './ui/collapsible-sidebar';
 
 interface TeacherDashboardNewProps {
   user: User;
@@ -47,7 +47,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'teaching-style' | 'lesson-planner' | 'analytics-compare' | 'manage-class'>('lesson-planner');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'teaching-style' | 'lesson-planner' | 'analytics-compare' | 'manage-class'>('overview');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -139,7 +139,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className || user.role === 'teacher').forEach(c => teacherClassIds.add(c.id));
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
-        studentUsers = allUsers.filter(u => u.role === 'student' && ((u.classId && teacherClassIds.has(u.classId)) || u.teacherId === user.id));
+        studentUsers = allUsers.filter(u => isStudentConnectedToTeacher(u, user, teacherClassIds));
         
         // Fetch assessments for the teacher's students (not the teacher themselves)
         if (studentUsers.length > 0) {
@@ -256,7 +256,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className || user.role === 'teacher').forEach(c => teacherClassIds.add(c.id));
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
-        localStudents = allUsers.filter(u => u.role === 'student' && ((u.classId && teacherClassIds.has(u.classId)) || u.teacherId === user.id));
+        localStudents = allUsers.filter(u => isStudentConnectedToTeacher(u, user, teacherClassIds));
         
         // Scope local assessments to only this teacher's students
         const localStudentIds = new Set(localStudents.map(s => s.id));
@@ -418,37 +418,82 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#F5F7FF]">
-      <TeacherAppHeader
-        user={user}
-        onLogout={onLogout}
-        onViewAnalytics={onViewAnalytics}
-        onViewPrivacy={onViewPrivacy}
-        onViewEngagement={onViewEngagement}
-        onViewTeacherIntelligence={onViewTeacherIntelligence}
-        onViewInstitutionDashboard={onViewInstitutionDashboard}
-        onViewSettings={onViewSettings}
-      />
-      <TeacherTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+  const teacherNavGroups: NavGroup[] = [
+    {
+      groupLabel: 'Educator Tools',
+      items: [
+        { id: 'overview', label: 'Class Overview', icon: Users, badge: students.length },
+        { id: 'individual', label: 'Student Roster', icon: Eye },
+        { id: 'analytics-compare', label: 'Class Analytics', icon: BarChart3 },
+        { id: 'manage-class', label: 'Roster & Codes', icon: Calendar },
+        { id: 'lesson-planner', label: 'AI Lesson Planner', icon: ClipboardList },
+      ]
+    },
+    {
+      groupLabel: 'Professional Development',
+      items: [
+        { id: 'my-style', label: 'Cognitive Profile', icon: History },
+        { id: 'teaching-style', label: 'JTIA Teaching Style', icon: GraduationCap },
+      ]
+    }
+  ];
 
-      {/* Connected students — always visible across tabs */}
-      <div className="px-4 lg:px-6 pt-4 max-w-[960px] mx-auto">
-        <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>
-          <span className="text-xl" aria-hidden>👥</span>
-          <div>
-            <div className="text-lg font-semibold leading-none">
-              {loading ? '…' : students.length}
-              <span className="text-sm font-normal text-white/80"> {students.length === 1 ? 'student' : 'students'} connected</span>
-            </div>
-            <div className="text-xs text-white/70 mt-0.5">Learners linked to your account</div>
-          </div>
-        </div>
+  const teacherHeaderContent = (
+    <div className="w-full flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
+          {activeTab.replace('-', ' ')}
+        </h2>
+        {user.school && (
+          <Badge variant="outline" className="border-purple-600 text-purple-700">
+            {user.school}
+          </Badge>
+        )}
       </div>
+      <div className="flex items-center gap-2">
+        {onViewTeacherIntelligence && (
+          <Button variant="ghost" size="sm" onClick={onViewTeacherIntelligence}>
+            Intelligence Portal
+          </Button>
+        )}
+        {onViewInstitutionDashboard && (
+          <Button variant="outline" size="sm" onClick={onViewInstitutionDashboard}>
+            School Dashboard
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 
-      {/* Onboarding Info for New Teachers */}
-      {students.length === 0 && activeTab !== 'my-style' && (
-        <div className="px-4 lg:px-6 py-4 max-w-[960px] mx-auto">
+  return (
+    <DashboardLayout
+      navGroups={teacherNavGroups}
+      activeTab={activeTab}
+      setActiveTab={(tab: any) => setActiveTab(tab)}
+      user={user}
+      onLogout={onLogout}
+      brandSubtitle="Educator Portal"
+      onOpenSettings={onViewSettings}
+      headerContent={teacherHeaderContent}
+    >
+      <div className="max-w-5xl mx-auto w-full space-y-6">
+
+        {/* Students connected banner — visible on class-related tabs */}
+        {['overview', 'individual', 'analytics-compare', 'manage-class'].includes(activeTab) && (
+          <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>
+            <span className="text-xl" aria-hidden>👥</span>
+            <div>
+              <div className="text-lg font-semibold leading-none">
+                {loading ? '…' : students.length}
+                <span className="text-sm font-normal text-white/80"> {students.length === 1 ? 'student' : 'students'} connected</span>
+              </div>
+              <div className="text-xs text-white/70 mt-0.5">Learners linked to your account</div>
+            </div>
+          </div>
+        )}
+
+        {/* Onboarding Info for New Teachers */}
+        {students.length === 0 && activeTab !== 'my-style' && activeTab !== 'teaching-style' && activeTab !== 'lesson-planner' && (
           <Alert className="border-[#2563EB] bg-blue-50">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Welcome to JotMinds Teacher Portal!</AlertTitle>
@@ -457,19 +502,18 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               Students must select the same school name during registration to be linked to your class.
             </AlertDescription>
           </Alert>
-        </div>
-      )}
-      
-      {activeTab === 'overview' && (
-        <TeacherClassOverview students={students} assessments={allAssessments} />
-      )}
-      
-      {activeTab === 'individual' && (
-        <TeacherIndividualStudentView students={students} assessments={allAssessments} initialStudentId={targetStudentId} />
+        )}
+
+        {activeTab === 'overview' && (
+          <TeacherClassOverview students={students} assessments={allAssessments} />
+        )}
+
+        {activeTab === 'individual' && (
+          <TeacherIndividualStudentView students={students} assessments={allAssessments} initialStudentId={targetStudentId} />
       )}
 
-      {activeTab === 'my-style' && (
-        <div className="max-w-4xl mx-auto p-4 lg:p-6 space-y-8">
+        {activeTab === 'my-style' && (
+          <div className="space-y-8">
           {/* Profile Management Card */}
           <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardHeader>
@@ -655,11 +699,11 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               </div>
             );
           })()}
-        </div>
-      )}
+          </div>
+        )}
 
-      {activeTab === 'teaching-style' && (
-        <div className="max-w-6xl mx-auto p-4 lg:p-6 space-y-8">
+        {activeTab === 'teaching-style' && (
+          <div className="space-y-8">
           {/* Sub-navigation inside JTIA tab: My Profile vs School Intelligence */}
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-xl border shadow-2xs">
             <div className="flex items-center gap-2">
@@ -791,96 +835,97 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             </div>
           )}
 
-      {/* All Assessment History */}
-      <Card className="border-2 border-gray-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-indigo-600" />
-                Complete Assessment History
-              </CardTitle>
-              <CardDescription>
-                A unified list of all assessments you have taken on the platform.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const completed = [...allMyAssessments, ...allAssessments]
-                  .filter(a => a.userId === user.id && a.completedAt && a.score)
-                  .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+            {/* All Assessment History */}
+            <Card className="border-2 border-gray-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-indigo-600" />
+                  Complete Assessment History
+                </CardTitle>
+                <CardDescription>
+                  A unified list of all assessments you have taken on the platform.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const completed = [...allMyAssessments, ...allAssessments]
+                    .filter(a => a.userId === user.id && a.completedAt && a.score)
+                    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
 
-                if (completed.length === 0) {
-                  return <div className="text-gray-500 text-sm text-center py-4">You have not completed any assessments yet.</div>;
-                }
+                  if (completed.length === 0) {
+                    return <div className="text-gray-500 text-sm text-center py-4">You have not completed any assessments yet.</div>;
+                  }
 
-                return (
-                  <div className="space-y-3">
-                    {completed.map((assmt, idx) => (
-                      <div key={assmt.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
-                        <div>
-                          <h5 className="font-semibold text-gray-900 capitalize flex items-center gap-2">
-                            {assmt.type.replace('-', ' ')}
-                            <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">Completed</Badge>
-                          </h5>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(assmt.completedAt!).toLocaleDateString()} at {new Date(assmt.completedAt!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          </p>
+                  return (
+                    <div className="space-y-3">
+                      {completed.map((assmt, idx) => (
+                        <div key={assmt.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
+                          <div>
+                            <h5 className="font-semibold text-gray-900 capitalize flex items-center gap-2">
+                              {assmt.type.replace('-', ' ')}
+                              <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">Completed</Badge>
+                            </h5>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(assmt.completedAt!).toLocaleDateString()} at {new Date(assmt.completedAt!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </p>
+                          </div>
+                          <div className="mt-3 sm:mt-0 text-sm bg-white border px-3 py-2 rounded-md">
+                            {assmt.type === 'teaching-style' ? (
+                              <div className="text-xs">
+                                <span className="text-gray-500">Primary:</span> <span className="font-medium text-indigo-700">{assmt.score['teaching-style']?.primaryStyle || 'N/A'}</span>
+                              </div>
+                            ) : assmt.type === 'kolb' ? (
+                              <div className="text-xs">
+                                <span className="text-gray-500">Style:</span> <span className="font-medium text-pink-600">{assmt.score.kolb?.style || 'N/A'}</span>
+                              </div>
+                            ) : assmt.type === 'dual-process' ? (
+                              <div className="text-xs">
+                                <span className="text-gray-500">Style:</span> <span className="font-medium text-orange-600">{assmt.score.dualProcess?.style || 'N/A'}</span>
+                              </div>
+                            ) : (
+                              <div className="text-xs">
+                                <span className="text-gray-500">Style:</span> <span className="font-medium text-blue-600">
+                                  {assmt.score?.sternberg?.style || assmt.score?.['adult-thinking']?.primaryStyle || assmt.score?.['shs-thinking']?.primaryStyle || assmt.score?.['jhs-thinking']?.primaryStyle || 'N/A'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        
-                        <div className="mt-3 sm:mt-0 text-sm bg-white border px-3 py-2 rounded-md">
-                          {assmt.type === 'teaching-style' ? (
-                            <div className="text-xs">
-                              <span className="text-gray-500">Primary:</span> <span className="font-medium text-indigo-700">{assmt.score['teaching-style']?.primaryStyle || 'N/A'}</span>
-                            </div>
-                          ) : assmt.type === 'kolb' ? (
-                            <div className="text-xs">
-                              <span className="text-gray-500">Style:</span> <span className="font-medium text-pink-600">{assmt.score.kolb?.style || 'N/A'}</span>
-                            </div>
-                          ) : assmt.type === 'dual-process' ? (
-                            <div className="text-xs">
-                              <span className="text-gray-500">Style:</span> <span className="font-medium text-orange-600">{assmt.score.dualProcess?.style || 'N/A'}</span>
-                            </div>
-                          ) : (
-                            <div className="text-xs">
-                              <span className="text-gray-500">Style:</span> <span className="font-medium text-blue-600">
-                                {assmt.score?.sternberg?.style || assmt.score?.['adult-thinking']?.primaryStyle || assmt.score?.['shs-thinking']?.primaryStyle || assmt.score?.['jhs-thinking']?.primaryStyle || 'N/A'}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                      ))}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-      {activeTab === 'lesson-planner' && (
-        <AILessonPlannerContainer />
-      )}
+        {activeTab === 'lesson-planner' && (
+          <AILessonPlannerContainer />
+        )}
 
-      {activeTab === 'analytics-compare' && (
-        <TeacherAnalyticsComparison
-          teacherAssessments={allMyAssessments}
-          studentAssessments={allAssessments}
-          students={students}
-          teacherProfile={user}
-        />
-      )}
-
-      {activeTab === 'manage-class' && (
-        <div className="max-w-4xl mx-auto p-4 lg:p-6 space-y-8">
-          <TeacherStudentManagement 
-            teacher={user} 
-            onViewReport={(studentId) => {
-              setTargetStudentId(studentId);
-              setActiveTab('individual');
-            }}
+        {activeTab === 'analytics-compare' && (
+          <TeacherAnalyticsComparison
+            teacherAssessments={allMyAssessments}
+            studentAssessments={allAssessments}
+            students={students}
+            teacherProfile={user}
           />
-        </div>
-      )}
-    </div>
+        )}
+
+        {activeTab === 'manage-class' && (
+          <div className="space-y-8">
+            <TeacherStudentManagement 
+              teacher={user} 
+              onViewReport={(studentId) => {
+                setTargetStudentId(studentId);
+                setActiveTab('individual');
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
   );
 }
+

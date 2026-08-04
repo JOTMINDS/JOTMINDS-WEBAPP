@@ -67,6 +67,8 @@ import { CognitiveProfileView } from './CognitiveProfileView';
 import { CareerRecommendations } from './CareerRecommendations';
 import { StudentCareerFit } from './StudentCareerFit';
 import { getCognitiveProfile, CognitiveProfile } from '../utils/cognitiveProfileApi';
+import { DashboardLayout } from './ui/dashboard-layout';
+import { NavGroup } from './ui/collapsible-sidebar';
 
 interface StudentDashboardProps {
   user: User;
@@ -664,227 +666,91 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
   const trendData = getTrendData();
   const reflections = getUserReflections(user.id);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-violet-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="border-b bg-white/80 backdrop-blur-sm shadow-sm dark:bg-gray-950/80 dark:border-gray-800 relative z-50">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Avatar with Hover Tooltip */}
-            <div className="relative group">
-              <div className="w-12 h-12 rounded-full gradient-aqua-violet flex items-center justify-center text-white text-xl font-bold cursor-pointer transition-transform group-hover:scale-105 overflow-hidden">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt={`${user.name}'s photo`} className="w-full h-full object-cover" />
-                ) : (
-                  user.name.charAt(0)
-                )}
-              </div>
-              
-              {/* Tooltip */}
-              <div className="absolute left-0 top-full mt-2 w-64 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-xl border-2 border-[#6B4C9A]/20 dark:border-[#6B4C9A]/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 pb-3 border-b border-gray-200 dark:border-gray-700">
-                    <div className="w-10 h-10 rounded-full gradient-aqua-violet flex items-center justify-center text-white font-bold">
-                      {user.name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900 dark:text-white">{user.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">Student</Badge>
-                        {user.className && <Badge variant="outline" className="text-xs border-[#1E8A6E] text-[#1E8A6E]">{user.className}</Badge>}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-start gap-2">
-                      <span className="text-muted-foreground min-w-16">Email:</span>
-                      <span className="text-gray-900 dark:text-white break-all">{user.email}</span>
-                    </div>
-                    
-                    {user.school && (
-                      <div className="flex items-start gap-2">
-                        <span className="text-muted-foreground min-w-16">School:</span>
-                        <span className="text-gray-900 dark:text-white">{user.school}</span>
-                      </div>
-                    )}
-                    
-                    {user.educationLevel && (
-                      <div className="flex items-start gap-2">
-                        <span className="text-muted-foreground min-w-16">Level:</span>
-                        <span className="text-gray-900 dark:text-white">{user.educationLevel}</span>
-                      </div>
-                    )}
-                    
-                    {user.dateOfBirth && (
-                      <div className="flex items-start gap-2">
-                        <span className="text-muted-foreground min-w-16">Age:</span>
-                        <span className="text-gray-900 dark:text-white">{calculateAge(user.dateOfBirth)} years</span>
-                      </div>
-                    )}
-                    
-                    {user.createdAt && (
-                      <div className="flex items-start gap-2">
-                        <span className="text-muted-foreground min-w-16">Member:</span>
-                        <span className="text-gray-900 dark:text-white">
-                          Since {formatMonthYear(user.createdAt)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Tooltip Arrow */}
-                <div className="absolute -top-2 left-6 w-4 h-4 bg-white dark:bg-gray-800 border-l-2 border-t-2 border-[#6B4C9A]/20 dark:border-[#6B4C9A]/40 transform rotate-45"></div>
-              </div>
-            </div>
-            
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-[#6B4C9A] via-[#7B61FF] to-[#5B7DB1] bg-clip-text text-transparent">JotMinds</h1>
-              <div className="hidden sm:flex items-center gap-2 mt-1">
-                <p className="text-sm text-muted-foreground">Welcome, {user.name}!</p>
-                {user.className && (
-                  <span className="px-2 py-0.5 bg-[#1E8A6E]/10 text-[#1E8A6E] rounded-full text-[10px] font-medium uppercase tracking-wider">
-                    {user.className}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-2">
-            {/* Last Updated & Refresh */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mr-2">
-              {lastUpdated && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>Updated {Math.floor((Date.now() - lastUpdated.getTime()) / 1000)}s ago</span>
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="h-8 px-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-            <FrameworkInfo userRole="student" />
-            
-            {/* User Profile Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <UserIcon className="h-4 w-4" />
-                  <span className="hidden lg:inline">{user.name}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5 text-sm">
-                  <p className="font-semibold">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setActiveTab('parent-access')}>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Parent Access Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab('settings')}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onLogout} className="text-red-600">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+  const isChild = isChildrenUser();
 
-          {/* Mobile Menu */}
-          <MobileHeaderMenu onLogout={onLogout} userRole="student" />
-        </div>
+  const studentNavGroups: NavGroup[] = [
+    {
+      groupLabel: 'Navigation',
+      items: isChild ? [
+        { id: 'dashboard', label: 'Dashboard', icon: Home },
+        { id: 'daily-challenges', label: 'Mind Play', icon: Sparkles },
+        { id: 'mood-meter', label: 'Mood Meter', icon: Sparkles },
+        { id: 'discoveries', label: 'Discoveries', icon: BookOpen },
+        { id: 'track-record', label: 'My Progress', icon: BarChart3 },
+        { id: 'school-profile', label: 'School', icon: Building2 },
+      ] : [
+        { id: 'dashboard', label: 'Home', icon: Home },
+        { id: 'daily-challenges', label: 'Brain Boost', icon: Sparkles },
+        { id: 'track-record', label: 'Assessments', icon: BarChart3 },
+        { id: 'profile', label: 'Cognitive Profile', icon: UserIcon },
+        { id: 'school-profile', label: 'School Portal', icon: Building2 },
+      ]
+    },
+    {
+      groupLabel: 'Settings & Account',
+      items: [
+        { id: 'parent-access', label: 'Parent Access', icon: UserPlus },
+        { id: 'settings', label: 'Account Settings', icon: Settings },
+      ]
+    }
+  ];
+
+  const headerContent = (
+    <div className="w-full flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
+          {activeTab.replace('-', ' ')}
+        </h2>
+        {user.className && (
+          <Badge variant="outline" className="border-[#1E8A6E] text-[#1E8A6E]">
+            Class {user.className}
+          </Badge>
+        )}
       </div>
-
-      <div className="max-w-7xl mx-auto p-4 space-y-6">
-        <Tabs 
-          value={activeTab}
-          defaultValue="dashboard" 
-          className="w-full"
-          onValueChange={(value) => {
-            setActiveTab(value);
-            // Force reload when switching to specific tabs
-            if (value === 'daily-challenges') {
-              setChallengeKey(prev => prev + 1);
-            }
-            if (value === 'mood-meter') {
-              setMoodMeterKey(prev => prev + 1);
-            }
-          }}
+      <div className="flex items-center gap-2">
+        {lastUpdated && (
+          <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground mr-2">
+            <Clock className="h-3 w-3" />
+            <span>Updated {Math.floor((Date.now() - lastUpdated.getTime()) / 1000)}s ago</span>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="h-8 px-2"
+          title="Refresh Dashboard Data"
         >
-          {/* Different tabs based on education level (primary) or age (secondary) */}
-          {isChildrenUser() ? (
-            <TabsList className="flex flex-wrap justify-center w-full max-w-5xl mx-auto gap-1 mb-6 h-auto">
-              <TabsTrigger value="dashboard" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <Home className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Dashboard</span>
-                <span className="sm:hidden">Home</span>
-              </TabsTrigger>
-              <TabsTrigger value="daily-challenges" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Mind Play</span>
-                <span className="sm:hidden">Play</span>
-              </TabsTrigger>
-              <TabsTrigger value="mood-meter" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                🌞
-                <span className="hidden sm:inline">Mood Meter</span>
-                <span className="sm:hidden">Mood</span>
-              </TabsTrigger>
-              <TabsTrigger value="discoveries" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                💡
-                <span className="hidden sm:inline">Discoveries</span>
-                <span className="sm:hidden">Ideas</span>
-              </TabsTrigger>
-              <TabsTrigger value="track-record" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">My Progress</span>
-                <span className="sm:hidden">Stats</span>
-              </TabsTrigger>
-              <TabsTrigger value="school-profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">School</span>
-                <span className="sm:hidden">School</span>
-              </TabsTrigger>
-            </TabsList>
-          ) : (
-            <TabsList className="grid grid-cols-4 w-full max-w-2xl mx-auto gap-2 mb-6 h-auto p-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm">
-              <TabsTrigger value="dashboard" className="flex flex-col items-center gap-2 py-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#6B4C9A] data-[state=active]:to-[#7B61FF] data-[state=active]:text-white transition-all">
-                <Home className="h-5 w-5" />
-                <span className="text-sm font-semibold">Home</span>
-              </TabsTrigger>
-              <TabsTrigger value="daily-challenges" className="flex flex-col items-center gap-2 py-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#6B4C9A] data-[state=active]:to-[#7B61FF] data-[state=active]:text-white transition-all">
-                <Sparkles className="h-5 w-5" />
-                <span className="text-sm font-semibold">Boost</span>
-              </TabsTrigger>
-              <TabsTrigger value="track-record" className="flex flex-col items-center gap-2 py-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#6B4C9A] data-[state=active]:to-[#7B61FF] data-[state=active]:text-white transition-all">
-                <BarChart3 className="h-5 w-5" />
-                <span className="text-sm font-semibold">Assess</span>
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="flex flex-col items-center gap-2 py-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#6B4C9A] data-[state=active]:to-[#7B61FF] data-[state=active]:text-white transition-all">
-                <UserIcon className="h-5 w-5" />
-                <span className="text-sm font-semibold">Profile</span>
-              </TabsTrigger>
-              <TabsTrigger value="school-profile" className="flex flex-col items-center gap-2 py-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#6B4C9A] data-[state=active]:to-[#7B61FF] data-[state=active]:text-white transition-all">
-                <Building2 className="h-5 w-5" />
-                <span className="text-sm font-semibold">School</span>
-              </TabsTrigger>
-            </TabsList>
-          )}
-          <TabsContent value="dashboard" className="space-y-6">
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
+        <FrameworkInfo userRole="student" />
+      </div>
+    </div>
+  );
+
+  return (
+    <DashboardLayout
+      navGroups={studentNavGroups}
+      activeTab={activeTab}
+      setActiveTab={(val) => {
+        setActiveTab(val);
+        if (val === 'daily-challenges') setChallengeKey(prev => prev + 1);
+        if (val === 'mood-meter') setMoodMeterKey(prev => prev + 1);
+      }}
+      user={user}
+      onLogout={onLogout}
+      brandSubtitle="Student Portal"
+      onOpenSettings={() => setActiveTab('settings')}
+      headerContent={headerContent}
+    >
+      <Tabs 
+        value={activeTab}
+        defaultValue="dashboard" 
+        className="w-full"
+      >
+        <TabsContent value="dashboard" className="space-y-6">
+
             {/* Loading State */}
             {loading && (
               <Card>
@@ -2127,7 +1993,6 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

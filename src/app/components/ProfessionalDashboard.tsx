@@ -22,6 +22,8 @@ import { useAuth } from './AuthContext';
 import { MobileHeaderMenu } from './MobileHeaderMenu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { formatDate } from '../utils/dateFormat';
+import { DashboardLayout } from './ui/dashboard-layout';
+import { NavGroup } from './ui/collapsible-sidebar';
 
 interface ProfessionalDashboardProps {
   user: User;
@@ -38,6 +40,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
   const [professionalCognitiveProfile, setProfessionalCognitiveProfile] = useState<ProfessionalCognitiveProfile | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     loadAssessments();
@@ -381,98 +384,67 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
     hasCompletedAssessment('sternberg') && 
     hasCompletedAssessment('dual-process');
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-violet-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="border-b bg-white/80 backdrop-blur-sm shadow-sm dark:bg-gray-950/80 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
-          <TooltipProvider>
-            <div className="flex items-center gap-3">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-12 h-12 rounded-full gradient-aqua-violet flex items-center justify-center text-white text-xl font-bold cursor-pointer hover:opacity-90 transition-opacity">
-                    {user.name.charAt(0)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="p-4 max-w-xs bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">{user.position}</p>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1">
-                      <p className="text-sm text-gray-800 dark:text-gray-200"><span className="text-muted-foreground">Organization:</span> {user.organizationName}</p>
-                      <p className="text-sm text-gray-800 dark:text-gray-200"><span className="text-muted-foreground">Type:</span> {user.organizationType}</p>
-                      <p className="text-sm text-gray-800 dark:text-gray-200"><span className="text-muted-foreground">Account:</span> Professional</p>
-                    </div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-[#6B4C9A] via-[#7B61FF] to-[#5B7DB1] bg-clip-text text-transparent">JotMinds</h1>
-                <p className="text-sm text-muted-foreground">{user.name} - {user.position}</p>
-              </div>
-            </div>
-          </TooltipProvider>
-          
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-2">
-            {/* Last Updated & Refresh */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mr-2">
-              {lastUpdated && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>Updated {Math.floor((Date.now() - lastUpdated.getTime()) / 1000)}s ago</span>
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="h-8 px-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-            <FrameworkInfo userRole="professional" />
-            <Button variant="outline" onClick={onLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Button>
-          </div>
+  const proNavGroups: NavGroup[] = [
+    {
+      groupLabel: 'Professional Portal',
+      items: [
+        { id: 'overview', label: 'Overview', icon: Building2 },
+        { id: 'assessments', label: 'Framework Assessments', icon: FileText, badge: assessments.length },
+        { id: 'track-record', label: 'Track Record', icon: TrendingUp },
+        { id: 'reflections', label: 'Reflections & Notes', icon: Lightbulb },
+        { id: 'feedback', label: 'Feedback & Support', icon: MessageSquare },
+      ]
+    }
+  ];
 
-          {/* Mobile Menu */}
-          <MobileHeaderMenu onLogout={onLogout} userRole="professional" />
-        </div>
+  const proHeaderContent = (
+    <div className="w-full flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
+          {activeTab.replace('-', ' ')}
+        </h2>
+        {user.position && (
+          <Badge variant="outline" className="border-indigo-600 text-indigo-700">
+            {user.position}
+          </Badge>
+        )}
       </div>
+      <div className="flex items-center gap-2">
+        {lastUpdated && (
+          <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground mr-2">
+            <Clock className="h-3 w-3" />
+            <span>Updated {Math.floor((Date.now() - lastUpdated.getTime()) / 1000)}s ago</span>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="h-8 px-2"
+          title="Refresh Dashboard Data"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
+        <FrameworkInfo userRole="professional" />
+      </div>
+    </div>
+  );
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 max-w-5xl mx-auto gap-1">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-            <TabsTrigger value="assessments" className="text-xs sm:text-sm">
-              <span className="hidden sm:inline">Assessments</span>
-              <span className="sm:hidden">Tests</span>
-            </TabsTrigger>
-            <TabsTrigger value="track-record" className="text-xs sm:text-sm">
-              <span className="hidden md:inline">Track Record</span>
-              <span className="md:hidden">Track</span>
-            </TabsTrigger>
-            <TabsTrigger value="reflections" className="text-xs sm:text-sm">
-              <span className="hidden md:inline">Reflections</span>
-              <span className="md:hidden">Notes</span>
-            </TabsTrigger>
-            <TabsTrigger value="feedback" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm col-span-2 sm:col-span-1">
-              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Feedback</span>
-              <span className="sm:hidden">Feed</span>
-            </TabsTrigger>
-          </TabsList>
-
+  return (
+    <DashboardLayout
+      navGroups={proNavGroups}
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      user={user}
+      onLogout={onLogout}
+      brandSubtitle="Professional Portal"
+      headerContent={proHeaderContent}
+    >
+      <div className="max-w-7xl mx-auto space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsContent value="overview" className="space-y-6">
+
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-3">
               <Card>
@@ -1237,7 +1209,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
             </div>
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

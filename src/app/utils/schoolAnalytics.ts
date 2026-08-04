@@ -6,6 +6,7 @@
 import { EngagementMetrics, getEngagementMetrics } from './engagementTracking';
 import { StudentCognitiveProfile } from './teacherIntelligence';
 import { GamificationProfile, getGamificationProfile } from './gamification';
+import { getSavedLessonPlans } from './lessonPlannerStorage';
 
 export interface SchoolMetrics {
   schoolId: string;
@@ -153,11 +154,11 @@ export function calculateSchoolMetrics(
     needsSupport: cognitiveScores.filter(s => s < 40).length,
   };
 
-  // Growth metrics (mock calculation - would need historical data)
-  const studentsImproving = Math.floor(totalStudents * 0.6);
-  const studentsStagnant = Math.floor(totalStudents * 0.3);
-  const studentsRegressing = totalStudents - studentsImproving - studentsStagnant;
-  const averageGrowthRate = 12.5;
+  // Growth metrics (real default until historical growth tracking is accumulated)
+  const studentsImproving = 0;
+  const studentsStagnant = totalStudents;
+  const studentsRegressing = 0;
+  const averageGrowthRate = 0;
 
   // Gamification metrics
   const gamificationProfiles = students.map(s => getGamificationProfile(s.userId));
@@ -377,7 +378,7 @@ export function calculateTeacherPerformance(
     0
   );
 
-  const differentiatedLessonsCreated = Math.floor(Math.random() * 20) + 5; // Mock data
+  const differentiatedLessonsCreated = getSavedLessonPlans().filter(p => p.teacherId === teacherId).length;
 
   const lastActive = new Date().toISOString();
 

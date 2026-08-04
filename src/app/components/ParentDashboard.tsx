@@ -31,6 +31,8 @@ import { calculateAge } from '../utils/dateUtils';
 import { MobileHeaderMenu } from './MobileHeaderMenu';
 import { toast } from 'sonner';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
+import { DashboardLayout } from './ui/dashboard-layout';
+import { NavGroup } from './ui/collapsible-sidebar';
 
 interface ParentDashboardProps {
   user: User;
@@ -408,59 +410,60 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-violet-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="border-b bg-white/80 backdrop-blur-sm shadow-sm dark:bg-gray-950/80 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full gradient-aqua-violet flex items-center justify-center text-white text-xl font-bold">
-              {user.name.charAt(0)}
-            </div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-[#6B4C9A] via-[#7B61FF] to-[#5B7DB1] bg-clip-text text-transparent">JotMinds</h1>
-              <p className="text-sm text-muted-foreground">Welcome, {user.name}!</p>
-            </div>
-          </div>
-          
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-2">
-            {/* Last Updated & Refresh */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mr-2">
-              {lastUpdated && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>Updated {Math.floor((Date.now() - lastUpdated.getTime()) / 1000)}s ago</span>
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="h-8 px-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-            <FrameworkInfo userRole="parent" />
-            {onViewSettings && (
-              <Button variant="outline" onClick={onViewSettings}>
-                <Settings className="mr-2 h-4 w-4" />
-                Profile & Settings
-              </Button>
-            )}
-            <Button variant="outline" onClick={onLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Button>
-          </div>
+  const parentNavGroups: NavGroup[] = [
+    {
+      groupLabel: 'Parent Portal',
+      items: [
+        { id: 'overview', label: 'Overview', icon: Home },
+        { id: 'children', label: 'Children Profiles', icon: UserIcon, badge: children.length },
+        { id: 'observations', label: 'Parent Observations', icon: FileText },
+        { id: 'feedback', label: 'Feedback & Support', icon: MessageSquare },
+      ]
+    }
+  ];
 
-          {/* Mobile Menu */}
-          <MobileHeaderMenu onLogout={onLogout} userRole="parent" />
-        </div>
+  const parentHeaderContent = (
+    <div className="w-full flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
+          {activeTab.replace('-', ' ')}
+        </h2>
+        <Badge variant="secondary" className="text-xs">Parent Portal</Badge>
       </div>
+      <div className="flex items-center gap-2">
+        {lastUpdated && (
+          <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground mr-2">
+            <Clock className="h-3 w-3" />
+            <span>Updated {Math.floor((Date.now() - lastUpdated.getTime()) / 1000)}s ago</span>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="h-8 px-2"
+          title="Refresh Dashboard Data"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
+        <FrameworkInfo userRole="parent" />
+      </div>
+    </div>
+  );
 
-      <div className="max-w-7xl mx-auto p-4 space-y-6">
+  return (
+    <DashboardLayout
+      navGroups={parentNavGroups}
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      user={user}
+      onLogout={onLogout}
+      brandSubtitle="Parent Portal"
+      onOpenSettings={onViewSettings}
+      headerContent={parentHeaderContent}
+    >
+      <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Parent Assessment Call-to-Action Banner */}
         {parentAssessments.length === 0 && !takingParentAssessment && !viewingPairing && (
@@ -489,25 +492,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-2 sm:grid-cols-4 gap-1 mb-6">
-            <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <Home className="h-3 w-3 sm:h-4 sm:w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="children" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <UserIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-              Children
-            </TabsTrigger>
-            <TabsTrigger value="observations" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Observations</span>
-              <span className="sm:hidden">Notes</span>
-            </TabsTrigger>
-            <TabsTrigger value="feedback" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <MessageSquare className="h-4 w-4" />
-              Feedback
-            </TabsTrigger>
-          </TabsList>
+
 
           <TabsContent value="overview" className="space-y-6">
             {/* Link Child Form */}
@@ -1238,6 +1223,6 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

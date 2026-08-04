@@ -22,232 +22,27 @@ const STORAGE_KEYS = {
 // ─── INITIAL MOCK DATA ──────────────────────────────────────────────────────────
 
 export const initialMockClassSummary: ClassCognitiveSummary = {
-  classId: 'jhs-2a',
-  className: 'JHS 2A (Mathematics & Science)',
-  totalStudents: 32,
+  classId: 'all-students',
+  className: 'My Students',
+  totalStudents: 0,
   learningStylesBreakdown: {
-    visualPct: 45,
-    auditoryPct: 20,
-    readWritePct: 15,
-    kinestheticPct: 20
+    visualPct: 0,
+    auditoryPct: 0,
+    readWritePct: 0,
+    kinestheticPct: 0
   },
-  topCognitiveStrengths: [
-    'Pattern Recognition & Spatial Visualization',
-    'Practical Application in Real-World Scenarios',
-    'Collaborative Group Problem Solving'
-  ],
-  riskAlerts: [
-    {
-      alertType: 'abstract_concepts',
-      message: '5 students struggle with pure abstract algebraic formulas without visual aids.',
-      affectedStudentCount: 5,
-      suggestedInterventions: [
-        'Use geometric diagrams and algebra tiles during main instruction.',
-        'Pair abstract equations with real-world financial/distance scenarios.'
-      ]
-    },
-    {
-      alertType: 'attention_span',
-      message: '3 students exhibit low concentration patterns after 15 minutes of continuous lecture.',
-      affectedStudentCount: 3,
-      suggestedInterventions: [
-        'Incorporate 2-minute quick-check brain breaks or active peer discussions.',
-        'Provide structured fill-in notes during introduction.'
-      ]
-    }
-  ],
-  flaggedStudents: [
-    {
-      studentId: 'st-01',
-      studentName: 'Kwame Mensah',
-      learningStyle: 'Visual',
-      cognitiveStrength: 'Spatial & Diagrammatic Visualization',
-      attentionSpan: 'Moderate',
-      reasoningScore: 58,
-      needsAbstractSupport: true,
-      flaggedRiskReason: 'Struggles with abstract algebraic formulas without visual balance scale diagrams.',
-      recommendedTeacherAction: 'Provide visual balance scale template and algebra tiles during Tier 1 guided practice.'
-    },
-    {
-      studentId: 'st-02',
-      studentName: 'Yaw Addo',
-      learningStyle: 'Kinesthetic',
-      cognitiveStrength: 'Hands-on Manipulatives & Group Work',
-      attentionSpan: 'Low',
-      reasoningScore: 62,
-      needsAbstractSupport: true,
-      flaggedRiskReason: 'Concentration drops after 15 minutes of lecture.',
-      recommendedTeacherAction: 'Seat in front row; engage with 2-minute quick-check questions during main instruction.'
-    },
-    {
-      studentId: 'st-03',
-      studentName: 'Ama Osei',
-      learningStyle: 'Auditory',
-      cognitiveStrength: 'Verbal Communication & Peer Recap',
-      attentionSpan: 'High',
-      reasoningScore: 65,
-      needsAbstractSupport: true,
-      flaggedRiskReason: 'Benefits from verbal peer explanation before writing algebraic solutions.',
-      recommendedTeacherAction: 'Pair with a peer study buddy during guided group exercises.'
-    },
-    {
-      studentId: 'st-04',
-      studentName: 'Esi Boateng',
-      learningStyle: 'Read/Write',
-      cognitiveStrength: 'Structured Notes & Formulas',
-      attentionSpan: 'Moderate',
-      reasoningScore: 54,
-      needsAbstractSupport: true,
-      flaggedRiskReason: 'Requires step-by-step formula reference sheet for multi-step equations.',
-      recommendedTeacherAction: 'Hand out color-coded step-by-step equation solving checklist.'
-    }
-  ],
+  topCognitiveStrengths: [],
+  riskAlerts: [],
+  flaggedStudents: [],
   recommendedTeachingStyle: {
-    title: 'Visual-Interactive & Differentiated Guided Practice',
+    title: 'Differentiated Guided Practice',
     strategies: [
-      'Begin with visual diagrams or physical demonstrations.',
-      'Use interactive group discussions for auditory reinforcement.',
-      'Provide 3-tier differentiated practice tasks (Core, Support, Advanced).'
+      'Assess student learning styles to receive tailored recommendations.'
     ]
   }
 };
 
-export const initialMockLessonPlans: LessonPlan[] = [
-  {
-    id: 'lp-001',
-    teacherId: 'teacher-1',
-    subject: 'Mathematics',
-    gradeClass: 'JHS 2',
-    topic: 'Linear Equations in One Variable',
-    subtopic: 'Solving Algebraic Equations & Word Problems',
-    durationMinutes: 40,
-    date: new Date().toISOString().split('T')[0],
-    curriculumFramework: 'National',
-    curriculumTopicId: 'curr-math-04',
-    objectives: {
-      knowledge: [
-        'Define a linear equation in one variable.',
-        'Identify variables, coefficients, and constants.'
-      ],
-      skills: [
-        'Solve simple linear equations involving addition, subtraction, and multiplication.',
-        'Isolate the variable on one side of an equation.'
-      ],
-      applications: [
-        'Apply linear equations to calculate simple real-life budgeting and distance scenarios.'
-      ]
-    },
-    phases: [
-      {
-        name: 'Introduction',
-        durationMinutes: 5,
-        activity: 'Visual balance scale demonstration comparing equal weights on both sides of an equation.',
-        teachingNotes: 'Engage visual learners by drawing a balance scale on the board.',
-        materialsNeeded: ['Whiteboard markers', 'Balance scale diagram']
-      },
-      {
-        name: 'Main Lesson',
-        durationMinutes: 15,
-        activity: 'Direct instruction on inverse operations (adding/subtracting same number on both sides).',
-        teachingNotes: 'Break down steps: 1. Identify constant, 2. Apply inverse operation, 3. Simplify.',
-        materialsNeeded: ['Step-by-step handout']
-      },
-      {
-        name: 'Guided Practice',
-        durationMinutes: 10,
-        activity: 'Pairs work on 3 tiered linear equation problems with teacher roving and support.',
-        teachingNotes: 'Provide algebra tiles to the 5 students flagged for abstract support.',
-        materialsNeeded: ['Differentiated task cards']
-      },
-      {
-        name: 'Assessment',
-        durationMinutes: 5,
-        activity: 'Exit ticket with 2 quick linear equation check questions.',
-        teachingNotes: 'Collect exit tickets immediately to evaluate understanding.',
-        materialsNeeded: ['Exit ticket slips']
-      },
-      {
-        name: 'Conclusion',
-        durationMinutes: 5,
-        activity: 'Summary of key takeaway steps and real-world connection preview.',
-        teachingNotes: 'Reinforce that equations are balance statements.',
-        materialsNeeded: []
-      }
-    ],
-    differentiatedInstruction: {
-      coreActivity: {
-        title: 'Standard Equation Solving',
-        description: 'Solve 2x + 4 = 12 and 3y - 5 = 10 independently in exercise books.',
-        targetGroup: 'Average Proficiency Learners (60% of class)'
-      },
-      supportActivity: {
-        title: 'Visual Guided Balance Solving',
-        description: 'Solve x + 3 = 8 using visual balance diagrams and step-by-step guidance.',
-        targetGroup: 'Learners needing abstract support (5 students)',
-        scaffoldingNotes: [
-          'Use color-coded markers for variables vs constants.',
-          'Provide worked-out example sheet.'
-        ]
-      },
-      advancedActivity: {
-        title: 'Real-Life Word Problem Modeling',
-        description: 'Formulate and solve a linear equation for a taxi fare scenario: $5 base fee + $2 per km = $25.',
-        targetGroup: 'High Achievers & Fast Finishers (6 students)',
-        extensionTasks: [
-          'Create a custom word problem for a classmate to solve.'
-        ]
-      }
-    },
-    assessment: {
-      id: 'assmt-lp-001',
-      title: 'Linear Equations Checkpoint Quiz',
-      mcqs: [
-        {
-          id: 'q1',
-          type: 'mcq',
-          question: 'What is the first step to solve x + 7 = 15?',
-          options: ['Add 7 to both sides', 'Subtract 7 from both sides', 'Multiply by 7', 'Divide by 15'],
-          correctAnswer: 'Subtract 7 from both sides',
-          explanation: 'Subtracting 7 isolates variable x.'
-        },
-        {
-          id: 'q2',
-          type: 'mcq',
-          question: 'If 3x = 18, what is the value of x?',
-          options: ['3', '6', '15', '21'],
-          correctAnswer: '6',
-          explanation: 'Divide both sides by 3: 18 / 3 = 6.'
-        }
-      ],
-      shortAnswer: [
-        {
-          id: 'q3',
-          type: 'short_answer',
-          question: 'Solve for y: 2y - 4 = 10. Show your working.',
-          correctAnswer: '2y = 14, y = 7'
-        }
-      ],
-      discussion: [
-        {
-          id: 'q4',
-          type: 'discussion',
-          question: 'Why must whatever operation you do to one side of an equation also be done to the other side?'
-        }
-      ],
-      practicalExercises: [],
-      homework: [
-        {
-          id: 'q5',
-          type: 'homework',
-          question: 'Complete textbook page 42, questions 1 through 6 on linear equation word problems.'
-        }
-      ]
-    },
-    status: 'generated',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
+export const initialMockLessonPlans: LessonPlan[] = [];
 
 export const initialCurriculumTrack: CurriculumTrack = {
   frameworkName: 'National Curriculum (NaCCA / GES)',
@@ -290,17 +85,18 @@ export const initialPerformanceMetric: TeacherPerformanceMetric = {
 // ─── STORAGE HELPER FUNCTIONS ──────────────────────────────────────────────────
 
 export function getSavedLessonPlans(): LessonPlan[] {
-  if (typeof window === 'undefined') return initialMockLessonPlans;
+  if (typeof window === 'undefined') return [];
   const saved = localStorage.getItem(STORAGE_KEYS.LESSON_PLANS);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      // Filter out legacy mock lesson plans if previously cached
+      return Array.isArray(parsed) ? parsed.filter((p: any) => p.id !== 'lp-001' && !p.id?.startsWith('mock-')) : [];
     } catch (e) {
       console.error('Failed to parse lesson plans from localStorage', e);
     }
   }
-  localStorage.setItem(STORAGE_KEYS.LESSON_PLANS, JSON.stringify(initialMockLessonPlans));
-  return initialMockLessonPlans;
+  return [];
 }
 
 export function saveLessonPlan(plan: LessonPlan): void {
@@ -325,7 +121,9 @@ export function getClassCognitiveSummary(classId?: string): ClassCognitiveSummar
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if (parsed[classId || 'jhs-2a']) return parsed[classId || 'jhs-2a'];
+      if (parsed[classId || 'all-students']) return parsed[classId || 'all-students'];
+      const firstKey = Object.keys(parsed)[0];
+      if (firstKey && parsed[firstKey]) return parsed[firstKey];
     } catch (e) {}
   }
   return initialMockClassSummary;

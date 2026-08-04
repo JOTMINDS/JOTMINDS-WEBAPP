@@ -216,6 +216,40 @@ export function mapStudentsToTeacher(teacherId: string): User {
   return updatedTeacher;
 }
 
+// Universal helper to check if a student should be synced and appear to a teacher
+export function isStudentConnectedToTeacher(student: User, teacher: User, teacherClassIds?: Set<string>): boolean {
+  if (!student || student.role !== 'student' || !teacher) return false;
+
+  // 1. Explicit Teacher ID match
+  if (student.teacherId === teacher.id) return true;
+  if (Array.isArray(student.linkedTeachers) && student.linkedTeachers.includes(teacher.id)) return true;
+
+  // 2. Teacher Email match
+  if (student.teacherEmail && teacher.email && student.teacherEmail.trim().toLowerCase() === teacher.email.trim().toLowerCase()) return true;
+
+  // 3. Class ID match
+  if (student.classId && teacherClassIds && teacherClassIds.has(student.classId)) return true;
+  if (student.className && teacherClassIds && teacherClassIds.has(student.className)) return true;
+
+  // 4. Class Code / Organization Code match
+  const teacherCodes = [teacher.classCode, teacher.organizationCode].filter(Boolean).map(c => c?.trim().toUpperCase());
+  const studentCodes = [student.classCode, student.organizationCode].filter(Boolean).map(c => c?.trim().toUpperCase());
+  for (const tc of teacherCodes) {
+    if (tc && studentCodes.includes(tc)) return true;
+  }
+
+  // 5. School / Institution match
+  const teacherSchools = [teacher.school, teacher.organizationName].filter(Boolean).map(s => s?.trim().toLowerCase());
+  const studentSchools = [student.school, student.organizationName].filter(Boolean).map(s => s?.trim().toLowerCase());
+  if (teacherSchools.length > 0 && studentSchools.length > 0) {
+    for (const ts of teacherSchools) {
+      if (ts && studentSchools.includes(ts)) return true;
+    }
+  }
+
+  return false;
+}
+
 // School mapping - Get all schools with student/teacher counts
 export function getAllSchools(): { name: string; studentCount: number; teacherCount: number }[] {
   const users = getAllUsers();

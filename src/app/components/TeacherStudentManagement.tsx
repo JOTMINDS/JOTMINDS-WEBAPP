@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
-import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
+import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher } from '../utils/storage';
 import { getStudentsForTeacher, updateUserProfile, inviteStudentToClass } from '../utils/api';
 import { getInstitutionForMember, joinInstitution } from '../utils/institution';
 import { projectId } from '../utils/supabase/info';
@@ -102,7 +102,7 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
     classes.filter(c => c.classTeacherId === teacher.id).forEach(c => teacherClassIds.add(c.id));
     assignments.forEach(a => teacherClassIds.add(a.classId));
     
-    const localStudents = all.filter(u => u.role === 'student' && ((u.classId && teacherClassIds.has(u.classId)) || u.teacherId === teacher.id));
+    const localStudents = all.filter(u => isStudentConnectedToTeacher(u, teacher, teacherClassIds));
 
     // 3. Merge avoiding duplicates (server takes precedence)
     const mergedMap = new Map();
