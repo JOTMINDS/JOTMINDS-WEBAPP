@@ -127,62 +127,94 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
 
       {/* ─── Key Institutional Metric Cards ─────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-slate-500 font-semibold uppercase">Overall School Intelligence</span>
-              <div className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
-                {insights.overallSchoolIntelligence}/100
+        <Card className="shadow-sm border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate" title="Overall School Intelligence">
+                  Overall School Intelligence
+                </p>
+                <div className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-2">
+                  {insights.overallSchoolIntelligence}<span className="text-sm font-semibold text-slate-400">/100</span>
+                </div>
               </div>
-              <span className="text-xs text-emerald-600 font-medium">Workforce Readiness Index</span>
+              <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                <Brain className="w-5 h-5" />
+              </div>
             </div>
-            <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600">
-              <Brain className="w-6 h-6" />
+            <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium truncate">
+                Workforce Readiness Index
+              </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-slate-500 font-semibold uppercase">Assessed Participation</span>
-              <div className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-                {insights.totalTeachersAssessed}
+        <Card className="shadow-sm border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate" title="Assessed Participation">
+                  Assessed Participation
+                </p>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2">
+                  {insights.totalTeachersAssessed}
+                </div>
               </div>
-              <span className="text-xs text-slate-500 font-medium">100% Complete 120-Item Profile</span>
+              <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex-shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
             </div>
-            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600">
-              <Users className="w-6 h-6" />
+            <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                100% Complete 120-Item Profile
+              </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-slate-500 font-semibold uppercase">Top Synergy Domain</span>
-              <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 truncate max-w-[180px]">
-                {insights.growthPatterns.highSynergyDomains[0] || "Relationship Intelligence"}
+        <Card className="shadow-sm border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate" title="Top Synergy Domain">
+                  Top Synergy Domain
+                </p>
+                <div className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-2 line-clamp-2 leading-snug" title={insights.growthPatterns.highSynergyDomains[0] || "Relationship Intelligence"}>
+                  {insights.growthPatterns.highSynergyDomains[0] || "Relationship Intelligence"}
+                </div>
               </div>
-              <span className="text-xs text-slate-500 font-medium">School-Wide Strength</span>
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                <HeartHandshake className="w-5 h-5" />
+              </div>
             </div>
-            <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600">
-              <HeartHandshake className="w-6 h-6" />
+            <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                School-Wide Strength
+              </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-slate-500 font-semibold uppercase">PD Priority Count</span>
-              <div className="text-3xl font-black text-amber-600 dark:text-amber-400 mt-1">
-                {displayedPdPriorities.length}
+        <Card className="shadow-sm border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate" title="PD Priority Count">
+                  PD Priority Count
+                </p>
+                <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400 mt-2">
+                  {displayedPdPriorities.length}
+                </div>
               </div>
-              <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">Targeted Growth Workshops</span>
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex-shrink-0">
+                <Target className="w-5 h-5" />
+              </div>
             </div>
-            <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600">
-              <Target className="w-6 h-6" />
+            <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+              <span className="text-xs text-amber-700 dark:text-amber-400 font-medium truncate">
+                Targeted Growth Workshops
+              </span>
             </div>
           </CardContent>
         </Card>
