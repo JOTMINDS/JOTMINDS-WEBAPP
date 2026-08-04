@@ -84,7 +84,7 @@ export function TeacherManagementContent({
     fetchAssessments();
   }, [teacher.id]);
 
-  const teachingStyleAssmt = teacherAssessments.find((a: any) => a.type === 'teaching-style');
+  const jtiaAssmt = teacherAssessments.find((a: any) => a.type === 'jtia');
 
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
@@ -187,25 +187,27 @@ export function TeacherManagementContent({
         {/* PERFORMANCE TAB */}
         {activeTab === 'performance' && (
           <div className="space-y-5">
-            {/* Teaching Style Profile */}
+            {/* Teacher Intelligence Profile (JTIA) */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teacher Intelligence Profile (JTIA)
               </h4>
-              {teachingStyleAssmt && teachingStyleAssmt.score && 'teaching-style' in teachingStyleAssmt.score ? (
+              {jtiaAssmt && (jtiaAssmt.report || jtiaAssmt.results || jtiaAssmt.score?.jtia) ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-purple-50 border border-purple-100 p-4 rounded-lg">
-                    <p className="text-xs text-purple-600 font-medium mb-1">Primary Style</p>
-                    <p className="font-semibold text-purple-900">{teachingStyleAssmt.score['teaching-style'].primaryStyle}</p>
+                    <p className="text-xs text-purple-600 font-medium mb-1">Overall JTIA Score</p>
+                    <p className="font-semibold text-purple-900">
+                      {(jtiaAssmt.report || jtiaAssmt.results || jtiaAssmt.score?.jtia).overallScore}/100
+                    </p>
                   </div>
                   <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg">
-                    <p className="text-xs text-blue-600 font-medium mb-1">Secondary Style</p>
-                    <p className="font-semibold text-blue-900">{teachingStyleAssmt.score['teaching-style'].secondaryStyle}</p>
+                    <p className="text-xs text-blue-600 font-medium mb-1">Assessment Status</p>
+                    <p className="font-semibold text-blue-900">120-Item Profile Complete</p>
                   </div>
                 </div>
               ) : (
                 <div className="bg-white p-4 rounded-lg text-sm text-gray-500 border border-gray-200 text-center">
-                  This teacher has not yet completed their teaching style assessment.
+                  This teacher has not yet completed the 120-item Teacher Intelligence Assessment (JTIA).
                 </div>
               )}
             </div>
@@ -299,10 +301,10 @@ export function TeacherManagementContent({
                     {/* Render score details depending on the type */}
                     {assmt.score && (
                       <div className="mt-3 p-3 bg-gray-50 rounded text-sm">
-                        {assmt.type === 'teaching-style' ? (
+                        {assmt.type === 'jtia' ? (
                           <div className="grid grid-cols-2 gap-2">
-                            <div><span className="text-gray-500">Primary:</span> {assmt.score['teaching-style']?.primaryStyle || 'N/A'}</div>
-                            <div><span className="text-gray-500">Secondary:</span> {assmt.score['teaching-style']?.secondaryStyle || 'N/A'}</div>
+                            <div><span className="text-gray-500">Overall Score:</span> {(assmt.report || assmt.results || assmt.score?.jtia)?.overallScore || 'Completed'}/100</div>
+                            <div><span className="text-gray-500">Status:</span> 120-Item Profile Complete</div>
                           </div>
                         ) : (
                           <div className="space-y-1">

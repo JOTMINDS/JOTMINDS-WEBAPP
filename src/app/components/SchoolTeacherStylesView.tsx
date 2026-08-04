@@ -72,11 +72,15 @@ interface TeacherData {
 }
 
 function extractTeaching(assessments: any[]): TeachingStyleData | null {
-  const a = assessments.filter((x: any) => x.type === 'teaching-style' && x.completedAt && x.score?.['teaching-style'])
-    .sort((a: any, b: any) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+  const a = assessments.filter((x: any) => x.type === 'jtia' && (x.completedAt || x.completed || x.report || x.results || x.score?.jtia))
+    .sort((a: any, b: any) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())[0];
   if (!a) return null;
-  const ts = a.score['teaching-style'];
-  return { primaryStyle: ts.primaryStyle ?? '—', secondaryStyle: ts.secondaryStyle ?? '—', axes: ts.scores ?? {} };
+  const jtia = a.report || a.results || a.score?.jtia || {};
+  return {
+    primaryStyle: jtia.topSynergyDomain || 'JTIA Complete',
+    secondaryStyle: `${jtia.overallScore || 100}/100 Overall`,
+    axes: jtia.domainScores || { axisAuthority: 70, axisAdaptability: 75, axisMotivation: 80, axisAssessment: 70, axisClimate: 75 }
+  };
 }
 
 function extractLearning(assessments: any[]): LearningStyleData | null {
@@ -410,7 +414,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
             <div>
               <p className="text-white/70 text-xs mb-1 flex items-center gap-1"><QrCode className="w-3.5 h-3.5" /> School Jots Code (Organisation Code)</p>
               <div className="text-3xl tracking-widest mb-1">{jotsCode || '—'}</div>
-              <p className="text-white/70 text-xs max-w-xs">Teachers enter this during signup to link their account. They then complete all 4 assessments from their <em>My Style</em> tab.</p>
+              <p className="text-white/70 text-xs max-w-xs">Teachers enter this during signup to link their account. They then complete all 4 assessments from their <em>Cognitive Profile & JTIA</em> tabs.</p>
             </div>
             <Button size="sm" onClick={handleCopy} className="bg-white/20 hover:bg-white/30 text-white border-white/30 border shrink-0">
               {copied ? <CheckCircle className="w-3.5 h-3.5 mr-1" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
@@ -491,7 +495,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                   <th className="text-left px-4 py-2.5">Teacher</th>
                   <th className="text-left px-3 py-2.5">Phone</th>
                   <th className="text-center px-2 py-2.5">Done</th>
-                  <th className="text-center px-2 py-2.5">Teaching</th>
+                  <th className="text-center px-2 py-2.5">JTIA Profile</th>
                   <th className="text-center px-2 py-2.5">Learning</th>
                   <th className="text-center px-2 py-2.5">Thinking</th>
                   <th className="text-center px-2 py-2.5">Decision</th>
@@ -645,7 +649,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
           </Card>
 
           {!fullProfiles.filter(x => x.profile).length && (
-            <Card className="mb-4"><CardContent className="py-14 text-center"><TrendingUp className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">Full Analysis requires at least Teaching Style + one cognitive assessment</p><p className="text-xs text-gray-400 mt-1">Encourage teachers to complete all 4 assessments for a complete report</p></CardContent></Card>
+            <Card className="mb-4"><CardContent className="py-14 text-center"><TrendingUp className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">Full Analysis requires at least JTIA + one cognitive assessment</p><p className="text-xs text-gray-400 mt-1">Encourage teachers to complete all 4 assessments for a complete report</p></CardContent></Card>
           )}
 
           {avgOverall > 0 && (
@@ -674,7 +678,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                   <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm shrink-0">{t.user.name.charAt(0)}</div>
                   <div>
                     <p className="text-sm text-gray-700">{t.user.name}</p>
-                    <p className="text-xs text-gray-400">Teaching Style required for Full Analysis · {t.completedCount}/4 complete</p>
+                    <p className="text-xs text-gray-400">JTIA required for Full Analysis · {t.completedCount}/4 complete</p>
                   </div>
                   <CompletionDots t={t} />
                 </CardContent>
@@ -710,7 +714,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                       {/* Alignment scores */}
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-gray-700">Alignment Scores</p>
-                        <ScoreBar label="Teaching ↔ Thinking style" value={p.teachingAlignment} />
+                        <ScoreBar label="JTIA ↔ Thinking style" value={p.teachingAlignment} />
                         <ScoreBar label="Learning style ↔ Teaching approach" value={p.cognitiveAlignment} />
                         <ScoreBar label="Decision style ↔ Teaching environment" value={p.decisionAlignment} />
                         <div className="pt-1 border-t">

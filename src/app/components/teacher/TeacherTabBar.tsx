@@ -1,6 +1,6 @@
 interface TeacherTabBarProps {
-  activeTab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'lesson-planner' | 'analytics-compare' | 'manage-class';
-  onTabChange: (tab: 'overview' | 'individual' | 'my-style' | 'teaching-style' | 'lesson-planner' | 'analytics-compare' | 'manage-class') => void;
+  activeTab: 'overview' | 'individual' | 'my-style' | 'jtia' | 'lesson-planner' | 'analytics-compare' | 'manage-class';
+  onTabChange: (tab: 'overview' | 'individual' | 'my-style' | 'jtia' | 'lesson-planner' | 'analytics-compare' | 'manage-class') => void;
 }
 
 export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
@@ -44,10 +44,10 @@ export function TeacherTabBar({ activeTab, onTabChange }: TeacherTabBarProps) {
           Class Overview
         </button>
         <button
-          onClick={() => onTabChange('teaching-style')}
+          onClick={() => onTabChange('jtia')}
           className={`
             px-4 py-2 rounded-full text-[14px] font-semibold transition-all duration-200 whitespace-nowrap
-            ${activeTab === 'teaching-style'
+            ${activeTab === 'jtia'
               ? 'bg-white text-foreground shadow-sm'
               : 'bg-transparent text-muted-foreground hover:text-foreground'
             }

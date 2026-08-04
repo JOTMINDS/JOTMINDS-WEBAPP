@@ -47,7 +47,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'teaching-style' | 'lesson-planner' | 'analytics-compare' | 'manage-class'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'jtia' | 'lesson-planner' | 'analytics-compare' | 'manage-class'>('overview');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -95,8 +95,8 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   };
 
   const startAssessment = () => {
-      // Check for saved progress
-      const progress = getAssessmentProgress(user.id, 'teaching-style', !!user.organizationName);
+      // Check for saved progress (only JTIA, never legacy teaching-style)
+      const progress = getAssessmentProgress(user.id, 'jtia', !!user.organizationName);
       if (progress && progress.responses) {
           setInitialResponses(progress.responses);
           if (progress.questions && progress.questions.length > 0) {
@@ -115,7 +115,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const handleSaveProgress = (responses: number[], currentSection: number, questions?: any[]) => {
       saveAssessmentProgress({
           userId: user.id,
-          assessmentType: 'teaching-style',
+          assessmentType: 'jtia',
           isOrganizational: !!user.organizationName,
           currentQuestion: currentSection, // Roughly maps to section index here
           responses,
@@ -305,7 +305,6 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
     saveAssessment(newAssessment);
     clearAssessmentProgress(user.id, 'jtia', !!user.organizationName);
-    clearAssessmentProgress(user.id, 'teaching-style', !!user.organizationName);
 
     // Sync JTIA to the server KV store
     try {
@@ -322,7 +321,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
   const teachingStyleAssessments = useMemo(() => 
     [...myAssessments, ...serverAssessments]
-      .filter(a => a.type === 'jtia' || a.type === 'teaching-style')
+      .filter(a => a.type === 'jtia')
       .sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()),
     [myAssessments, serverAssessments]
   );
@@ -361,7 +360,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const handleRetakeAssessment = () => {
     if (window.confirm("Are you sure you want to start a new assessment? Your previous results will be saved in your history.")) {
         // Clear any saved progress to start fresh
-        clearAssessmentProgress(user.id, 'teaching-style', !!user.organizationName);
+        clearAssessmentProgress(user.id, 'jtia', !!user.organizationName);
         setInitialResponses([]);
         setInitialQuestions([]);
         setIsTakingAssessment(true);
@@ -403,7 +402,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   }
 
   // If taking assessment, show it full screen or within layout
-  if (activeTab === 'teaching-style' && isTakingAssessment) {
+  if (activeTab === 'jtia' && isTakingAssessment) {
     return (
       <div className="min-h-screen bg-[#F5F7FF] py-8 px-4">
         <JTIAAssessmentTaking
@@ -433,7 +432,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       groupLabel: 'Professional Development',
       items: [
         { id: 'my-style', label: 'Cognitive Profile', icon: History },
-        { id: 'teaching-style', label: 'JTIA Teaching Style', icon: GraduationCap },
+        { id: 'jtia', label: 'Teacher Intelligence (JTIA)', icon: GraduationCap },
       ]
     }
   ];
@@ -493,7 +492,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         )}
 
         {/* Onboarding Info for New Teachers */}
-        {students.length === 0 && activeTab !== 'my-style' && activeTab !== 'teaching-style' && activeTab !== 'lesson-planner' && (
+        {students.length === 0 && activeTab !== 'my-style' && activeTab !== 'jtia' && activeTab !== 'lesson-planner' && (
           <Alert className="border-[#2563EB] bg-blue-50">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Welcome to JotMinds Teacher Portal!</AlertTitle>
@@ -702,7 +701,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
           </div>
         )}
 
-        {activeTab === 'teaching-style' && (
+        {activeTab === 'jtia' && (
           <div className="space-y-8">
           {/* Sub-navigation inside JTIA tab: My Profile vs School Intelligence */}
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-xl border shadow-2xs">
@@ -870,9 +869,9 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                             </p>
                           </div>
                           <div className="mt-3 sm:mt-0 text-sm bg-white border px-3 py-2 rounded-md">
-                            {assmt.type === 'teaching-style' ? (
+                            {assmt.type === 'jtia' ? (
                               <div className="text-xs">
-                                <span className="text-gray-500">Primary:</span> <span className="font-medium text-indigo-700">{assmt.score['teaching-style']?.primaryStyle || 'N/A'}</span>
+                                <span className="text-gray-500">Overall Score:</span> <span className="font-medium text-indigo-700">{(assmt.report || assmt.results || assmt.score?.jtia)?.overallScore || 'Completed'}/100</span>
                               </div>
                             ) : assmt.type === 'kolb' ? (
                               <div className="text-xs">

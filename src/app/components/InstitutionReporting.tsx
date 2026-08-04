@@ -19,7 +19,7 @@ export const formatAssessmentType = (type: string) => {
     'shs-thinking': 'SHS Thinking Style',
     'adult-thinking': 'Adult Thinking Style',
     'children-thinking': 'Children Thinking Style',
-    'teaching-style': 'Teaching Style Assessment',
+    'jtia': 'Teacher Intelligence (JTIA)',
   };
   return map[type] || type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 };

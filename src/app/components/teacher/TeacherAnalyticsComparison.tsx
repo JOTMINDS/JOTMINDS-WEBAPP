@@ -47,9 +47,9 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
   const tKolb = getLatestAssessment('kolb', teacherAssessments);
   const tThink = getLatestAssessment('sternberg', teacherAssessments);
   const tDual = getLatestAssessment('dual-process', teacherAssessments);
-  const tTeaching = getLatestAssessment('teaching-style', teacherAssessments);
+  const tJtia = getLatestAssessment('jtia', teacherAssessments);
 
-  const tTeachingScore = tTeaching ? calculateTeachingStyleScore(tTeaching.responses) : null;
+  const tJtiaReport = tJtia ? (tJtia.report || tJtia.results || tJtia.score?.jtia) : null;
 
   // Aggregate student data
   const studentData = useMemo(() => {
@@ -189,32 +189,32 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
 
             <Card className="md:col-span-2 shadow-sm border-slate-200">
               <CardHeader>
-                <CardTitle className="text-xl">Teaching Style Context</CardTitle>
-                <CardDescription>How your instructional approach maps to student needs</CardDescription>
+                <CardTitle className="text-xl">Teacher Intelligence (JTIA) Context</CardTitle>
+                <CardDescription>How your 120-item educator intelligence profile maps to student needs</CardDescription>
               </CardHeader>
               <CardContent>
-                {tTeachingScore ? (
+                {tJtiaReport ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
                         <LayoutTemplate className="h-8 w-8 text-blue-600" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-lg text-slate-800">{tTeachingScore.primaryStyle}</h4>
-                        <p className="text-sm text-slate-500">Primary Teaching Style</p>
+                        <h4 className="font-semibold text-lg text-slate-800">{tJtiaReport.topSynergyDomain || 'Educator Intelligence Profile'}</h4>
+                        <p className="text-sm text-slate-500">Top Synergy Domain ({tJtiaReport.overallScore}/100 Overall)</p>
                       </div>
                     </div>
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
                       <p className="text-sm text-slate-700 leading-relaxed">
-                        As a <strong>{tTeachingScore.primaryStyle}</strong> educator, you tend to focus on {tTeachingScore.primaryStyle === 'Facilitator' ? 'guiding students through self-discovery' : tTeachingScore.primaryStyle === 'Expert' ? 'delivering structured knowledge' : tTeachingScore.primaryStyle === 'Delegator' ? 'fostering independent work' : 'balancing multiple teaching methods'}.
-                        Combine this with your {alignmentScore}% alignment score to see where you might need to stretch your approach to reach students with different cognitive preferences.
+                        Your highest synergy is in <strong>{tJtiaReport.topSynergyDomain || 'Pedagogical Adaptability'}</strong>.
+                        Combine this with your {alignmentScore}% alignment score to see where you might stretch your approach across the 5 JTIA domains to reach students with different cognitive preferences.
                       </p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 text-slate-500 bg-slate-50 p-4 rounded-lg">
                     <Info className="h-5 w-5" />
-                    <p className="text-sm">Complete your Teaching Style assessment to see insights here.</p>
+                    <p className="text-sm">Complete your 120-item Teacher Intelligence (JTIA) assessment to see insights here.</p>
                   </div>
                 )}
               </CardContent>

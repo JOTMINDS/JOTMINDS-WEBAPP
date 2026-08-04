@@ -123,7 +123,7 @@ export function ReflectionsViewer({ userId, onViewAssessment }: ReflectionsViewe
                     {reflections.filter(r => {
                       const a = getAssessmentForReflection(r.assessmentId);
                       const t = (a?.type || '') as string;
-                      return t === 'kolb' || t === 'learning' || t === 'teaching-style';
+                      return t === 'kolb' || t === 'learning' || t === 'jtia';
                     }).length}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Learning Style</p>
