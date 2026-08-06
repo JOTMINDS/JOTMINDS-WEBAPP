@@ -988,9 +988,10 @@ export function getFullJTIAQuestionBank(): JTIAQuestion[] {
  */
 export function getShuffledJTIAQuestionSet(options?: {
   countPerDomain?: number;
+  totalQuestions?: number;
   useFullBank?: boolean;
 }): JTIAQuestion[] {
-  const { countPerDomain = 24, useFullBank = true } = options || {};
+  const { countPerDomain, totalQuestions = 120, useFullBank = true } = options || {};
   const sourceBank = useFullBank ? getFullJTIAQuestionBank() : jtiaQuestions;
 
   const domains: JTIADomain[] = [
@@ -1001,16 +1002,25 @@ export function getShuffledJTIAQuestionSet(options?: {
     "Professional Intelligence"
   ];
 
+  let itemsPerDomain = countPerDomain || Math.floor(totalQuestions / domains.length);
+  if (itemsPerDomain < 2) itemsPerDomain = 2;
+
   const shuffledSession: JTIAQuestion[] = [];
 
-  domains.forEach(domain => {
+  domains.forEach((domain, idx) => {
+    // If totalQuestions is e.g. 12, distribute 3, 3, 2, 2, 2
+    let domainTarget = itemsPerDomain;
+    if (totalQuestions === 12) {
+      domainTarget = idx < 2 ? 3 : 2;
+    }
+
     const domainQuestions = sourceBank.filter(q => q.domain === domain);
     const shuffled = [...domainQuestions];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    shuffledSession.push(...shuffled.slice(0, countPerDomain));
+    shuffledSession.push(...shuffled.slice(0, domainTarget));
   });
 
   return shuffledSession;

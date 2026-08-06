@@ -432,7 +432,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       groupLabel: 'Professional Development',
       items: [
         { id: 'my-style', label: 'Cognitive Profile', icon: History },
-        { id: 'jtia', label: 'Teacher Intelligence (JTIA)', icon: GraduationCap },
+        { id: 'jtia', label: 'Teacher Insights (JTIA)', icon: GraduationCap },
       ]
     }
   ];
@@ -703,7 +703,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
         {activeTab === 'jtia' && (
           <div className="space-y-8">
-          {/* Sub-navigation inside JTIA tab: My Profile vs School Intelligence */}
+          {/* Sub-navigation inside JTIA tab: My Profile vs School Insights */}
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-xl border shadow-2xs">
             <div className="flex items-center gap-2">
               <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
@@ -728,7 +728,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  School Intelligence Dashboard
+                  School Insights Dashboard
                 </button>
               </div>
             </div>
@@ -739,7 +739,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm"
               >
                 <RefreshCcw className="h-3.5 w-3.5 mr-1.5" />
-                {displayedAssessment ? 'Retake JTIA (120 Items)' : 'Start JTIA Assessment'}
+                {displayedAssessment ? 'Retake JTIA' : 'Start JTIA Assessment'}
               </Button>
             </div>
           </div>
@@ -774,7 +774,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                       JTIA Assessment History
                     </CardTitle>
                     <CardDescription>
-                      Track how your Teacher Intelligence domains have evolved over time.
+                      Track how your Teacher Insights domains have evolved over time.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -787,10 +787,10 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                             </div>
                             <div>
                               <p className="font-medium text-slate-900">
-                                JTIA Profile — Overall Score: {assessment.score?.jtia?.overallScore || calculateJTIAScore(assessment.responses).overallScore}/100
+                                JTIA Profile • Completed {new Date(assessment.completedAt || "").toLocaleDateString()}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                Completed on {new Date(assessment.completedAt || "").toLocaleDateString()}
+                                5 Core Teacher Intelligence Domains
                               </p>
                             </div>
                           </div>
@@ -815,8 +815,8 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">🧠</span>
               </div>
-              <Badge className="bg-indigo-100 text-indigo-800 mb-3">JTIA • 120 Scenario & Preference Items</Badge>
-              <h2 className="text-2xl font-bold mb-2">JotMinds Teacher Intelligence Assessment (JTIA)</h2>
+              <Badge className="bg-indigo-100 text-indigo-800 mb-3">JTIA • Teacher Insights & Adaptive Assessment</Badge>
+              <h2 className="text-2xl font-bold mb-2">JotMinds Teacher Insights Assessment (JTIA)</h2>
               <p className="text-muted-foreground max-w-lg mx-auto mb-6">
                 Unlike traditional assessments that focus on qualifications or compliance, JTIA evaluates the deeper cognitive and professional capabilities that drive effective teaching across 5 Core Domains: Cognitive Intelligence, Instructional Intelligence, Classroom Leadership, Relationship Intelligence, and Professional Intelligence.
               </p>
@@ -829,73 +829,10 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 onClick={() => setIsTakingAssessment(true)}
                 className="bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl cursor-pointer"
               >
-                Start JTIA Assessment (120 Items)
+                Start JTIA Assessment
               </button>
             </div>
           )}
-
-            {/* All Assessment History */}
-            <Card className="border-2 border-gray-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-indigo-600" />
-                  Complete Assessment History
-                </CardTitle>
-                <CardDescription>
-                  A unified list of all assessments you have taken on the platform.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {(() => {
-                  const completed = [...allMyAssessments, ...allAssessments]
-                    .filter(a => a.userId === user.id && a.completedAt && a.score)
-                    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
-
-                  if (completed.length === 0) {
-                    return <div className="text-gray-500 text-sm text-center py-4">You have not completed any assessments yet.</div>;
-                  }
-
-                  return (
-                    <div className="space-y-3">
-                      {completed.map((assmt, idx) => (
-                        <div key={assmt.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
-                          <div>
-                            <h5 className="font-semibold text-gray-900 capitalize flex items-center gap-2">
-                              {assmt.type.replace('-', ' ')}
-                              <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">Completed</Badge>
-                            </h5>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(assmt.completedAt!).toLocaleDateString()} at {new Date(assmt.completedAt!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </p>
-                          </div>
-                          <div className="mt-3 sm:mt-0 text-sm bg-white border px-3 py-2 rounded-md">
-                            {assmt.type === 'jtia' ? (
-                              <div className="text-xs">
-                                <span className="text-gray-500">Overall Score:</span> <span className="font-medium text-indigo-700">{(assmt.report || assmt.results || assmt.score?.jtia)?.overallScore || 'Completed'}/100</span>
-                              </div>
-                            ) : assmt.type === 'kolb' ? (
-                              <div className="text-xs">
-                                <span className="text-gray-500">Style:</span> <span className="font-medium text-pink-600">{assmt.score.kolb?.style || 'N/A'}</span>
-                              </div>
-                            ) : assmt.type === 'dual-process' ? (
-                              <div className="text-xs">
-                                <span className="text-gray-500">Style:</span> <span className="font-medium text-orange-600">{assmt.score.dualProcess?.style || 'N/A'}</span>
-                              </div>
-                            ) : (
-                              <div className="text-xs">
-                                <span className="text-gray-500">Style:</span> <span className="font-medium text-blue-600">
-                                  {assmt.score?.sternberg?.style || assmt.score?.['adult-thinking']?.primaryStyle || assmt.score?.['shs-thinking']?.primaryStyle || assmt.score?.['jhs-thinking']?.primaryStyle || 'N/A'}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
           </div>
         )}
 

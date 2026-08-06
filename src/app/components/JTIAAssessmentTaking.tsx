@@ -26,8 +26,18 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
   initialResponses = []
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedLength, setSelectedLength] = useState<number | null>(() => {
+    const savedIds = localStorage.getItem(`jtia_session_ids_${userId}`);
+    if (savedIds) {
+      try {
+        const parsed: number[] = JSON.parse(savedIds);
+        if (parsed.length > 0) return parsed.length;
+      } catch (e) {}
+    }
+    return null;
+  });
 
-  const [sessionQuestions] = useState<JTIAQuestion[]>(() => {
+  const [sessionQuestions, setSessionQuestions] = useState<JTIAQuestion[]>(() => {
     const fullBank = getFullJTIAQuestionBank();
     const savedIds = localStorage.getItem(`jtia_session_ids_${userId}`);
     if (savedIds) {
@@ -41,29 +51,114 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
         console.error("Failed to restore saved JTIA session questions", e);
       }
     }
-    const freshSession = getShuffledJTIAQuestionSet({ countPerDomain: 24, useFullBank: true });
-    localStorage.setItem(`jtia_session_ids_${userId}`, JSON.stringify(freshSession.map(q => q.id)));
-    return freshSession;
+    return [];
   });
+
+  const startWithLength = (targetCount: number) => {
+    const freshSession = getShuffledJTIAQuestionSet({ totalQuestions: targetCount, useFullBank: true });
+    localStorage.setItem(`jtia_session_ids_${userId}`, JSON.stringify(freshSession.map(q => q.id)));
+    setSessionQuestions(freshSession);
+    setSelectedLength(targetCount);
+    const arr = new Array(freshSession.length).fill(0);
+    setResponses(arr);
+    setCurrentIndex(0);
+  };
 
   const [responses, setResponses] = useState<number[]>(() => {
     const saved = localStorage.getItem(`jtia_progress_${userId}`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === sessionQuestions.length) {
+        if (Array.isArray(parsed) && sessionQuestions.length > 0 && parsed.length === sessionQuestions.length) {
           return parsed;
         }
       } catch (e) {
         console.error("Failed to parse saved JTIA progress", e);
       }
     }
-    const arr = new Array(sessionQuestions.length).fill(0);
+    const arr = new Array(sessionQuestions.length || 120).fill(0);
     initialResponses.forEach((val, i) => {
       if (i < arr.length) arr[i] = val;
     });
     return arr;
   });
+
+  if (!selectedLength || sessionQuestions.length === 0) {
+    return (
+      <div className="space-y-8 max-w-3xl mx-auto pb-12">
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" onClick={onCancel}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+          </Button>
+          <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
+            JTIA Assessment Selector
+          </Badge>
+        </div>
+
+        <Card className="border-2 border-indigo-200 dark:border-indigo-800/40 shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 md:p-8">
+            <h2 className="text-2xl font-bold mb-2">Select Your Assessment Format</h2>
+            <p className="text-slate-300 text-sm max-w-xl">
+              Choose the depth of assessment that fits your current schedule. All options sample across the 5 Core Teacher Domains.
+            </p>
+          </div>
+
+          <CardContent className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Option 1: 12 Questions */}
+            <div
+              onClick={() => startWithLength(12)}
+              className="p-6 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/50 dark:bg-emerald-950/20 hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between space-y-4"
+            >
+              <div>
+                <Badge className="bg-emerald-600 text-white mb-3">Quick Snapshot</Badge>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">12 Questions</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                  Fast 3-minute diagnostic overview across key teaching scenarios.
+                </p>
+              </div>
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
+                Start 12 Items (~3 min)
+              </Button>
+            </div>
+
+            {/* Option 2: 60 Questions */}
+            <div
+              onClick={() => startWithLength(60)}
+              className="p-6 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/50 dark:bg-indigo-950/20 hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between space-y-4"
+            >
+              <div>
+                <Badge className="bg-indigo-600 text-white mb-3">Standard</Badge>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">60 Questions</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                  Balanced 12-minute assessment providing deep domain insights.
+                </p>
+              </div>
+              <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                Start 60 Items (~12 min)
+              </Button>
+            </div>
+
+            {/* Option 3: 120 Questions */}
+            <div
+              onClick={() => startWithLength(120)}
+              className="p-6 rounded-2xl border-2 border-purple-200 dark:border-purple-800/40 bg-purple-50/50 dark:bg-purple-950/20 hover:border-purple-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between space-y-4"
+            >
+              <div>
+                <Badge className="bg-purple-600 text-white mb-3">Comprehensive</Badge>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">120 Questions</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                  Complete 25-minute evaluation covering all sub-competency scenarios.
+                </p>
+              </div>
+              <Button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold">
+                Start 120 Items (~25 min)
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const currentQuestion = sessionQuestions[currentIndex] || sessionQuestions[0];
   const totalQuestions = sessionQuestions.length;

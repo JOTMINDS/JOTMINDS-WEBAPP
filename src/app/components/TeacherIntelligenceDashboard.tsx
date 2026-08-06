@@ -13,7 +13,7 @@ import {
   ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, PieChart, Pie, Cell, Legend, LineChart, Line
 } from 'recharts';
-import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId } from '../utils/storage';
+import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher } from '../utils/storage';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
 import { JTIAReport } from './JTIAReport';
@@ -177,8 +177,14 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
 
   const students = useMemo(() => {
     const allUsers = getAllUsers();
-    let raw = allUsers.filter((u: User) => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
-    return raw.slice(0, 60); // cap for performance
+    const classes = getAllClasses();
+    const assignments = getAssignmentsForTeacher(user.id);
+    const teacherClassIds = new Set<string>();
+    classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className || user.role === 'teacher').forEach(c => teacherClassIds.add(c.id));
+    assignments.forEach(a => teacherClassIds.add(a.classId));
+
+    let raw = allUsers.filter((u: User) => isStudentConnectedToTeacher(u, user, teacherClassIds));
+    return raw.slice(0, 100);
   }, [user]);
 
   const profiles = useMemo(() => students.map(buildStudentProfile), [students]);

@@ -81,14 +81,14 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-1 text-xs font-semibold">
-              School Intelligence Dashboard • JTIA
+              School Insights Dashboard • JTIA
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-1 text-xs font-semibold">
               {insights.totalTeachersAssessed} Teachers Assessed
             </Badge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            {schoolName} — Teacher Intelligence Analytics
+            {schoolName} — Teacher Insights Analytics (JTIA)
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-3xl">
             Aggregated intelligence insights across 5 Core Domains to support evidence-based professional development and institutional excellence.

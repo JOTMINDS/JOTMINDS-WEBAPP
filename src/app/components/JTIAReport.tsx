@@ -81,28 +81,54 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
     window.print();
   };
 
+  const getOrientationBadge = (score: number) => {
+    if (score >= 85) return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300">Exemplary Practice</Badge>;
+    if (score >= 70) return <Badge className="bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300">Established Practice</Badge>;
+    return <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300">Developing Focus</Badge>;
+  };
+
   return (
-    <div className="space-y-8 pb-12 max-w-6xl mx-auto">
+    <div id="jtia-printable-report" className="space-y-8 pb-12 max-w-6xl mx-auto">
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #jtia-printable-report, #jtia-printable-report * {
+            visibility: visible !important;
+          }
+          #jtia-printable-report {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+          }
+          .no-print-btn {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* ─── Header & Navigation ─────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 md:p-8 rounded-2xl shadow-xl border border-indigo-800/30">
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-1 text-xs font-semibold">
-              JTIA • 120 Scenario & Preference Items
+              JTIA • Teacher Insights & Adaptive Assessment
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-1 text-xs font-semibold">
-              5 Core Intelligence Domains
+              5 Core Domains
             </Badge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            JotMinds Teacher Intelligence Assessment
+            JotMinds Teacher Insights Profile (JTIA)
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-2xl">
-            Understanding the intelligence behind great teaching. A comprehensive analysis of how you think, teach, lead, and make decisions in real classroom situations.
+            Understanding the cognitive styles and pedagogical strengths behind great teaching. A holistic, non-competitive analysis of your classroom decision-making.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 no-print-btn">
           {onBack && (
             <Button variant="outline" onClick={onBack} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
               Back to Dashboard
@@ -110,11 +136,11 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
           )}
           <Button onClick={handlePrint} variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20">
             <Printer className="w-4 h-4 mr-2" />
-            Print Report
+            Print JTIA Report
           </Button>
           {onRetake && (
             <Button onClick={onRetake} className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg">
-              Retake JTIA
+              Retake Assessment
             </Button>
           )}
         </div>
@@ -130,13 +156,13 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             Designed for Development, Not Ranking
           </h4>
           <p className="text-xs md:text-sm text-slate-300 mt-1">
-            The JotMinds Teacher Intelligence Assessment does not rank or compare teachers against one another. Unlike traditional compliance evaluations, your JTIA profile is dedicated entirely to personal self-awareness, professional growth, and classroom excellence.
+            The JotMinds Teacher Insights Assessment does not rank or compare teachers against one another. Unlike traditional compliance evaluations, your JTIA profile is dedicated entirely to personal self-awareness, professional growth, and classroom excellence.
           </p>
         </div>
       </div>
 
       {/* ─── Main Navigation Tabs ───────────────────────────────────────── */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 overflow-x-auto pb-1">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 overflow-x-auto pb-1 no-print-btn">
         <button
           onClick={() => setActiveTab('overview')}
           className={`px-4 py-2.5 font-medium text-sm transition-all border-b-2 whitespace-nowrap flex items-center gap-2 ${
@@ -188,43 +214,51 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
         <div className="space-y-8 animate-in fade-in-50 duration-300">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Radar Visual */}
-            <Card className="lg:col-span-5 shadow-md border-slate-200 dark:border-slate-800">
+            <Card className="lg:col-span-5 shadow-md border-indigo-100 dark:border-slate-800 bg-gradient-to-b from-white via-indigo-50/20 to-white dark:from-slate-900 dark:to-slate-950">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Compass className="w-5 h-5 text-indigo-600" />
                   Intelligence Domain Profile
                 </CardTitle>
                 <CardDescription>
-                  Normalized scores (0-100) across the five teacher intelligence domains.
+                  Holistic orientation map across the five teacher intelligence domains.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center">
-                <div className="w-full h-[300px]">
+                <div className="w-full h-[320px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                      <PolarGrid stroke="rgba(148, 163, 184, 0.3)" />
-                      <PolarAngleAxis dataKey="domain" stroke="#64748B" tick={{ fontSize: 12, fontWeight: 500 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#94A3B8" />
+                      <defs>
+                        <linearGradient id="radarGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#6366F1" stopOpacity={0.6} />
+                          <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0.2} />
+                        </linearGradient>
+                      </defs>
+                      <PolarGrid stroke="rgba(99, 102, 241, 0.2)" />
+                      <PolarAngleAxis dataKey="domain" stroke="#475569" tick={{ fontSize: 11, fontWeight: 600 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#CBD5E1" tick={false} />
                       <Radar
-                        name="Domain Score"
+                        name="Domain Alignment"
                         dataKey="score"
                         stroke="#6366F1"
-                        fill="#6366F1"
-                        fillOpacity={0.3}
+                        strokeWidth={2.5}
+                        fill="url(#radarGrad)"
+                        fillOpacity={0.7}
+                        dot={{ r: 4, fill: "#6366F1", stroke: "#FFF", strokeWidth: 2 }}
                       />
                       <RechartsTip
-                        formatter={(val: number) => [`${val} / 100`, 'Score']}
-                        contentStyle={{ backgroundColor: '#1E293B', borderRadius: '8px', color: '#FFF' }}
+                        formatter={(val: number) => [val >= 85 ? 'Exemplary' : val >= 70 ? 'Established' : 'Developing', 'Domain Orientation']}
+                        contentStyle={{ backgroundColor: '#0F172A', borderRadius: '10px', color: '#FFF', border: '1px solid #334155' }}
                       />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="mt-2 text-center">
                   <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
-                    Overall Teacher Intelligence Index
+                    Primary Domain Alignment
                   </span>
-                  <div className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-1">
-                    {report.overallScore || 85} <span className="text-base font-normal text-slate-400">/ 100</span>
+                  <div className="mt-1">
+                    {getOrientationBadge(report.overallScore || 85)}
                   </div>
                 </div>
               </CardContent>
@@ -268,12 +302,10 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                         </div>
 
                         <div className="text-right shrink-0">
-                          <div className="text-2xl font-black text-slate-900 dark:text-white">
-                            {item.score}
+                          {getOrientationBadge(item.score)}
+                          <div className="text-[10px] text-slate-400 uppercase font-semibold mt-1">
+                            Domain Orientation
                           </div>
-                          <span className="text-[10px] text-slate-400 uppercase font-semibold">
-                            Proficiency
-                          </span>
                         </div>
                       </div>
                     </CardContent>
@@ -306,9 +338,9 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                     <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 text-xs">
                       {strength.domain}
                     </Badge>
-                    <span className="text-lg font-black text-emerald-600">
-                      {strength.score}/100
-                    </span>
+                    <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 text-xs font-semibold">
+                      Core Strength
+                    </Badge>
                   </div>
                   <CardTitle className="text-lg font-bold mt-2">
                     {strength.title}
@@ -346,9 +378,9 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                     <Badge className="bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 text-xs">
                       {growth.domain}
                     </Badge>
-                    <span className="text-lg font-black text-amber-600">
-                      {growth.score}/100
-                    </span>
+                    <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 text-xs font-semibold">
+                      Development Focus
+                    </Badge>
                   </div>
                   <CardTitle className="text-lg font-bold mt-2">
                     {growth.title}
