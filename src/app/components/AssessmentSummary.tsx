@@ -33,9 +33,9 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
 
   const getAssessmentTitle = () => {
     switch (type) {
-      case 'learning': return 'Your Learning Style';
-      case 'thinking': return 'Your Thinking Style';
-      case 'decision': return 'Your Decision Style';
+      case 'learning': return 'Learning Style Assessment';
+      case 'thinking': return 'Thinking Style Assessment';
+      case 'decision': return 'Decision Style Assessment';
     }
   };
 
@@ -293,7 +293,8 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
           </Button>
           <Button
             onClick={async () => {
-              const text = `I've completed my ${getAssessmentTitle()} on JotMinds. My primary style is ${dominantStyle}.`;
+              const cleanStyle = dominantStyle ? dominantStyle.replace(/\s*\([^)]*\)/g, '').trim() : '';
+              const text = `I've completed my ${getAssessmentTitle()} on JotMinds! My primary style is ${cleanStyle}.`;
               if (navigator.share && navigator.canShare) {
                 try {
                   await navigator.share({ title: 'My JotMinds Profile', text });

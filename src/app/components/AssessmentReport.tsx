@@ -145,8 +145,8 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
   };
 
   const handleShareResults = async () => {
-    const mainStyle = getMainStyle();
-    const shareText = `I've completed my ${assessment.type === 'kolb' ? 'Learning Style' : assessment.type === 'sternberg' ? 'Thinking Style' : 'Decision Making Style'} assessment on JotMinds. My profile: ${mainStyle}`;
+    const mainStyle = getMainStyle() ? getMainStyle().replace(/\s*\([^)]*\)/g, '').trim() : '';
+    const shareText = `I've completed my ${assessment.type === 'kolb' ? 'Learning Style' : assessment.type === 'sternberg' ? 'Thinking Style' : 'Decision Style'} Assessment on JotMinds! My primary style is ${mainStyle}.`;
     
     // Check if Web Share API is available and supported
     if (navigator.share && navigator.canShare) {
