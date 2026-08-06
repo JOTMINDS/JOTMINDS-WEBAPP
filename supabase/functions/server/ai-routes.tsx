@@ -270,6 +270,78 @@ COACHING GUIDELINES:
   }
 });
 
+aiRoutes.post('/generate-lesson-plan', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { subject, gradeClass, topic, durationMinutes, classSummary } = body;
+
+    if (!subject || !topic) {
+      return c.json({ error: 'Subject and Topic are required' }, 400);
+    }
+
+    const systemPrompt = `You are the JotMinds AI Lesson Planner — an expert curriculum architect specializing in differentiated instruction, active learning, and cognitive alignment.
+You build clear, highly practical, and engaging lesson plans tailored for educators.
+
+RESPONSE FORMAT (JSON OBJECT):
+You must respond with valid JSON matching exactly this structure:
+{
+  "summary": "Brief 2-3 sentence overview of the lesson structure and pedagogical goals.",
+  "objectives": ["3-4 clear, measurable learning objectives using Bloom's Taxonomy"],
+  "differentiationStrategies": [
+    { "style": "Visual / Concrete Learners", "activity": "Specific differentiated strategy or activity" },
+    { "style": "Reflective / Analytical Learners", "activity": "Specific differentiated strategy or activity" },
+    { "style": "Active / Practical Learners", "activity": "Specific differentiated strategy or activity" }
+  ],
+  "assessmentQuestions": [
+    { "question": "Formative check question 1", "answer": "Sample answer or rubric criteria" },
+    { "question": "Formative check question 2", "answer": "Sample answer or rubric criteria" },
+    { "question": "Formative check question 3", "answer": "Sample answer or rubric criteria" }
+  ]
+}`;
+
+    const userPrompt = `Subject: ${subject}
+Grade/Class Level: ${gradeClass || 'General'}
+Topic: ${topic}
+Duration: ${durationMinutes || 45} minutes
+Class Profile Summary: ${classSummary ? JSON.stringify(classSummary) : 'Standard mixed-ability classroom'}`;
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.75
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('OpenAI Lesson Plan Error:', err);
+      return c.json({ error: 'Failed to generate lesson plan from AI provider' }, 500);
+    }
+
+    const data = await response.json();
+    const aiText = data.choices?.[0]?.message?.content;
+    if (!aiText) {
+      return c.json({ error: 'Invalid response from AI provider' }, 500);
+    }
+
+    const planJson = JSON.parse(aiText);
+    return c.json(planJson);
+  } catch (error) {
+    console.error('AI Lesson Plan Error:', error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
+});
+
 aiRoutes.post('/generate-school-insights', async (c) => {
   try {
     const body = await c.req.json();
