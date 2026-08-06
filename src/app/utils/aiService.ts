@@ -130,6 +130,103 @@ export async function generateAIInsights(
     return data;
   } catch (error) {
     console.error('Failed to generate real AI insights:', error);
+  }
+}
+
+/**
+ * Sends chat messages to OpenAI AI Coach.
+ */
+export async function sendAIChatMessage(
+  messages: { role: 'user' | 'assistant' | 'system'; content: string }[],
+  userProfile?: any
+): Promise<string | null> {
+  const apiKey = (import.meta.env.VITE_OPENAI_API_KEY as string) || '';
+
+  // 1. Try direct OpenAI API call if key is present
+  if (apiKey) {
+    try {
+      const systemMsg = {
+        role: 'system',
+        content: `You are the JotMinds AI Learning Coach, an encouraging, empathetic, and expert educational AI assistant.
+You provide personalized study strategies, learning advice, and cognitive guidance.
+${userProfile ? `User Profile context: ${JSON.stringify(userProfile)}` : ''}
+
+Keep answers concise (2-4 paragraphs), warm, structured, and practical. Use markdown formatting.`
+      };
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [systemMsg, ...messages],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) return content;
+      }
+    } catch (e) {
+      console.warn('Direct OpenAI call failed, falling back to server route:', e);
+    }
+  }
+
+  // 2. Fallback to Supabase Edge Function endpoint
+  try {
+    const response = await fetch(`${getBaseUrl()}/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${publicAnonKey}`
+      },
+      body: JSON.stringify({ messages, userProfile })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.reply || null;
+    }
+  } catch (error) {
+    console.error('Failed to communicate with AI chat service:', error);
+  }
+
+  return null;
+}
+
+const OPENAI_KEY = (import.meta.env.VITE_OPENAI_API_KEY as string) || '';
+
+async function callOpenAI(messages: any[], isJson = false, maxTokens = 800) {
+  if (!OPENAI_KEY) return null;
+  try {
+    const body: any = {
+      model: 'gpt-4o-mini',
+      messages,
+      temperature: 0.7,
+      max_tokens: maxTokens
+    };
+    if (isJson) {
+      body.response_format = { type: 'json_object' };
+    }
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_KEY}`
+      },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || null;
+  } catch (e) {
+    console.error('OpenAI call error:', e);
     return null;
   }
 }
@@ -181,6 +278,121 @@ export async function askAICoach(
   }
 }
 
+/**
+ * 1. AI Lesson Plan Generator
+ */
+export async function generateAILessonPlan(
+  subjectOrPayload: string | { subject: string; gradeClass: string; topic: string; durationMinutes?: number; classSummary?: any },
+  topic?: string,
+  grade?: string,
+  curriculum?: string,
+  customQuestions?: string
+): Promise<{
+  objectives: string[];
+  differentiationStrategies: { style: string; activity: string }[];
+  assessmentQuestions: { question: string; answer: string }[];
+  summary: string;
+} | any | null> {
+  if (typeof subjectOrPayload === 'object' && subjectOrPayload !== null) {
+    try {
+      const response = await fetch(`${getBaseUrl()}/ai/generate-lesson-plan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`
+        },
+        body: JSON.stringify({
+          ...subjectOrPayload,
+          scientificPositioning: getScientificPositioningContext('lesson-planner')
+        })
+      });
+      if (!response.ok) throw new Error(`Lesson Plan AI error: ${response.status}`);
+      return await response.json();
+    } catch (err) {
+      console.error('Failed to generate AI Lesson Plan:', err);
+    }
+  }
+
+  const subjectStr = typeof subjectOrPayload === 'string' ? subjectOrPayload : subjectOrPayload.subject;
+  const topicStr = topic || (typeof subjectOrPayload === 'object' ? subjectOrPayload.topic : '');
+  const gradeStr = grade || (typeof subjectOrPayload === 'object' ? subjectOrPayload.gradeClass : '');
+
+  const prompt = `Generate a comprehensive differentiated lesson plan for:
+Subject: ${subjectStr}
+Topic: ${topicStr}
+Grade/Level: ${gradeStr}
+Curriculum Standard: ${curriculum || 'Standard'}
+${customQuestions ? `Custom Assessment Questions requested by teacher: ${customQuestions}` : ''}
+
+Respond strictly with valid JSON with this structure:
+{
+  "summary": "Brief 2-sentence overview of the lesson",
+  "objectives": ["Objective 1", "Objective 2", "Objective 3"],
+  "differentiationStrategies": [
+    { "style": "Visual Learners", "activity": "Specific activity description" },
+    { "style": "Auditory Learners", "activity": "Specific activity description" },
+    { "style": "Kinesthetic Learners", "activity": "Specific activity description" },
+    { "style": "Analytical Thinkers", "activity": "Specific activity description" }
+  ],
+  "assessmentQuestions": [
+    { "question": "Question 1", "answer": "Answer 1" },
+    { "question": "Question 2", "answer": "Answer 2" },
+    { "question": "Question 3", "answer": "Answer 3" }
+  ]
+}`;
+
+  const res = await callOpenAI([
+    { role: 'system', content: 'You are an expert curriculum designer and educational consultant specializing in differentiated instruction and African/international curricula.' },
+    { role: 'user', content: prompt }
+  ], true, 1200);
+
+  if (!res) return null;
+  try {
+    return JSON.parse(res);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 2. AI Career Insights & Path Analysis
+ */
+export async function generateAICareerInsights(
+  archetype: string,
+  strengths: string[],
+  scores?: any
+): Promise<{
+  careerMatches: { title: string; rationale: string; keySkills: string[] }[];
+  advice: string;
+} | null> {
+  const prompt = `Analyze this student cognitive profile and generate tailored career recommendations:
+Archetype: ${archetype}
+Top Strengths: ${strengths.join(', ')}
+${scores ? `Scores: ${JSON.stringify(scores)}` : ''}
+
+Return JSON with format:
+{
+  "advice": "Encouraging 2-sentence overview of career direction",
+  "careerMatches": [
+    { "title": "Career Name 1", "rationale": "Why this aligns with their cognitive style", "keySkills": ["Skill 1", "Skill 2"] },
+    { "title": "Career Name 2", "rationale": "Why this aligns with their cognitive style", "keySkills": ["Skill 1", "Skill 2"] },
+    { "title": "Career Name 3", "rationale": "Why this aligns with their cognitive style", "keySkills": ["Skill 1", "Skill 2"] }
+  ]
+}`;
+
+  const res = await callOpenAI([
+    { role: 'system', content: 'You are an AI career counselor and educational psychologist specializing in cognitive talent matching.' },
+    { role: 'user', content: prompt }
+  ], true, 1000);
+
+  if (!res) return null;
+  try {
+    return JSON.parse(res);
+  } catch {
+    return null;
+  }
+}
+
 export interface SchoolAIInsightsRequest {
   schoolName?: string;
   role?: string;
@@ -202,10 +414,6 @@ export interface SchoolAIInsightsResponse {
   pedagogicalAlignment?: string;
 }
 
-/**
- * Calls the backend OpenAI AI proxy to generate institutional, school-level, or classroom-level insights.
- * Guided by JotMinds proprietary group/school algorithms while producing dynamic, executive-ready variations.
- */
 export async function generateSchoolAIInsights(
   request: SchoolAIInsightsRequest
 ): Promise<SchoolAIInsightsResponse | null> {
@@ -227,6 +435,41 @@ export async function generateSchoolAIInsights(
     return data;
   } catch (error) {
     console.error('Failed to generate real School AI insights:', error);
+    return null;
+  }
+}
+
+/**
+ * 3. AI Guided Reflection Feedback
+ */
+export async function generateAIReflectionFeedback(
+  reflectionText: string,
+  promptTopic?: string
+): Promise<{
+  encouragement: string;
+  insight: string;
+  actionableStep: string;
+} | null> {
+  const prompt = `A student wrote this self-reflection journal entry:
+${promptTopic ? `Prompt Topic: ${promptTopic}` : ''}
+Student Writing: "${reflectionText}"
+
+Provide empathetic, constructive coaching feedback in JSON format:
+{
+  "encouragement": "Warm 1-2 sentence praise acknowledging their effort and honesty",
+  "insight": "Deeper psychological insight into what their reflection reveals about their growth mindset",
+  "actionableStep": "One clear, concrete micro-action they can try tomorrow"
+}`;
+
+  const res = await callOpenAI([
+    { role: 'system', content: 'You are a warm, supportive educational mentor helping students build metacognition and emotional intelligence.' },
+    { role: 'user', content: prompt }
+  ], true, 600);
+
+  if (!res) return null;
+  try {
+    return JSON.parse(res);
+  } catch {
     return null;
   }
 }
@@ -255,6 +498,39 @@ export async function generateJTIAAIRecommendations(
     return data;
   } catch (error) {
     console.error('Failed to generate real JTIA AI recommendations:', error);
+    return null;
+  }
+}
+
+/**
+ * 4. AI Executive Cognitive Profile Summary
+ */
+export async function generateAICognitiveExecutiveSummary(
+  userProfile: any
+): Promise<{
+  narrativeSummary: string;
+  keyTakeaway: string;
+  personalizedMantra: string;
+} | null> {
+  const prompt = `Generate a rich executive summary for this user cognitive profile:
+Profile Data: ${JSON.stringify(userProfile)}
+
+Return JSON format:
+{
+  "narrativeSummary": "A inspiring 3-sentence summary of who they are cognitively and how they learn/work best",
+  "keyTakeaway": "Single most important insight for teachers/parents/managers",
+  "personalizedMantra": "A motivating 1-line quote tailored to their cognitive strengths"
+}`;
+
+  const res = await callOpenAI([
+    { role: 'system', content: 'You are a master cognitive psychologist synthesizing assessment results into professional narrative summaries.' },
+    { role: 'user', content: prompt }
+  ], true, 700);
+
+  if (!res) return null;
+  try {
+    return JSON.parse(res);
+  } catch {
     return null;
   }
 }
@@ -289,31 +565,79 @@ export async function generateSchoolJTIAAIInsights(
   }
 }
 
-// ─── AI LESSON PLANNER PROXY FUNCTIONS ──────────────────────────────────────────
+/**
+ * 5. AI Custom Study Strategy Generator
+ */
+export async function generateAIStudyStrategy(
+  subject: string,
+  learningStyle: string,
+  examGoal?: string
+): Promise<{
+  techniques: { name: string; description: string; duration: string }[];
+  weeklyRoutine: string;
+} | null> {
+  const prompt = `Create a custom study strategy for:
+Subject: ${subject}
+Learning Style: ${learningStyle}
+${examGoal ? `Goal: ${examGoal}` : ''}
 
-export async function generateAILessonPlan(payload: {
-  subject: string;
-  gradeClass: string;
-  topic: string;
-  durationMinutes: number;
-  classSummary?: any;
-}): Promise<any | null> {
+Return JSON format:
+{
+  "weeklyRoutine": "Overview of recommended study cadence",
+  "techniques": [
+    { "name": "Technique 1", "description": "How to apply it for ${subject}", "duration": "e.g. 25 mins daily" },
+    { "name": "Technique 2", "description": "How to apply it for ${subject}", "duration": "e.g. 30 mins 3x/week" },
+    { "name": "Technique 3", "description": "How to apply it for ${subject}", "duration": "e.g. 15 mins post-class" }
+  ]
+}`;
+
+  const res = await callOpenAI([
+    { role: 'system', content: 'You are an academic coach specializing in evidence-based study techniques (active recall, spaced repetition, Feynman technique).' },
+    { role: 'user', content: prompt }
+  ], true, 800);
+
+  if (!res) return null;
   try {
-    const response = await fetch(`${getBaseUrl()}/ai/generate-lesson-plan`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify({
-        ...payload,
-        scientificPositioning: getScientificPositioningContext('lesson-planner')
-      })
-    });
-    if (!response.ok) throw new Error(`Lesson Plan AI error: ${response.status}`);
-    return await response.json();
-  } catch (err) {
-    console.error('Failed to generate AI Lesson Plan:', err);
+    return JSON.parse(res);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 6. AI Daily Discovery & Brain Challenge Generator
+ */
+export async function generateAIDailyDiscovery(
+  category: string = 'Cognitive Science'
+): Promise<{
+  title: string;
+  fact: string;
+  challengeQuestion: string;
+  options: string[];
+  correctAnswerIndex: number;
+  explanation: string;
+} | null> {
+  const prompt = `Generate a fun, fascinating daily brain discovery and challenge question for students in the category of "${category}".
+
+Return JSON format:
+{
+  "title": "Catchy Discovery Title",
+  "fact": "Fascinating 2-sentence educational fact",
+  "challengeQuestion": "A fun multiple-choice question testing understanding of the fact",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correctAnswerIndex": 0,
+  "explanation": "Why this answer is correct"
+}`;
+
+  const res = await callOpenAI([
+    { role: 'system', content: 'You are a fun science communicator creating engaging daily learning snippets for youth.' },
+    { role: 'user', content: prompt }
+  ], true, 700);
+
+  if (!res) return null;
+  try {
+    return JSON.parse(res);
+  } catch {
     return null;
   }
 }
@@ -392,7 +716,4 @@ export async function chatWithLessonCopilot(message: string, history: any[], con
     return null;
   }
 }
-
-
-
 

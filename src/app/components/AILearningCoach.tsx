@@ -26,8 +26,11 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Send
 } from 'lucide-react';
+import { Input } from './ui/input';
+import { sendAIChatMessage } from '../utils/aiService';
 import {
   interpretProfile,
   generateRecommendations,
@@ -104,6 +107,18 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterTime, setFilterTime] = useState<number>(120);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const chatScrollRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, isTyping]);
 
   // Reminder config
   const [reminderConfig, setReminderConfig] = useState<ReminderConfig>({
@@ -230,6 +245,62 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
     localStorage.setItem('jotminds_reminder_config', JSON.stringify(reminderConfig));
     setRemindersSaved(true);
     setTimeout(() => setRemindersSaved(false), 2000);
+  };
+
+  const generateChatResponse = (message: string) => {
+    const lowerMsg = message.toLowerCase();
+    const archetypeData = archetype || { name: 'Learner', strengths: ['learning'], tagline: 'Ready to learn', description: 'Curious learner.' };
+    
+    if (lowerMsg.includes('improve') || lowerMsg.includes('weakness') || lowerMsg.includes('struggle')) {
+      if (profileInterpretation?.developmentAreas && profileInterpretation.developmentAreas.length > 0) {
+        return `Based on your profile, one area for growth is ${profileInterpretation.developmentAreas[0].area}. I suggest: ${profileInterpretation.developmentAreas[0].suggestedActions[0]}`;
+      }
+      return "To improve, try focusing on breaking down complex topics into smaller, manageable chunks and reviewing them consistently.";
+    }
+    
+    if (lowerMsg.includes('study') || lowerMsg.includes('technique') || lowerMsg.includes('tips')) {
+      if (profileInterpretation?.personalizedInsights && profileInterpretation.personalizedInsights.length > 0) {
+        return `Here is a personalized study tip for you: ${profileInterpretation.personalizedInsights[0]}`;
+      }
+      return "Active recall and spaced repetition are highly effective techniques. Try testing yourself instead of just re-reading notes.";
+    }
+    
+    if (lowerMsg.includes('archetype') || lowerMsg.includes('profile')) {
+      return `You are a ${archetypeData.name}. ${archetypeData.tagline || ''} This means your natural strengths include ${archetypeData.strengths.slice(0,2).join(' and ')}. Focus on learning environments that support this!`;
+    }
+
+    if (lowerMsg.includes('strength')) {
+      if (profileInterpretation?.strengths && profileInterpretation.strengths.length > 0) {
+        return `Your biggest strength is ${profileInterpretation.strengths[0].area}. Use this to your advantage when tackling new subjects!`;
+      }
+      return `As a ${archetypeData.name}, you naturally excel at ${archetypeData.strengths[0]}.`;
+    }
+
+    return `That's an interesting question! As your AI Coach, I recommend focusing on your strengths as a ${archetypeData.name}. Is there a specific area like your study schedule, weaknesses, or techniques you'd like to discuss?`;
+  };
+
+  const handleSendMessage = async (text?: string) => {
+    const messageText = typeof text === 'string' ? text : chatInput;
+    if (!messageText.trim()) return;
+    
+    const userMsg = { role: 'user' as const, content: messageText };
+    const updatedHistory = [...chatMessages, userMsg];
+    
+    setChatMessages(updatedHistory);
+    setChatInput('');
+    setIsTyping(true);
+    
+    try {
+      const aiReply = await sendAIChatMessage(updatedHistory, userProfile);
+      const finalReply = aiReply || generateChatResponse(messageText);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: finalReply }]);
+    } catch (err) {
+      console.warn('AI service error, using local generator:', err);
+      const fallbackReply = generateChatResponse(messageText);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: fallbackReply }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   if (loading) {
@@ -1191,6 +1262,110 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                 </CardContent>
               </Card>
             )}
+
+            {/* Interactive Chat Interface */}
+            <Card className="flex flex-col h-[500px]">
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="w-5 h-5" style={{ color: '#6B4C9A' }} />
+                  Chat with your AI Coach
+                </CardTitle>
+                <CardDescription>Ask questions about your profile or get study advice</CardDescription>
+              </CardHeader>
+              
+              <div 
+                ref={chatScrollRef}
+                className="flex-1 overflow-y-auto p-4 space-y-4"
+              >
+                {chatMessages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center text-gray-500 space-y-4">
+                    <div className="bg-purple-100 p-4 rounded-full">
+                      <Brain className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <p>I'm your AI Learning Coach. How can I help you today?</p>
+                    
+                    <div className="flex flex-wrap justify-center gap-2 mt-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs rounded-full"
+                        onClick={() => handleSendMessage('Explain my cognitive archetype')}
+                      >
+                        Explain my cognitive archetype
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs rounded-full"
+                        onClick={() => handleSendMessage('How can I improve my weakest area?')}
+                      >
+                        How can I improve my weakest area?
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs rounded-full"
+                        onClick={() => handleSendMessage('What study techniques suit my style?')}
+                      >
+                        What study techniques suit my style?
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {chatMessages.map((msg, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div 
+                          className={`max-w-[80%] p-3 rounded-2xl ${
+                            msg.role === 'user' 
+                              ? 'bg-purple-600 text-white rounded-br-sm' 
+                              : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+                          }`}
+                        >
+                          <p className="text-sm">{msg.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {isTyping && (
+                      <div className="flex justify-start">
+                        <div className="bg-gray-100 text-gray-500 p-3 rounded-2xl rounded-bl-sm flex gap-1 items-center">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              <div className="p-3 border-t bg-gray-50">
+                <form 
+                  onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+                  className="flex items-center gap-2"
+                >
+                  <Input 
+                    type="text" 
+                    placeholder="Ask your coach anything..." 
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    className="flex-1 rounded-full bg-white border-gray-300 focus-visible:ring-purple-500"
+                  />
+                  <Button 
+                    type="submit" 
+                    size="icon" 
+                    className="rounded-full shrink-0"
+                    style={{ backgroundColor: '#6B4C9A' }}
+                    disabled={!chatInput.trim() || isTyping}
+                  >
+                    <Send className="w-4 h-4 text-white" />
+                  </Button>
+                </form>
+              </div>
+            </Card>
           </div>
         )}
       </div>

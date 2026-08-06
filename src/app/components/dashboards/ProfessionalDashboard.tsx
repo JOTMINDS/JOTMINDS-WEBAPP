@@ -226,10 +226,10 @@ export function ProfessionalDashboard({
               <h3 className="text-gray-900 mb-4">🌟 Top Strengths</h3>
               
               <div className="space-y-2">
-                <StrengthItem strength="Strategic Thinking" level={95} />
-                <StrengthItem strength="Problem Solving" level={89} />
-                <StrengthItem strength="Data Analysis" level={87} />
-                <StrengthItem strength="Communication" level={82} />
+                <StrengthItem strength="You excel at strategic thinking" level={95} />
+                <StrengthItem strength="You excel at problem solving" level={89} />
+                <StrengthItem strength="You excel at data analysis" level={87} />
+                <StrengthItem strength="You excel at communication" level={82} />
               </div>
               
               <button className="w-full mt-4 bg-gradient-to-r from-purple-700 to-indigo-700 text-white font-bold py-2.5 rounded-lg hover:from-purple-800 hover:to-indigo-800 transition-all shadow-md text-sm">
@@ -424,7 +424,6 @@ function StrengthItem({ strength, level }: { strength: string; level: number }) 
     <div>
       <div className="flex justify-between text-sm mb-1">
         <span className="text-gray-700">{strength}</span>
-        <span className="text-gray-600">{level}%</span>
       </div>
       <div className="w-full bg-white rounded-full h-2">
         <div

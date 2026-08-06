@@ -1,4 +1,4 @@
-import { linkChildByEmail, unlinkChild } from '../utils/api';
+import { linkChildByEmail, unlinkChild, sendUnlinkEmailNotification } from '../utils/api';
 import { createAccessRequest, getMyAccessRequests, getLinkedChildrenWithAssessments } from '../utils/api';
 import { useState, useEffect } from 'react';
 import { Input } from './ui/input';
@@ -11,6 +11,7 @@ import { ParentObservationResults } from './ParentObservationResults';
 import { DualViewIntegration } from './DualViewIntegration';
 import { ParentChildPairingAnalytics } from './ParentChildPairingAnalytics';
 import { AdultThinkingAssessment } from './AdultThinkingAssessment';
+import { ProfileSettingsModal } from './ProfileSettingsModal';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -62,6 +63,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
   const [activeTab, setActiveTab] = useState('overview');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     loadChildrenData();
@@ -180,8 +182,9 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
         const result = await unlinkChild(childId);
         if (result.success) {
           loadChildrenData();
-          setLinkMessage({ type: 'success', text: `${childName} has been unlinked.` });
-          setTimeout(() => setLinkMessage(null), 3000);
+          setLinkMessage({ type: 'info', text: `Notice: Link to ${childName} has been removed. An email notification was sent to ${currentUser.email}.` });
+          await sendUnlinkEmailNotification(currentUser.email, currentUser.name, childName);
+          setTimeout(() => setLinkMessage(null), 5000);
         } else {
           setLinkMessage({ type: 'error', text: result.error || 'Failed to unlink child.' });
         }
@@ -392,6 +395,15 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
           saveAssessment(assessment);
           loadParentAssessments();
           toast.success("Assessment completed! You can now view Cognitive Match insights on your children's profiles.");
+          
+          // To give instant feedback per Task 2, we can set viewingPairing to this assessment if they have children
+          if (children.length > 0) {
+            setViewingPairing({
+              child: children[0],
+              parentAssessment: assessment,
+              childAssessments: childrenData.get(children[0].id) || []
+            });
+          }
         }}
         onCancel={() => setTakingParentAssessment(false)}
       />
@@ -620,6 +632,24 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                 </CardContent>
               </Card>
             )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>My Self-Assessments</CardTitle>
+                <CardDescription>
+                  Take or retake your own cognitive assessment to generate personalized Parent-Child Cognitive Match Insights.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => setTakingParentAssessment(true)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <Brain className="mr-2 h-4 w-4" />
+                  {parentAssessments.length > 0 ? "Retake Assessment" : "Take My Cognitive Assessment"}
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="children" className="space-y-6">
@@ -1223,6 +1253,16 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
           </TabsContent>
         </Tabs>
       </div>
+      <ProfileSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={currentUser}
+        onProfileUpdate={(updatedUser) => {
+          setCurrentUser(updatedUser);
+          saveUser(updatedUser);
+          toast.success('Profile updated successfully!');
+        }}
+      />
     </DashboardLayout>
   );
 }

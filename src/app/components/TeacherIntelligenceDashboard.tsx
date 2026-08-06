@@ -281,7 +281,7 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
           <div className="flex-1">
             <h1 className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-[#5B7DB1]" />
-              Teacher Intelligence
+              Teacher Insights
             </h1>
             <p className="text-xs text-gray-500">{user.school ?? 'All students'} · {stats.total} students</p>
           </div>
@@ -707,6 +707,19 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
                     </RadarChart>
                   </ResponsiveContainer>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Classroom Leadership Insights */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2"><Users className="w-4 h-4" /> Classroom Leadership Insights</CardTitle>
+                <CardDescription>Leadership approach tailored to your class's cognitive profile</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Based on your class's cognitive profile, your leadership approach should balance structure with creative exploration. Foster a collaborative environment where analytical thinkers can dive deep, while providing hands-on opportunities for experiential learners to thrive.
+                </p>
               </CardContent>
             </Card>
 

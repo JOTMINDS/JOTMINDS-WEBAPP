@@ -442,8 +442,7 @@ export function ProfessionalAssessmentReport({
                     <div className="space-y-2 pt-2">
                       <div>
                         <div className="flex justify-between text-xs mb-1">
-                          <span>Creative</span>
-                          <span className="font-semibold">{assessment.score.sternberg.scores.creative}</span>
+                          <span>You excel at creative thinking</span>
                         </div>
                         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div 
@@ -454,24 +453,22 @@ export function ProfessionalAssessmentReport({
                       </div>
                       <div>
                         <div className="flex justify-between text-xs mb-1">
-                          <span>Analytical</span>
-                          <span className="font-semibold">{assessment.score.sternberg.scores.analytical}</span>
+                          <span>You excel at analytical thinking</span>
                         </div>
                         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-gradient-to-r from-[#5B7DB1] to-[#7B61FF] transition-all"
+                            className="h-full bg-gradient-to-r from-[#7B61FF] to-[#6B4C9A] transition-all"
                             style={{ width: `${(assessment.score.sternberg.scores.analytical / 48) * 100}%` }}
                           />
                         </div>
                       </div>
                       <div>
                         <div className="flex justify-between text-xs mb-1">
-                          <span>Practical</span>
-                          <span className="font-semibold">{assessment.score.sternberg.scores.practical}</span>
+                          <span>You excel at practical thinking</span>
                         </div>
                         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-gradient-to-r from-[#FF715B] to-[#5B7DB1] transition-all"
+                            className="h-full bg-gradient-to-r from-[#7B61FF] to-[#6B4C9A] transition-all"
                             style={{ width: `${(assessment.score.sternberg.scores.practical / 48) * 100}%` }}
                           />
                         </div>

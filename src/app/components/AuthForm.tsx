@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader, AlertCircle, CheckCircle2, GraduationCap, Users, School, Briefcase, Mail, Lock, User } from 'lucide-react';
 import { PhoneInput } from './PhoneInput';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { createClient } from '../utils/supabase/client';
 import { setAuthToken, signup, signin } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -306,6 +307,18 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
       setRegistrationStep(2);
     } else {
       setRegistrationStep(registrationStep - 1);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (!email.trim()) return;
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase() });
+      if (error) throw error;
+      toast.success('Verification code resent successfully');
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend code');
     }
   };
 
@@ -701,9 +714,18 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                             maxLength={6}
                           />
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Enter the code sent to {email}
-                        </p>
+                        <div className="flex justify-between items-center mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            Enter the code sent to {email}
+                          </p>
+                          <button
+                            type="button"
+                            className="text-xs text-[#7B61FF] hover:text-[#5B7DB1] underline transition-colors"
+                            onClick={handleResendOTP}
+                          >
+                            Resend Code
+                          </button>
+                        </div>
                       </div>
                     )
                   )}

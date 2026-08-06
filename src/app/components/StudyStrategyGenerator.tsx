@@ -1,5 +1,9 @@
-import { BookOpen, Clock, FileText, Brain, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { BookOpen, Clock, FileText, Brain, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { generateAIStudyStrategy } from '../utils/aiService';
+import { toast } from 'sonner';
 
 interface StudyStrategy {
   timeOfDay: string;
@@ -15,6 +19,29 @@ interface StudyStrategyGeneratorProps {
 }
 
 export function StudyStrategyGenerator({ cognitiveStyle, assessmentType }: StudyStrategyGeneratorProps) {
+  const [aiCustomStrategy, setAiCustomStrategy] = useState<{
+    weeklyRoutine: string;
+    techniques: { name: string; description: string; duration: string }[];
+  } | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  const handleGenerateAiStrategy = async () => {
+    setLoadingAi(true);
+    try {
+      const res = await generateAIStudyStrategy('General Academics', cognitiveStyle);
+      if (res) {
+        setAiCustomStrategy(res);
+        toast.success('OpenAI Custom Study Strategy generated!');
+      } else {
+        toast.error('Could not generate AI study strategy.');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
   const getStrategy = (): StudyStrategy => {
     // Kolb Learning Styles
     if (assessmentType === 'kolb') {
@@ -129,15 +156,51 @@ export function StudyStrategyGenerator({ cognitiveStyle, assessmentType }: Study
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <CardTitle>Your Personalized Study Strategy</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <CardTitle>Your Personalized Study Strategy</CardTitle>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs border-purple-200 text-purple-700 hover:bg-purple-50 flex items-center gap-1.5"
+            onClick={handleGenerateAiStrategy}
+            disabled={loadingAi}
+          >
+            {loadingAi ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            )}
+            Generate OpenAI Strategy
+          </Button>
         </div>
         <CardDescription>
           Based on your {cognitiveStyle} profile
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {aiCustomStrategy && (
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800 rounded-lg p-4 space-y-3 mb-4">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900 dark:text-purple-200">
+              <Sparkles className="w-4 h-4 text-purple-600" />
+              OpenAI Tailored Study Plan
+            </div>
+            <p className="text-xs text-gray-700 dark:text-gray-300">
+              <strong>Weekly Cadence:</strong> {aiCustomStrategy.weeklyRoutine}
+            </p>
+            <div className="grid gap-2 md:grid-cols-3 pt-1">
+              {aiCustomStrategy.techniques.map((tech, idx) => (
+                <div key={idx} className="bg-white dark:bg-slate-900 p-2.5 rounded-md border border-purple-100 dark:border-purple-900 text-xs">
+                  <div className="font-semibold text-purple-800 dark:text-purple-300">{tech.name}</div>
+                  <div className="text-gray-600 dark:text-gray-400 text-[11px] mt-0.5">{tech.description}</div>
+                  <div className="text-[10px] text-purple-500 font-mono mt-1">{tech.duration}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Best Study Time */}
         <div className="flex items-start gap-3">
           <div className="mt-1">

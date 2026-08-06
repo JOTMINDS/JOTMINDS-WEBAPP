@@ -32,6 +32,11 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
   const [isLoading, setIsLoading] = useState(false);
   const [institutionId, setInstitutionId] = useState<string | null>(null);
 
+  // Observation Modal State
+  const [isObservationModalOpen, setIsObservationModalOpen] = useState(false);
+  const [observationStudentId, setObservationStudentId] = useState('');
+  const [observationData, setObservationData] = useState({ category: 'Academic', notes: '' });
+
   // Teacher Observation State
   const [observationStudent, setObservationStudent] = useState<User | null>(null);
   const [observationCategory, setObservationCategory] = useState<'Behavioral' | 'Academic' | 'Emotional' | 'Attention'>('Behavioral');
@@ -177,6 +182,30 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
     loadStudents();
   };
 
+  const handleObservationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!observationData.notes.trim()) return;
+
+    try {
+      const existingStr = localStorage.getItem('jm_teacher_observations');
+      const observations = existingStr ? JSON.parse(existingStr) : [];
+      observations.push({
+        id: `obs_${Date.now()}`,
+        teacherId: teacher.id,
+        studentId: observationStudentId,
+        category: observationData.category,
+        notes: observationData.notes,
+        createdAt: new Date().toISOString()
+      });
+      localStorage.setItem('jm_teacher_observations', JSON.stringify(observations));
+      toast.success('Observation logged and shared with parent!');
+      setIsObservationModalOpen(false);
+      setObservationData({ category: 'Academic', notes: '' });
+    } catch (err) {
+      toast.error('Failed to save observation.');
+    }
+  };
+
   const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -300,27 +329,7 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
         </Card>
       )}
 
-      {/* Teacher Class Code Banner */}
-      {!isInstitutionAdmin && (
-        <Card className="border-blue-200 bg-blue-50/50 mb-6">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-blue-600" />
-                <CardTitle className="text-lg text-blue-800">Your Class Code</CardTitle>
-              </div>
-              {teacher.classCode && (
-                <Badge variant="outline" className="text-lg px-3 py-1 font-mono bg-white text-blue-700 border-blue-200">
-                  {teacher.classCode}
-                </Badge>
-              )}
-            </div>
-            <CardDescription className="text-blue-700/80">
-              Give this code to your students during signup. They will automatically be linked to your class{teacher.organizationName ? ` at ${teacher.organizationName}` : ''}.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
+      {/* Teacher Class Code display removed as per system-generated codes approach */}
 
       <div className="flex justify-between items-center">
         <div>
@@ -378,8 +387,8 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
                     size="sm"
                     className="text-[#2C2E83] border-[#2C2E83]/30 hover:bg-[#2C2E83]/10 h-7 text-xs"
                     onClick={() => {
-                      setObservationStudent(student);
-                      setObservationNote('');
+                      setObservationStudentId(student.id);
+                      setIsObservationModalOpen(true);
                     }}
                   >
                     <MessageSquare className="w-3 h-3 mr-1" /> Log Concern
@@ -558,13 +567,14 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
           </div>
         </div>
       )}
-      {/* Teacher Observation Modal */}
+
+      {/* Observation Modal */}
       {observationStudent && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <div className="flex justify-between items-center border-b pb-3">
+            <div className="flex items-start justify-between border-b pb-3">
               <div>
-                <h3 className="text-lg font-bold text-[#2C2E83]">Log Concern / Observation</h3>
+                <h3 className="text-lg font-bold">Log Observation</h3>
                 <p className="text-xs text-gray-500">Student: {observationStudent.name}</p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setObservationStudent(null)}>✕</Button>

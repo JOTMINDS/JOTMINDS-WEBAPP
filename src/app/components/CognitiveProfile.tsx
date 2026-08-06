@@ -250,7 +250,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
     }
   };
 
-  const handleExportProfile = () => {
+  const generateReportHTML = () => {
     const userName = (impersonatedUser as any)?.user_metadata?.name || 'User';
     const exportDate = new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
@@ -258,8 +258,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
       day: 'numeric' 
     });
 
-    // Generate HTML content for export
-    const htmlContent = `
+    return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -513,10 +512,22 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
     }
     @media print {
       body {
-        padding: 20px;
+        padding: 0;
+        margin: 0;
+        background: white;
       }
       .section {
         page-break-inside: avoid;
+      }
+      .footer {
+        page-break-after: avoid;
+      }
+      .insight-card {
+        border-width: 1px;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
     }
   </style>
@@ -716,18 +727,40 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
 </body>
 </html>
     `;
+  };
+
+  const handleExportProfile = () => {
+    const htmlContent = generateReportHTML();
+    const userName = (impersonatedUser as any)?.user_metadata?.name || 'User';
+    const safeUserName = userName || 'User';
 
     // Create a blob and download
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    const safeUserName = userName || 'User';
     link.download = `cognitive-profile-${safeUserName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.html`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handlePrintProfile = () => {
+    const htmlContent = generateReportHTML();
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        // Option to close the window after print dialog is closed:
+        // printWindow.close();
+      }, 250);
+    } else {
+      console.error('Failed to open print window. Pop-ups might be blocked.');
+    }
   };
 
   return (
@@ -761,10 +794,16 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
                 <CardTitle>Your Dominant Styles</CardTitle>
                 <CardDescription>Primary cognitive patterns across all assessments</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={handleExportProfile}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Profile
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handlePrintProfile}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Print as PDF
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportProfile}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export HTML
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

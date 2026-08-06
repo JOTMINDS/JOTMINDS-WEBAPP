@@ -7,7 +7,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend 
 } from 'recharts';
-import { Download, ArrowLeft, CheckCircle2, Target, TrendingUp, Briefcase, MessageSquare, ExternalLink, Brain, Lightbulb, Scale } from 'lucide-react';
+import { Download, ArrowLeft, CheckCircle2, Target, TrendingUp, Briefcase, MessageSquare, ExternalLink, Brain, Lightbulb, Scale, Users, ArrowUp, ArrowDown } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
 import { getRoleProfiles } from '../utils/api';
 
@@ -374,6 +374,22 @@ export function ProfessionalCognitiveResults({
                 </CardContent>
               </Card>
             )}
+
+            {/* Classroom Leadership Insights */}
+            <Card className="border-2 border-orange-200 dark:border-orange-700 bg-gradient-to-br from-orange-50/30 to-white dark:from-orange-900/10 dark:to-gray-800">
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  Classroom Leadership Insights
+                </CardTitle>
+                <CardDescription>How your cognitive profile translates to educational leadership</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  As a leader with {profile.learning.style.toLowerCase()} and {profile.thinking.style.toLowerCase()} tendencies, you naturally create environments that value {profile.thinking.style.includes('Creative') ? 'innovation and exploration' : 'structure and clarity'}. Your {profile.decisionMaking.style.toLowerCase()} approach means you handle classroom challenges by {profile.decisionMaking.style.includes('Intuitive') ? 'adapting quickly to student needs' : 'carefully evaluating the best course of action'}.
+                </p>
+              </CardContent>
+            </Card>
 
             {/* Competency Fit Summary */}
             <Card className="border-2 border-violet-200 dark:border-violet-700">

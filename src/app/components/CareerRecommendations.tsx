@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
-import { Briefcase, ExternalLink, BookOpen, Target, Sparkles, TrendingUp, Clock, Lightbulb, Calendar, Link as LinkIcon, Search, Filter, Heart, X } from 'lucide-react';
+import { Briefcase, ExternalLink, BookOpen, Target, Sparkles, TrendingUp, Clock, Lightbulb, Calendar, Link as LinkIcon, Search, Filter, Heart, X, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { generateSkillPlan } from '../utils/skillPlanApi';
+import { generateAICareerInsights } from '../utils/aiService';
 import { toast } from 'sonner';
 import { recordCareerExploration, recordCareerFavorite } from '../utils/gamification';
 import { useAuth } from './AuthContext';
@@ -44,6 +45,29 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [selectedDimension, setSelectedDimension] = useState<string>('all');
+
+  const [aiAnalysis, setAiAnalysis] = useState<{
+    advice: string;
+    careerMatches: { title: string; rationale: string; keySkills: string[] }[];
+  } | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  const handleFetchAICareers = async () => {
+    setLoadingAi(true);
+    try {
+      const res = await generateAICareerInsights(cognitiveStyle, [cognitiveStyle, assessmentType]);
+      if (res) {
+        setAiAnalysis(res);
+        toast.success('OpenAI Career Insights generated!');
+      } else {
+        toast.error('Could not generate AI career insights.');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
   const getCareers = (): Career[] => {
     // Kolb Learning Styles
@@ -931,6 +955,67 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
             </div>
           </div>
         </CardContent>
+      </Card>
+
+      {/* AI Career Insights Card */}
+      <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <CardTitle>OpenAI Dynamic Career Matcher</CardTitle>
+            </div>
+            <Button
+              size="sm"
+              className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+              onClick={handleFetchAICareers}
+              disabled={loadingAi}
+            >
+              {loadingAi ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Analyzing with OpenAI...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Generate AI Career Insights
+                </>
+              )}
+            </Button>
+          </div>
+          <CardDescription>
+            Uses OpenAI gpt-4o-mini to analyze your cognitive profile and match real-world career trajectories
+          </CardDescription>
+        </CardHeader>
+        {aiAnalysis && (
+          <CardContent className="space-y-4">
+            <p className="text-sm font-medium text-purple-950 dark:text-purple-200 bg-purple-100 dark:bg-purple-900/50 p-3 rounded-lg">
+              <strong>AI Advice:</strong> {aiAnalysis.advice}
+            </p>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {aiAnalysis.careerMatches.map((match, idx) => (
+                <div key={idx} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-purple-200 dark:border-purple-800 shadow-sm space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-purple-700 dark:text-purple-300">
+                    <Briefcase className="w-4 h-4" />
+                    {match.title}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                    {match.rationale}
+                  </p>
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {match.keySkills.map((sk, skIdx) => (
+                      <Badge key={skIdx} variant="secondary" className="text-[10px]">
+                        {sk}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Favorites Section */}

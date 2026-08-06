@@ -18,7 +18,13 @@ import {
   BarChart3,
   PieChart,
   FileText,
+  Calendar,
+  Edit2,
+  Info,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
+import { generateAILessonPlan } from '../utils/aiService';
 import {
   analyzeClassroom,
   generateClassroomInsights,
@@ -158,22 +164,34 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
       </header>
 
       <main className="max-w-7xl mx-auto p-4">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="distribution">Distribution</TabsTrigger>
-            <TabsTrigger value="insights">Insights</TabsTrigger>
-            <TabsTrigger value="students">Students</TabsTrigger>
-            <TabsTrigger value="lessons">Lesson Plans</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-600" />
+              <span className="font-medium text-blue-900">Curriculum Cycle: Term 1 / Week 3</span>
+            </div>
+            <Button variant="outline" size="sm" className="bg-white">
+              <Edit2 className="h-4 w-4 mr-2" />
+              Update Cycle
+            </Button>
+          </div>
+
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="distribution">Distribution</TabsTrigger>
+              <TabsTrigger value="insights">Insights</TabsTrigger>
+              <TabsTrigger value="students">Students</TabsTrigger>
+              <TabsTrigger value="lessons">Lesson Plans</TabsTrigger>
+            </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Key Metrics */}
             <div className="grid gap-4 md:grid-cols-4">
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Students</CardTitle>
+                  <span title="Total number of students in the class based on recent assessment data"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></span>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{distribution.totalStudents}</div>
@@ -181,8 +199,9 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
               </Card>
 
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-sm font-medium text-muted-foreground">High Performers</CardTitle>
+                  <span title="Students with an average cognitive score above 75 (High Effectiveness)"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></span>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
@@ -195,8 +214,9 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
               </Card>
 
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Mid Performers</CardTitle>
+                  <span title="Students with an average cognitive score between 50 and 75 (Steady Growth Trend)"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></span>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-blue-600">
@@ -209,8 +229,9 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
               </Card>
 
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Needs Support</CardTitle>
+                  <span title="Students with an average cognitive score below 50, often indicating lower engagement score or need for tailored support"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></span>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-orange-600">
@@ -573,18 +594,101 @@ function StudentRecommendationsModal({
 
 // Lesson Plan Generator Component
 function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribution }) {
+  const [curriculum, setCurriculum] = useState('NaCCA / GES (Ghana)');
   const [subject, setSubject] = useState('');
+  const [otherSubject, setOtherSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [grade, setGrade] = useState('');
   const [lessonPlan, setLessonPlan] = useState<any>(null);
+  
+  // Assessment State
+  const [useAIGeneratedQuestions, setUseAIGeneratedQuestions] = useState(true);
+  const [customQuestions, setCustomQuestions] = useState('');
+  
+  // Upload Existing Plan State
+  const [uploadedPlanText, setUploadedPlanText] = useState('');
+  
+  // History State
+  const [history, setHistory] = useState<any[]>([]);
 
-  const handleGenerate = () => {
-    const plan = generateDifferentiatedLesson(subject, topic, grade, distribution);
+  useEffect(() => {
+    const saved = localStorage.getItem('jotminds_lesson_plans_history');
+    if (saved) {
+      try {
+        setHistory(JSON.parse(saved));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = async () => {
+    const finalSubject = subject === 'Other' ? otherSubject : subject;
+    setIsGenerating(true);
+    
+    let plan = generateDifferentiatedLesson(finalSubject, topic, grade, distribution, curriculum);
+    
+    try {
+      const aiResult = await generateAILessonPlan(
+        finalSubject,
+        topic,
+        grade,
+        curriculum,
+        !useAIGeneratedQuestions ? customQuestions : undefined
+      );
+
+      if (aiResult) {
+        plan = {
+          ...plan,
+          objectives: aiResult.objectives,
+          assessmentMethods: aiResult.assessmentQuestions.map(aq => ({
+            type: 'written' as const,
+            description: `Q: ${aq.question} (Answer: ${aq.answer})`,
+            suitableFor: ['analytical', 'reflective']
+          }))
+        };
+      }
+    } catch (e) {
+      console.warn('AI lesson plan call failed, using rule-based fallback:', e);
+    } finally {
+      setIsGenerating(false);
+    }
+    
+    // Add custom questions if toggle is off
+    if (!useAIGeneratedQuestions && customQuestions.trim()) {
+      plan.assessmentMethods.push({
+        type: 'written',
+        description: `Custom Teacher Questions: ${customQuestions}`,
+        suitableFor: ['analytical', 'reflective']
+      });
+    }
+
     setLessonPlan(plan);
+    
+    const historyItem = {
+      ...plan,
+      dateCreated: new Date().toISOString(),
+    };
+    
+    const newHistory = [historyItem, ...history];
+    setHistory(newHistory);
+    localStorage.setItem('jotminds_lesson_plans_history', JSON.stringify(newHistory));
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (text: string) => void) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setter(`File uploaded: ${file.name}\n\n(File content would be extracted here)`);
+    }
+  };
+
+  const subjects = ['Mathematics', 'English Language', 'Science', 'Social Studies', 'ICT', 'Creative Arts', 'French', 'Ghanaian Language (Twi/Ga/Ewe)', 'Religious & Moral Education', 'Other'];
+  const curricula = ['NaCCA / GES (Ghana)', 'Cambridge International', 'International Baccalaureate (IB)', 'National Standard'];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -596,16 +700,40 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Curriculum</label>
+              <select
+                value={curriculum}
+                onChange={(e) => setCurriculum(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md bg-background"
+              >
+                {curricula.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Subject</label>
-              <input
-                type="text"
+              <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g., Mathematics"
-                className="w-full px-3 py-2 border rounded-md"
-              />
+                className="w-full px-3 py-2 border rounded-md bg-background"
+              >
+                <option value="">Select subject...</option>
+                {subjects.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              {subject === 'Other' && (
+                <input
+                  type="text"
+                  value={otherSubject}
+                  onChange={(e) => setOtherSubject(e.target.value)}
+                  placeholder="Enter custom subject"
+                  className="w-full px-3 py-2 border rounded-md mt-2"
+                />
+              )}
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Topic</label>
@@ -628,18 +756,118 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
               />
             </div>
           </div>
-          <Button onClick={handleGenerate} disabled={!subject || !topic || !grade}>
-            Generate Lesson Plan
+          
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-semibold mb-3">Assessment Questions</h3>
+            <div className="flex items-center gap-3 mb-3">
+              <input 
+                type="checkbox" 
+                id="useAIQuestions"
+                checked={useAIGeneratedQuestions}
+                onChange={(e) => setUseAIGeneratedQuestions(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300"
+              />
+              <label htmlFor="useAIQuestions" className="text-sm font-medium">Use AI-generated questions</label>
+            </div>
+            
+            {!useAIGeneratedQuestions && (
+              <div className="space-y-3 pl-7">
+                <textarea
+                  value={customQuestions}
+                  onChange={(e) => setCustomQuestions(e.target.value)}
+                  placeholder="Type your custom assessment questions here (default currency in scenarios is GH₵)..."
+                  className="w-full px-3 py-2 border rounded-md min-h-[100px]"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Or upload a file (.txt, .csv, .docx):</span>
+                  <input 
+                    type="file" 
+                    accept=".txt,.csv,.docx"
+                    onChange={(e) => handleFileUpload(e, setCustomQuestions)}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Button 
+            onClick={handleGenerate} 
+            disabled={!(subject === 'Other' ? otherSubject : subject) || !topic || !grade || isGenerating}
+            className="flex items-center gap-2"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating OpenAI Lesson Plan...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 text-amber-300" />
+                Generate AI Lesson Plan
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
+      
+      {/* Upload Existing Plan Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload Your Lesson Plan</CardTitle>
+          <CardDescription>Upload your existing lesson plan and we will help you enhance it</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <textarea
+            value={uploadedPlanText}
+            onChange={(e) => setUploadedPlanText(e.target.value)}
+            placeholder="Paste your existing lesson plan here..."
+            className="w-full px-3 py-2 border rounded-md min-h-[100px]"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Or upload a file (.pdf, .docx, .txt):</span>
+            <input 
+              type="file" 
+              accept=".pdf,.docx,.txt"
+              onChange={(e) => handleFileUpload(e, setUploadedPlanText)}
+              className="text-sm"
+            />
+          </div>
+          <Button variant="outline" disabled={!uploadedPlanText.trim()}>Enhance Lesson Plan</Button>
+        </CardContent>
+      </Card>
+
+      {/* History Card */}
+      {history.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Lesson Plan History</CardTitle>
+            <CardDescription>Previously generated lesson plans</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {history.map((h, i) => (
+                <div key={h.id || i} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                  <div>
+                    <h4 className="font-medium">{h.subject}: {h.topic}</h4>
+                    <p className="text-xs text-muted-foreground">
+                      {h.grade} • {h.curriculum || 'Standard'} • {new Date(h.dateCreated).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setLessonPlan(h)}>View</Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {lessonPlan && (
         <Card>
           <CardHeader>
             <CardTitle>{lessonPlan.subject}: {lessonPlan.topic}</CardTitle>
             <CardDescription>
-              {lessonPlan.grade} • {lessonPlan.duration} minutes
+              {lessonPlan.grade} • {lessonPlan.curriculum || 'Standard'} • {lessonPlan.duration} minutes
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

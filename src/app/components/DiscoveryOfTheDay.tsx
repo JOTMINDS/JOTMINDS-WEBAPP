@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Lightbulb, Sparkles, Star, CheckCircle2, Trophy } from 'lucide-react';
+import { Lightbulb, Sparkles, Star, CheckCircle2, Trophy, Loader2, RefreshCw } from 'lucide-react';
+import { generateAIDailyDiscovery } from '../utils/aiService';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface DiscoveryOfTheDayProps {
@@ -54,6 +55,30 @@ export function DiscoveryOfTheDay({ userId, userName, showAsWidget = false }: Di
     selectTodayDiscovery();
     loadProgress();
   }, [userId]);
+
+  const [aiDiscovery, setAiDiscovery] = useState<{
+    title: string;
+    fact: string;
+    challengeQuestion: string;
+    options: string[];
+    correctAnswerIndex: number;
+    explanation: string;
+  } | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  const handleFetchAiDiscovery = async () => {
+    setLoadingAi(true);
+    try {
+      const res = await generateAIDailyDiscovery('Neuroscience & Learning');
+      if (res) {
+        setAiDiscovery(res);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
   const selectTodayDiscovery = () => {
     // Use date as seed for consistent daily discovery
@@ -241,22 +266,59 @@ export function DiscoveryOfTheDay({ userId, userName, showAsWidget = false }: Di
             <div className="flex items-center gap-3">
               <span className="text-5xl">{todayDiscovery.emoji}</span>
               <div>
-                <CardTitle className="text-2xl">💡 New Discovery of the Day!</CardTitle>
+                <CardTitle className="text-2xl">💡 Discovery of the Day!</CardTitle>
                 <CardDescription className="text-white opacity-90 text-base">
                   {todayDiscovery.category}
                 </CardDescription>
               </div>
             </div>
-            {acknowledged && (
-              <Badge className="bg-green-500 text-white text-base px-4 py-2">
-                <CheckCircle2 className="h-5 w-5 mr-1" />
-                Collected!
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-white/20 hover:bg-white/30 text-white border-white/40 flex items-center gap-1.5"
+                onClick={handleFetchAiDiscovery}
+                disabled={loadingAi}
+              >
+                {loadingAi ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 text-yellow-200" />
+                )}
+                Generate AI Discovery
+              </Button>
+              {acknowledged && (
+                <Badge className="bg-green-500 text-white text-base px-4 py-2">
+                  <CheckCircle2 className="h-5 w-5 mr-1" />
+                  Collected!
+                </Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6 pt-6">
+        <CardContent className="pt-6 space-y-6">
+          {aiDiscovery && (
+            <div className="bg-purple-50 dark:bg-purple-950/50 border-2 border-purple-300 dark:border-purple-700 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 font-bold text-purple-900 dark:text-purple-200">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                OpenAI Discovery: {aiDiscovery.title}
+              </div>
+              <p className="text-sm text-gray-700 dark:text-gray-200">{aiDiscovery.fact}</p>
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-purple-200 dark:border-purple-800 space-y-2">
+                <p className="text-xs font-semibold text-purple-800 dark:text-purple-300">
+                  Challenge: {aiDiscovery.challengeQuestion}
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {aiDiscovery.options.map((opt, optIdx) => (
+                    <div key={optIdx} className="p-2 rounded bg-purple-50 dark:bg-purple-900/40 border border-purple-100 dark:border-purple-800">
+                      {optIdx === aiDiscovery.correctAnswerIndex ? '✓ ' : ''}{opt}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-lg border-2 border-yellow-300">
             <div className="flex items-start gap-4">
               <Lightbulb className="h-10 w-10 text-yellow-600 mt-1 flex-shrink-0" />

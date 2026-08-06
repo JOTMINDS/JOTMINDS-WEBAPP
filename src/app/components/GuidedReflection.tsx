@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Lightbulb, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { Lightbulb, MessageSquare, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { generateAIReflectionFeedback } from '../utils/aiService';
 
 interface ReflectionPrompt {
   question: string;
@@ -217,6 +217,32 @@ export function GuidedReflection({ cognitiveStyle, assessmentType, onSaveReflect
     }));
   };
 
+  const [aiFeedback, setAiFeedback] = useState<Record<number, { encouragement: string; insight: string; actionableStep: string }>>({});
+  const [loadingAi, setLoadingAi] = useState<Record<number, boolean>>({});
+
+  const handleGetAIFeedback = async (index: number) => {
+    const text = reflections[index];
+    if (!text || text.trim().length < 10) {
+      toast.error('Please write at least a sentence before requesting AI feedback.');
+      return;
+    }
+
+    setLoadingAi(prev => ({ ...prev, [index]: true }));
+    try {
+      const result = await generateAIReflectionFeedback(text, prompts[index]?.question);
+      if (result) {
+        setAiFeedback(prev => ({ ...prev, [index]: result }));
+        toast.success('AI Feedback generated!');
+      } else {
+        toast.error('Could not generate AI feedback. Please try again.');
+      }
+    } catch (e) {
+      console.error('AI Reflection Feedback error:', e);
+    } finally {
+      setLoadingAi(prev => ({ ...prev, [index]: false }));
+    }
+  };
+
   const handleSave = () => {
     if (onSaveReflection) {
       onSaveReflection(reflections);
@@ -277,6 +303,43 @@ export function GuidedReflection({ cognitiveStyle, assessmentType, onSaveReflect
               onChange={(e) => handleReflectionChange(index, e.target.value)}
               className="min-h-[100px]"
             />
+
+            {/* AI Feedback Action */}
+            <div className="flex justify-between items-center pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs flex items-center gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300"
+                onClick={() => handleGetAIFeedback(index)}
+                disabled={loadingAi[index]}
+              >
+                {loadingAi[index] ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                )}
+                Get AI Coaching Feedback
+              </Button>
+            </div>
+
+            {/* AI Feedback Display */}
+            {aiFeedback[index] && (
+              <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-lg p-4 space-y-2 mt-2">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-800 dark:text-purple-300">
+                  <Sparkles className="w-4 h-4 text-purple-600" />
+                  AI Metacognitive Feedback
+                </div>
+                <p className="text-xs text-gray-700 dark:text-gray-300">
+                  <strong>Encouragement:</strong> {aiFeedback[index].encouragement}
+                </p>
+                <p className="text-xs text-gray-700 dark:text-gray-300">
+                  <strong>Insight:</strong> {aiFeedback[index].insight}
+                </p>
+                <p className="text-xs text-purple-900 dark:text-purple-200 font-medium">
+                  <strong>Action Step:</strong> {aiFeedback[index].actionableStep}
+                </p>
+              </div>
+            )}
           </div>
         ))}
 

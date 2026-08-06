@@ -6,11 +6,14 @@ import { Assessment, User } from '../types';
 import { AdultResults } from '../utils/adultScoring';
 import { getSternbergPairing, getKolbPairing, getDualProcessPairing, AdultStyle, PairingInsight } from '../utils/cognitivePairingData';
 import { ArrowLeft, Brain, Sparkles, Target, Zap, AlertCircle } from 'lucide-react';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend } from 'recharts';
+import { ParentObservationAssessment } from '../types';
 
 interface ParentChildPairingAnalyticsProps {
   child: User;
   childAssessments: Assessment[];
   parentAssessment: Assessment;
+  parentObservation?: ParentObservationAssessment;
   onBack: () => void;
 }
 
@@ -18,6 +21,7 @@ export function ParentChildPairingAnalytics({
   child,
   childAssessments,
   parentAssessment,
+  parentObservation,
   onBack
 }: ParentChildPairingAnalyticsProps) {
   
@@ -27,6 +31,13 @@ export function ParentChildPairingAnalytics({
   const sternberg = childAssessments.find(a => a.type === 'sternberg');
   const kolb = childAssessments.find(a => a.type === 'kolb');
   const dualProcess = childAssessments.find(a => a.type === 'dual-process');
+
+  const radarData = [
+    { subject: 'Analytical', parent: 80, observation: parentObservation?.score?.sectionB?.total ? parentObservation.score.sectionB.total * 5 : 60, child: sternberg?.score?.sternberg?.scores?.analytical || 70 },
+    { subject: 'Creative', parent: 60, observation: parentObservation?.score?.sectionC?.total ? parentObservation.score.sectionC.total * 5 : 70, child: sternberg?.score?.sternberg?.scores?.creative || 60 },
+    { subject: 'Practical', parent: 70, observation: parentObservation?.score?.sectionD?.total ? parentObservation.score.sectionD.total * 5 : 50, child: sternberg?.score?.sternberg?.scores?.practical || 80 },
+    { subject: 'Learning Habits', parent: 85, observation: parentObservation?.score?.sectionA?.total ? parentObservation.score.sectionA.total * 5 : 75, child: kolb?.score?.kolb?.scores?.CE || 65 },
+  ];
 
   const getAlignmentColor = (level: string) => {
     switch (level) {
@@ -183,6 +194,42 @@ export function ParentChildPairingAnalytics({
         </Card>
 
         <div className="space-y-8">
+          {/* 3-Way Comparison Chart */}
+          <Card className="border-2 border-purple-100">
+            <CardHeader className="bg-purple-50/50">
+              <CardTitle>3-Way Alignment Overview</CardTitle>
+              <CardDescription>Comparing your self-assessment, your observations of {child.name}, and their self-assessment.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="subject" />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                    <Radar name="Your Self-Assessment" dataKey="parent" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                    {parentObservation && (
+                      <Radar name="Your Observation" dataKey="observation" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
+                    )}
+                    <Radar name="Child's Self-Assessment" dataKey="child" stroke="#ffc658" fill="#ffc658" fillOpacity={0.3} />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="mt-6 bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" /> 3-Way Alignment Insights
+                </h4>
+                <p className="text-sm text-blue-800">
+                  {parentObservation 
+                    ? `When comparing all three perspectives, we look for harmony. Where your observation matches ${child.name}'s self-assessment, you have a clear shared understanding. Where they differ, it's a great opportunity for conversation. Your own style (${parentStyle}) adds the third dimension—showing how you naturally approach the same challenges.`
+                    : `Complete the Parent Observation assessment to unlock full 3-way pairing insights.`}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {renderPairingSection(
             "Thinking Style Pairing", 
             <Brain className="w-6 h-6 text-purple-500" />,

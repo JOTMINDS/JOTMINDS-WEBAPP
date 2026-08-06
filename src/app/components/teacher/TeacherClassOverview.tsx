@@ -29,11 +29,27 @@ const COLORS = {
 export function TeacherClassOverview({ students, assessments }: TeacherClassOverviewProps) {
   // Calculate class statistics
   const totalStudents = students.length;
-  const studentsWithAssessments = students.filter(s => 
-    assessments.some(a => a.userId === s.id && (a.completed || a.completedAt))
-  ).length;
   
-  const completedAssessments = assessments.filter(a => a.completed || a.completedAt).length;
+  // Deduplicate assessments by userId and type to prevent double counting
+  const uniqueAssessmentsMap = new Map();
+  assessments.forEach(a => {
+    if (a.completed || a.completedAt) {
+      // Normalize type for grouping
+      const typeStr = ((a.type as string) === 'learning' || a.type === 'kolb') ? 'kolb' : 
+                      ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) ? 'thinking' :
+                      ((a.type as string) === 'decision' || a.type === 'dual-process') ? 'decision' : a.type;
+      const key = `${a.userId}-${typeStr}`;
+      uniqueAssessmentsMap.set(key, a);
+    }
+  });
+  const uniqueCompletedAssessments = Array.from(uniqueAssessmentsMap.values());
+  
+  const studentsWithAssessments = students.filter(s => 
+    uniqueCompletedAssessments.some(a => a.userId === s.id)
+  ).length;
+  const studentsWithoutAssessments = totalStudents - studentsWithAssessments;
+  
+  const completedAssessments = uniqueCompletedAssessments.length;
   const averageCompletion = totalStudents > 0 
     ? Math.round((studentsWithAssessments / totalStudents) * 100) 
     : 0;
@@ -80,11 +96,11 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
   }));
 
   // Assessment completion by type
-  const kolbCount = assessments.filter(a => (a.type === 'kolb' || (a.type as any) === 'learning') && (a.completed || a.completedAt)).length;
-  const thinkingCount = assessments.filter(a => 
-    ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type) && (a.completed || a.completedAt)
+  const kolbCount = uniqueCompletedAssessments.filter(a => (a.type === 'kolb' || (a.type as any) === 'learning')).length;
+  const thinkingCount = uniqueCompletedAssessments.filter(a => 
+    ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type)
   ).length;
-  const decisionCount = assessments.filter(a => (a.type === 'dual-process' || (a.type as any) === 'decision') && (a.completed || a.completedAt)).length;
+  const decisionCount = uniqueCompletedAssessments.filter(a => (a.type === 'dual-process' || (a.type as any) === 'decision')).length;
 
   const completionData = [
     { name: 'Learning Style', completed: kolbCount, pending: Math.max(0, totalStudents - kolbCount), total: totalStudents },
@@ -96,7 +112,7 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
     <div className="min-h-screen bg-[#F5F7FF]">
       <div className="px-4 lg:px-6 py-4 space-y-6 max-w-[960px] mx-auto">
         {/* Class Stats Header */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="rounded-2xl shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -120,6 +136,20 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
                 </div>
                 <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                   <Award className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[13px] text-muted-foreground font-medium">Pending Students</p>
+                  <p className="text-[24px] font-bold mt-1 text-red-500">{studentsWithoutAssessments}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-red-600" />
                 </div>
               </div>
             </CardContent>

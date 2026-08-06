@@ -77,7 +77,7 @@ export function TeacherAppHeader({ user, onLogout, onViewAnalytics, onViewPrivac
                   style={{ borderColor: '#5B7DB1', color: '#5B7DB1' }}
                 >
                   <Brain className="h-4 w-4 mr-2" />
-                  Teacher Intelligence
+                  Teacher Insights
                 </Button>
               )}
               {onViewAnalytics && (

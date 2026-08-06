@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
 import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher } from '../utils/storage';
+import { getInstitutionClasses, getInstitutionForMember } from '../utils/institution';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap } from 'lucide-react';
@@ -22,7 +23,6 @@ import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { calculateJTIAScore, JTIAReportData } from '../utils/jtiaScoring';
 import { TeacherStudentManagement } from './TeacherStudentManagement';
 import { getUserJotsCode } from '../utils/jotsCode';
-import { getInstitutionForMember, getInstitutionClasses } from '../utils/institution';
 import { generateDeepDiveQuestions } from '../utils/teachingStyleData';
 import { AdultThinkingContainer } from './AdultThinkingContainer';
 import { AILessonPlannerContainer } from './lessonPlanner/AILessonPlannerContainer';
@@ -63,7 +63,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   useEffect(() => {
     const initClasses = async () => {
       try {
-        let instId = user.institutionId || '';
+        let instId = (user as any).institutionId || '';
         if (!instId) {
           const inst = await getInstitutionForMember(user.id);
           if (inst) instId = inst.id;

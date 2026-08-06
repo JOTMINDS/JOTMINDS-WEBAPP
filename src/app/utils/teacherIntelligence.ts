@@ -1,4 +1,4 @@
-// Teacher Intelligence & School Analytics System
+// Teacher Insights & School Analytics System
 // Provides classroom insights, differentiated learning recommendations, and analytics
 
 export interface StudentCognitiveProfile {
@@ -460,8 +460,9 @@ export function generateDifferentiatedLesson(
   subject: string,
   topic: string,
   grade: string,
-  classDistribution: ClassroomDistribution
-): DifferentiatedLessonPlan {
+  classDistribution: ClassroomDistribution,
+  curriculum?: string
+): DifferentiatedLessonPlan & { curriculum?: string } {
   // This would be enhanced with AI in production
   // For now, we'll return a template structure
 
@@ -470,6 +471,7 @@ export function generateDifferentiatedLesson(
     subject,
     topic,
     grade,
+    curriculum,
     objectives: [
       `Understand key concepts of ${topic}`,
       'Apply learning through practical activities',

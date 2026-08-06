@@ -44,7 +44,7 @@ interface StudyGoal {
 const ANNOUNCEMENTS = [
   { id: 'ann1', title: '🎉 345 Assessment Questions Now Live', body: 'Kolb, Sternberg, and Decision-Making question banks are available. Take your assessments to build your cognitive profile!', priority: 'high' },
   { id: 'ann2', title: '🧠 AI Learning Coach Available', body: 'Your personalised AI Coach creates study plans, weekly planners, and smart reminders based on your cognitive profile.', priority: 'normal' },
-  { id: 'ann3', title: '📊 Teacher Intelligence & School Analytics', body: 'Head teachers and school admins now have class heatmaps, intervention recommendations, and Jots Code linking.', priority: 'normal' },
+  { id: 'ann3', title: '📊 Teacher Insights & School Analytics', body: 'Head teachers and school admins now have class heatmaps, intervention recommendations, and Jots Code linking.', priority: 'normal' },
 ];
 
 const GOAL_TEMPLATES: Omit<StudyGoal, 'id' | 'current' | 'completed' | 'createdAt'>[] = [
@@ -232,7 +232,7 @@ export function PlatformEssentials({ user, onBack, onNavigate }: PlatformEssenti
     { label: 'Cognitive Growth Tracker', available: true, desc: 'XP, milestones, progress graphs' },
     { label: 'Brain Gym', available: true, desc: 'Daily cognitive exercises' },
     { label: 'Gamification', available: true, desc: 'Badges, streaks, levels' },
-    { label: 'Teacher Intelligence', available: user.role === 'teacher' || user.role === 'school_admin' || user.role === 'admin', desc: 'Class analytics & interventions' },
+    { label: 'Teacher Insights', available: user.role === 'teacher' || user.role === 'school_admin' || user.role === 'admin', desc: 'Class analytics & interventions' },
     { label: 'School Analytics', available: user.role === 'school_admin' || user.role === 'admin', desc: 'School-wide performance data' },
   ];
 

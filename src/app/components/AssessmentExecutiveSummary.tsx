@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Brain, BookOpen, Target, TrendingUp, Award, Sparkles } from 'lucide-react';
+import { Brain, BookOpen, Target, TrendingUp, Award, Sparkles, Loader2, Quote } from 'lucide-react';
 import { 
   RadarChart, 
   PolarGrid, 
@@ -21,7 +21,7 @@ import {
   Pie
 } from 'recharts';
 import { getAssessmentResults, getAllAssessmentResults } from '../utils/api';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { generateAICognitiveExecutiveSummary } from '../utils/aiService';
 
 interface AssessmentExecutiveSummaryProps {
   userId: string;
@@ -44,6 +44,25 @@ export function AssessmentExecutiveSummary({ userId }: AssessmentExecutiveSummar
   const [loading, setLoading] = useState(true);
 
   console.log('[Executive Summary] Component mounted for userId:', userId);
+
+  const [aiExecutiveSummary, setAiExecutiveSummary] = useState<{
+    narrativeSummary: string;
+    keyTakeaway: string;
+    personalizedMantra: string;
+  } | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  const handleFetchAiSummary = async () => {
+    setLoadingAi(true);
+    try {
+      const summary = await generateAICognitiveExecutiveSummary({ results, userId });
+      if (summary) setAiExecutiveSummary(summary);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
   useEffect(() => {
     console.log('[Executive Summary] useEffect triggered');
@@ -223,12 +242,40 @@ export function AssessmentExecutiveSummary({ userId }: AssessmentExecutiveSummar
                 <CardDescription>Your comprehensive cognitive profile across three assessments</CardDescription>
               </div>
             </div>
-            <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2">
-              {completionCount}/3 Complete
-            </Badge>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleFetchAiSummary}
+                disabled={loadingAi}
+                className="px-3 py-1.5 rounded-md bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium flex items-center gap-1.5 shadow"
+              >
+                {loadingAi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                Generate AI Narrative
+              </button>
+              <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2">
+                {completionCount}/3 Complete
+              </Badge>
+            </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {aiExecutiveSummary && (
+            <div className="bg-purple-100/70 dark:bg-purple-950/60 border border-purple-300 dark:border-purple-800 rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-purple-900 dark:text-purple-200">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                OpenAI Cognitive Narrative Summary
+              </div>
+              <p className="text-gray-700 dark:text-gray-200 leading-relaxed">
+                {aiExecutiveSummary.narrativeSummary}
+              </p>
+              <p className="text-purple-950 dark:text-purple-100 font-semibold">
+                <strong>Key Takeaway:</strong> {aiExecutiveSummary.keyTakeaway}
+              </p>
+              <div className="flex items-center gap-1.5 italic text-purple-800 dark:text-purple-300 pt-1">
+                <Quote className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                "{aiExecutiveSummary.personalizedMantra}"
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Learning Style Summary */}
             <div className={`p-4 rounded-xl border-2 ${results.learning ? 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-300' : 'bg-gray-50 border-gray-200'}`}>

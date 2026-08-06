@@ -2,11 +2,61 @@ import { Hono } from 'npm:hono';
 
 const aiRoutes = new Hono();
 
-// OpenAI API Key with fallback to environment variable
 const DEFAULT_KEY_P1 = 'sk-proj-RSXpvjInsGg_7PkJg8SDsHQE_hw0HrQmy_jOKcOB4Im_KiAZUpPMBKpwR20o0W3tAEwFWUQ_RmT3Bl';
 const DEFAULT_KEY_P2 = 'bkFJQAUuxjZdRFPEE17bT2Up9Y-gnXzEPrrcUVjtXgjUi6cNWFtGMuGbh78Nf2FHkK7-w-498pnigA';
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || (DEFAULT_KEY_P1 + DEFAULT_KEY_P2);
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+
+aiRoutes.post('/chat', async (c) => {
+  try {
+    const { messages, userProfile } = await c.req.json();
+
+    if (!messages || !Array.isArray(messages)) {
+      return c.json({ error: 'Messages array is required' }, 400);
+    }
+
+    const systemMessage = {
+      role: 'system',
+      content: `You are the JotMinds AI Learning Coach, an encouraging, highly knowledgeable, and empathetic AI tutor and educational strategist.
+You specialize in cognitive profiles, personalized learning strategies, study techniques, and academic advice.
+${userProfile ? `User Profile Context: ${JSON.stringify(userProfile)}` : ''}
+
+Keep your answers structured, actionable, warm, and supportive. Use markdown formatting when appropriate.`
+    };
+
+    if (OPENAI_API_KEY) {
+      const response = await fetch(OPENAI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [systemMessage, ...messages],
+          temperature: 0.7,
+          max_tokens: 600
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('OpenAI Chat API Error:', errText);
+        return c.json({ error: 'Failed to generate chat response from OpenAI' }, 500);
+      }
+
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || 'I could not generate a response right now. Please try again.';
+      return c.json({ reply });
+    } else {
+      return c.json({ error: 'No AI Provider configured' }, 500);
+    }
+  } catch (error) {
+    console.error('AI Chat Error:', error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
+});
 
 aiRoutes.post('/generate-insights', async (c) => {
   try {
@@ -90,6 +140,61 @@ You must respond with valid JSON matching exactly this structure:
     const insightsJson = JSON.parse(aiText);
     return c.json(insightsJson);
 
+=======
+    if (OPENAI_API_KEY) {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `Analyze these scores and return the JSON: ${JSON.stringify(scores)}` }
+          ],
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error('OpenAI Insights Error:', err);
+        return c.json({ error: 'Failed to generate insights from OpenAI' }, 500);
+      }
+
+      const data = await response.json();
+      const aiText = data.choices?.[0]?.message?.content;
+      if (!aiText) return c.json({ error: 'Invalid response from OpenAI' }, 500);
+      return c.json(JSON.parse(aiText));
+    } else if (GEMINI_API_KEY) {
+      const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      const response = await fetch(GEMINI_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: `Analyze these scores and return the JSON: ${JSON.stringify(scores)}` }] }],
+          generationConfig: { response_mime_type: "application/json", temperature: 0.7 }
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error('Gemini API Error:', err);
+        return c.json({ error: 'Failed to generate insights from Gemini' }, 500);
+      }
+
+      const data = await response.json();
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!aiText) return c.json({ error: 'Invalid response from Gemini' }, 500);
+      return c.json(JSON.parse(aiText));
+    } else {
+      return c.json({ error: 'No AI Provider configured' }, 500);
+    }
+>>>>>>> 36bd5346 (feat: JotMinds platform enhancements & live OpenAI integrations across 6 key modules)
   } catch (error) {
     console.error('AI Generation Error:', error);
     return c.json({ error: 'Internal Server Error' }, 500);
@@ -402,3 +507,4 @@ You must respond with valid JSON matching exactly this structure:
 });
 
 export default aiRoutes;
+

@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Reflection, Assessment } from '../types';
 import { getUserReflections, getUserAssessments } from '../utils/storage';
+import { getReflections } from '../utils/api';
 import { FileText, Search, Calendar, Eye, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { formatDateTime, formatDate } from '../utils/dateFormat';
@@ -25,12 +26,30 @@ export function ReflectionsViewer({ userId, onViewAssessment }: ReflectionsViewe
     loadData();
   }, [userId]);
 
-  const loadData = () => {
+  const loadData = async () => {
     const userReflections = getUserReflections(userId);
     const userAssessments = getUserAssessments(userId);
     
+    let serverReflections: Reflection[] = [];
+    try {
+      const res = await getReflections();
+      if (res.success && res.reflections) {
+        serverReflections = res.reflections;
+      }
+    } catch (e) {
+      console.error('Failed to load server reflections', e);
+    }
+
+    // Merge and remove duplicates by ID
+    const mergedMap = new Map<string, Reflection>();
+    [...userReflections, ...serverReflections].forEach(r => {
+      mergedMap.set(r.id, r);
+    });
+
+    const mergedReflections = Array.from(mergedMap.values());
+    
     // Sort reflections by date, newest first
-    const sortedReflections = userReflections.sort((a, b) => 
+    const sortedReflections = mergedReflections.sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
     
