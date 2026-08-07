@@ -13,9 +13,10 @@ import {
   ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, PieChart, Pie, Cell, Legend, LineChart, Line
 } from 'recharts';
-import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher } from '../utils/storage';
+import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher, getRelatedTeacherAccounts } from '../utils/storage';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
+import { toast } from 'sonner';
 import { JTIAReport } from './JTIAReport';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
@@ -177,13 +178,16 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
 
   const students = useMemo(() => {
     const allUsers = getAllUsers();
+    const relatedTeachers = getRelatedTeacherAccounts(user);
     const classes = getAllClasses();
-    const assignments = getAssignmentsForTeacher(user.id);
+    
     const teacherClassIds = new Set<string>();
-    classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className || user.role === 'teacher').forEach(c => teacherClassIds.add(c.id));
-    assignments.forEach(a => teacherClassIds.add(a.classId));
+    relatedTeachers.forEach(rt => {
+      classes.filter(c => !c.classTeacherId || c.classTeacherId === rt.id || c.classTeacherId === rt.email || c.id === rt.classId || c.name === rt.className).forEach(c => teacherClassIds.add(c.id));
+      getAssignmentsForTeacher(rt.id).forEach(a => teacherClassIds.add(a.classId));
+    });
 
-    let raw = allUsers.filter((u: User) => isStudentConnectedToTeacher(u, user, teacherClassIds));
+    let raw = allUsers.filter((u: User) => relatedTeachers.some(rt => isStudentConnectedToTeacher(u, rt, teacherClassIds)));
     return raw.slice(0, 100);
   }, [user]);
 
@@ -250,9 +254,15 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
         }))
       }
     }).then(res => {
-      if (res) setAiClassroomReport(res);
-    }).catch(err => console.error('Classroom AI report error:', err))
-      .finally(() => setIsGeneratingClassAi(false));
+      if (res) {
+        setAiClassroomReport(res);
+      } else {
+        toast.error('AI Insights generation failed.');
+      }
+    }).catch(err => {
+      console.error('Classroom AI report error:', err);
+      toast.error('AI Insights generation failed.');
+    }).finally(() => setIsGeneratingClassAi(false));
   };
 
   useEffect(() => {
@@ -298,7 +308,7 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
               className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Take JTIA (120 Items)
+              Take Teacher Insights Assessment
             </Button>
             <Badge className="bg-blue-50 text-blue-700">{stats.assessed}/{stats.total} assessed</Badge>
           </div>

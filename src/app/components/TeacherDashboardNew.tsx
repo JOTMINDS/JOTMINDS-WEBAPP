@@ -3,7 +3,7 @@ import { User, Assessment } from '../types';
 import { useAuth } from './AuthContext';
 import { getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
 import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
-import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher } from '../utils/storage';
+import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher, getRelatedTeacherAccounts } from '../utils/storage';
 import { getInstitutionClasses, getInstitutionForMember } from '../utils/institution';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
@@ -136,7 +136,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         const classes = getAllClasses();
         const assignments = getAssignmentsForTeacher(user.id);
         const teacherClassIds = new Set<string>();
-        classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className || user.role === 'teacher').forEach(c => teacherClassIds.add(c.id));
+        classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className).forEach(c => teacherClassIds.add(c.id));
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
         studentUsers = allUsers.filter(u => isStudentConnectedToTeacher(u, user, teacherClassIds));
@@ -251,12 +251,15 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         let localStudents: User[] = [];
         const allUsers = getAllUsers();
         const classes = getAllClasses();
-        const assignments = getAssignmentsForTeacher(user.id);
-        const teacherClassIds = new Set<string>();
-        classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className || user.role === 'teacher').forEach(c => teacherClassIds.add(c.id));
-        assignments.forEach(a => teacherClassIds.add(a.classId));
+        const relatedTeachers = getRelatedTeacherAccounts(user);
         
-        localStudents = allUsers.filter(u => isStudentConnectedToTeacher(u, user, teacherClassIds));
+        const teacherClassIds = new Set<string>();
+        relatedTeachers.forEach(rt => {
+          classes.filter(c => !c.classTeacherId || c.classTeacherId === rt.id || c.classTeacherId === rt.email || c.id === rt.classId || c.name === rt.className).forEach(c => teacherClassIds.add(c.id));
+          getAssignmentsForTeacher(rt.id).forEach(a => teacherClassIds.add(a.classId));
+        });
+        
+        localStudents = allUsers.filter(u => relatedTeachers.some(rt => isStudentConnectedToTeacher(u, rt, teacherClassIds)));
         
         // Scope local assessments to only this teacher's students
         const localStudentIds = new Set(localStudents.map(s => s.id));
@@ -771,7 +774,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <History className="h-5 w-5 text-muted-foreground" />
-                      JTIA Assessment History
+                      Teacher Insights Assessment (JTIA) History
                     </CardTitle>
                     <CardDescription>
                       Track how your Teacher Insights domains have evolved over time.
@@ -790,7 +793,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                                 JTIA Profile • Completed {new Date(assessment.completedAt || "").toLocaleDateString()}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                5 Core Teacher Intelligence Domains
+                                5 Core Teacher Insights Domains
                               </p>
                             </div>
                           </div>
@@ -833,6 +836,69 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               </button>
             </div>
           )}
+
+            {/* All Assessment History */}
+            <Card className="border-2 border-gray-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-indigo-600" />
+                  Complete Assessment History
+                </CardTitle>
+                <CardDescription>
+                  A unified list of all assessments you have taken on the platform.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const completed = [...allMyAssessments, ...allAssessments]
+                    .filter(a => a.userId === user.id && a.completedAt && a.score)
+                    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+
+                  if (completed.length === 0) {
+                    return <div className="text-gray-500 text-sm text-center py-4">You have not completed any assessments yet.</div>;
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      {completed.map((assmt, idx) => (
+                        <div key={assmt.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
+                          <div>
+                            <h5 className="font-semibold text-gray-900 capitalize flex items-center gap-2">
+                              {assmt.type.replace('-', ' ')}
+                              <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">Completed</Badge>
+                            </h5>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(assmt.completedAt!).toLocaleDateString()} at {new Date(assmt.completedAt!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </p>
+                          </div>
+                          <div className="mt-3 sm:mt-0 text-sm bg-white border px-3 py-2 rounded-md">
+                            {assmt.type === 'jtia' ? (
+                              <div className="text-xs">
+                                <span className="text-gray-500">Overall Score:</span> <span className="font-medium text-indigo-700">{(assmt.report || assmt.results || assmt.score?.jtia)?.overallScore || 'Completed'}/100</span>
+                              </div>
+                            ) : assmt.type === 'kolb' ? (
+                              <div className="text-xs">
+                                <span className="text-gray-500">Style:</span> <span className="font-medium text-pink-600">{assmt.score.kolb?.style || 'N/A'}</span>
+                              </div>
+                            ) : assmt.type === 'dual-process' ? (
+                              <div className="text-xs">
+                                <span className="text-gray-500">Style:</span> <span className="font-medium text-orange-600">{assmt.score.dualProcess?.style || 'N/A'}</span>
+                              </div>
+                            ) : (
+                              <div className="text-xs">
+                                <span className="text-gray-500">Style:</span> <span className="font-medium text-blue-600">
+                                  {assmt.score?.sternberg?.style || assmt.score?.['adult-thinking']?.primaryStyle || assmt.score?.['shs-thinking']?.primaryStyle || assmt.score?.['jhs-thinking']?.primaryStyle || 'N/A'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
           </div>
         )}
 
