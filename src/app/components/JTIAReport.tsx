@@ -121,7 +121,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             </Badge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            JotMinds Teacher Insights Profile (JTIA)
+            JotMinds Teaching Insights Assessment
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-2xl">
             Understanding the cognitive styles and pedagogical strengths behind great teaching. A holistic, non-competitive analysis of your classroom decision-making.
@@ -156,7 +156,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             Designed for Development, Not Ranking
           </h4>
           <p className="text-xs md:text-sm text-slate-300 mt-1">
-            The JotMinds Teacher Insights Assessment does not rank or compare teachers against one another. Unlike traditional compliance evaluations, your JTIA profile is dedicated entirely to personal self-awareness, professional growth, and classroom excellence.
+            The JotMinds Teaching Insights Assessment does not rank or compare teachers against one another. Unlike traditional compliance evaluations, your JTIA profile is dedicated entirely to personal self-awareness, professional growth, and classroom excellence.
           </p>
         </div>
       </div>
@@ -306,6 +306,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                           <div className="text-[10px] text-slate-400 uppercase font-semibold mt-1">
                             Domain Orientation
                           </div>
+
                         </div>
                       </div>
                     </CardContent>
@@ -409,14 +410,14 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-bold text-white">
-                        JotMinds AI Personalised Development Pathway
+                        Personalised Development Pathway
                       </h3>
                       <Badge variant="outline" className="bg-purple-500/20 text-purple-200 border-purple-500/30 text-xs">
                         {aiRecommendations ? 'Live AI Variations' : 'Algorithmic Guidance'}
                       </Badge>
                     </div>
                     <p className="text-sm text-purple-200">
-                      Custom-curated learning resources, classroom activities, coaching suggestions, and career growth pathways based on your 120 JTIA responses.
+                      Custom-curated learning resources, classroom activities, coaching suggestions, and career growth pathways based on your JTIA responses.
                     </p>
                   </div>
                 </div>

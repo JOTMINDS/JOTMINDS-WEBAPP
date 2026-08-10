@@ -180,7 +180,7 @@ export function getCopilotChatHistory(): CopilotChatMessage[] {
     {
       id: 'msg-1',
       sender: 'copilot',
-      text: 'Hello Teacher! I am your AI Lesson Copilot. How can I assist your lesson planning today? (e.g. "Create a 60-minute lesson on Photosynthesis for SHS 1" or "Generate 3 group activity ideas")',
+      text: 'Hello Teacher! I am Jottie, your AI Lesson Copilot. How can I assist your lesson planning today? (e.g. "Create a 60-minute lesson on Photosynthesis for SHS 1" or "Generate 3 group activity ideas")',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ];

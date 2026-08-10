@@ -297,7 +297,7 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
           <div className="flex-1">
             <h1 className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-[#5B7DB1]" />
-              Teacher Insights
+              Teaching Insights
             </h1>
             <p className="text-xs text-gray-500">{user.school ?? 'All students'} · {stats.total} students</p>
           </div>
@@ -320,7 +320,7 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
             ['interventions', Lightbulb, 'Interventions'],
             ['trends', TrendingUp, 'Class Trends'],
             ['jtia-report', Brain, 'My JTIA Profile (5 Domains)'],
-            ['jtia-school', Users, 'School Intelligence (JTIA)'],
+            ['jtia-school', Users, 'School Insights (JTIA)'],
           ] as const).map(([t, Icon, label]) => (
             <button
               key={t}

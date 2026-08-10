@@ -81,7 +81,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             onClick={() => setIsCopilotOpen(true)}
             className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold shadow-md text-xs"
           >
-            <Sparkles className="w-4 h-4 mr-1.5" /> AI Copilot Chat
+            <Sparkles className="w-4 h-4 mr-1.5" /> Jottie Chat
           </Button>
           {activePlan && (
             <Button

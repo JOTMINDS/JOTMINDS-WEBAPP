@@ -187,10 +187,10 @@ export function TeacherManagementContent({
         {/* PERFORMANCE TAB */}
         {activeTab === 'performance' && (
           <div className="space-y-5">
-            {/* Teacher Intelligence Profile (JTIA) */}
+            {/* Teaching Insights Profile (JTIA) */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teacher Intelligence Profile (JTIA)
+                <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teaching Insights Profile (JTIA)
               </h4>
               {jtiaAssmt && (jtiaAssmt.report || jtiaAssmt.results || jtiaAssmt.score?.jtia) ? (
                 <div className="grid grid-cols-2 gap-4">
@@ -202,12 +202,12 @@ export function TeacherManagementContent({
                   </div>
                   <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg">
                     <p className="text-xs text-blue-600 font-medium mb-1">Assessment Status</p>
-                    <p className="font-semibold text-blue-900">120-Item Profile Complete</p>
+                    <p className="font-semibold text-blue-900">Profile Complete</p>
                   </div>
                 </div>
               ) : (
                 <div className="bg-white p-4 rounded-lg text-sm text-gray-500 border border-gray-200 text-center">
-                  This teacher has not yet completed the 120-item Teacher Intelligence Assessment (JTIA).
+                  This teacher has not yet completed the Teaching Insights Assessment (JTIA).
                 </div>
               )}
             </div>
@@ -304,7 +304,7 @@ export function TeacherManagementContent({
                         {assmt.type === 'jtia' ? (
                           <div className="grid grid-cols-2 gap-2">
                             <div><span className="text-gray-500">Overall Score:</span> {(assmt.report || assmt.results || assmt.score?.jtia)?.overallScore || 'Completed'}/100</div>
-                            <div><span className="text-gray-500">Status:</span> 120-Item Profile Complete</div>
+                            <div><span className="text-gray-500">Status:</span> Profile Complete</div>
                           </div>
                         ) : (
                           <div className="space-y-1">

@@ -386,7 +386,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
         <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-0 overflow-x-auto">
           {([
             ['overview', Layers, 'Overview'],
-            ['teaching', BookOpen, 'Teacher Intelligence (JTIA)'],
+            ['teaching', BookOpen, 'Teaching Insights (JTIA)'],
             ['cognitive', Brain, 'Cognitive Profile'],
             ['analysis', TrendingUp, 'Full Analysis'],
           ] as const).map(([t, Icon, label]) => (

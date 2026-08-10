@@ -40,8 +40,11 @@ import {
   Mail,
   Upload,
   Target,
-  ArrowLeft
+  ArrowLeft,
+  QrCode
 } from 'lucide-react';
+import { DashboardLayout } from './ui/dashboard-layout';
+import { NavGroup } from './ui/collapsible-sidebar';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { formatDate } from '../utils/dateFormat';
@@ -388,107 +391,52 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
     }).length
   };
 
+  const supervisorNavGroups: NavGroup[] = [
+    {
+      groupLabel: 'Organization Management',
+      items: [
+        { id: 'overview', label: 'Overview', icon: Building2 },
+        { id: 'professionals', label: 'Professionals', icon: Users },
+        { id: 'insights', label: 'Org Insights', icon: BarChart3 },
+        { id: 'role-fit', label: 'Role Matcher', icon: Target },
+        { id: 'codes', label: 'Org Codes', icon: QrCode },
+      ]
+    }
+  ];
+
+  const supervisorHeaderContent = (
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+        <Building2 className="h-4 w-4 text-white" />
+      </div>
+      <div className="min-w-0">
+        <h1 className="text-base font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent truncate">
+          {user.organizationName}
+        </h1>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+          {dashboardTitle} {user.industrySector ? `• ${user.industrySector}` : ''}
+        </p>
+      </div>
+      <Button variant="outline" size="sm" onClick={handleExportCSV} className="ml-auto flex items-center gap-1.5 text-xs">
+        <Download className="h-3.5 w-3.5" />
+        Export CSV
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] text-slate-900 dark:text-slate-100 font-sans selection:bg-purple-200 dark:selection:bg-purple-900">
+    <DashboardLayout
+      navGroups={supervisorNavGroups}
+      activeTab={activeTab}
+      setActiveTab={(val: any) => setActiveTab(val)}
+      user={user}
+      onLogout={onLogout}
+      brandSubtitle="Supervisor Portal"
+      onOpenSettings={onViewSettings}
+      headerContent={supervisorHeaderContent}
+    >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        {/* Premium Header & Navigation */}
-        <header className="sticky top-0 z-40 w-full bg-white/70 dark:bg-black/70 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 transition-all duration-300">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              {/* Logo / Title Area */}
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
-                    <Building2 className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-                      {user.organizationName}
-                    </h1>
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {dashboardTitle} {user.industrySector ? `• ${user.industrySector}` : ''}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Horizontal Navigation */}
-                <TabsList className="hidden md:flex h-full bg-transparent p-0 space-x-1 border-0">
-                  <TabsTrigger 
-                    value="overview" 
-                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none"
-                  >
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="professionals" 
-                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none"
-                  >
-                    Professionals
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="insights" 
-                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none"
-                  >
-                    Insights
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="role-fit" 
-                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none flex items-center gap-2"
-                  >
-                    <Target className="w-4 h-4" /> Role Matcher
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="codes" 
-                    className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-lg px-4 py-2 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-0 shadow-none flex items-center gap-2"
-                  >
-                    Codes
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              {/* Actions Area */}
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex flex-col items-end mr-2">
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-none">{user.name}</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{user.position}</p>
-                </div>
-                
-                <Button variant="ghost" size="icon" onClick={handleExportCSV} className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full" title="Export CSV">
-                  <Download className="h-4 w-4" />
-                </Button>
-                
-                {onViewSettings && (
-                  <Button variant="ghost" size="icon" onClick={onViewSettings} className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full" title="Settings">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                )}
-                
-                <Button variant="ghost" size="icon" onClick={onLogout} className="text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full" title="Logout">
-                  <LogOut className="h-4 w-4" />
-                </Button>
-                
-                {/* Mobile Menu Trigger Placeholder (if needed) */}
-                <div className="md:hidden">
-                {/* @ts-ignore */}
-                <MobileHeaderMenu user={user} onLogout={onLogout} onSettings={onViewSettings} />
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Mobile Navigation (shows below header on small screens) */}
-          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-black/50 backdrop-blur-md px-2 py-2 overflow-x-auto">
-            <TabsList className="flex w-full justify-start bg-transparent p-0 border-0 gap-1 h-auto">
-              <TabsTrigger value="overview" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Overview</TabsTrigger>
-              <TabsTrigger value="professionals" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Professionals</TabsTrigger>
-              <TabsTrigger value="insights" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Insights</TabsTrigger>
-              <TabsTrigger value="role-fit" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Roles</TabsTrigger>
-              <TabsTrigger value="codes" className="flex-1 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-white/10 shadow-none rounded-md text-xs py-2">Codes</TabsTrigger>
-            </TabsList>
-          </div>
-        </header>
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-500">
+        <main className="max-w-7xl mx-auto py-8 space-y-8 animate-in fade-in duration-500">
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-8 mt-0 border-0 p-0">
             {/* Premium Hero Section */}
@@ -961,7 +909,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
             onClose={() => setShowRoleProfilesModal(false)} 
           />
         )}
-      </div>
+    </DashboardLayout>
   );
 }
 

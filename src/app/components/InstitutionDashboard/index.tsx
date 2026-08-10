@@ -5,6 +5,8 @@ import { Badge } from '../ui/badge';
 import {
   ArrowLeft, Building2, QrCode, Users, BarChart3, Download, Settings, Shield, Loader, LogOut, Brain
 } from 'lucide-react';
+import { DashboardLayout } from '../ui/dashboard-layout';
+import { NavGroup } from '../ui/collapsible-sidebar';
 import { User } from '../../types';
 import {
   Institution,
@@ -313,82 +315,72 @@ export function InstitutionDashboard({
   const isPrimaryAdmin = institution.adminId === user.id;
   const isCoAdmin = institution.coAdminIds?.includes(user.id) ?? false;
   
-  let availableTabs: Tab[];
-  if (isPrimaryAdmin) {
-    availableTabs = ['overview', 'code', 'members', 'manage_students', 'classes', 'analytics', 'reports', 'teacher_styles', 'settings', 'profile'];
-  } else if (isCoAdmin) {
-    availableTabs = ['overview', 'members', 'manage_students', 'classes', 'analytics', 'reports', 'teacher_styles', 'profile'];
-  } else {
-    availableTabs = ['overview', 'members', 'manage_students', 'analytics', 'reports', 'teacher_styles', 'profile'];
-  }
+  const institutionNavGroups: NavGroup[] = [
+    {
+      groupLabel: 'School Administration',
+      items: [
+        { id: 'overview', label: 'School Overview', icon: Building2 },
+        ...(isPrimaryAdmin ? [{ id: 'code', label: 'School Codes', icon: QrCode }] : []),
+        { id: 'members', label: 'Teacher Roster', icon: Users },
+        { id: 'manage_students', label: 'Student Directory', icon: Users },
+        ...(isPrimaryAdmin || isCoAdmin ? [{ id: 'classes', label: 'Classes & Groups', icon: Building2 }] : []),
+      ]
+    },
+    {
+      groupLabel: 'Pedagogical & Analytics',
+      items: [
+        { id: 'analytics', label: 'Assessment Analytics', icon: BarChart3 },
+        { id: 'reports', label: 'Reporting & Export', icon: Download },
+        { id: 'teacher_styles', label: 'Educator Styles', icon: Brain },
+      ]
+    },
+    {
+      groupLabel: 'Account & Settings',
+      items: [
+        ...(isPrimaryAdmin ? [{ id: 'settings', label: 'School Settings', icon: Settings }] : []),
+        { id: 'profile', label: 'My Profile', icon: Shield },
+      ]
+    }
+  ];
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={onLogout} className="gap-1">
-            <LogOut className="w-4 h-4" /> Logout
-          </Button>
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            {institution.logo ? (
-              <img src={institution.logo} alt="Logo" className="w-8 h-8 object-contain rounded" />
-            ) : (
-              <div className="w-8 h-8 rounded bg-[#5B7DB1] flex items-center justify-center text-white text-sm">
-                {institution.name.charAt(0)}
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1 className="text-base text-gray-900 truncate">{institution.name}</h1>
-              <div className="flex items-center gap-2">
-                <Badge
-                  style={{
-                    backgroundColor: institution.isActive ? '#1E8A6E20' : '#DC262620',
-                    color: institution.isActive ? '#1E8A6E' : '#DC2626'
-                  }}
-                  className="text-[10px]"
-                >
-                  {institution.isActive ? '● Active' : '● Inactive'}
-                </Badge>
-                <span className="text-xs text-gray-500">{institution.type} · {institution.region}</span>
-              </div>
-            </div>
-          </div>
+  const institutionHeaderContent = (
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+      {institution.logo ? (
+        <img src={institution.logo} alt="Logo" className="w-8 h-8 object-contain rounded" />
+      ) : (
+        <div className="w-8 h-8 rounded bg-[#5B7DB1] flex items-center justify-center text-white text-sm font-bold">
+          {institution.name.charAt(0)}
         </div>
-        <div className="max-w-7xl mx-auto px-4 flex gap-1 pb-0 overflow-x-auto">
-          <div className="flex overflow-x-auto no-scrollbar border-b">
-            {availableTabs.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 shrink-0 transition-colors ${
-                  tab === t ? 'border-[#5B7DB1] text-[#5B7DB1]' : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {t === 'overview' && <Building2 className="h-4 w-4" />}
-                {t === 'code' && <QrCode className="h-4 w-4" />}
-                {t === 'members' && <Users className="h-4 w-4" />}
-                {t === 'manage_students' && <Users className="h-4 w-4" />}
-                {t === 'classes' && <Building2 className="h-4 w-4" />}
-                {t === 'analytics' && <BarChart3 className="h-4 w-4" />}
-                {t === 'reports' && <Download className="h-4 w-4" />}
-                {t === 'teacher_styles' && <Brain className="h-4 w-4" />}
-                {t === 'settings' && <Settings className="h-4 w-4" />}
-                {t === 'profile' && <Shield className="h-4 w-4" />}
-                <span className="capitalize">
-                  {t === 'analytics' ? 'Assessment Analytics' : 
-                   t === 'manage_students' ? 'Manage Students' :
-                   t === 'settings' ? 'School Settings' :
-                   t === 'profile' ? 'My Profile' :
-                   t.replace('_', ' ')}
-                </span>
-              </button>
-            ))}
-          </div>
+      )}
+      <div className="min-w-0">
+        <h1 className="text-base text-gray-900 font-semibold truncate">{institution.name}</h1>
+        <div className="flex items-center gap-2">
+          <Badge
+            style={{
+              backgroundColor: institution.isActive ? '#1E8A6E20' : '#DC262620',
+              color: institution.isActive ? '#1E8A6E' : '#DC2626'
+            }}
+            className="text-[10px]"
+          >
+            {institution.isActive ? '● Active' : '● Inactive'}
+          </Badge>
+          <span className="text-xs text-gray-500">{institution.type} · {institution.region}</span>
         </div>
       </div>
+    </div>
+  );
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
+  return (
+    <DashboardLayout
+      navGroups={institutionNavGroups}
+      activeTab={tab}
+      setActiveTab={(val: any) => setTab(val)}
+      user={user}
+      onLogout={onLogout}
+      brandSubtitle="Institution Portal"
+      headerContent={institutionHeaderContent}
+    >
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* tabs */}
         {tab === 'overview' && (
           <InstitutionOverview
@@ -545,6 +537,6 @@ export function InstitutionDashboard({
           onRefresh={loadData}
         />
       )}
-    </div>
+    </DashboardLayout>
   );
 }

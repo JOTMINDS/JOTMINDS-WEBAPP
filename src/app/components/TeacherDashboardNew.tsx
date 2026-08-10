@@ -435,7 +435,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       groupLabel: 'Professional Development',
       items: [
         { id: 'my-style', label: 'Cognitive Profile', icon: History },
-        { id: 'jtia', label: 'Teacher Insights (JTIA)', icon: GraduationCap },
+        { id: 'jtia', label: 'Teaching Insights (JTIA)', icon: GraduationCap },
       ]
     }
   ];
@@ -444,7 +444,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab.replace('-', ' ')}
+          {activeTab === 'jtia' ? 'JTIA' : activeTab.replace('-', ' ')}
         </h2>
         {user.school && (
           <Badge variant="outline" className="border-purple-600 text-purple-700">
@@ -454,8 +454,8 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       </div>
       <div className="flex items-center gap-2">
         {onViewTeacherIntelligence && (
-          <Button variant="ghost" size="sm" onClick={onViewTeacherIntelligence}>
-            Intelligence Portal
+          <Button variant="default" className="bg-indigo-600 hover:bg-indigo-500 text-white" size="sm" onClick={onViewTeacherIntelligence}>
+            Insights Portal
           </Button>
         )}
         {onViewInstitutionDashboard && (
@@ -777,7 +777,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                       Teacher Insights Assessment (JTIA) History
                     </CardTitle>
                     <CardDescription>
-                      Track how your Teacher Insights domains have evolved over time.
+                      Track how your Teaching Insights domains have evolved over time.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -818,8 +818,8 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">🧠</span>
               </div>
-              <Badge className="bg-indigo-100 text-indigo-800 mb-3">JTIA • Teacher Insights & Adaptive Assessment</Badge>
-              <h2 className="text-2xl font-bold mb-2">JotMinds Teacher Insights Assessment (JTIA)</h2>
+              <Badge className="bg-indigo-100 text-indigo-800 mb-3">JTIA • Scenario & Preference Items</Badge>
+              <h2 className="text-2xl font-bold mb-2">JotMinds Teaching Insights Assessment (JTIA)</h2>
               <p className="text-muted-foreground max-w-lg mx-auto mb-6">
                 Unlike traditional assessments that focus on qualifications or compliance, JTIA evaluates the deeper cognitive and professional capabilities that drive effective teaching across 5 Core Domains: Cognitive Intelligence, Instructional Intelligence, Classroom Leadership, Relationship Intelligence, and Professional Intelligence.
               </p>

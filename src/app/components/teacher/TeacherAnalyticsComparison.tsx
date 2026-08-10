@@ -189,8 +189,8 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
 
             <Card className="md:col-span-2 shadow-sm border-slate-200">
               <CardHeader>
-                <CardTitle className="text-xl">Teacher Intelligence (JTIA) Context</CardTitle>
-                <CardDescription>How your 120-item educator intelligence profile maps to student needs</CardDescription>
+                <CardTitle className="text-xl">Teaching Insights (JTIA) Context</CardTitle>
+                <CardDescription>How your educator intelligence profile maps to student needs</CardDescription>
               </CardHeader>
               <CardContent>
                 {tJtiaReport ? (
@@ -214,7 +214,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                 ) : (
                   <div className="flex items-center gap-3 text-slate-500 bg-slate-50 p-4 rounded-lg">
                     <Info className="h-5 w-5" />
-                    <p className="text-sm">Complete your 120-item Teacher Intelligence (JTIA) assessment to see insights here.</p>
+                    <p className="text-sm">Complete your Teaching Insights (JTIA) assessment to see insights here.</p>
                   </div>
                 )}
               </CardContent>
