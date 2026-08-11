@@ -21,7 +21,7 @@ import { JTIAReport } from './JTIAReport';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
 import { calculateJTIAScore } from '../utils/jtiaScoring';
-import { getStudentsForTeacher } from '../utils/api';
+import { getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
 
 interface InsightsPortalProps {
   user: User;

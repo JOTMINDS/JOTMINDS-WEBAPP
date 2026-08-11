@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import { 
   Users, UserPlus, Search, MoreVertical, Edit2, Trash2, 
   Mail, Phone, BookOpen, Star, AlertCircle, Loader, Shield, Lock,
-  Plus, Upload, FileText, Download, Building2, Edit, MessageSquare
+  Plus, Upload, FileText, Download, Building2, Edit, MessageSquare, Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 
