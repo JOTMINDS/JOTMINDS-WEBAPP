@@ -88,7 +88,7 @@ async function callOpenAI(messages: any[], isJson = false, maxTokens = 1200) {
     const body: any = {
       model: 'gpt-4o-mini',
       messages,
-      temperature: 0.7,
+      temperature: 0.9,
       max_tokens: maxTokens
     };
     if (isJson) {
@@ -99,7 +99,8 @@ async function callOpenAI(messages: any[], isJson = false, maxTokens = 1200) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      cache: 'no-store'
     });
     if (!res.ok) {
       console.error('OpenAI proxy error:', res.statusText);
@@ -144,7 +145,7 @@ Return strictly valid JSON matching this schema:
 }`;
 
     const res = await callOpenAI([
-      { role: 'system', content: 'You are an expert cognitive psychologist.' },
+      { role: 'system', content: 'You are an expert cognitive psychologist. Always provide highly unique, creative phrasing. Vary your vocabulary and avoid repetitive or generic insights.' },
       { role: 'user', content: prompt }
     ], true, 800);
 
@@ -396,7 +397,7 @@ Report Data: ${JSON.stringify(report)}
 Return JSON matching the JTIAAIRecommendations interface format precisely, which includes executiveSummary, pedagogicalArchetype (name, description, cognitiveAlignment), personalizedStrategies (array of domain, strategies, implementation), and professionalDevelopment (focusAreas, suggestedResources).`;
     
     const res = await callOpenAI([
-      { role: 'system', content: 'You are an expert teacher trainer and pedagogical coach.' },
+      { role: 'system', content: 'You are an expert teacher trainer and pedagogical coach. Ensure your phrasing is highly unique, creative, and personalized to the specific metrics.' },
       { role: 'user', content: prompt }
     ], true, 1200);
 
@@ -425,7 +426,7 @@ Return JSON format:
 }`;
 
   const res = await callOpenAI([
-    { role: 'system', content: 'You are a master cognitive psychologist synthesizing assessment results into professional narrative summaries.' },
+    { role: 'system', content: 'You are a master cognitive psychologist synthesizing assessment results into professional narrative summaries. Be extremely creative and vary your vocabulary significantly to ensure each summary feels totally unique.' },
     { role: 'user', content: prompt }
   ], true, 700);
 
@@ -455,7 +456,7 @@ Return strictly a JSON array of objects representing pdPriorities, each containi
 Example: { "pdPriorities": [ { "theme": "...", "description": "...", "priority": 1, "recommendedFormat": "Workshop" } ] }`;
 
     const res = await callOpenAI([
-      { role: 'system', content: 'You are an expert educational consultant planning professional development for a whole school.' },
+      { role: 'system', content: 'You are an expert educational consultant planning professional development. Ensure your phrasing is unique, creative, and avoids repetitive generic templates.' },
       { role: 'user', content: prompt }
     ], true, 1000);
 
