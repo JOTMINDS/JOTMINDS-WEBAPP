@@ -27,6 +27,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/colla
 import { StudentDetailView } from '../StudentDetailView';
 import { KidsCognitiveProfile } from '../kids/KidsCognitiveProfile';
 import { sendStudentReminder } from '../../utils/api';
+import { generateAITeachingStrategies, AIStudentTeachingStrategies } from '../../utils/aiService';
 import { toast } from 'sonner';
 
 interface TeacherIndividualStudentViewProps {
@@ -54,7 +55,10 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
   const [isStrategiesOpen, setIsStrategiesOpen] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [viewFullProfile, setViewFullProfile] = useState(false);
-  const [isSendingReminder, setIsSendingReminder] = useState(false);
+  
+  const [aiStrategies, setAiStrategies] = useState<AIStudentTeachingStrategies | null>(null);
+  const [isLoadingStrategies, setIsLoadingStrategies] = useState(false);
+const [isSendingReminder, setIsSendingReminder] = useState(false);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -128,146 +132,39 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
     return 'Tertiary';
   };
 
-  // Get quick insights
-  const getQuickInsights = () => {
-    const insights: Array<{ icon: string; text: string }> = [];
-    
-    if (latestLearning?.score) {
-      const style = ((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style;
-      switch (style) {
-        case 'Diverging':
-          insights.push({ icon: '🎯', text: 'Excels in group work and creative brainstorming' });
-          insights.push({ icon: '💭', text: 'Values reflection and multiple perspectives' });
-          break;
-        case 'Assimilating':
-          insights.push({ icon: '📚', text: 'Prefers logical frameworks and theoretical concepts' });
-          insights.push({ icon: '🔍', text: 'Enjoys independent study and deep analysis' });
-          break;
-        case 'Converging':
-          insights.push({ icon: '🎯', text: 'Strong in practical problem-solving' });
-          insights.push({ icon: '🧪', text: 'Learns best through experimentation' });
-          break;
-        case 'Accommodating':
-          insights.push({ icon: '✨', text: 'Thrives with hands-on, active learning' });
-          insights.push({ icon: '🚀', text: 'Learns through trial and error' });
-          break;
+
+  useEffect(() => {
+    async function fetchStrategies() {
+      if (!selectedStudent || !hasAssessments) {
+        setAiStrategies(null);
+        return;
+      }
+      setIsLoadingStrategies(true);
+      try {
+        const data = {
+          name: selectedStudent.name,
+          learningStyle: latestLearning?.score,
+          thinkingStyle: latestThinking?.score,
+          decisionStyle: latestDecision?.score,
+          age: selectedStudent.age
+        };
+        const result = await generateAITeachingStrategies(data);
+        if (result) {
+          setAiStrategies(result);
+        }
+      } catch (e) {
+        console.error('Failed to fetch AI strategies:', e);
+      } finally {
+        setIsLoadingStrategies(false);
       }
     }
+    fetchStrategies();
+  }, [selectedStudent, latestLearning, latestThinking, latestDecision]);
 
-    if (latestThinking) {
-      let style = '';
-      if (latestThinking.type === 'sternberg') {
-        style = latestThinking.score.sternberg?.style || '';
-      } else if (latestThinking.type === 'jhs-thinking') {
-        style = latestThinking.score['jhs-thinking']?.primaryStyle || '';
-      } else if (latestThinking.type === 'shs-thinking') {
-        style = latestThinking.score['shs-thinking']?.primaryStyle || '';
-      } else if (latestThinking.type === 'adult-thinking') {
-        style = latestThinking.score['adult-thinking']?.dominantStyle || '';
-      } else if (latestThinking.type === 'child-thinking') {
-        style = latestThinking.score['child-thinking']?.primaryStyle || '';
-      }
-
-      if (style.toLowerCase().includes('analytical')) {
-        insights.push({ icon: '🧠', text: 'Strong analytical and critical thinking abilities' });
-      } else if (style.toLowerCase().includes('creative')) {
-        insights.push({ icon: '💡', text: 'Creative thinker with innovative approaches' });
-      } else if (style.toLowerCase().includes('practical')) {
-        insights.push({ icon: '🛠️', text: 'Practical mindset focused on real-world applications' });
-      }
-    }
-
-    return insights.slice(0, 5);
-  };
-
-  // Get teaching strategies
-  const getTeachingStrategies = () => {
-    const strategies: string[] = [];
-    
-    if (latestLearning?.score) {
-      const style = ((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style;
-      switch (style) {
-        case 'Diverging':
-          strategies.push(
-            'Facilitate group discussions and collaborative projects where they can explore multiple perspectives',
-            'Use brainstorming sessions and reflective activities like journaling to leverage their observational strength',
-            'Connect learning material to personal experiences and emotional contexts they can relate to'
-          );
-          break;
-        case 'Assimilating':
-          strategies.push(
-            'Present information in logical, organized frameworks with clear theoretical foundations',
-            'Provide reading materials and dedicated time for independent study and analysis',
-            'Use diagrams, models, and systematic explanations to support their preference for structure'
-          );
-          break;
-        case 'Converging':
-          strategies.push(
-            'Focus on practical problem-solving exercises with clear objectives and measurable outcomes',
-            'Use simulations, experiments, and technical tasks that allow hypothesis testing',
-            'Provide opportunities to apply theoretical concepts to real-world situations'
-          );
-          break;
-        case 'Accommodating':
-          strategies.push(
-            'Incorporate hands-on activities and experiments where they can learn by doing',
-            'Allow learning through trial and error with immediate, constructive feedback',
-            'Use real-world demonstrations and encourage active participation and movement'
-          );
-          break;
-      }
-    }
-
-    return strategies.slice(0, 3);
-  };
-
-  // Educational resources
-  const getEducationalResources = () => {
-    const resources: Array<{
-      type: 'Guide' | 'Article' | 'Video';
-      title: string;
-      description: string;
-      whyHelps: string;
-      url: string;
-    }> = [];
-
-    if (latestLearning) {
-      const style = ((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style || '';
-      resources.push({
-        type: 'Guide',
-        title: `Teaching ${style} Learners: A Practical Guide`,
-        description: `Comprehensive strategies and activities specifically designed for ${style} learning style preferences.`,
-        whyHelps: `Aligned with ${selectedStudent.name}'s preference for ${style.toLowerCase()} learning approaches`,
-        url: '#'
-      });
-    }
-
-    if (latestThinking) {
-      resources.push({
-        type: 'Article',
-        title: 'Understanding Cognitive Diversity in the Classroom',
-        description: 'Research-backed insights on how different thinking styles contribute to learning outcomes.',
-        whyHelps: `Helps understand ${selectedStudent.name}'s unique thinking patterns and cognitive strengths`,
-        url: '#'
-      });
-    }
-
-    resources.push({
-      type: 'Video',
-      title: 'Differentiated Instruction Techniques',
-      description: 'Practical video demonstrations of classroom strategies for diverse cognitive profiles.',
-      whyHelps: 'Provides visual examples of strategies that work for this cognitive profile',
-      url: '#'
-    });
-
-    return resources;
-  };
-
-  const quickInsights = getQuickInsights();
-  const teachingStrategies = getTeachingStrategies();
-  const educationalResources = getEducationalResources();
-
-  return (
+  const quickInsights = aiStrategies?.quickInsights || [];
+  const teachingStrategies = aiStrategies?.teachingStrategies || [];
+  const educationalResources = aiStrategies?.educationalResources || [];
+return (
     <div className="min-h-screen bg-[#F5F7FF] py-6">
       <div className="px-4 lg:px-8 max-w-[1400px] mx-auto flex flex-col lg:flex-row gap-6 items-start">
         
@@ -520,7 +417,9 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
                       <CollapsibleContent>
                         <CardContent className="p-5 pt-0 space-y-2">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {quickInsights.map((insight, index) => (
+                            {isLoadingStrategies ? (
+                          <div className="flex justify-center p-4"><Loader className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                        ) : quickInsights.map((insight, index) => (
                               <div
                                 key={index}
                                 className="flex items-start gap-3 p-3 bg-[#F8FAFC] rounded-xl border border-slate-100"
@@ -561,7 +460,9 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
                       
                       <CollapsibleContent>
                         <CardContent className="p-5 pt-0 space-y-3">
-                          {teachingStrategies.map((strategy, index) => (
+                          {isLoadingStrategies ? (
+                          <div className="flex justify-center p-4"><Loader className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                        ) : teachingStrategies.map((strategy, index) => (
                             <div
                               key={index}
                               className="flex items-start gap-3 p-4 bg-[#F8FAFC] rounded-xl border border-slate-100"
@@ -602,7 +503,9 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
                     
                     <CollapsibleContent>
                       <CardContent className="p-5 pt-0 space-y-3">
-                        {educationalResources.map((resource, index) => (
+                        {isLoadingStrategies ? (
+                          <div className="flex justify-center p-4"><Loader className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                        ) : educationalResources.map((resource, index) => (
                           <div
                             key={index}
                             className="p-4 bg-[#F8FAFC] border border-slate-100 rounded-xl space-y-3"
