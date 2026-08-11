@@ -459,7 +459,6 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             ))}
           </div>
         </div>
-      </div>
 
       {/* ─── TAB 3: GROWTH OPPORTUNITIES ────────────────────────────────── */}
       <div className={`${activeTab === 'growth' ? 'block animate-in fade-in-50 duration-300' : 'hidden print:block'} space-y-6 mt-8 print:mt-12`}>
