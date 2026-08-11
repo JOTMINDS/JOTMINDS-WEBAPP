@@ -31,7 +31,7 @@ export function StudyStrategyGenerator({ cognitiveStyle, assessmentType }: Study
       const res = await generateAIStudyStrategy('General Academics', cognitiveStyle);
       if (res) {
         setAiCustomStrategy(res);
-        toast.success('OpenAI Custom Study Strategy generated!');
+        toast.success('Custom Study Strategy generated successfully!');
       } else {
         toast.error('Could not generate AI study strategy.');
       }

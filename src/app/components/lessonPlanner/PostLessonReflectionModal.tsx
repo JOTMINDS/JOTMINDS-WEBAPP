@@ -42,7 +42,7 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
     savePostLessonReflection(reflection);
     await syncLessonReflectionToSupabase(reflection);
 
-    toast.success('Post-Lesson Reflection saved & synced to Supabase!');
+    toast.success('Post-Lesson Reflection saved successfully!');
     onSaved(reflection);
     onClose();
   };

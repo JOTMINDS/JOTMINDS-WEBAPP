@@ -58,7 +58,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
       const res = await generateAICareerInsights(cognitiveStyle, [cognitiveStyle, assessmentType]);
       if (res) {
         setAiAnalysis(res);
-        toast.success('OpenAI Career Insights generated!');
+        toast.success('Career Insights generated successfully!');
       } else {
         toast.error('Could not generate AI career insights.');
       }
