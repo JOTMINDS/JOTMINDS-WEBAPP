@@ -308,15 +308,17 @@ export interface JTIASchoolAggregatedInsights {
 
 export function generateSchoolJTIAInsights(reports: JTIAReportData[] = []): JTIASchoolAggregatedInsights {
   if (!reports || reports.length === 0) {
-    // Generate realistic simulated school cohort data for demonstration
-    const simulatedReports: JTIAReportData[] = [
-      calculateJTIAScore(Array(120).fill(5)),
-      calculateJTIAScore(Array(120).fill(4)),
-      calculateJTIAScore(Array(120).fill(4)),
-      calculateJTIAScore(Array(120).fill(3)),
-      calculateJTIAScore(Array(120).fill(4))
-    ];
-    reports = simulatedReports;
+    return {
+      overallSchoolIntelligence: 0,
+      domainAverages: { cognitive: 0, instructional: 0, leadership: 0, relationship: 0, professional: 0 },
+      topStrengths: [],
+      pdPriorities: [],
+      growthPatterns: {
+        highSynergyDomains: [],
+        collaborativeOpportunities: [],
+        workforceReadiness: 0
+      }
+    };
   }
 
   const count = reports.length;
