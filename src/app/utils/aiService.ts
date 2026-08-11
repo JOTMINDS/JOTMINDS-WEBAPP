@@ -1,20 +1,9 @@
-import { projectId, publicAnonKey } from './supabase/info';
 import { AssessmentScore } from '../types';
 import { JTIAAIRecommendations, JTIASchoolAggregatedInsights } from './jtiaScoring';
 
-// Use same BASE_URL strategy as api.ts
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
-const LOCAL_URL = 'http://localhost:54321/functions/v1/server/make-server-fc8eb847';
-
-// Determine if we're running locally with Supabase CLI
-const isLocal = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
+// We now securely proxy through our Cloudflare Pages Function
 const getBaseUrl = () => {
-  // If we're strictly local and there's a local edge function runner, we could use LOCAL_URL
-  // But generally sticking to production or configured proxy is safer
-  // For this JotMinds setup, we'll use BASE_URL and fallback if needed
-  return BASE_URL;
+  return '/api';
 };
 
 export interface AIInsightsRequest {
@@ -36,9 +25,6 @@ export interface ScientificPositioningContext {
   scientificGroundingSummary: string;
 }
 
-/**
- * Returns theoretical frameworks and scientific research grounding for AI positioning
- */
 export function getScientificPositioningContext(assessmentType?: string): ScientificPositioningContext {
   return {
     frameworks: [
@@ -95,9 +81,38 @@ export interface AIInsightsResponse {
 }
 
 /**
- * Calls the backend OpenAI AI proxy to generate customized insights.
- * Supports algorithmic guidance so OpenAI responses are grounded in JotMinds algorithms while providing rich variations.
+ * Helper to call our Cloudflare Pages proxy
  */
+async function callOpenAI(messages: any[], isJson = false, maxTokens = 1200) {
+  try {
+    const body: any = {
+      model: 'gpt-4o-mini',
+      messages,
+      temperature: 0.7,
+      max_tokens: maxTokens
+    };
+    if (isJson) {
+      body.response_format = { type: 'json_object' };
+    }
+    const res = await fetch(`${getBaseUrl()}/openai`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      console.error('OpenAI proxy error:', res.statusText);
+      return null;
+    }
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || null;
+  } catch (e) {
+    console.error('OpenAI proxy call error:', e);
+    return null;
+  }
+}
+
 export async function generateAIInsights(
   scoresOrRequest: AssessmentScore | AIInsightsRequest,
   options?: Omit<AIInsightsRequest, 'scores'>
@@ -113,120 +128,51 @@ export async function generateAIInsights(
       ? { ...scoresOrRequest, scientificPositioning: getScientificPositioningContext((scoresOrRequest as any).type) }
       : { scores: scoresOrRequest as AssessmentScore, scientificPositioning: getScientificPositioningContext(options?.type), ...options };
 
-    const response = await fetch(`${getBaseUrl()}/ai/generate-insights`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify(payload)
-    });
+    const prompt = `Analyze this cognitive assessment data and generate professional insights:
+Payload: ${JSON.stringify(payload)}
 
-    if (!response.ok) {
-      throw new Error(`AI API error: ${response.status}`);
-    }
+Return strictly valid JSON matching this schema:
+{
+  "strengths": ["Strength 1", "Strength 2", "Strength 3"],
+  "weaknesses": ["Growth area 1", "Growth area 2", "Growth area 3"],
+  "improvements": ["Action 1", "Action 2"],
+  "archetype": {
+    "name": "E.g. The Analytical Architect",
+    "tagline": "A short inspiring tagline"
+  },
+  "summary": "A 2-sentence professional summary."
+}`;
 
-    const data: AIInsightsResponse = await response.json();
-    return data;
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an expert cognitive psychologist.' },
+      { role: 'user', content: prompt }
+    ], true, 800);
+
+    if (res) return JSON.parse(res);
   } catch (error) {
-    console.error('Failed to generate real AI insights:', error);
+    console.error('Failed to generate AI insights:', error);
   }
+  return null;
 }
 
-/**
- * Sends chat messages to OpenAI AI Coach.
- */
 export async function sendAIChatMessage(
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[],
   userProfile?: any
 ): Promise<string | null> {
-  const apiKey = (import.meta.env.VITE_OPENAI_API_KEY as string) || '';
-
-  // 1. Try direct OpenAI API call if key is present
-  if (apiKey) {
-    try {
-      const systemMsg = {
-        role: 'system',
-        content: `You are the JotMinds AI Learning Coach, an encouraging, empathetic, and expert educational AI assistant.
+  try {
+    const systemMsg = {
+      role: 'system',
+      content: `You are the JotMinds AI Learning Coach, an encouraging, empathetic, and expert educational AI assistant.
 You provide personalized study strategies, learning advice, and cognitive guidance.
 ${userProfile ? `User Profile context: ${JSON.stringify(userProfile)}` : ''}
 
 Keep answers concise (2-4 paragraphs), warm, structured, and practical. Use markdown formatting.`
-      };
+    };
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [systemMsg, ...messages],
-          temperature: 0.7,
-          max_tokens: 500
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return content;
-      }
-    } catch (e) {
-      console.warn('Direct OpenAI call failed, falling back to server route:', e);
-    }
-  }
-
-  // 2. Fallback to Supabase Edge Function endpoint
-  try {
-    const response = await fetch(`${getBaseUrl()}/ai/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify({ messages, userProfile })
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.reply || null;
-    }
+    const res = await callOpenAI([systemMsg, ...messages], false, 800);
+    return res;
   } catch (error) {
     console.error('Failed to communicate with AI chat service:', error);
-  }
-
-  return null;
-}
-
-const OPENAI_KEY = (import.meta.env.VITE_OPENAI_API_KEY as string) || '';
-
-async function callOpenAI(messages: any[], isJson = false, maxTokens = 800) {
-  if (!OPENAI_KEY) return null;
-  try {
-    const body: any = {
-      model: 'gpt-4o-mini',
-      messages,
-      temperature: 0.7,
-      max_tokens: maxTokens
-    };
-    if (isJson) {
-      body.response_format = { type: 'json_object' };
-    }
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_KEY}`
-      },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || null;
-  } catch (e) {
-    console.error('OpenAI call error:', e);
     return null;
   }
 }
@@ -235,9 +181,6 @@ export interface AICoachChatResponse {
   reply: string;
 }
 
-/**
- * Calls the backend OpenAI proxy to chat with the AI Learning Coach.
- */
 export async function askAICoach(
   message: string,
   profile?: any,
@@ -249,38 +192,28 @@ export async function askAICoach(
   }
 ): Promise<string | null> {
   try {
-    const response = await fetch(`${getBaseUrl()}/ai/coach-chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify({
-        message,
-        profile,
-        history,
-        role: options?.role || profile?.role || profile?.userType,
-        algorithmicGuidance: options?.algorithmicGuidance,
-        scores: options?.scores,
-        scientificPositioning: getScientificPositioningContext(options?.role)
-      })
-    });
+    const systemMsg = {
+      role: 'system',
+      content: `You are an expert educational AI coach. Use this profile context to personalize your advice:
+Profile: ${JSON.stringify(profile)}
+Options: ${JSON.stringify(options)}
+Keep answers concise, warm, structured, and highly practical. Use markdown.`
+    };
 
-    if (!response.ok) {
-      throw new Error(`AI Coach API error: ${response.status}`);
+    const messages = [systemMsg];
+    if (history) {
+      messages.push(...history);
     }
+    messages.push({ role: 'user', content: message });
 
-    const data: AICoachChatResponse = await response.json();
-    return data.reply;
+    const res = await callOpenAI(messages, false, 800);
+    return res;
   } catch (error) {
     console.error('Failed to communicate with AI Coach:', error);
     return null;
   }
 }
 
-/**
- * 1. AI Lesson Plan Generator
- */
 export async function generateAILessonPlan(
   subjectOrPayload: string | { subject: string; gradeClass: string; topic: string; durationMinutes?: number; classSummary?: any },
   topic?: string,
@@ -293,26 +226,6 @@ export async function generateAILessonPlan(
   assessmentQuestions: { question: string; answer: string }[];
   summary: string;
 } | any | null> {
-  if (typeof subjectOrPayload === 'object' && subjectOrPayload !== null) {
-    try {
-      const response = await fetch(`${getBaseUrl()}/ai/generate-lesson-plan`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
-        body: JSON.stringify({
-          ...subjectOrPayload,
-          scientificPositioning: getScientificPositioningContext('lesson-planner')
-        })
-      });
-      if (!response.ok) throw new Error(`Lesson Plan AI error: ${response.status}`);
-      return await response.json();
-    } catch (err) {
-      console.error('Failed to generate AI Lesson Plan:', err);
-    }
-  }
-
   const subjectStr = typeof subjectOrPayload === 'string' ? subjectOrPayload : subjectOrPayload.subject;
   const topicStr = topic || (typeof subjectOrPayload === 'object' ? subjectOrPayload.topic : '');
   const gradeStr = grade || (typeof subjectOrPayload === 'object' ? subjectOrPayload.gradeClass : '');
@@ -323,6 +236,7 @@ Topic: ${topicStr}
 Grade/Level: ${gradeStr}
 Curriculum Standard: ${curriculum || 'Standard'}
 ${customQuestions ? `Custom Assessment Questions requested by teacher: ${customQuestions}` : ''}
+${typeof subjectOrPayload === 'object' ? `Additional payload: ${JSON.stringify(subjectOrPayload)}` : ''}
 
 Respond strictly with valid JSON with this structure:
 {
@@ -354,9 +268,6 @@ Respond strictly with valid JSON with this structure:
   }
 }
 
-/**
- * 2. AI Career Insights & Path Analysis
- */
 export async function generateAICareerInsights(
   archetype: string,
   strengths: string[],
@@ -418,30 +329,31 @@ export async function generateSchoolAIInsights(
   request: SchoolAIInsightsRequest
 ): Promise<SchoolAIInsightsResponse | null> {
   try {
-    const response = await fetch(`${getBaseUrl()}/ai/generate-school-insights`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify(request)
-    });
+    const prompt = `Generate institutional insights based on this school data:
+Payload: ${JSON.stringify(request)}
 
-    if (!response.ok) {
-      throw new Error(`School AI API error: ${response.status}`);
-    }
+Return JSON with format:
+{
+  "executiveSummary": "A 2-3 sentence overview.",
+  "keyStrengths": ["Strength 1", "Strength 2"],
+  "strategicAlerts": ["Alert 1", "Alert 2"],
+  "actionableInterventions": [
+    { "area": "E.g. Mathematics", "priority": "high", "strategy": "Describe strategy", "targetGroup": "E.g. Grade 10" }
+  ],
+  "pedagogicalAlignment": "Brief description of pedagogical alignment."
+}`;
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an expert school administrator and educational data analyst.' },
+      { role: 'user', content: prompt }
+    ], true, 1000);
 
-    const data: SchoolAIInsightsResponse = await response.json();
-    return data;
+    if (res) return JSON.parse(res);
   } catch (error) {
-    console.error('Failed to generate real School AI insights:', error);
-    return null;
+    console.error('Failed to generate School AI insights:', error);
   }
+  return null;
 }
 
-/**
- * 3. AI Guided Reflection Feedback
- */
 export async function generateAIReflectionFeedback(
   reflectionText: string,
   promptTopic?: string
@@ -478,33 +390,23 @@ export async function generateJTIAAIRecommendations(
   report: any
 ): Promise<JTIAAIRecommendations | null> {
   try {
-    const response = await fetch(`${getBaseUrl()}/ai/generate-jtia-insights`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify({
-        report,
-        scientificPositioning: getScientificPositioningContext('jtia')
-      })
-    });
+    const prompt = `Generate JTIA teaching insights recommendations based on this report:
+Report Data: ${JSON.stringify(report)}
 
-    if (!response.ok) {
-      throw new Error(`JTIA AI API error: ${response.status}`);
-    }
+Return JSON matching the JTIAAIRecommendations interface format precisely, which includes executiveSummary, pedagogicalArchetype (name, description, cognitiveAlignment), personalizedStrategies (array of domain, strategies, implementation), and professionalDevelopment (focusAreas, suggestedResources).`;
+    
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an expert teacher trainer and pedagogical coach.' },
+      { role: 'user', content: prompt }
+    ], true, 1200);
 
-    const data: JTIAAIRecommendations = await response.json();
-    return data;
+    if (res) return JSON.parse(res);
   } catch (error) {
-    console.error('Failed to generate real JTIA AI recommendations:', error);
-    return null;
+    console.error('Failed to generate JTIA AI recommendations:', error);
   }
+  return null;
 }
 
-/**
- * 4. AI Executive Cognitive Profile Summary
- */
 export async function generateAICognitiveExecutiveSummary(
   userProfile: any
 ): Promise<{
@@ -540,34 +442,33 @@ export async function generateSchoolJTIAAIInsights(
   schoolName?: string
 ): Promise<JTIASchoolAggregatedInsights['pdPriorities'] | null> {
   try {
-    const response = await fetch(`${getBaseUrl()}/ai/generate-school-jtia-insights`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify({
-        schoolInsights,
-        schoolName,
-        scientificPositioning: getScientificPositioningContext('school-jtia')
-      })
-    });
+    const prompt = `Generate school-wide JTIA PD Priorities based on this data:
+School Name: ${schoolName || 'The School'}
+Data: ${JSON.stringify(schoolInsights)}
 
-    if (!response.ok) {
-      throw new Error(`School JTIA AI API error: ${response.status}`);
+Return strictly a JSON array of objects representing pdPriorities, each containing:
+- theme (string)
+- description (string)
+- priority (number, 1-3)
+- recommendedFormat (string)
+
+Example: { "pdPriorities": [ { "theme": "...", "description": "...", "priority": 1, "recommendedFormat": "Workshop" } ] }`;
+
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an expert educational consultant planning professional development for a whole school.' },
+      { role: 'user', content: prompt }
+    ], true, 1000);
+
+    if (res) {
+      const parsed = JSON.parse(res);
+      return parsed.pdPriorities || parsed;
     }
-
-    const data = await response.json();
-    return data.pdPriorities || null;
   } catch (error) {
-    console.error('Failed to generate real School JTIA AI insights:', error);
-    return null;
+    console.error('Failed to generate School JTIA AI insights:', error);
   }
+  return null;
 }
 
-/**
- * 5. AI Custom Study Strategy Generator
- */
 export async function generateAIStudyStrategy(
   subject: string,
   learningStyle: string,
@@ -604,9 +505,6 @@ Return JSON format:
   }
 }
 
-/**
- * 6. AI Daily Discovery & Brain Challenge Generator
- */
 export async function generateAIDailyDiscovery(
   category: string = 'Cognitive Science'
 ): Promise<{
@@ -649,23 +547,18 @@ export async function generateAIDifferentiatedInstruction(payload: {
   classSummary?: any;
 }): Promise<any | null> {
   try {
-    const response = await fetch(`${getBaseUrl()}/ai/generate-differentiated-instruction`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify({
-        ...payload,
-        scientificPositioning: getScientificPositioningContext('differentiated-instruction')
-      })
-    });
-    if (!response.ok) throw new Error(`Differentiated Instruction AI error: ${response.status}`);
-    return await response.json();
+    const prompt = `Generate differentiated instruction strategies:
+Payload: ${JSON.stringify(payload)}
+Return JSON with structured strategies.`;
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an expert in differentiated instruction.' },
+      { role: 'user', content: prompt }
+    ], true, 800);
+    if (res) return JSON.parse(res);
   } catch (err) {
     console.error('Failed to generate Differentiated Instruction:', err);
-    return null;
   }
+  return null;
 }
 
 export async function generateAILessonAssessment(payload: {
@@ -674,46 +567,30 @@ export async function generateAILessonAssessment(payload: {
   gradeClass: string;
 }): Promise<any | null> {
   try {
-    const response = await fetch(`${getBaseUrl()}/ai/generate-lesson-assessment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify({
-        ...payload,
-        scientificPositioning: getScientificPositioningContext('lesson-assessment')
-      })
-    });
-    if (!response.ok) throw new Error(`Lesson Assessment AI error: ${response.status}`);
-    return await response.json();
+    const prompt = `Generate a lesson assessment format:
+Payload: ${JSON.stringify(payload)}
+Return JSON with assessment questions, answers, and rubrics.`;
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an expert assessment designer.' },
+      { role: 'user', content: prompt }
+    ], true, 800);
+    if (res) return JSON.parse(res);
   } catch (err) {
     console.error('Failed to generate Lesson Assessment:', err);
-    return null;
   }
+  return null;
 }
 
 export async function chatWithLessonCopilot(message: string, history: any[], context?: any): Promise<string | null> {
   try {
-    const response = await fetch(`${getBaseUrl()}/ai/lesson-copilot-chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify({
-        message,
-        history,
-        context,
-        scientificPositioning: getScientificPositioningContext('lesson-copilot')
-      })
-    });
-    if (!response.ok) throw new Error(`Copilot AI error: ${response.status}`);
-    const data = await response.json();
-    return data.reply || null;
+    const systemMsg = {
+      role: 'system',
+      content: `You are the Lesson Copilot, an expert instructional design assistant. Use this context if provided: ${JSON.stringify(context)}`
+    };
+    const messages = [systemMsg, ...history, { role: 'user', content: message }];
+    return await callOpenAI(messages, false, 800);
   } catch (err) {
     console.error('Failed to chat with Lesson Copilot:', err);
     return null;
   }
 }
-
