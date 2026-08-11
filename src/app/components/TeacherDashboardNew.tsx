@@ -865,7 +865,6 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               </button>
             </div>
           )}
-          )}
           </div>
         )}
 
