@@ -63,10 +63,18 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
       learningStyleDistribution[style] = (learningStyleDistribution[style] || 0) + 1;
     });
 
-  const learningStyleData = Object.entries(learningStyleDistribution).map(([name, value]) => ({
-    name,
-    value
-  }));
+  const learningCount = uniqueCompletedAssessments.filter(a => (a.type === 'kolb' || (a.type as any) === 'learning')).length;
+  if (totalStudents > learningCount) {
+    learningStyleDistribution['Unknown'] = (learningStyleDistribution['Unknown'] || 0) + (totalStudents - learningCount);
+  }
+
+  const learningStyleData = Object.entries(learningStyleDistribution)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => {
+      if (a.name === 'Unknown') return 1;
+      if (b.name === 'Unknown') return -1;
+      return b.value - a.value;
+    });
 
   // Thinking style distribution
   const thinkingStyleDistribution: Record<string, number> = {};
@@ -90,16 +98,23 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
       thinkingStyleDistribution[style] = (thinkingStyleDistribution[style] || 0) + 1;
     });
 
-  const thinkingStyleData = Object.entries(thinkingStyleDistribution).map(([name, value]) => ({
-    name,
-    value
-  }));
-
-  // Assessment completion by type
-  const kolbCount = uniqueCompletedAssessments.filter(a => (a.type === 'kolb' || (a.type as any) === 'learning')).length;
   const thinkingCount = uniqueCompletedAssessments.filter(a => 
     ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking'].includes(a.type)
   ).length;
+
+  if (totalStudents > thinkingCount) {
+    thinkingStyleDistribution['Unknown'] = (thinkingStyleDistribution['Unknown'] || 0) + (totalStudents - thinkingCount);
+  }
+
+  const thinkingStyleData = Object.entries(thinkingStyleDistribution)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => {
+      if (a.name === 'Unknown') return 1;
+      if (b.name === 'Unknown') return -1;
+      return b.value - a.value;
+    });
+
+  const kolbCount = uniqueCompletedAssessments.filter(a => (a.type === 'kolb' || (a.type as any) === 'learning')).length;
   const decisionCount = uniqueCompletedAssessments.filter(a => (a.type === 'dual-process' || (a.type as any) === 'decision')).length;
 
   const completionData = [
@@ -251,28 +266,23 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
-                      labelLine={false}
-                      fill="#8884d8"
+                      outerRadius={80}
+                      paddingAngle={5}
                       dataKey="value"
+                      nameKey="name"
                     >
                       {learningStyleData.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={[COLORS.success, COLORS.primary, COLORS.warning, COLORS.purple][index % 4]} 
+                          fill={entry.name === 'Unknown' ? '#94A3B8' : [COLORS.success, COLORS.primary, COLORS.warning, COLORS.purple][index % 4]} 
                         />
                       ))}
                     </Pie>
                     <Tooltip 
-                      contentStyle={{ 
-                        borderRadius: '12px', 
-                        border: '1px solid #E2E8F0',
-                        fontSize: '13px'
-                      }}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '13px' }}
                       formatter={(value: number) => [`${value} student${value !== 1 ? 's' : ''}`, 'Count']}
                     />
-                    <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} />
+                    <Legend wrapperStyle={{ fontSize: '13px' }} layout="horizontal" verticalAlign="bottom" align="center" />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -299,28 +309,23 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
-                      labelLine={false}
-                      fill="#8884d8"
+                      outerRadius={80}
+                      paddingAngle={5}
                       dataKey="value"
+                      nameKey="name"
                     >
                       {thinkingStyleData.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={[COLORS.purple, COLORS.info, COLORS.pink, COLORS.warning][index % 4]} 
+                          fill={entry.name === 'Unknown' ? '#94A3B8' : [COLORS.purple, COLORS.info, COLORS.pink, COLORS.warning][index % 4]} 
                         />
                       ))}
                     </Pie>
                     <Tooltip 
-                      contentStyle={{ 
-                        borderRadius: '12px', 
-                        border: '1px solid #E2E8F0',
-                        fontSize: '13px'
-                      }}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '13px' }}
                       formatter={(value: number) => [`${value} student${value !== 1 ? 's' : ''}`, 'Count']}
                     />
-                    <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} />
+                    <Legend wrapperStyle={{ fontSize: '13px' }} layout="horizontal" verticalAlign="bottom" align="center" />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -357,7 +362,7 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
               {studentsWithAssessments > 0 && (
                 <div className="p-3 bg-white rounded-xl">
                   <p className="text-[13px]">
-                    <strong>Next step:</strong> Review individual student profiles in the "Individual Students" tab 
+                    <strong>Next step:</strong> Review individual student profiles in the "Student Roster" tab 
                     to access personalized teaching strategies for each learner.
                   </p>
                 </div>

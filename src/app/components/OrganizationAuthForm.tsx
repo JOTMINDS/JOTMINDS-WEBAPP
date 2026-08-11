@@ -98,7 +98,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
   };
 
   const validateStep3 = (): boolean => {
-    if (!emailVerified) {
+    if (email.trim() && !emailVerified) {
       setError('Please verify your email address first.');
       return false;
     }
@@ -812,6 +812,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                     </p>
                   </div>
 
+                {email.trim() && (
                   <div className="space-y-3 p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
                     <div className="flex justify-between items-center">
                       <div>
@@ -843,6 +844,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
                       </div>
                     )}
                   </div>
+                )}
                 </div>
               )}
 

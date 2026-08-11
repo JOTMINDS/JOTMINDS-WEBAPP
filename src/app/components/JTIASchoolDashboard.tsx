@@ -74,6 +74,13 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
     }
   };
 
+  const getScoreLevelText = (score: number) => {
+    if (score >= 85) return 'Exemplary';
+    if (score >= 70) return 'Established Practice';
+    if (score >= 50) return 'Developing Focus';
+    return 'Emerging';
+  };
+
   return (
     <div className="space-y-8 pb-12 max-w-7xl mx-auto">
       {/* ─── Header & Institutional Banner ──────────────────────────────── */}
@@ -119,7 +126,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
               Designed for Development, Not Ranking
             </h3>
             <p className="text-xs md:text-sm text-slate-300 mt-1 max-w-3xl">
-              The JotMinds Teacher Intelligence Assessment does not rank or compare teachers against one another. This dashboard aggregates anonymized institutional patterns exclusively to guide targeted professional development, celebrate school strengths, and elevate learning experiences.
+              The JotMinds Teaching Insights Assessment does not rank or compare teachers against one another. This dashboard aggregates anonymized institutional patterns exclusively to guide targeted professional development, celebrate school strengths, and elevate learning experiences.
             </p>
           </div>
         </div>
@@ -134,8 +141,8 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
                 <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate" title="Overall School Intelligence">
                   Overall School Intelligence
                 </p>
-                <div className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-2">
-                  {insights.overallSchoolIntelligence}<span className="text-sm font-semibold text-slate-400">/100</span>
+                <div className="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-2">
+                  {getScoreLevelText(insights.overallSchoolIntelligence)}
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0">
@@ -167,7 +174,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
             </div>
             <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
-                100% Complete 120-Item Profile
+                100% Complete Comprehensive Profile
               </span>
             </div>
           </CardContent>
@@ -240,7 +247,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
                 <PolarAngleAxis dataKey="domain" stroke="#64748B" fontSize={11} />
                 <PolarRadiusAxis domain={[0, 100]} stroke="#64748B" fontSize={10} />
                 <Radar name="School Average" dataKey="score" stroke="#10B981" fill="#10B981" fillOpacity={0.35} />
-                <RechartsTip formatter={(val: number) => [`${val} / 100`, 'Average Score']} />
+                <RechartsTip formatter={(val: number) => [getScoreLevelText(val), 'Average Level']} />
               </RadarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -285,7 +292,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
                     {pd.domain}
                   </Badge>
                   <span className="text-sm font-black text-amber-600">
-                    School Avg: {pd.averageScore}/100
+                    School Avg: {getScoreLevelText(pd.averageScore)}
                   </span>
                 </div>
                 <h4 className="font-bold text-base text-slate-900 dark:text-white">

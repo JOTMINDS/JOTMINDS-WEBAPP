@@ -48,22 +48,25 @@ export const initialCurriculumTrack: CurriculumTrack = {
   frameworkName: 'National Curriculum (NaCCA / GES)',
   subject: 'Mathematics',
   grade: 'JHS 2',
-  totalTopics: 12,
-  coveredTopicsCount: 8,
-  completionPercentage: 67,
+  totalTopics: 15,
+  coveredTopicsCount: 10,
+  completionPercentage: 66,
   topics: [
-    { id: 'curr-math-01', code: 'MATH-JHS2-01', title: 'Number Systems & Real Numbers', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
-    { id: 'curr-math-02', code: 'MATH-JHS2-02', title: 'Fractions, Decimals & Percentages', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
-    { id: 'curr-math-03', code: 'MATH-JHS2-03', title: 'Algebraic Expressions', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
-    { id: 'curr-math-04', code: 'MATH-JHS2-04', title: 'Linear Equations in One Variable', subject: 'Mathematics', grade: 'JHS 2', status: 'in_progress', mappedLessonId: 'lp-001' },
-    { id: 'curr-math-05', code: 'MATH-JHS2-05', title: 'Linear Inequalities', subject: 'Mathematics', grade: 'JHS 2', status: 'outstanding' },
-    { id: 'curr-math-06', code: 'MATH-JHS2-06', title: 'Angles & Geometric Shapes', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
-    { id: 'curr-math-07', code: 'MATH-JHS2-07', title: 'Perimeter and Area of Plane Figures', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
-    { id: 'curr-math-08', code: 'MATH-JHS2-08', title: 'Surface Area & Volume of Solids', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
-    { id: 'curr-math-09', code: 'MATH-JHS2-09', title: 'Data Collection & Organization', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
-    { id: 'curr-math-10', code: 'MATH-JHS2-10', title: 'Bar Charts & Pie Charts', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
-    { id: 'curr-math-11', code: 'MATH-JHS2-11', title: 'Probability Basics', subject: 'Mathematics', grade: 'JHS 2', status: 'outstanding' },
-    { id: 'curr-math-12', code: 'MATH-JHS2-12', title: 'Transformation Geometry', subject: 'Mathematics', grade: 'JHS 2', status: 'outstanding' }
+    { id: 'curr-math-01', code: 'MATH-JHS2-01', title: 'Number Systems & Sets (Properties and Operations)', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-02', code: 'MATH-JHS2-02', title: 'Fractions, Decimals, and Percentages (Advanced Conversions)', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-03', code: 'MATH-JHS2-03', title: 'Ratios, Rates, and Proportions (Real-world Applications)', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-04', code: 'MATH-JHS2-04', title: 'Algebraic Expressions (Factorization & Expansion)', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-05', code: 'MATH-JHS2-05', title: 'Linear Equations in One Variable (Word Problems)', subject: 'Mathematics', grade: 'JHS 2', status: 'in_progress', mappedLessonId: 'lp-001' },
+    { id: 'curr-math-06', code: 'MATH-JHS2-06', title: 'Linear Inequalities (Graphing on Number Lines)', subject: 'Mathematics', grade: 'JHS 2', status: 'outstanding' },
+    { id: 'curr-math-07', code: 'MATH-JHS2-07', title: 'Angles & Transversals (Parallel Lines)', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-08', code: 'MATH-JHS2-08', title: 'Properties of Polygons (Interior & Exterior Angles)', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-09', code: 'MATH-JHS2-09', title: 'Perimeter and Area of Compound Plane Figures', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-10', code: 'MATH-JHS2-10', title: 'Surface Area & Volume (Prisms and Cylinders)', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-11', code: 'MATH-JHS2-11', title: 'Data Collection, Organization & Frequency Tables', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-12', code: 'MATH-JHS2-12', title: 'Data Representation (Bar Charts, Histograms, Pie Charts)', subject: 'Mathematics', grade: 'JHS 2', status: 'covered' },
+    { id: 'curr-math-13', code: 'MATH-JHS2-13', title: 'Measures of Central Tendency (Mean, Median, Mode)', subject: 'Mathematics', grade: 'JHS 2', status: 'outstanding' },
+    { id: 'curr-math-14', code: 'MATH-JHS2-14', title: 'Probability Basics (Theoretical & Experimental)', subject: 'Mathematics', grade: 'JHS 2', status: 'outstanding' },
+    { id: 'curr-math-15', code: 'MATH-JHS2-15', title: 'Transformation Geometry (Translation, Reflection, Rotation)', subject: 'Mathematics', grade: 'JHS 2', status: 'outstanding' }
   ]
 };
 
@@ -140,6 +143,17 @@ export function savePostLessonReflection(reflection: PostLessonReflection): void
   }
   arr.unshift(reflection);
   localStorage.setItem(STORAGE_KEYS.REFLECTIONS, JSON.stringify(arr));
+}
+
+export function getPostLessonReflections(): PostLessonReflection[] {
+  if (typeof window === 'undefined') return [];
+  const saved = localStorage.getItem(STORAGE_KEYS.REFLECTIONS);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {}
+  }
+  return [];
 }
 
 export function getCurriculumTrack(): CurriculumTrack {

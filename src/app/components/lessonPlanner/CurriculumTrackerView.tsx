@@ -53,7 +53,7 @@ export const CurriculumTrackerView: React.FC = () => {
             <BookOpen className="w-5 h-5 text-indigo-400" /> {track.frameworkName}: {track.subject} ({track.grade})
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Automatic mapping of lesson plans against national, Cambridge, IB, and institutional curricula.
+            Easily align lesson plans with various educational curricula.
           </p>
         </div>
       </div>

@@ -34,80 +34,113 @@ const DUAL_COLORS: Record<string, string> = {
 };
 
 export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessments, students, teacherProfile }: TeacherAnalyticsComparisonProps) {
-  const getLatestAssessment = (type: string, sourceAssessments: Assessment[]) => {
-    const filtered = sourceAssessments.filter(a => a.type === type);
+  const getLatestAssessment = (types: string[], sourceAssessments: Assessment[]) => {
+    const filtered = sourceAssessments.filter(a => types.includes(a.type));
     return filtered.sort((a, b) => new Date(b.completedAt || '').getTime() - new Date(a.completedAt || '').getTime())[0];
   };
 
-  const getLatestForUser = (type: string, userId: string, sourceAssessments: Assessment[]) => {
-    const filtered = sourceAssessments.filter(a => a.type === type && a.userId === userId);
+  const getLatestForUser = (types: string[], userId: string, sourceAssessments: Assessment[]) => {
+    const filtered = sourceAssessments.filter(a => types.includes(a.type) && a.userId === userId);
     return filtered.sort((a, b) => new Date(b.completedAt || '').getTime() - new Date(a.completedAt || '').getTime())[0];
   };
 
-  const tKolb = getLatestAssessment('kolb', teacherAssessments);
-  const tThink = getLatestAssessment('sternberg', teacherAssessments);
-  const tDual = getLatestAssessment('dual-process', teacherAssessments);
-  const tJtia = getLatestAssessment('jtia', teacherAssessments);
+  const tKolb = getLatestAssessment(['kolb', 'learning'], teacherAssessments);
+  const tThink = getLatestAssessment(['sternberg', 'adult-thinking', 'shs-thinking', 'jhs-thinking', 'child-thinking', 'thinking'], teacherAssessments);
+  const tDual = getLatestAssessment(['dual-process', 'decision'], teacherAssessments);
+  const tJtia = getLatestAssessment(['jtia'], teacherAssessments);
 
   const tJtiaReport = tJtia ? (tJtia.report || tJtia.results || tJtia.score?.jtia) : null;
 
   // Aggregate student data
   const studentData = useMemo(() => {
     const counts = {
-      kolb: { Diverging: 0, Assimilating: 0, Converging: 0, Accommodating: 0, Total: 0 },
-      think: { Analytical: 0, Creative: 0, Practical: 0, Total: 0 },
-      dual: { Intuitive: 0, Reflective: 0, Balanced: 0, Total: 0 }
+      kolb: { Total: 0 } as Record<string, number>,
+      think: { Total: 0 } as Record<string, number>,
+      dual: { Total: 0 } as Record<string, number>
     };
 
     students.forEach(student => {
-      const sKolb = getLatestForUser('kolb', student.id, studentAssessments);
-      if (sKolb?.score?.kolb?.style) {
-        const style = sKolb.score.kolb.style as keyof typeof counts.kolb;
-        if (counts.kolb[style] !== undefined) {
-            counts.kolb[style]++;
-            counts.kolb.Total++;
+      const sKolb = getLatestForUser(['kolb', 'learning'], student.id, studentAssessments);
+      if (sKolb?.score) {
+        const styleRaw = sKolb.score.kolb?.style || sKolb.score.learning?.style;
+        if (styleRaw) {
+          const style = styleRaw.charAt(0).toUpperCase() + styleRaw.slice(1);
+          counts.kolb[style] = (counts.kolb[style] || 0) + 1;
+          counts.kolb.Total++;
         }
       }
 
-      const sThink = getLatestForUser('sternberg', student.id, studentAssessments);
-      if (sThink?.score?.sternberg?.style) {
-        const style = sThink.score.sternberg.style as keyof typeof counts.think;
-        if (counts.think[style] !== undefined) {
-            counts.think[style]++;
-            counts.think.Total++;
+      const sThink = getLatestForUser(['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'], student.id, studentAssessments);
+      if (sThink?.score) {
+        const scoreRaw = sThink.score.sternberg || sThink.score['jhs-thinking'] || sThink.score['shs-thinking'] || sThink.score['adult-thinking'] || sThink.score['child-thinking'] || sThink.score.thinking;
+        let styleStr = scoreRaw?.style || scoreRaw?.primaryStyle || scoreRaw?.dominantStyle;
+        if (styleStr) {
+          styleStr = styleStr.charAt(0).toUpperCase() + styleStr.slice(1);
+          counts.think[styleStr] = (counts.think[styleStr] || 0) + 1;
+          counts.think.Total++;
         }
       }
 
-      const sDual = getLatestForUser('dual-process', student.id, studentAssessments);
-      if (sDual?.score?.dualProcess?.style) {
-        const style = sDual.score.dualProcess.style as keyof typeof counts.dual;
-        if (counts.dual[style] !== undefined) {
-            counts.dual[style]++;
-            counts.dual.Total++;
+      const sDual = getLatestForUser(['dual-process', 'decision'], student.id, studentAssessments);
+      if (sDual?.score) {
+        const styleRaw = sDual.score.dualProcess?.style || sDual.score.decision?.style || sDual.score['dual-process']?.style;
+        if (styleRaw) {
+          let styleStr = styleRaw.charAt(0).toUpperCase() + styleRaw.slice(1);
+          counts.dual[styleStr] = (counts.dual[styleStr] || 0) + 1;
+          counts.dual.Total++;
         }
       }
     });
 
     return counts;
   }, [students, studentAssessments]);
+  let tKolbStyle = '';
+  if (tKolb?.score) {
+    const rawStyle = tKolb.score.kolb?.style || tKolb.score.learning?.style || '';
+    if (rawStyle) {
+      tKolbStyle = rawStyle.charAt(0).toUpperCase() + rawStyle.slice(1);
+    }
+  }
 
+  let tThinkStyle = '';
+  if (tThink?.score) {
+    const scoreRaw = tThink.score.sternberg || tThink.score['jhs-thinking'] || tThink.score['shs-thinking'] || tThink.score['adult-thinking'] || tThink.score['child-thinking'] || tThink.score.thinking;
+    let styleStr = scoreRaw?.style || scoreRaw?.primaryStyle || scoreRaw?.dominantStyle || '';
+    if (styleStr) {
+      tThinkStyle = styleStr.charAt(0).toUpperCase() + styleStr.slice(1);
+    }
+  }
+
+  let tDualStyle = '';
+  if (tDual?.score) {
+    const styleRaw = tDual.score.dualProcess?.style || tDual.score.decision?.style || tDual.score['dual-process']?.style || '';
+    if (styleRaw) {
+      tDualStyle = styleRaw.charAt(0).toUpperCase() + styleRaw.slice(1);
+    }
+  }
   // Transform data for charts
-  const kolbChartData = Object.keys(KOLB_COLORS).map(key => ({
-    name: key,
-    Students: studentData.kolb.Total ? Math.round(((studentData.kolb as any)[key] / studentData.kolb.Total) * 100) : 0,
-    Teacher: tKolb?.score?.kolb?.style === key ? 100 : 0
+  const kolbKeys = Array.from(new Set([...Object.keys(studentData.kolb).filter(k => k !== 'Total'), tKolbStyle].filter(Boolean)));
+  const kolbChartData = kolbKeys.map(key => ({
+    name: key + (tKolbStyle === key ? ' (You)' : ''),
+    originalName: key,
+    Students: studentData.kolb.Total ? Math.round(((studentData.kolb[key] || 0) / studentData.kolb.Total) * 100) : 0,
+    isTeacher: tKolbStyle === key
   }));
 
-  const thinkChartData = Object.keys(THINK_COLORS).map(key => ({
-    name: key,
-    Students: studentData.think.Total ? Math.round(((studentData.think as any)[key] / studentData.think.Total) * 100) : 0,
-    Teacher: tThink?.score?.sternberg?.style === key ? 100 : 0
+  const thinkKeys = Array.from(new Set([...Object.keys(studentData.think).filter(k => k !== 'Total'), tThinkStyle].filter(Boolean)));
+  const thinkChartData = thinkKeys.map(key => ({
+    name: key + (tThinkStyle === key ? ' (You)' : ''),
+    originalName: key,
+    Students: studentData.think.Total ? Math.round(((studentData.think[key] || 0) / studentData.think.Total) * 100) : 0,
+    isTeacher: tThinkStyle === key
   }));
 
-  const dualChartData = Object.keys(DUAL_COLORS).map(key => ({
-    name: key,
-    Students: studentData.dual.Total ? Math.round(((studentData.dual as any)[key] / studentData.dual.Total) * 100) : 0,
-    Teacher: tDual?.score?.dualProcess?.style === key ? 100 : 0
+  const dualKeys = Array.from(new Set([...Object.keys(studentData.dual).filter(k => k !== 'Total'), tDualStyle].filter(Boolean)));
+  const dualChartData = dualKeys.map(key => ({
+    name: key + (tDualStyle === key ? ' (You)' : ''),
+    originalName: key,
+    Students: studentData.dual.Total ? Math.round(((studentData.dual[key] || 0) / studentData.dual.Total) * 100) : 0,
+    isTeacher: tDualStyle === key
   }));
 
   // Calculate Alignment Score
@@ -115,22 +148,28 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
     let score = 0;
     let totalWeights = 0;
 
-    if (tKolb?.score?.kolb?.style && studentData.kolb.Total > 0) {
-      const matchPct = (studentData.kolb as any)[tKolb.score.kolb.style] / studentData.kolb.Total;
-      score += matchPct * 100;
-      totalWeights += 1;
+    if (tKolbStyle && studentData.kolb.Total > 0) {
+      const matchPct = (studentData.kolb[tKolbStyle] || 0) / studentData.kolb.Total;
+      if (!isNaN(matchPct)) {
+        score += matchPct * 100;
+        totalWeights += 1;
+      }
     }
     
-    if (tThink?.score?.sternberg?.style && studentData.think.Total > 0) {
-      const matchPct = (studentData.think as any)[tThink.score.sternberg.style] / studentData.think.Total;
-      score += matchPct * 100;
-      totalWeights += 1;
+    if (tThinkStyle && studentData.think.Total > 0) {
+      const matchPct = (studentData.think[tThinkStyle] || 0) / studentData.think.Total;
+      if (!isNaN(matchPct)) {
+        score += matchPct * 100;
+        totalWeights += 1;
+      }
     }
 
-    if (tDual?.score?.dualProcess?.style && studentData.dual.Total > 0) {
-      const matchPct = (studentData.dual as any)[tDual.score.dualProcess.style] / studentData.dual.Total;
-      score += matchPct * 100;
-      totalWeights += 1;
+    if (tDualStyle && studentData.dual.Total > 0) {
+      const matchPct = (studentData.dual[tDualStyle] || 0) / studentData.dual.Total;
+      if (!isNaN(matchPct)) {
+        score += matchPct * 100;
+        totalWeights += 1;
+      }
     }
 
     return totalWeights > 0 ? Math.round(score / totalWeights) : 0;
@@ -200,8 +239,8 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                         <LayoutTemplate className="h-8 w-8 text-blue-600" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-lg text-slate-800">{tJtiaReport.topSynergyDomain || 'Educator Intelligence Profile'}</h4>
-                        <p className="text-sm text-slate-500">Top Synergy Domain ({tJtiaReport.overallScore}/100 Overall)</p>
+                        <h4 className="font-semibold text-lg text-slate-800">{tJtiaReport.topSynergyDomain || 'Teaching Insights Profile'}</h4>
+                        <p className="text-sm text-slate-500">Top Synergy Domain ({tJtiaReport.descriptiveLevel || 'Developing'})</p>
                       </div>
                     </div>
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
@@ -227,9 +266,9 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Learning Style (Kolb)</span>
-                  {tKolb?.score?.kolb?.style && (
-                    <Badge style={{ backgroundColor: KOLB_COLORS[tKolb.score.kolb.style] + '20', color: KOLB_COLORS[tKolb.score.kolb.style] }}>
-                      You: {tKolb.score.kolb.style}
+                  {tKolbStyle && (
+                    <Badge style={{ backgroundColor: KOLB_COLORS[tKolbStyle] + '20', color: KOLB_COLORS[tKolbStyle] }}>
+                      You: {tKolbStyle}
                     </Badge>
                   )}
                 </CardTitle>
@@ -249,12 +288,13 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                       <Legend />
                       <Bar dataKey="Students" fill="#94A3B8" name="Class (%)" radius={[0, 4, 4, 0]}>
                         {kolbChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={KOLB_COLORS[entry.name] || '#94A3B8'} fillOpacity={0.6} />
-                        ))}
-                      </Bar>
-                      <Bar dataKey="Teacher" fill="#475569" name="Your Match" radius={[0, 4, 4, 0]}>
-                         {kolbChartData.map((entry, index) => (
-                          <Cell key={`cell-teacher-${index}`} fill={KOLB_COLORS[entry.name] || '#475569'} fillOpacity={entry.Teacher > 0 ? 1 : 0} />
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={KOLB_COLORS[entry.originalName] || '#94A3B8'} 
+                            fillOpacity={entry.isTeacher ? 1 : 0.4} 
+                            stroke={entry.isTeacher ? '#1E293B' : 'none'} 
+                            strokeWidth={entry.isTeacher ? 2 : 0} 
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -267,10 +307,10 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
             <Card className="shadow-sm border-slate-200">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Thinking Style (Sternberg)</span>
-                  {tThink?.score?.sternberg?.style && (
-                    <Badge style={{ backgroundColor: THINK_COLORS[tThink.score.sternberg.style] + '20', color: THINK_COLORS[tThink.score.sternberg.style] }}>
-                      You: {tThink.score.sternberg.style}
+                  <span>Thinking Style</span>
+                  {tThinkStyle && (
+                    <Badge style={{ backgroundColor: THINK_COLORS[tThinkStyle] + '20', color: THINK_COLORS[tThinkStyle] }}>
+                      You: {tThinkStyle}
                     </Badge>
                   )}
                 </CardTitle>
@@ -290,12 +330,13 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                       <Legend />
                       <Bar dataKey="Students" fill="#94A3B8" name="Class (%)" radius={[0, 4, 4, 0]}>
                         {thinkChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={THINK_COLORS[entry.name] || '#94A3B8'} fillOpacity={0.6} />
-                        ))}
-                      </Bar>
-                      <Bar dataKey="Teacher" fill="#475569" name="Your Match" radius={[0, 4, 4, 0]}>
-                         {thinkChartData.map((entry, index) => (
-                          <Cell key={`cell-teacher-${index}`} fill={THINK_COLORS[entry.name] || '#475569'} fillOpacity={entry.Teacher > 0 ? 1 : 0} />
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={THINK_COLORS[entry.originalName] || '#94A3B8'} 
+                            fillOpacity={entry.isTeacher ? 1 : 0.4}
+                            stroke={entry.isTeacher ? '#1E293B' : 'none'} 
+                            strokeWidth={entry.isTeacher ? 2 : 0}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -308,10 +349,10 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
             <Card className="shadow-sm border-slate-200 lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Decision Style</span>
-                  {tDual?.score?.dualProcess?.style && (
-                    <Badge style={{ backgroundColor: DUAL_COLORS[tDual.score.dualProcess.style] + '20', color: DUAL_COLORS[tDual.score.dualProcess.style] }}>
-                      You: {tDual.score.dualProcess.style}
+                  <span>Decision Making</span>
+                  {tDualStyle && (
+                    <Badge style={{ backgroundColor: DUAL_COLORS[tDualStyle] + '20', color: DUAL_COLORS[tDualStyle] }}>
+                      You: {tDualStyle}
                     </Badge>
                   )}
                 </CardTitle>
@@ -331,12 +372,13 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                       <Legend wrapperStyle={{ paddingTop: '20px' }} />
                       <Bar dataKey="Students" fill="#94A3B8" name="Class (%)" radius={[4, 4, 0, 0]} maxBarSize={60}>
                         {dualChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={DUAL_COLORS[entry.name] || '#94A3B8'} fillOpacity={0.6} />
-                        ))}
-                      </Bar>
-                      <Bar dataKey="Teacher" fill="#475569" name="Your Match" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                         {dualChartData.map((entry, index) => (
-                          <Cell key={`cell-teacher-${index}`} fill={DUAL_COLORS[entry.name] || '#475569'} fillOpacity={entry.Teacher > 0 ? 1 : 0} />
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={DUAL_COLORS[entry.originalName] || '#94A3B8'} 
+                            fillOpacity={entry.isTeacher ? 1 : 0.4}
+                            stroke={entry.isTeacher ? '#1E293B' : 'none'} 
+                            strokeWidth={entry.isTeacher ? 2 : 0}
+                          />
                         ))}
                       </Bar>
                     </BarChart>

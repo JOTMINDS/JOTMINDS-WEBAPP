@@ -519,7 +519,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
           </Card>
         </>)}
 
-        {/* ── TEACHER INTELLIGENCE (JTIA) ── */}
+        {/* ── TEACHING INSIGHTS (JTIA) ── */}
         {tab === 'teaching' && (
           <JTIASchoolDashboard 
             reports={jtiaReports}

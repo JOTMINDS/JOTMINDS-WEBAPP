@@ -41,7 +41,57 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
           'Formulate and solve a custom linear word problem for a peer.',
           'Graph the taxi fare equation on a coordinate plane.'
         ]
-      }
+      },
+      alternativeActivities: [
+        {
+          title: 'Kinesthetic Equation Balance',
+          description: 'Students use physical blocks and a balance scale to physically add/remove blocks, mirroring algebra steps hands-on.',
+          targetGroup: 'Kinesthetic / Tactile Learners',
+          type: 'Kinesthetic'
+        },
+        {
+          title: 'Digital Equation Solver Game',
+          description: 'Use an interactive gamified app where students manipulate digital scales and drag variables to isolate x.',
+          targetGroup: 'Tech-Savvy / Gamification Motivated',
+          type: 'Digital'
+        },
+        {
+          title: 'Auditory Discussion & Peer Explanation Relay',
+          description: 'Students pair up to explain each step aloud to their partner before writing it down, cementing logical sequencing.',
+          targetGroup: 'Auditory / Verbal Learners',
+          type: 'Auditory'
+        },
+        {
+          title: 'Visual Flowchart Concept Mapping',
+          description: 'Students map out the decision tree for solving single-variable vs multi-step equations using color-coded flow diagrams.',
+          targetGroup: 'Visual / Graphic Organizers',
+          type: 'Visual'
+        },
+        {
+          title: 'Musical / Rhythmic Memorization',
+          description: 'Create a short rap or mnemonic chant to remember the order of operations when solving equations.',
+          targetGroup: 'Musical / Rhythmic Learners',
+          type: 'Musical'
+        },
+        {
+          title: 'Independent Research & Real-World Application',
+          description: 'Research how linear equations are used in computer programming or engineering, and present findings in a short report.',
+          targetGroup: 'Independent / Self-Directed Learners',
+          type: 'Research'
+        },
+        {
+          title: 'Group Debate on Methods',
+          description: 'Form teams to debate the most efficient way to solve a complex multi-step equation, arguing for different initial steps.',
+          targetGroup: 'Social / Interpersonal Learners',
+          type: 'Interpersonal'
+        },
+        {
+          title: 'Nature-Based Data Collection',
+          description: 'Collect environmental data outside (e.g., leaf sizes, temperatures) and form equations based on observed linear patterns.',
+          targetGroup: 'Naturalistic / Outdoors Learners',
+          type: 'Naturalistic'
+        }
+      ]
     }
   );
 
@@ -208,6 +258,39 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
           </div>
         </Card>
       </div>
+
+      {/* Alternative Activities Section */}
+      {instruction.alternativeActivities && instruction.alternativeActivities.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-indigo-500" /> Alternative Activities
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {instruction.alternativeActivities.map((alt, index) => (
+              <Card key={index} className="border-indigo-100 dark:border-indigo-900/50 bg-white dark:bg-slate-900 shadow-sm">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <Badge className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border-indigo-200 text-[10px]">
+                      {alt.type}
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-sm font-bold text-slate-900 dark:text-white mt-2">
+                    {alt.title}
+                  </CardTitle>
+                  <CardDescription className="text-[11px] text-slate-500 font-medium">
+                    Target: {alt.targetGroup}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
+                    {alt.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

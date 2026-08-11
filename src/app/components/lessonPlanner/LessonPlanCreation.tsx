@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Sparkles, BookOpen, Clock, Calendar, CheckCircle2, FileText, Loader, ArrowRight } from 'lucide-react';
+import { Sparkles, BookOpen, Clock, Calendar, CheckCircle2, FileText, Loader, ArrowRight, Search } from 'lucide-react';
 import { LessonPlan, ClassCognitiveSummary } from '../../types/lessonPlannerTypes';
 import { generateAILessonPlan } from '../../utils/aiService';
 import { saveLessonPlan } from '../../utils/lessonPlannerStorage';
@@ -23,6 +23,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
   const [subject, setSubject] = useState('Mathematics');
   const [gradeClass, setGradeClass] = useState('JHS 2');
+  const [curriculumFramework, setCurriculumFramework] = useState('National');
   const [topic, setTopic] = useState('Linear Equations in One Variable');
   const [subtopic, setSubtopic] = useState('Solving Algebraic Equations & Word Problems');
   const [durationMinutes, setDurationMinutes] = useState(40);
@@ -41,7 +42,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
     }
 
     setIsGenerating(true);
-    toast.info('AI Lesson Assistant is generating your lesson structure...');
+    toast.info('Creating your lesson structure...');
 
     // Call real AI proxy or generate structured response
     const aiResult = await generateAILessonPlan({
@@ -63,7 +64,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       subtopic,
       durationMinutes,
       date,
-      curriculumFramework: 'National',
+      curriculumFramework,
       objectives: aiResult?.objectives || {
         knowledge: [
           `Define key concepts of ${topic} in ${subject}.`,
@@ -158,7 +159,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       subtopic,
       durationMinutes,
       date,
-      curriculumFramework: 'National',
+      curriculumFramework,
       objectives: {
         knowledge: knowledgeObj.split('\n').filter(Boolean),
         skills: skillsObj.split('\n').filter(Boolean),
@@ -191,14 +192,14 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               Module 1 • Lesson Creation
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
-              70% Time Reduction
+              Save Planning Time
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-400" /> AI-Powered Lesson Plan Generator
+            <BookOpen className="w-5 h-5 text-indigo-400" /> Lesson Plan Generator
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Create data-driven, cognitive-profile-aligned lesson plans in seconds.
+            Generate customized lesson plans to support diverse learners.
           </p>
         </div>
 
@@ -209,7 +210,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             onClick={() => setMode('ai')}
             className={mode === 'ai' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-white/10 text-white border-white/20'}
           >
-            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> AI Generator
+            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Auto Generator
           </Button>
           <Button
             variant={mode === 'manual' ? 'default' : 'outline'}
@@ -251,6 +252,18 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                 placeholder="e.g. JHS 2"
                 className="mt-1"
               />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Curriculum Type</Label>
+              <div className="relative mt-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                <Input
+                  value={curriculumFramework}
+                  onChange={(e) => setCurriculumFramework(e.target.value)}
+                  placeholder="Search curriculum... (e.g. National, Cambridge)"
+                  className="pl-9"
+                />
+              </div>
             </div>
             <div>
               <Label className="text-xs font-semibold">Lesson Date</Label>

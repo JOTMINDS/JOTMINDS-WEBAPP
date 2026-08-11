@@ -3,6 +3,7 @@ import { User } from '../types';
 import { getAllUsers, saveUser, deleteUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher } from '../utils/storage';
 import { getStudentsForTeacher, updateUserProfile, inviteStudentToClass } from '../utils/api';
 import { getInstitutionForMember, joinInstitution } from '../utils/institution';
+import { getUserJotsCode } from '../utils/jotsCode';
 import { projectId } from '../utils/supabase/info';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -300,6 +301,47 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
 
   return (
     <div className="space-y-6">
+      {/* Class Code — for inviting students directly to this teacher's class */}
+      {teacher.classCode && (
+        <div className="rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap" style={{ background: 'linear-gradient(135deg, #1E8A6E, #10B981)' }}>
+          <div className="text-white">
+            <p className="text-xs text-white/70 mb-0.5">Your Class Code</p>
+            <div className="text-xl tracking-widest font-mono font-bold">{teacher.classCode}</div>
+            <p className="text-xs text-white/80 mt-1">Share this code with your students. They can enter it during sign-up to join your class.</p>
+          </div>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(teacher.classCode!);
+              toast.success('Class code copied to clipboard');
+            }}
+            className="bg-white/20 hover:bg-white/30 text-white text-xs px-4 py-2 rounded-lg border border-white/30 transition-colors flex items-center gap-2"
+          >
+            <Copy className="w-3.5 h-3.5" /> Copy Code
+          </button>
+        </div>
+      )}
+
+      {/* Jots Code — school linkage info for teacher */}
+      {(() => {
+        const jc = getUserJotsCode(teacher);
+        if (!jc) return null;
+        return (
+          <div className="rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>
+            <div className="text-white">
+              <p className="text-xs text-white/70 mb-0.5">Your School Jots Code (Organisation Code)</p>
+              <div className="text-xl tracking-widest">{jc}</div>
+              <p className="text-xs text-white/60 mt-0.5">Your School administrator uses this code to view your teaching methods.</p>
+            </div>
+            <button
+              onClick={() => navigator.clipboard.writeText(jc)}
+              className="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-lg border border-white/30 transition-colors"
+            >
+              Copy Code
+            </button>
+          </div>
+        );
+      })()}
+
       {/* Join Institution Banner */}
       {!teacher.organizationCode && (
         <Card className="border-[#6B4C9A] bg-purple-50/50">
@@ -349,63 +391,85 @@ export function TeacherStudentManagement({ teacher, onViewReport, isInstitutionA
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {students.map(student => (
-          <Card key={student.id}>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{student.name}</CardTitle>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => {
-                    setFormData({
-                      id: student.id,
-                      name: student.name,
-                      email: student.email,
-                      phone: student.phone || '',
-                      dateOfBirth: student.dateOfBirth || '',
-                      classId: student.classId || ''
-                    });
-                    setIsEditModalOpen(true);
-                  }}>
-                    <Edit className="w-4 h-4 text-gray-500" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleRemove(student.id)}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
-                </div>
-              </div>
-              <CardDescription>{student.email}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center mt-2 flex-wrap gap-2">
-                <Badge variant="outline">
-                  {getAssessmentsByUserId(student.id).filter(a => a.completedAt).length} Assessments
-                </Badge>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-[#2C2E83] border-[#2C2E83]/30 hover:bg-[#2C2E83]/10 h-7 text-xs"
-                    onClick={() => {
-                      setObservationStudentId(student.id);
-                      setIsObservationModalOpen(true);
-                    }}
-                  >
-                    <MessageSquare className="w-3 h-3 mr-1" /> Log Concern
-                  </Button>
-                  <Button variant="link" className="text-[#6B4C9A] p-0 h-auto text-xs" onClick={() => onViewReport?.(student.id)}>
-                    View Reports
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {students.length === 0 && (
-          <div className="col-span-full py-12 text-center border-2 border-dashed rounded-lg">
-            <p className="text-gray-500">No students found. Add a student to get started.</p>
-          </div>
-        )}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student Name</th>
+                <th className="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+                <th className="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Assessments</th>
+                <th className="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {students.map(student => (
+                <tr key={student.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3 px-4">
+                    <div className="font-semibold text-slate-900">{student.name}</div>
+                    {student.dateOfBirth && <div className="text-xs text-slate-500">DOB: {student.dateOfBirth}</div>}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-slate-600">{student.email}</td>
+                  <td className="py-3 px-4 text-center">
+                    <Badge variant="outline" className="bg-slate-100/50">
+                      {getAssessmentsByUserId(student.id).filter(a => a.completedAt).length} Completed
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"
+                        onClick={() => onViewReport?.(student.id)}
+                      >
+                        <BookOpen className="w-3.5 h-3.5 mr-1" /> View
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-xs text-amber-600 hover:text-amber-800 hover:bg-amber-50"
+                        onClick={() => {
+                          setObservationStudentId(student.id);
+                          setIsObservationModalOpen(true);
+                        }}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 mr-1" /> Log
+                      </Button>
+                      <div className="h-4 w-px bg-slate-200 mx-1"></div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                        setFormData({
+                          id: student.id,
+                          name: student.name,
+                          email: student.email,
+                          phone: student.phone || '',
+                          dateOfBirth: student.dateOfBirth || '',
+                          classId: student.classId || ''
+                        });
+                        setIsEditModalOpen(true);
+                      }}>
+                        <Edit className="w-3.5 h-3.5 text-slate-400 hover:text-slate-700" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-50" onClick={() => handleRemove(student.id)}>
+                        <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {students.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <Users className="w-10 h-10 text-slate-300 mb-3" />
+                      <p>No students found. Add a student to get started.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Add Modal */}

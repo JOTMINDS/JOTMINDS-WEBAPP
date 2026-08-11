@@ -17,17 +17,14 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
-              Module 9 • School Insights Dashboard
-            </Badge>
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
-              Executive Institutional View
+              Institutional Cognitive
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <School className="w-5 h-5 text-indigo-400" /> Institutional Cognitive & Curriculum Insights
+            <School className="w-5 h-5 text-indigo-400" /> Institutional Cognitive
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            School-wide aggregated student learning styles, risk alerts, curriculum delivery, and teacher effectiveness metrics.
+            Aggregated student learning styles, support indicators, curriculum delivery, and teaching effectiveness metrics across your classes.
           </p>
         </div>
       </div>
@@ -38,15 +35,15 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
           <CardContent className="p-5 space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total Students Assessed</span>
             <span className="text-2xl font-black text-slate-900 dark:text-white">128</span>
-            <p className="text-[10px] text-slate-500">Across 4 Class Sections</p>
+            <p className="text-[10px] text-slate-500">Across your 4 Class Sections</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardContent className="p-5 space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Risk Students Identified</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Students Requiring Support</span>
             <span className="text-2xl font-black text-amber-600 dark:text-amber-400">14</span>
-            <p className="text-[10px] text-slate-500">Abstract & Attention support</p>
+            <p className="text-[10px] text-slate-500">Additional conceptual scaffolding</p>
           </CardContent>
         </Card>
 
@@ -54,7 +51,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
           <CardContent className="p-5 space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Lesson Completion Rate</span>
             <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">92%</span>
-            <p className="text-[10px] text-slate-500">Delivered vs. Planned</p>
+            <p className="text-[10px] text-slate-500">Delivered vs. Planned (Your Classes)</p>
           </CardContent>
         </Card>
 
@@ -62,12 +59,12 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
           <CardContent className="p-5 space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Avg Student Engagement</span>
             <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">4.5 / 5.0</span>
-            <p className="text-[10px] text-slate-500">School-wide classroom rating</p>
+            <p className="text-[10px] text-slate-500">Your average classroom rating</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* School Learning Style & Risk Overview */}
+      {/* School Learning Style & Support Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Student Insights Card */}
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
@@ -76,7 +73,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
               <Users className="w-4 h-4 text-indigo-500" /> Student Cognitive Insights
             </CardTitle>
             <CardDescription className="text-xs">
-              Aggregated learning modalities and risk patterns across classes.
+              Aggregated learning modalities and support patterns across classes.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -138,10 +135,10 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
             </div>
             <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 space-y-1 mt-2">
               <span className="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-wider block">
-                Executive Actionable Recommendation:
+                Actionable Recommendation:
               </span>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Provide visual algebra manipulative toolkits to JHS 2 and JHS 3 math departments to support the 14 flagged abstract-reasoning students.
+                Provide visual algebra manipulative toolkits to your math classes to support the 14 flagged abstract-reasoning students.
               </p>
             </div>
           </CardContent>

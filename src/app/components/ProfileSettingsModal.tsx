@@ -38,6 +38,8 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   
+  const [classCode, setClassCode] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -45,7 +47,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
   const [success, setSuccess] = useState('');
   
   // Verification State
-  const isVerified = user?.isVerified === true;
+  const isVerified = user?.isVerified === true || !user?.email;
   const [isVerifying, setIsVerifying] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
@@ -75,6 +77,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
       setOrgType(user.institutionType || user.organizationType || '');
       setOrgSector(user.industrySector || '');
       setLogoUrl(user.logoUrl || '');
+      setClassCode(user.classCode || '');
       setError('');
       setSuccess('');
       if (isOrg) {
@@ -147,6 +150,23 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
       setError(err.message || 'Invalid verification code.');
     } finally {
       setIsVerifying(false);
+    }
+  };
+
+  const handleGenerateClassCode = async () => {
+    try {
+      setIsLoading(true);
+      const newCode = 'CLASS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const updatedUser = { ...user, classCode: newCode };
+      await updateUserProfile({ classCode: newCode });
+      setClassCode(newCode);
+      setSuccess('Class code generated successfully.');
+      setTimeout(() => setSuccess(''), 3000);
+      onProfileUpdate(updatedUser);
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate class code.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -336,6 +356,15 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                                     >
                                       {isVerifying ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
                                       Verify
+                                    </Button>
+                                    <Button 
+                                      type="button" 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={handleSendVerification}
+                                      disabled={isVerifying}
+                                    >
+                                      Resend
                                     </Button>
                                   </div>
                                 </div>
@@ -528,6 +557,15 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                                     {isVerifying ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
                                     Verify
                                   </Button>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={handleSendVerification}
+                                    disabled={isVerifying}
+                                  >
+                                    Resend
+                                  </Button>
                                 </div>
                               </div>
                             )}
@@ -554,6 +592,8 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                   </Button>
                 </div>
               </form>
+              
+
             </div>
           )}
         </div>

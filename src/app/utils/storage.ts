@@ -232,8 +232,8 @@ export function isStudentConnectedToTeacher(student: User, teacher: User, teache
   if (student.className && teacherClassIds && teacherClassIds.has(student.className)) return true;
 
   // 4. Class Code / Organization Code match
-  const teacherCodes = [teacher.classCode, teacher.organizationCode].filter(Boolean).map(c => c?.trim().toUpperCase());
-  const studentCodes = [student.classCode, student.organizationCode].filter(Boolean).map(c => c?.trim().toUpperCase());
+  const teacherCodes = [teacher.classCode, teacher.organizationCode, teacher.jotsCode].filter(Boolean).map(c => c?.trim().toUpperCase());
+  const studentCodes = [student.classCode, student.organizationCode, student.jotsCode].filter(Boolean).map(c => c?.trim().toUpperCase());
   for (const tc of teacherCodes) {
     if (tc && studentCodes.includes(tc)) return true;
   }
@@ -842,3 +842,11 @@ export function getAssessmentFrequency(userId: string): string {
   if (daysSince > 30) return 'Inactive';
   return `${daysSince}d ago`;
 }
+
+export const getRelatedTeacherAccounts = (teacher: User): User[] => {
+  const allUsers = getAllUsers();
+  if (!teacher.email) return [teacher];
+  const related = allUsers.filter(u => u.email === teacher.email && u.role === 'teacher');
+  if (related.length === 0) return [teacher];
+  return related;
+};

@@ -120,7 +120,7 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
         'Authorization': `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        from: 'JotMinds Support <service@jotminds.com>',
+        from: 'JotMinds Support <onboarding@resend.dev>',
         to: email,
         subject: 'Your JotMinds Verification Code',
         html: `
@@ -1596,7 +1596,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
             'Authorization': `Bearer ${resendApiKey}`
           },
           body: JSON.stringify({
-            from: 'JotMinds Support <service@jotminds.com>',
+            from: 'JotMinds Support <onboarding@resend.dev>',
             to: email,
             subject: 'Welcome to JotMinds! 🧠',
             html: welcomeHtml
@@ -4826,7 +4826,7 @@ app.patch('/make-server-fc8eb847/organization/profile', async (c) => {
               'Authorization': `Bearer ${resendApiKey}`
             },
             body: JSON.stringify({
-              from: 'JotMinds Support <service@jotminds.com>',
+              from: 'JotMinds Support <onboarding@resend.dev>',
               to: member.email,
               subject: 'Institution Account Deactivated',
               html: `
@@ -5262,7 +5262,7 @@ app.post('/make-server-fc8eb847/send-email', async (c) => {
         'Authorization': `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        from: 'JotMinds Support <service@jotminds.com>',
+        from: 'JotMinds Support <onboarding@resend.dev>',
         to: [recipientEmail],
         subject: subject,
         html: htmlContent || textContent,

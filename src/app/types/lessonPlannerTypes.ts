@@ -36,6 +36,12 @@ export interface DifferentiatedInstruction {
     targetGroup: string;
     extensionTasks: string[];
   };
+  alternativeActivities?: Array<{
+    title: string;
+    description: string;
+    targetGroup: string;
+    type: string;
+  }>;
 }
 
 export interface AssessmentQuestion {

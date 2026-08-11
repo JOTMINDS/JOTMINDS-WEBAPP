@@ -107,7 +107,7 @@ export function FeedbackTab() {
                   >
                     <option value="overall">Overall Platform Experience</option>
                     <option value="accuracy">Assessment & Cognitive Profile Accuracy</option>
-                    <option value="lesson-planner">AI Lesson Planner & Recommendations</option>
+                    <option value="lesson-planner">Lesson Planner & Recommendations</option>
                     <option value="feature">Feature Request or Idea</option>
                     <option value="bug">Report an Issue / Bug</option>
                   </select>

@@ -21,8 +21,9 @@ import { JTIAReport } from './JTIAReport';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
 import { calculateJTIAScore } from '../utils/jtiaScoring';
+import { getStudentsForTeacher } from '../utils/api';
 
-interface TeacherIntelligenceDashboardProps {
+interface InsightsPortalProps {
   user: User;
   onBack: () => void;
 }
@@ -75,9 +76,16 @@ function getMaxForDim(dim: string): number {
   return ['CE', 'RO', 'AC', 'AE'].includes(dim) ? 48 : 100;
 }
 
-function buildStudentProfile(user: User): StudentProfile {
-  const assessments = getAssessmentsByUserId(user.id);
-  const completed = assessments.filter((a: any) => a.completedAt && a.score);
+function buildStudentProfile(user: User, assessmentsMap?: Map<string, any[]>): StudentProfile {
+  const localAssessments = getAssessmentsByUserId(user.id) || [];
+  const serverAssessments = assessmentsMap?.get(user.id) || (user.email ? assessmentsMap?.get(user.email.toLowerCase()) : []) || [];
+
+  const assessmentMap = new Map();
+  localAssessments.forEach(a => assessmentMap.set(a.id || a.type, a));
+  serverAssessments.forEach(a => assessmentMap.set(a.id || a.type, a));
+  const assessments = Array.from(assessmentMap.values());
+
+  const completed = assessments.filter((a: any) => (a.completed || a.completedAt) && a.score);
 
   const completedTypes = new Set(completed.map((a: any) => {
     if (['kolb', 'vark'].includes(a.type)) return 'learning';
@@ -170,28 +178,73 @@ function completedTypesLabel(types: Set<string>): string {
 
 const PIE_COLORS = ['#5B7DB1', '#6B4C9A', '#1E8A6E', '#E0A020', '#DC2626', '#06b6d4'];
 
-export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligenceDashboardProps) {
+export function InsightsPortal({ user, onBack }: InsightsPortalProps) {
   const [tab, setTab] = useState<Tab>('overview');
   const [isTakingJTIA, setIsTakingJTIA] = useState<boolean>(false);
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [heatmapGroup, setHeatmapGroup] = useState<string>('Learning (Kolb)');
 
-  const students = useMemo(() => {
-    const allUsers = getAllUsers();
-    const relatedTeachers = getRelatedTeacherAccounts(user);
-    const classes = getAllClasses();
-    
-    const teacherClassIds = new Set<string>();
-    relatedTeachers.forEach(rt => {
-      classes.filter(c => !c.classTeacherId || c.classTeacherId === rt.id || c.classTeacherId === rt.email || c.id === rt.classId || c.name === rt.className).forEach(c => teacherClassIds.add(c.id));
-      getAssignmentsForTeacher(rt.id).forEach(a => teacherClassIds.add(a.classId));
-    });
+  const [students, setStudents] = useState<User[]>([]);
+  const [serverAssessmentsMap, setServerAssessmentsMap] = useState<Map<string, any[]>>(new Map());
 
-    let raw = allUsers.filter((u: User) => relatedTeachers.some(rt => isStudentConnectedToTeacher(u, rt, teacherClassIds)));
-    return raw.slice(0, 100);
+  useEffect(() => {
+    const fetchStudents = async () => {
+      const allUsers = getAllUsers();
+      const relatedTeachers = getRelatedTeacherAccounts(user);
+      const classes = getAllClasses();
+      
+      const teacherClassIds = new Set<string>();
+      relatedTeachers.forEach(rt => {
+        classes.filter(c => !c.classTeacherId || c.classTeacherId === rt.id || c.classTeacherId === rt.email || c.id === rt.classId || c.name === rt.className).forEach(c => teacherClassIds.add(c.id));
+        getAssignmentsForTeacher(rt.id).forEach(a => teacherClassIds.add(a.classId));
+      });
+
+      const localStudents = allUsers.filter((u: User) => relatedTeachers.some(rt => isStudentConnectedToTeacher(u, rt, teacherClassIds)));
+      
+      let serverStudents: User[] = [];
+      try {
+        const result = await getStudentsForTeacher();
+        if (result.success && result.students) {
+          serverStudents = result.students;
+        }
+      } catch (err) {
+        console.error('Failed to fetch students from server:', err);
+      }
+
+      // Merge avoiding duplicates (server takes precedence)
+      const mergedMap = new Map();
+      localStudents.forEach(stu => mergedMap.set(stu.email?.toLowerCase() || stu.id, stu));
+      serverStudents.forEach(stu => {
+        mergedMap.set(stu.email?.toLowerCase() || stu.id, stu);
+      });
+
+      const finalStudents: User[] = Array.from(mergedMap.values()).slice(0, 100);
+      setStudents(finalStudents);
+
+      // Fetch server assessments for all connected students
+      if (finalStudents.length > 0) {
+        try {
+          const studentIds = finalStudents.map(s => s.id);
+          const res = await getAllAssessmentResults(studentIds);
+          const rawResults = res.results || res.data || [];
+          const aMap = new Map<string, any[]>();
+          rawResults.forEach((item: any) => {
+            const uId = item.userId || item.user_id;
+            if (uId) {
+              if (!aMap.has(uId)) aMap.set(uId, []);
+              aMap.get(uId)!.push(item);
+            }
+          });
+          setServerAssessmentsMap(aMap);
+        } catch (e) {
+          console.error('Failed to fetch student assessment results:', e);
+        }
+      }
+    };
+    fetchStudents();
   }, [user]);
 
-  const profiles = useMemo(() => students.map(buildStudentProfile), [students]);
+  const profiles = useMemo(() => students.map(s => buildStudentProfile(s, serverAssessmentsMap)), [students, serverAssessmentsMap]);
 
   const stats = useMemo(() => {
     const assessed = profiles.filter(p => p.completedCount > 0);
@@ -297,7 +350,7 @@ export function TeacherIntelligenceDashboard({ user, onBack }: TeacherIntelligen
           <div className="flex-1">
             <h1 className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-[#5B7DB1]" />
-              Teaching Insights
+              Insights Portal
             </h1>
             <p className="text-xs text-gray-500">{user.school ?? 'All students'} · {stats.total} students</p>
           </div>

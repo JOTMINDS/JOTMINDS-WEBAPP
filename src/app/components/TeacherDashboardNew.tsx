@@ -22,7 +22,6 @@ import { JTIAReport } from './JTIAReport';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { calculateJTIAScore, JTIAReportData } from '../utils/jtiaScoring';
 import { TeacherStudentManagement } from './TeacherStudentManagement';
-import { getUserJotsCode } from '../utils/jotsCode';
 import { generateDeepDiveQuestions } from '../utils/teachingStyleData';
 import { AdultThinkingContainer } from './AdultThinkingContainer';
 import { AILessonPlannerContainer } from './lessonPlanner/AILessonPlannerContainer';
@@ -47,7 +46,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'jtia' | 'lesson-planner' | 'analytics-compare' | 'manage-class'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'jtia' | 'lesson-planner' | 'analytics-compare'>('overview');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -424,11 +423,10 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     {
       groupLabel: 'Educator Tools',
       items: [
-        { id: 'overview', label: 'Class Overview', icon: Users, badge: students.length },
+        { id: 'overview', label: 'Class Overview & Student Management', icon: Users, badge: students.length },
         { id: 'individual', label: 'Student Roster', icon: Eye },
         { id: 'analytics-compare', label: 'Class Analytics', icon: BarChart3 },
-        { id: 'manage-class', label: 'Roster & Codes', icon: Calendar },
-        { id: 'lesson-planner', label: 'AI Lesson Planner', icon: ClipboardList },
+        { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
       ]
     },
     {
@@ -481,7 +479,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       <div className="max-w-5xl mx-auto w-full space-y-6">
 
         {/* Students connected banner — visible on class-related tabs */}
-        {['overview', 'individual', 'analytics-compare', 'manage-class'].includes(activeTab) && (
+        {['overview', 'individual', 'analytics-compare'].includes(activeTab) && (
           <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>
             <span className="text-xl" aria-hidden>👥</span>
             <div>
@@ -507,12 +505,16 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         )}
 
         {activeTab === 'overview' && (
-          <TeacherClassOverview students={students} assessments={allAssessments} />
+          <div className="space-y-8">
+            <TeacherClassOverview students={students} assessments={allAssessments} />
+          </div>
         )}
 
         {activeTab === 'individual' && (
-          <TeacherIndividualStudentView students={students} assessments={allAssessments} initialStudentId={targetStudentId} />
-      )}
+          <div className="space-y-8">
+            <TeacherIndividualStudentView students={students} assessments={allAssessments} initialStudentId={targetStudentId} teacher={user} />
+          </div>
+        )}
 
         {activeTab === 'my-style' && (
           <div className="space-y-8">
@@ -539,26 +541,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             </CardContent>
           </Card>
 
-          {/* Jots Code — school linkage info for teacher */}
-          {(() => {
-            const jc = getUserJotsCode(user);
-            if (!jc) return null;
-            return (
-              <div className="rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>
-                <div className="text-white">
-                  <p className="text-xs text-white/70 mb-0.5">Your School Jots Code (Organisation Code)</p>
-                  <div className="text-xl tracking-widest">{jc}</div>
-                  <p className="text-xs text-white/60 mt-0.5">Your School administrator uses this code to view your teaching methods.</p>
-                </div>
-                <button
-                  onClick={() => navigator.clipboard.writeText(jc)}
-                  className="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-lg border border-white/30 transition-colors"
-                >
-                  Copy Code
-                </button>
-              </div>
-            );
-          })()}
+
 
           {/* Cognitive Profile — all 3 core assessments */}
           {(() => {
@@ -701,6 +684,94 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               </div>
             );
           })()}
+
+          {/* All Assessment History */}
+          <Card className="border-2 border-gray-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-indigo-600" />
+                Complete Assessment History
+              </CardTitle>
+              <CardDescription>
+                A unified list of all assessments you have taken on the platform.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const completed = [...allMyAssessments, ...allAssessments]
+                  .filter(a => a.userId === user.id && a.completedAt && a.score)
+                  .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+
+                if (completed.length === 0) {
+                  return <div className="text-gray-500 text-sm text-center py-4">You have not completed any assessments yet.</div>;
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {completed.map((assmt, idx) => (
+                      <div key={assmt.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
+                        <div>
+                          <h5 className="font-semibold text-gray-900 capitalize flex items-center gap-2">
+                            {assmt.type.replace('-', ' ')}
+                            <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">Completed</Badge>
+                          </h5>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(assmt.completedAt!).toLocaleDateString()} at {new Date(assmt.completedAt!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </p>
+                        </div>
+                        <div className="mt-3 sm:mt-0 text-sm flex items-center gap-3">
+                          <div className="bg-white border px-3 py-2 rounded-md">
+                            {assmt.type === 'jtia' ? (
+                              <div className="text-xs flex items-center gap-3">
+                                <div>
+                                  <span className="text-gray-500">Overall Level:</span> <span className="font-medium text-indigo-700">
+                                    {(() => {
+                                      const s = (assmt.report || assmt.results || assmt.score?.jtia)?.overallScore;
+                                      if (typeof s !== 'number') return 'Completed';
+                                      if (s >= 85) return 'Exemplary Practice';
+                                      if (s >= 70) return 'Established Practice';
+                                      if (s >= 50) return 'Developing Focus';
+                                      return 'Emerging';
+                                    })()}
+                                  </span>
+                                </div>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-6 text-[10px] px-2 ml-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                  onClick={() => {
+                                    setSelectedHistoryId(assmt.id);
+                                    setActiveTab('jtia');
+                                  }}
+                                >
+                                  View Report
+                                </Button>
+                              </div>
+                            ) : assmt.type === 'kolb' ? (
+                            <div className="text-xs">
+                              <span className="text-gray-500">Style:</span> <span className="font-medium text-pink-600">{assmt.score.kolb?.style || 'N/A'}</span>
+                            </div>
+                          ) : assmt.type === 'dual-process' ? (
+                            <div className="text-xs">
+                              <span className="text-gray-500">Style:</span> <span className="font-medium text-orange-600">{assmt.score.dualProcess?.style || 'N/A'}</span>
+                            </div>
+                          ) : (
+                            <div className="text-xs">
+                              <span className="text-gray-500">Style:</span> <span className="font-medium text-blue-600">
+                                {assmt.score?.sternberg?.style || assmt.score?.['adult-thinking']?.primaryStyle || assmt.score?.['shs-thinking']?.primaryStyle || assmt.score?.['jhs-thinking']?.primaryStyle || 'N/A'}
+                              </span>
+                            </div>
+                          )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
           </div>
         )}
 
@@ -769,49 +840,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 onRetake={() => setIsTakingAssessment(true)}
               />
 
-              {teachingStyleAssessments.length > 1 && !selectedHistoryId && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <History className="h-5 w-5 text-muted-foreground" />
-                      Teacher Insights Assessment (JTIA) History
-                    </CardTitle>
-                    <CardDescription>
-                      Track how your Teaching Insights domains have evolved over time.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {teachingStyleAssessments.slice(1).map((assessment) => (
-                        <div key={assessment.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
-                          <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
-                              <Calendar className="h-5 w-5 text-slate-500" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-slate-900">
-                                JTIA Profile • Completed {new Date(assessment.completedAt || "").toLocaleDateString()}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                5 Core Teacher Insights Domains
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary">
-                              {new Date(assessment.completedAt || "").toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </Badge>
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedHistoryId(assessment.id)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Report
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+
             </div>
           ) : (
             <div className="text-center py-12 bg-white rounded-xl shadow-sm border p-8">
@@ -836,69 +865,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               </button>
             </div>
           )}
-
-            {/* All Assessment History */}
-            <Card className="border-2 border-gray-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-indigo-600" />
-                  Complete Assessment History
-                </CardTitle>
-                <CardDescription>
-                  A unified list of all assessments you have taken on the platform.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {(() => {
-                  const completed = [...allMyAssessments, ...allAssessments]
-                    .filter(a => a.userId === user.id && a.completedAt && a.score)
-                    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
-
-                  if (completed.length === 0) {
-                    return <div className="text-gray-500 text-sm text-center py-4">You have not completed any assessments yet.</div>;
-                  }
-
-                  return (
-                    <div className="space-y-3">
-                      {completed.map((assmt, idx) => (
-                        <div key={assmt.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
-                          <div>
-                            <h5 className="font-semibold text-gray-900 capitalize flex items-center gap-2">
-                              {assmt.type.replace('-', ' ')}
-                              <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">Completed</Badge>
-                            </h5>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(assmt.completedAt!).toLocaleDateString()} at {new Date(assmt.completedAt!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </p>
-                          </div>
-                          <div className="mt-3 sm:mt-0 text-sm bg-white border px-3 py-2 rounded-md">
-                            {assmt.type === 'jtia' ? (
-                              <div className="text-xs">
-                                <span className="text-gray-500">Overall Score:</span> <span className="font-medium text-indigo-700">{(assmt.report || assmt.results || assmt.score?.jtia)?.overallScore || 'Completed'}/100</span>
-                              </div>
-                            ) : assmt.type === 'kolb' ? (
-                              <div className="text-xs">
-                                <span className="text-gray-500">Style:</span> <span className="font-medium text-pink-600">{assmt.score.kolb?.style || 'N/A'}</span>
-                              </div>
-                            ) : assmt.type === 'dual-process' ? (
-                              <div className="text-xs">
-                                <span className="text-gray-500">Style:</span> <span className="font-medium text-orange-600">{assmt.score.dualProcess?.style || 'N/A'}</span>
-                              </div>
-                            ) : (
-                              <div className="text-xs">
-                                <span className="text-gray-500">Style:</span> <span className="font-medium text-blue-600">
-                                  {assmt.score?.sternberg?.style || assmt.score?.['adult-thinking']?.primaryStyle || assmt.score?.['shs-thinking']?.primaryStyle || assmt.score?.['jhs-thinking']?.primaryStyle || 'N/A'}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
+          )}
           </div>
         )}
 
@@ -915,17 +882,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
           />
         )}
 
-        {activeTab === 'manage-class' && (
-          <div className="space-y-8">
-            <TeacherStudentManagement 
-              teacher={user} 
-              onViewReport={(studentId) => {
-                setTargetStudentId(studentId);
-                setActiveTab('individual');
-              }}
-            />
-          </div>
-        )}
+
       </div>
     </DashboardLayout>
   );

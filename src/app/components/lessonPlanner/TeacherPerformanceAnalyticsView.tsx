@@ -2,7 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { TrendingUp, Award, Calendar, CheckCircle2, FileText, Star, Target } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { TrendingUp, Award, Calendar, CheckCircle2, FileText, Star, Target, Info } from 'lucide-react';
 import { TeacherPerformanceMetric } from '../../types/lessonPlannerTypes';
 import { getTeacherPerformanceMetrics } from '../../utils/lessonPlannerStorage';
 
@@ -34,32 +35,64 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
       {/* Monthly Metrics KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-          <CardContent className="p-5 space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Lessons Planned</span>
+          <CardContent className="p-5 space-y-1 relative">
+            <Popover>
+              <PopoverTrigger className="absolute top-4 right-4 text-slate-400 hover:text-indigo-500">
+                <Info className="w-4 h-4" />
+              </PopoverTrigger>
+              <PopoverContent className="w-64 text-xs">
+                The total number of lesson plans you have created and finalized this month using the Lesson Planner.
+              </PopoverContent>
+            </Popover>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Lessons Planned</span>
             <span className="text-2xl font-black text-slate-900 dark:text-white">{metrics.monthly.lessonsPlanned}</span>
             <p className="text-[10px] text-slate-500">{metrics.monthly.monthName}</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-          <CardContent className="p-5 space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Lessons Delivered</span>
+          <CardContent className="p-5 space-y-1 relative">
+            <Popover>
+              <PopoverTrigger className="absolute top-4 right-4 text-slate-400 hover:text-indigo-500">
+                <Info className="w-4 h-4" />
+              </PopoverTrigger>
+              <PopoverContent className="w-64 text-xs">
+                Lessons successfully presented in class and logged in the system. Delivery rate compares this to planned lessons.
+              </PopoverContent>
+            </Popover>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Lessons Delivered</span>
             <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{metrics.monthly.lessonsDelivered}</span>
             <p className="text-[10px] text-slate-500">91% Delivery Rate</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-          <CardContent className="p-5 space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Assessments Created</span>
+          <CardContent className="p-5 space-y-1 relative">
+            <Popover>
+              <PopoverTrigger className="absolute top-4 right-4 text-slate-400 hover:text-indigo-500">
+                <Info className="w-4 h-4" />
+              </PopoverTrigger>
+              <PopoverContent className="w-64 text-xs">
+                Assessments generated using AI across all your active lesson plans. Includes MCQs and discussions.
+              </PopoverContent>
+            </Popover>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Assessments Created</span>
             <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{metrics.monthly.assessmentsCreated}</span>
             <p className="text-[10px] text-slate-500">Auto-generated & Quizzes</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-          <CardContent className="p-5 space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Avg Engagement Score</span>
+          <CardContent className="p-5 space-y-1 relative">
+            <Popover>
+              <PopoverTrigger className="absolute top-4 right-4 text-slate-400 hover:text-indigo-500">
+                <Info className="w-4 h-4" />
+              </PopoverTrigger>
+              <PopoverContent className="w-64 text-xs">
+                Average engagement metric based on your post-lesson reflections and AI evaluations of student responsiveness.
+              </PopoverContent>
+            </Popover>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Avg Engagement Score</span>
             <span className="text-2xl font-black text-amber-500">{metrics.monthly.averageStudentEngagement} / 5.0</span>
             <p className="text-[10px] text-slate-500">Student classroom rating</p>
           </CardContent>

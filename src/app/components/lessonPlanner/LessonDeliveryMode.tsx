@@ -100,7 +100,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
       teacherLiveNotes: teacherNotes,
       startedAt: new Date().toISOString()
     };
-    toast.success('Live Lesson Presentation completed!');
+    toast.success('Lesson Prep completed!');
     onFinishDelivery(session);
   };
 
@@ -113,7 +113,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Live Classroom Delivery Mode
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Lesson Prep Mode
             </Badge>
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
               Phase {currentPhaseIndex + 1} of {plan.phases.length}
@@ -207,7 +207,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
                   {currentPhaseIndex < plan.phases.length - 1 ? (
                     <>Next Phase <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></>
                   ) : (
-                    <>Finish Presentation & Reflect <CheckCircle2 className="w-3.5 h-3.5 ml-1.5" /></>
+                    <>Finish Lesson Prep & Reflect <CheckCircle2 className="w-3.5 h-3.5 ml-1.5" /></>
                   )}
                 </Button>
               </div>

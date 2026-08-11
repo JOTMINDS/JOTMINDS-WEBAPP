@@ -13,6 +13,7 @@ import { CognitiveInsightEngine } from './CognitiveInsightEngine';
 import { DifferentiatedInstructionView } from './DifferentiatedInstructionView';
 import { AssessmentGeneratorView } from './AssessmentGeneratorView';
 import { LessonDeliveryMode } from './LessonDeliveryMode';
+import { ReflectionHistoryView } from './ReflectionHistoryView';
 import { PostLessonReflectionModal } from './PostLessonReflectionModal';
 import { CurriculumTrackerView } from './CurriculumTrackerView';
 import { TeacherPerformanceAnalyticsView } from './TeacherPerformanceAnalyticsView';
@@ -65,14 +66,14 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
               JotMinds Intelligence Suite
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
-              10-Module AI Lesson Planner
+              10-Module Lesson Planner
             </Badge>
           </div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-indigo-400" /> AI-Powered Lesson Planner & Teaching Intelligence
+            <BookOpen className="w-6 h-6 text-indigo-400" /> Lesson Planner & Teaching Insights
           </h1>
           <p className="text-xs text-slate-300 mt-1">
-            Connecting student cognitive profiles $\rightarrow$ lesson planning $\rightarrow$ 3-tier differentiation $\rightarrow$ live presentation $\rightarrow$ curriculum analytics.
+            Connecting student cognitive profiles $\rightarrow$ lesson planning $\rightarrow$ 3-tier differentiation $\rightarrow$ lesson prep $\rightarrow$ curriculum analytics.
           </p>
         </div>
 
@@ -88,7 +89,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
               onClick={() => setIsDelivering(true)}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md"
             >
-              <Play className="w-4 h-4 mr-1.5" /> Start Live Presentation
+              <Play className="w-4 h-4 mr-1.5" /> Lesson Prep tool
             </Button>
           )}
         </div>
@@ -127,35 +128,42 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
 
       {/* 10 Module Tabs Workspace */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-        <TabsList className="flex overflow-x-auto scrollbar-none p-1.5 rounded-xl gap-1 bg-slate-100 dark:bg-slate-900 md:grid md:grid-cols-9">
-          <TabsTrigger value="create" className="text-xs font-semibold">
-            1. Creation
-          </TabsTrigger>
-          <TabsTrigger value="insights" className="text-xs font-semibold">
-            2. Cognitive
-          </TabsTrigger>
-          <TabsTrigger value="differentiated" className="text-xs font-semibold">
-            3. Differentiated
-          </TabsTrigger>
-          <TabsTrigger value="assessment" className="text-xs font-semibold">
-            4. Assessment
-          </TabsTrigger>
-          <TabsTrigger value="curriculum" className="text-xs font-semibold">
-            7. Curriculum
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs font-semibold">
-            8. Teacher Analytics
-          </TabsTrigger>
-          <TabsTrigger value="school" className="text-xs font-semibold">
-            9. School Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="delivery" className="text-xs font-semibold">
-            5. Presentation
-          </TabsTrigger>
-          <TabsTrigger value="reflection" className="text-xs font-semibold">
-            6. Reflection
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto scrollbar-none pb-2">
+          <TabsList className="inline-flex h-12 items-center justify-start rounded-2xl bg-white dark:bg-slate-900 p-1.5 text-slate-500 shadow-sm border border-slate-200 dark:border-slate-800 gap-1.5 min-w-max">
+            <TabsTrigger value="create" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Creation
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <Brain className="w-3.5 h-3.5" /> Cognitive
+            </TabsTrigger>
+            <TabsTrigger value="differentiated" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" /> Differentiated
+            </TabsTrigger>
+            <TabsTrigger value="assessment" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <FileCheck className="w-3.5 h-3.5" /> Assessment
+            </TabsTrigger>
+            <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+            <TabsTrigger value="delivery" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-emerald-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <Play className="w-3.5 h-3.5" /> Lesson Prep
+            </TabsTrigger>
+            <TabsTrigger value="reflection" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Reflection
+            </TabsTrigger>
+            <TabsTrigger value="history" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-slate-700 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <History className="w-3.5 h-3.5" /> History
+            </TabsTrigger>
+            <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+            <TabsTrigger value="curriculum" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" /> Curriculum
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <BarChart3 className="w-3.5 h-3.5" /> Analytics
+            </TabsTrigger>
+            <TabsTrigger value="school" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <School className="w-3.5 h-3.5" /> Institutional Cognitive
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Module 1 */}
         <TabsContent value="create">
@@ -209,12 +217,17 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
           <SchoolInsightsDashboardView summary={classSummary} />
         </TabsContent>
 
+        {/* History Tab */}
+        <TabsContent value="history">
+          <ReflectionHistoryView />
+        </TabsContent>
+
         {/* Module 5 Launcher */}
         <TabsContent value="delivery">
           <Card className="text-center p-8 space-y-4 max-w-xl mx-auto border-indigo-200 dark:border-indigo-900/50">
             <Play className="w-12 h-12 text-indigo-600 mx-auto" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Launch Live Classroom Presentation Mode
+              Launch Lesson Prep tool
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400">
               Open full-screen delivery mode with live activity timer, teaching notes, student attendance, and engagement trackers.

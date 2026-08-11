@@ -237,28 +237,28 @@ export function calculateJTIAScore(responses: number[] = [], sessionQuestions: J
 
   const recommendations: JTIAAIRecommendations = {
     resources: [
-      "Book: 'The Skillful Teacher: On Technique, Trust, and Responsiveness in the Classroom' by Jon Saphier",
-      "Research Toolkit: Harvard Project Zero Teaching for Understanding Framework & Visual Thinking Routines",
-      "Interactive Guide: Universal Design for Learning (UDL) Guidelines for Differentiated Instruction",
+      "Book: 'Teach Like a Champion 3.0' by Doug Lemov - Techniques for Classroom Management & Rigor",
+      "Toolkit: Collaborative Learning Structures & Kagan Strategies for active student engagement",
+      "Guide: Universal Design for Learning (UDL) Guidelines for differentiating diverse classrooms",
       "JotMinds Library: 'Cognitive Diversity in Action: Mapping Student Thinking Styles'"
     ],
     activities: [
-      "Socratic Questioning Lab: Incorporate intentional 5-second wait time and evidence-probing questions in upcoming lessons.",
-      "Formative Check Routine: Embed 2-minute anonymous exit tickets to diagnose misconceptions before homework assignment.",
-      "Restorative Circle Protocol: Conduct a weekly 15-minute community check-in to strengthen classroom psychological safety.",
-      "Backwards Design Audit: Review unit assessments to ensure 100% alignment with real-world transfer competencies."
+      "Wait-Time Practice: Intentionally implement a 3-5 second pause after asking questions before calling on students.",
+      "Formative Checks: Use daily 'Exit Tickets' to quickly gauge student understanding before the next lesson.",
+      "Restorative Practices: Lead a weekly morning circle or check-in to build classroom community and trust.",
+      "Scaffolded Modeling: Use the 'I Do, We Do, You Do' gradual release model explicitly for complex tasks."
     ],
     coaching: [
-      "Peer Observation Exchange: Schedule a 30-minute cross-subject classroom observation focused on questioning techniques.",
-      "Student-Feedback Cycle: Conduct a mid-semester anonymous student survey to uncover instructional blind spots.",
-      "PLC Collaborative Review: Share student work samples from a challenging lesson during grade-level team meetings.",
-      "Mentorship Connection: Partner with an instructional coach to refine differentiated pathways for neurodivergent learners."
+      "Peer Observation: Visit a colleague's classroom to observe how they manage transitions and student behavior.",
+      "Student Feedback: Run a short, anonymous survey asking students what helps them learn best in your class.",
+      "Lesson Plan Review: Sit with your department head to align an upcoming unit's assessments with learning objectives.",
+      "Video Reflection: Record 10 minutes of your teaching to self-evaluate your teacher-talk vs. student-talk ratio."
     ],
     pathways: [
-      "Instructional Leadership Pathway: Lead a faculty professional development workshop on differentiated assessment.",
-      "Curriculum Innovation Fellowship: Design an interdisciplinary pilot unit combining creative synthesis and analytical rigor.",
-      "Action Research Project: Investigate the correlation between formative feedback speed and student mastery in your class.",
-      "Educational Network Advocate: Participate in national or regional teacher development forums to share best practices."
+      "Curriculum Development: Take a lead role in designing interdisciplinary projects for your grade level.",
+      "Mentorship: Become a mentor or cooperating teacher for newly qualified teachers in your school.",
+      "Subject Matter Expert: Lead professional development workshops on subject-specific pedagogical strategies.",
+      "Student Support Liaison: Specialize in creating inclusion strategies and IEP accommodations in general education."
     ]
   };
 

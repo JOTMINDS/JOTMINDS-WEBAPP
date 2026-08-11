@@ -214,8 +214,8 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
   };
 
   const proceedFromVerification = () => {
-    if (!emailVerified) return setError('Please verify your email address first.');
-    if (!phoneVerified) return setError('Please verify your phone number first.');
+    if (email.trim() && !emailVerified) return setError('Please verify your email address first.');
+    if (phone.trim() && !phoneVerified) return setError('Please verify your phone number first.');
     setError(''); next();
   };
 
@@ -450,8 +450,9 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
             <CardContent className="space-y-6">
 
               {/* Email verification */}
-              <div className={`p-4 rounded-xl border-2 transition-all ${emailVerified ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-3">
+              {email.trim() && (
+                <div className={`p-4 rounded-xl border-2 transition-all ${emailVerified ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
+                  <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4 text-gray-500" />
                     <span className="text-sm font-medium text-gray-800">Email: {email}</span>
@@ -478,13 +479,15 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
                     <Button type="button" onClick={verifyEmailOTP} disabled={verifyingEmail || !emailOTP}>
                       {verifyingEmail ? <Loader className="h-4 w-4 animate-spin" /> : 'Verify'}
                     </Button>
-                  </div>
-                )}
-              </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Phone verification */}
-              <div className={`p-4 rounded-xl border-2 transition-all ${phoneVerified ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-3">
+              {phone.trim() && (
+                <div className={`p-4 rounded-xl border-2 transition-all ${phoneVerified ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
+                  <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-gray-500" />
                     <span className="text-sm font-medium text-gray-800">Phone: {phone}</span>
@@ -510,6 +513,7 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
                   )}
                 </>)}
               </div>
+              )}
 
               {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
 

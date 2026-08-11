@@ -64,7 +64,7 @@ export function getScientificPositioningContext(assessmentType?: string): Scient
         name: "Pedagogical Content Knowledge (PCK)",
         author: "Lee Shulman",
         construct: "Intersection of Subject Matter Knowledge and Pedagogical Craft",
-        relevance: "Grounds teacher intelligence domains in instructional strategy and content delivery."
+        relevance: "Grounds teaching insights domains in instructional strategy and content delivery."
       },
       {
         name: "Metacognition and Self-Regulation",

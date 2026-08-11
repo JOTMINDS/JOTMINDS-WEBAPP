@@ -109,6 +109,19 @@ app.post('/make-server-fc8eb847/validate-org-code', async (c) => {
     const organization = await kv.get(`organization:${code}`);
     
     if (!organization) {
+      // Check if it's a teacher class code
+      const classCodeInfo = await kv.get(`classCode:${code.toUpperCase().trim()}`);
+      if (classCodeInfo) {
+        console.log(`[validate-org-code] ✓ Teacher class code found: ${classCodeInfo.classCode}`);
+        return c.json({ 
+          valid: true, 
+          teacherId: classCodeInfo.teacherId,
+          teacherName: classCodeInfo.teacherName,
+          organizationName: classCodeInfo.organizationName,
+          organizationType: 'School'
+        });
+      }
+
       // Try to find in the Postgres institutions table (for school codes)
       const supabase = getSupabaseClient(true);
       const { data: instData, error: instError } = await supabase
@@ -127,7 +140,7 @@ app.post('/make-server-fc8eb847/validate-org-code', async (c) => {
       }
 
       console.log(`[validate-org-code] ✗ Organization not found for code: ${code}`);
-      return c.json({ valid: false, error: 'Invalid organization code' }, 200);
+      return c.json({ valid: false, error: 'Invalid code' }, 200);
     }
 
     console.log(`[validate-org-code] ✓ Organization found: ${organization.name}`);
@@ -171,10 +184,18 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     } else if ((role === 'professional' || role === 'teacher' || role === 'student' || role === 'educator') && organizationCode) {
       // Professional, Teacher, Student, or Educator can optionally provide an organization code
       let foundOrgName = null;
+      let linkedTeacherId = teacherId || null;
+      let linkedTeacherName = teacherName || null;
+
       const organization = await kv.get(`organization:${organizationCode}`);
+      const classCodeInfo = await kv.get(`classCode:${organizationCode.toUpperCase().trim()}`);
       
       if (organization) {
         foundOrgName = organization.name;
+      } else if (classCodeInfo) {
+        foundOrgName = classCodeInfo.organizationName;
+        linkedTeacherId = classCodeInfo.teacherId;
+        linkedTeacherName = classCodeInfo.teacherName;
       } else {
         // Try Postgres institutions table
         const supabase = getSupabaseClient(true);
@@ -187,12 +208,14 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         if (instData) {
           foundOrgName = instData.name;
         } else {
-          return c.json({ error: 'Invalid organization code' }, 400);
+          return c.json({ error: 'Invalid organization or class code' }, 400);
         }
       }
 
       finalOrgCode = organizationCode;
       finalOrgName = foundOrgName;
+      if (linkedTeacherId) teacherId = linkedTeacherId;
+      if (linkedTeacherName) teacherName = linkedTeacherName;
     }
 
     const supabase = getSupabaseClient(true);
@@ -407,6 +430,19 @@ app.patch('/make-server-fc8eb847/user/profile', async (c) => {
     };
     
     await kv.set(`user:${user.id}`, updatedProfile);
+
+    // Index classCode if updated
+    if (updates.classCode) {
+      const codeKey = `classCode:${updates.classCode.toUpperCase().trim()}`;
+      await kv.set(codeKey, {
+        teacherId: user.id,
+        teacherName: updatedProfile.name || user.email,
+        classCode: updates.classCode.toUpperCase().trim(),
+        organizationName: updatedProfile.school || updatedProfile.organizationName || 'School'
+      });
+      console.log(`Indexed class code: ${codeKey}`);
+    }
+
     console.log(`Profile updated successfully for user ${user.id}`);
 
     return c.json({ success: true, profile: updatedProfile });

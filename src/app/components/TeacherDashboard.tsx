@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { User } from '../types';
 import { getUserAssessmentResults, getStudentsForTeacher } from '../utils/api';
-import { getStudentsBySchool, getAllUsers, getAllAssessments } from '../utils/storage';
+import { getStudentsBySchool, getAllUsers, getAllAssessments, isStudentConnectedToTeacher, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { formatDate, formatTime } from '../utils/dateFormat';
 import { 
@@ -80,7 +80,12 @@ export function TeacherDashboard({
         // For teachers viewed by admin, we'd need to fetch their students from API
         // For now, use localStorage fallback
         const allUsers = getAllUsers();
-        studentUsers = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
+        
+        const teacherClassIds = new Set<string>();
+        getAllClasses().filter(c => c.classTeacherId === user.id).forEach(c => teacherClassIds.add(c.id));
+        getAssignmentsForTeacher(user.id).forEach(a => teacherClassIds.add(a.classId));
+        
+        studentUsers = allUsers.filter(u => isStudentConnectedToTeacher(u, user, teacherClassIds));
       } else {
         // Regular teacher viewing their own data
         try {
@@ -105,7 +110,12 @@ export function TeacherDashboard({
           }
           
           const allUsers = getAllUsers();
-          studentUsers = allUsers.filter(u => u.role === 'student' && (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id))));
+          
+          const teacherClassIds = new Set<string>();
+          getAllClasses().filter(c => c.classTeacherId === user.id).forEach(c => teacherClassIds.add(c.id));
+          getAssignmentsForTeacher(user.id).forEach(a => teacherClassIds.add(a.classId));
+          
+          studentUsers = allUsers.filter(u => isStudentConnectedToTeacher(u, user, teacherClassIds));
           
           // Scope assessments to only this teacher's students
           const studentIds = new Set(studentUsers.map(s => s.id));
@@ -346,7 +356,7 @@ export function TeacherDashboard({
 
         <TeacherTabBar activeTab={activeTab} onTabChange={setActiveTab} />
         
-        {/* MAIN TAB: Individual Students with Personalized Tabs */}
+        {/* MAIN TAB: Student Roster with Personalized Tabs */}
         {activeTab === 'individual' && (
           <div className="space-y-6">
           <Card className="border-2 border-[#6B4C9A]">
@@ -355,7 +365,7 @@ export function TeacherDashboard({
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <UserCheck className="h-6 w-6 text-[#6B4C9A]" />
-                    Individual Student Profiles
+                    Student Roster
                   </CardTitle>
                   <CardDescription className="mt-2">
                     View personalized insights, teaching strategies, and educational resources for each student

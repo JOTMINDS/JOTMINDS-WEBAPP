@@ -39,7 +39,7 @@ import { DailyChallengeRunner } from './components/DailyChallengeRunner';
 import { LessonViewer } from './components/LessonViewer';
 import { AILearningCoach } from './components/AILearningCoach';
 import { CognitiveGrowthDashboard } from './components/CognitiveGrowthDashboard';
-import { TeacherIntelligenceDashboard } from './components/TeacherIntelligenceDashboard';
+import { InsightsPortal } from './components/InsightsPortal';
 import { SchoolAnalyticsDashboard } from './components/SchoolAnalyticsDashboard';
 import { PlatformEssentials } from './components/PlatformEssentials';
 import { SchoolTeacherStylesView } from './components/SchoolTeacherStylesView';
@@ -756,7 +756,7 @@ function AppContent() {
 
     case 'teacher-intelligence':
       return user ? (
-        <TeacherIntelligenceDashboard
+        <InsightsPortal
           user={impersonatedUser || user}
           onBack={handleBackToDashboard}
         />

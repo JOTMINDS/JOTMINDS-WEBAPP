@@ -111,13 +111,13 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
             >
               <div>
                 <Badge className="bg-emerald-600 text-white mb-3">Quick Snapshot</Badge>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">12 Questions</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Brief Overview</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
                   Fast 3-minute diagnostic overview across key teaching scenarios.
                 </p>
               </div>
               <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
-                Start 12 Items (~3 min)
+                Start Brief Overview (~3 min)
               </Button>
             </div>
 
@@ -128,13 +128,13 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
             >
               <div>
                 <Badge className="bg-indigo-600 text-white mb-3">Standard</Badge>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">60 Questions</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Standard Profile</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
                   Balanced 12-minute assessment providing deep domain insights.
                 </p>
               </div>
               <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
-                Start 60 Items (~12 min)
+                Start Standard Profile (~12 min)
               </Button>
             </div>
 
@@ -145,13 +145,13 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
             >
               <div>
                 <Badge className="bg-purple-600 text-white mb-3">Comprehensive</Badge>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">120 Questions</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Comprehensive Profile</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
                   Complete 25-minute evaluation covering all sub-competency scenarios.
                 </p>
               </div>
               <Button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold">
-                Start 120 Items (~25 min)
+                Start Comprehensive Profile (~25 min)
               </Button>
             </div>
           </CardContent>

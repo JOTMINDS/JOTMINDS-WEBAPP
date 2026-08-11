@@ -1000,7 +1000,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
 
                   {role === 'student' && (
                     <div className="space-y-2">
-                      <Label htmlFor="studentJotsCode">School Jots Code (Optional)</Label>
+                      <Label htmlFor="studentJotsCode">School Jots Code or Class Code (Optional)</Label>
                       <div className="flex gap-2">
                         <Input
                           id="studentJotsCode"

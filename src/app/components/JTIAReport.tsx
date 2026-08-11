@@ -6,7 +6,7 @@ import {
   Brain, BookOpen, Users, HeartHandshake, Award,
   Sparkles, CheckCircle2, TrendingUp, Compass, Share2,
   Printer, ArrowRight, ShieldCheck, HelpCircle, Layers, Lightbulb,
-  RefreshCw, Loader2
+  RefreshCw, Loader2, FileText
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -31,6 +31,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
   onBack
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'strengths' | 'growth' | 'ai'>('overview');
+  const [graphType, setGraphType] = useState<'radar' | 'bar'>('radar');
   const [recommendationCategory, setRecommendationCategory] = useState<'resources' | 'activities' | 'coaching' | 'pathways'>('resources');
   const [aiRecommendations, setAiRecommendations] = useState<JTIAAIRecommendations | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
@@ -78,7 +79,63 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    const printContent = document.getElementById('jtia-printable-report');
+    const root = document.getElementById('root');
+    if (printContent && root) {
+      // Hide the main app
+      const originalRootDisplay = root.style.display;
+      root.style.display = 'none';
+
+      // Create a temporary div for printing
+      const printDiv = document.createElement('div');
+      printDiv.id = 'temp-print-div';
+      printDiv.className = 'p-8 max-w-4xl mx-auto';
+      printDiv.innerHTML = printContent.innerHTML;
+      
+      // Hide elements that shouldn't be printed
+      const noPrintElements = printDiv.querySelectorAll('.no-print-btn');
+      noPrintElements.forEach(el => (el as HTMLElement).style.display = 'none');
+
+      document.body.appendChild(printDiv);
+      window.print();
+
+      // Cleanup
+      document.body.removeChild(printDiv);
+      root.style.display = originalRootDisplay;
+    } else {
+      window.print();
+    }
+  };
+
+  const handleExportCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "JTIA Assessment Report\n\n";
+    csvContent += "Domain,Score\n";
+    radarData.forEach(d => {
+      csvContent += `"${d.full}",${d.score}\n`;
+    });
+    
+    if (report.strengths) {
+      csvContent += "\nStrengths\n";
+      report.strengths.forEach(s => {
+        csvContent += `"${s.title}","${s.domain}"\n`;
+      });
+    }
+
+    if (report.growthOpportunities) {
+      csvContent += "\nGrowth Opportunities\n";
+      report.growthOpportunities.forEach(s => {
+        csvContent += `"${s.title}","${s.domain}"\n`;
+      });
+    }
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `JTIA_Report.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getOrientationBadge = (score: number) => {
@@ -90,22 +147,10 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
   return (
     <div id="jtia-printable-report" className="space-y-8 pb-12 max-w-6xl mx-auto">
       <style>{`
+        /* Global print overrides */
         @media print {
-          body * {
-            visibility: hidden !important;
-          }
-          #jtia-printable-report, #jtia-printable-report * {
-            visibility: visible !important;
-          }
-          #jtia-printable-report {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-          }
-          .no-print-btn {
-            display: none !important;
-          }
+          @page { margin: 10mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white !important; }
         }
       `}</style>
 
@@ -136,7 +181,15 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
           )}
           <Button onClick={handlePrint} variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20">
             <Printer className="w-4 h-4 mr-2" />
-            Print JTIA Report
+            Print / Save as PDF
+          </Button>
+          <Button onClick={handleExportCSV} variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+            <FileText className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button onClick={() => toast.success("Report shared with admin.")} variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+            <Share2 className="w-4 h-4 mr-2" />
+            Share with Admin
           </Button>
           {onRetake && (
             <Button onClick={onRetake} className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg">
@@ -210,49 +263,88 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
       </div>
 
       {/* ─── TAB 1: 5 CORE DOMAINS OVERVIEW ─────────────────────────────── */}
-      {activeTab === 'overview' && (
-        <div className="space-y-8 animate-in fade-in-50 duration-300">
+      <div className={`${activeTab === 'overview' ? 'block animate-in fade-in-50 duration-300' : 'hidden print:block'} space-y-8`}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Radar Visual */}
             <Card className="lg:col-span-5 shadow-md border-indigo-100 dark:border-slate-800 bg-gradient-to-b from-white via-indigo-50/20 to-white dark:from-slate-900 dark:to-slate-950">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Compass className="w-5 h-5 text-indigo-600" />
-                  Intelligence Domain Profile
-                </CardTitle>
-                <CardDescription>
-                  Holistic orientation map across the five teacher intelligence domains.
-                </CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between pb-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Compass className="w-5 h-5 text-indigo-600" />
+                    Teaching Insights Domain Profile
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Holistic orientation map across the five teaching insights domains.
+                  </CardDescription>
+                </div>
+                <select 
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={graphType}
+                  onChange={(e) => setGraphType(e.target.value as 'radar' | 'bar')}
+                >
+                  <option value="radar">Radar Chart</option>
+                  <option value="bar">Bar Chart</option>
+                </select>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center">
-                <div className="w-full h-[320px]">
+                <div className="w-full h-[400px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                      <defs>
-                        <linearGradient id="radarGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#6366F1" stopOpacity={0.6} />
-                          <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0.2} />
-                        </linearGradient>
-                      </defs>
-                      <PolarGrid stroke="rgba(99, 102, 241, 0.2)" />
-                      <PolarAngleAxis dataKey="domain" stroke="#475569" tick={{ fontSize: 11, fontWeight: 600 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#CBD5E1" tick={false} />
-                      <Radar
-                        name="Domain Alignment"
-                        dataKey="score"
-                        stroke="#6366F1"
-                        strokeWidth={2.5}
-                        fill="url(#radarGrad)"
-                        fillOpacity={0.7}
-                        dot={{ r: 4, fill: "#6366F1", stroke: "#FFF", strokeWidth: 2 }}
-                      />
-                      <RechartsTip
-                        formatter={(val: number) => [val >= 85 ? 'Exemplary' : val >= 70 ? 'Established' : 'Developing', 'Domain Orientation']}
-                        contentStyle={{ backgroundColor: '#0F172A', borderRadius: '10px', color: '#FFF', border: '1px solid #334155' }}
-                      />
-                    </RadarChart>
+                    {graphType === 'radar' ? (
+                      <RadarChart cx="50%" cy="50%" outerRadius="55%" data={radarData}>
+                        <defs>
+                          <linearGradient id="radarGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#6366F1" stopOpacity={0.6} />
+                            <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0.2} />
+                          </linearGradient>
+                        </defs>
+                        <PolarGrid stroke="rgba(99, 102, 241, 0.2)" />
+                        <PolarAngleAxis 
+                          dataKey="domain" 
+                          stroke="#475569" 
+                          tick={{ fontSize: 10, fontWeight: 600 }}
+                        />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#CBD5E1" tick={false} />
+                        <Radar
+                          name="Domain Alignment"
+                          dataKey="score"
+                          stroke="#6366F1"
+                          strokeWidth={2.5}
+                          fill="url(#radarGrad)"
+                          fillOpacity={0.7}
+                          dot={{ r: 4, fill: "#6366F1", stroke: "#FFF", strokeWidth: 2 }}
+                        />
+                        <RechartsTip
+                          formatter={(val: number) => [val >= 85 ? 'Exemplary' : val >= 70 ? 'Established' : 'Developing', 'Domain Orientation']}
+                          contentStyle={{ backgroundColor: '#0F172A', borderRadius: '10px', color: '#FFF', border: '1px solid #334155' }}
+                        />
+                      </RadarChart>
+                    ) : (
+                      <BarChart data={radarData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(99, 102, 241, 0.1)" />
+                        <XAxis 
+                          dataKey="domain" 
+                          tick={{ fontSize: 10, fontWeight: 600 }}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis hide domain={[0, 100]} />
+                        <RechartsTip
+                          formatter={(val: number) => [val >= 85 ? 'Exemplary' : val >= 70 ? 'Established' : 'Developing', 'Domain Orientation']}
+                          contentStyle={{ backgroundColor: '#0F172A', borderRadius: '10px', color: '#FFF', border: '1px solid #334155' }}
+                          cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
+                        />
+                        <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                          {radarData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.score >= 85 ? '#6366F1' : entry.score >= 70 ? '#8B5CF6' : '#C4B5FD'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    )}
                   </ResponsiveContainer>
                 </div>
+                <p className="text-xs text-slate-500 mt-2 text-center max-w-sm">
+                  This chart illustrates your natural teaching inclinations. A broader shape in the radar chart, or higher bars in the bar chart, indicate stronger alignment with specific cognitive domains.
+                </p>
                 <div className="mt-2 text-center">
                   <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
                     Primary Domain Alignment
@@ -267,7 +359,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             {/* Domain Score Breakdown */}
             <div className="lg:col-span-7 space-y-4">
               {radarData.map((item, index) => {
-                const descObj = Object.values(jtiaDomainDescriptions).find(d => d.title.startsWith(item.domain));
+                const descObj = Object.values(jtiaDomainDescriptions).find(d => d.title === item.full);
                 return (
                   <Card key={item.domain} className="shadow-sm hover:shadow-md transition-shadow border-slate-200 dark:border-slate-800">
                     <CardContent className="p-5">
@@ -316,11 +408,10 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* ─── TAB 2: PROFESSIONAL STRENGTHS ──────────────────────────────── */}
-      {activeTab === 'strengths' && (
-        <div className="space-y-6 animate-in fade-in-50 duration-300">
+      <div className={`${activeTab === 'strengths' ? 'block animate-in fade-in-50 duration-300' : 'hidden print:block'} space-y-6 mt-8 print:mt-12`}>
           <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-5">
             <h3 className="font-bold text-emerald-900 dark:text-emerald-300 text-lg flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -331,36 +422,47 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(report.strengths || []).map((strength, idx) => (
-              <Card key={strength.title} className="border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 text-xs">
-                      {strength.domain}
-                    </Badge>
-                    <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 text-xs font-semibold">
-                      Core Strength
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-lg font-bold mt-2">
-                    {strength.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    {strength.description}
-                  </p>
-                </CardContent>
-              </Card>
+          <div className="space-y-8">
+            {Object.entries(
+              (report.strengths || []).reduce((acc, strength) => {
+                if (!acc[strength.domain]) acc[strength.domain] = [];
+                acc[strength.domain].push(strength);
+                return acc;
+              }, {} as Record<string, typeof report.strengths>)
+            ).map(([domain, items]) => (
+              <div key={domain} className="space-y-4">
+                <h4 className="font-semibold text-slate-800 dark:text-slate-200 border-b pb-2 flex items-center justify-between">
+                  {domain}
+                  <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 text-xs font-normal">
+                    {items.length} {items.length === 1 ? 'Strength' : 'Strengths'}
+                  </Badge>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {items.map((strength) => (
+                    <Card key={strength.title} className="border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg font-bold">
+                            {strength.title}
+                          </CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                          {strength.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
-      )}
+      </div>
 
       {/* ─── TAB 3: GROWTH OPPORTUNITIES ────────────────────────────────── */}
-      {activeTab === 'growth' && (
-        <div className="space-y-6 animate-in fade-in-50 duration-300">
+      <div className={`${activeTab === 'growth' ? 'block animate-in fade-in-50 duration-300' : 'hidden print:block'} space-y-6 mt-8 print:mt-12`}>
           <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-5">
             <h3 className="font-bold text-amber-900 dark:text-amber-300 text-lg flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-amber-600" />
@@ -370,37 +472,47 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
               These areas represent your highest potential for professional enhancement. Small targeted adjustments here can yield significant gains in learner outcomes.
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(report.growthOpportunities || []).map((growth, idx) => (
-              <Card key={growth.title} className="border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <Badge className="bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 text-xs">
-                      {growth.domain}
-                    </Badge>
-                    <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 text-xs font-semibold">
-                      Development Focus
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-lg font-bold mt-2">
-                    {growth.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    {growth.description}
-                  </p>
-                </CardContent>
-              </Card>
+          <div className="space-y-8">
+            {Object.entries(
+              (report.growthOpportunities || []).reduce((acc, growth) => {
+                if (!acc[growth.domain]) acc[growth.domain] = [];
+                acc[growth.domain].push(growth);
+                return acc;
+              }, {} as Record<string, typeof report.growthOpportunities>)
+            ).map(([domain, items]) => (
+              <div key={domain} className="space-y-4">
+                <h4 className="font-semibold text-slate-800 dark:text-slate-200 border-b pb-2 flex items-center justify-between">
+                  {domain}
+                  <Badge className="bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 text-xs font-normal">
+                    {items.length} {items.length === 1 ? 'Opportunity' : 'Opportunities'}
+                  </Badge>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {items.map((growth) => (
+                    <Card key={growth.title} className="border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg font-bold">
+                            {growth.title}
+                          </CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                          {growth.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
-      )}
+      </div>
 
       {/* ─── TAB 4: AI DEVELOPMENT RECOMMENDATIONS ──────────────────────── */}
-      {activeTab === 'ai' && (
-        <div className="space-y-6 animate-in fade-in-50 duration-300">
+      <div className={`${activeTab === 'ai' ? 'block animate-in fade-in-50 duration-300' : 'hidden print:block'} space-y-6 mt-8 print:mt-12`}>
           <div className="bg-gradient-to-r from-purple-900/40 via-indigo-900/40 to-slate-900/40 border border-purple-500/30 rounded-xl p-6">
               <div className="flex items-center justify-between flex-wrap gap-4 mb-2">
                 <div className="flex items-center gap-3">
@@ -531,7 +643,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             </CardContent>
           </Card>
         </div>
-      )}
+      </div>
     </div>
   );
 };

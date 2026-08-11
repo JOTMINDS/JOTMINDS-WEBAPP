@@ -37,6 +37,54 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
           options: ['3', '6', '15', '21'],
           correctAnswer: '6',
           explanation: '18 divided by 3 equals 6.'
+        },
+        {
+          id: 'mcq-3',
+          type: 'mcq',
+          question: 'Which of these is a linear equation in one variable?',
+          options: ['x^2 + 5 = 9', '2x + 3y = 10', '4z - 7 = 13', 'x^3 = 27'],
+          correctAnswer: '4z - 7 = 13',
+          explanation: 'It has only one variable (z) and its highest power is 1.'
+        },
+        {
+          id: 'mcq-4',
+          type: 'mcq',
+          question: 'If x/4 = 5, what is the value of x?',
+          options: ['1', '9', '20', '1.25'],
+          correctAnswer: '20',
+          explanation: 'Multiply both sides by 4 to isolate x (5 * 4 = 20).'
+        },
+        {
+          id: 'mcq-5',
+          type: 'mcq',
+          question: 'Translate to an equation: "Five less than twice a number is fifteen."',
+          options: ['5 - 2x = 15', '2x - 5 = 15', '2(x - 5) = 15', '5x - 2 = 15'],
+          correctAnswer: '2x - 5 = 15',
+          explanation: '"Twice a number" is 2x, "five less than" means subtract 5.'
+        },
+        {
+          id: 'mcq-6',
+          type: 'mcq',
+          question: 'What is the value of p if 7p - 2 = 12?',
+          options: ['2', '4', '14', '7'],
+          correctAnswer: '2',
+          explanation: 'Add 2 to both sides to get 7p = 14, then divide by 7 to get p = 2.'
+        },
+        {
+          id: 'mcq-7',
+          type: 'mcq',
+          question: 'Which equation represents "a number divided by 3 is equal to 9"?',
+          options: ['3n = 9', 'n/3 = 9', 'n - 3 = 9', 'n + 3 = 9'],
+          correctAnswer: 'n/3 = 9',
+          explanation: '"A number divided by 3" is written as n/3.'
+        },
+        {
+          id: 'mcq-8',
+          type: 'mcq',
+          question: 'If 5(x - 2) = 20, what is the value of x?',
+          options: ['4', '6', '8', '2'],
+          correctAnswer: '6',
+          explanation: 'Divide by 5 first (x - 2 = 4), then add 2 (x = 6).'
         }
       ],
       shortAnswer: [
@@ -45,6 +93,30 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
           type: 'short_answer',
           question: 'Solve for y: 4y - 8 = 16. Show your step-by-step working.',
           correctAnswer: 'Step 1: 4y = 24. Step 2: y = 6.'
+        },
+        {
+          id: 'sa-2',
+          type: 'short_answer',
+          question: 'Solve for m: 3(m + 2) = 21',
+          correctAnswer: 'Step 1: m + 2 = 7 (divide by 3). Step 2: m = 5.'
+        },
+        {
+          id: 'sa-3',
+          type: 'short_answer',
+          question: 'A rectangle has a length of x+3 and a width of 4. If the perimeter is 28, find x.',
+          correctAnswer: 'Perimeter = 2(length + width). 2(x+3 + 4) = 28 -> 2(x+7) = 28 -> x+7 = 14 -> x = 7.'
+        },
+        {
+          id: 'sa-4',
+          type: 'short_answer',
+          question: 'Write a word problem that can be solved using the equation 2x + 5 = 15.',
+          correctAnswer: 'Example: I bought 2 pens of the same price and a $5 notebook. My total was $15. How much was each pen?'
+        },
+        {
+          id: 'sa-5',
+          type: 'short_answer',
+          question: 'Solve the equation: 5x + 7 = 2x + 16',
+          correctAnswer: 'Subtract 2x from both sides: 3x + 7 = 16. Subtract 7: 3x = 9. Divide by 3: x = 3.'
         }
       ],
       discussion: [
@@ -52,6 +124,26 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
           id: 'disc-1',
           type: 'discussion',
           question: 'In a real-life taxi fare equation (Fare = $5 + $2/km), explain why the $5 base fee is considered a constant and the distance traveled is a variable.'
+        },
+        {
+          id: 'disc-2',
+          type: 'discussion',
+          question: 'Why must we perform the same mathematical operation on BOTH sides of the equals sign when solving an equation?'
+        },
+        {
+          id: 'disc-3',
+          type: 'discussion',
+          question: 'Compare and contrast solving 2x + 4 = 10 and 2(x + 4) = 10. Does the order of operations matter?'
+        },
+        {
+          id: 'disc-4',
+          type: 'discussion',
+          question: 'How do you check your answer after solving an algebraic equation? Why is this step important?'
+        },
+        {
+          id: 'disc-5',
+          type: 'discussion',
+          question: 'Can an equation have no solution? Discuss an example of when this might occur.'
         }
       ],
       practicalExercises: [
@@ -59,6 +151,26 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
           id: 'prac-1',
           type: 'practical',
           question: 'Using physical or drawn balance scales, model the equation x + 5 = 11 and demonstrate how removing 5 from both sides maintains balance.'
+        },
+        {
+          id: 'prac-2',
+          type: 'practical',
+          question: 'Create a short skit or presentation explaining how to use opposite operations to find a hidden treasure (the unknown variable).'
+        },
+        {
+          id: 'prac-3',
+          type: 'practical',
+          question: 'Use algebra tiles to construct the equation 3x - 2 = 7, then physically add two positive tiles to both sides.'
+        },
+        {
+          id: 'prac-4',
+          type: 'practical',
+          question: 'Design a board game where players advance spaces by correctly identifying the next inverse operation needed to solve complex equations.'
+        },
+        {
+          id: 'prac-5',
+          type: 'practical',
+          question: 'Measure various objects in the classroom and create linear equations representing their combined lengths.'
         }
       ],
       homework: [
@@ -66,6 +178,26 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
           id: 'hw-1',
           type: 'homework',
           question: 'Complete textbook page 45, questions 1 to 5 on linear equation word problems. Write a short real-world scenario representing the equation 3x + 2 = 14.'
+        },
+        {
+          id: 'hw-2',
+          type: 'homework',
+          question: 'Find one example of a linear relationship in your home (e.g., cell phone bill, streaming subscription) and write an equation for it.'
+        },
+        {
+          id: 'hw-3',
+          type: 'homework',
+          question: 'Solve the 10 mixed equations on Worksheet A. Highlight any steps where you made a mistake and explain how you fixed it.'
+        },
+        {
+          id: 'hw-4',
+          type: 'homework',
+          question: 'Interview a parent or guardian about how they use math or budgets in their daily work, and formulate one linear equation from their example.'
+        },
+        {
+          id: 'hw-5',
+          type: 'homework',
+          question: 'Create a 5-question quiz on solving linear equations for a classmate, including an answer key with full working steps.'
         }
       ]
     }
@@ -75,7 +207,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
 
   const handleGenerateAssessment = async () => {
     setIsGenerating(true);
-    toast.info('AI Assessment Generator is crafting MCQs, Short Answers, and Discussion Prompts...');
+    toast.info('Generating Assessment Questions...');
 
     const res = await generateAILessonAssessment({
       subject: plan?.subject || 'Mathematics',
