@@ -130,7 +130,12 @@ export async function generateAIInsights(
       : { scores: scoresOrRequest as AssessmentScore, scientificPositioning: getScientificPositioningContext(options?.type), ...options };
 
     const prompt = `Analyze this cognitive assessment data and generate professional insights:
-Payload: ${JSON.stringify(payload)}
+Scores and Profile: ${JSON.stringify({
+    scores: payload.scores || (payload as any).scoresOrRequest,
+    type: payload.type,
+    role: payload.role,
+    age: payload.age
+  })}
 
 Return strictly valid JSON matching this schema:
 {
@@ -635,6 +640,82 @@ Return ONLY JSON with this exact format:
   if (!res) return null;
   try {
     return JSON.parse(res);
+  } catch {
+    return null;
+  }
+}
+
+export async function generateAIParentSupportTips(assessmentData: any): Promise<string[] | null> {
+  const prompt = `Analyze this child's assessment profile and generate 4 highly specific, actionable parenting support tips for home life:
+Assessment Profile: ${JSON.stringify(assessmentData)}
+
+Return ONLY JSON format:
+{
+  "tips": [
+    "Specific parenting tip 1",
+    "Specific parenting tip 2",
+    "Specific parenting tip 3",
+    "Specific parenting tip 4"
+  ]
+}`;
+
+  const systemMsg = { 
+    role: 'system', 
+    content: 'You are an expert child psychologist and family learning advisor. Always provide highly creative, non-repeating tips for parents.' 
+  };
+
+  const res = await callOpenAI([systemMsg, { role: 'user', content: prompt }], true, 600);
+  if (!res) return null;
+  try {
+    const parsed = JSON.parse(res);
+    return parsed.tips || null;
+  } catch {
+    return null;
+  }
+}
+
+export interface AIEducationalResource {
+  title: string;
+  description: string;
+  type: 'article' | 'video' | 'guide' | 'tip';
+  url: string;
+  relevance: string;
+}
+
+export async function generateAIEducationalResources(params: {
+  learningStyle?: string;
+  thinkingStyle?: string;
+  decisionStyle?: string;
+  userType: 'parent' | 'teacher';
+}): Promise<AIEducationalResource[] | null> {
+  const prompt = `Generate 4 tailored educational resources and guides for a ${params.userType} working with a student profile:
+Learning Style: ${params.learningStyle || 'General'}
+Thinking Style: ${params.thinkingStyle || 'General'}
+Decision Style: ${params.decisionStyle || 'General'}
+
+Return ONLY valid JSON matching this schema:
+{
+  "resources": [
+    {
+      "title": "Specific resource title",
+      "description": "2-sentence practical description",
+      "type": "guide",
+      "url": "#",
+      "relevance": "Why this aligns with their cognitive profile"
+    }
+  ]
+}`;
+
+  const systemMsg = { 
+    role: 'system', 
+    content: 'You are an educational resource specialist. Create highly inspiring, custom resource recommendations tailored specifically to the given student styles.' 
+  };
+
+  const res = await callOpenAI([systemMsg, { role: 'user', content: prompt }], true, 800);
+  if (!res) return null;
+  try {
+    const parsed = JSON.parse(res);
+    return parsed.resources || null;
   } catch {
     return null;
   }

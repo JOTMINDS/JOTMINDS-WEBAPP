@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { BookOpen, Brain, Layers, FileCheck, Play, RotateCcw, Target, School, Sparkles, MessageSquare, Plus, FileText, CheckCircle2, BarChart3 } from 'lucide-react';
+import { BookOpen, Brain, Layers, FileCheck, Play, RotateCcw, Target, School, Sparkles, MessageSquare, Plus, FileText, CheckCircle2, BarChart3, History } from 'lucide-react';
 import { LessonPlan, ClassCognitiveSummary, LessonDeliverySession, PostLessonReflection, GeneratedAssessment, DifferentiatedInstruction } from '../../types/lessonPlannerTypes';
 import { getSavedLessonPlans, getClassCognitiveSummary, saveLessonPlan } from '../../utils/lessonPlannerStorage';
 
