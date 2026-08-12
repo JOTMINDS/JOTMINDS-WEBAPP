@@ -41,6 +41,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showScoreExplainerModal, setShowScoreExplainerModal] = useState(false);
 
   useEffect(() => {
     loadAssessments();
@@ -498,18 +499,28 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                   <CardHeader className="relative">
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-2xl mb-2">Cognitive Intelligence Score</CardTitle>
-                        <CardDescription className="text-base">
-                          Comprehensive evaluation across all three frameworks
+                        <CardTitle className="text-2xl mb-1 text-slate-900">Cognitive Intelligence Score</CardTitle>
+                        <CardDescription className="text-sm text-slate-600">
+                          Comprehensive evaluation across all three psychometric frameworks
                         </CardDescription>
                       </div>
-                      <Button 
-                        onClick={() => setViewingReport(createCombinedAssessment())}
-                        className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white font-bold shadow-md border border-purple-500/30"
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        Full Report
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline"
+                          onClick={() => setShowScoreExplainerModal(true)}
+                          className="bg-purple-50 text-purple-900 hover:bg-purple-100 border-purple-200 text-xs font-bold rounded-xl"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5 mr-1 text-purple-600" />
+                          Metrics Explained
+                        </Button>
+                        <Button 
+                          onClick={() => setViewingReport(createCombinedAssessment())}
+                          className="bg-[#6B4C9A] hover:bg-[#5A3B89] text-white font-black text-sm px-5 py-2.5 rounded-xl shadow-lg border border-purple-400 flex items-center gap-2 cursor-pointer"
+                        >
+                          <Eye className="h-4 w-4 text-white" />
+                          <span>Full Report</span>
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="relative">
@@ -1210,6 +1221,64 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Score Metrics Explanation Modal */}
+      {showScoreExplainerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl space-y-5 border-4 border-purple-300 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-7 h-7 text-purple-600" />
+                <h3 className="text-xl font-black text-purple-950">How Score Metrics Are Calculated</h3>
+              </div>
+              <button 
+                onClick={() => setShowScoreExplainerModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              JotMinds score metrics combine three internationally validated cognitive frameworks. Scores represent comparative strength and preference intensity, not academic intelligence limits.
+            </p>
+
+            <div className="space-y-4 text-xs">
+              <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 space-y-1">
+                <span className="font-bold text-sm text-purple-900 block">1. Kolb's Learning Style Inventory (KLSI 4.0)</span>
+                <p className="text-purple-950 leading-relaxed">
+                  Evaluates how you process experience across two dual axes: <strong>Concrete Experience (CE) vs. Abstract Conceptualization (AC)</strong> and <strong>Reflective Observation (RO) vs. Active Experimentation (AE)</strong>. Scores range 0–100% per axis, determining dominant style (Diverging, Assimilating, Converging, Accommodating).
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 space-y-1">
+                <span className="font-bold text-sm text-blue-900 block">2. Sternberg's Triarchic Theory of Intelligence (STAT)</span>
+                <p className="text-blue-950 leading-relaxed">
+                  Measures three distinct cognitive dimensions: <strong>Analytical</strong> (problem breakdown & logical critique), <strong>Creative</strong> (novel problem solving & synthesis), and <strong>Practical</strong> (contextual execution & real-world implementation).
+                </p>
+              </div>
+
+              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-1">
+                <span className="font-bold text-sm text-emerald-900 block">3. Dual-Process Cognitive Decision Framework</span>
+                <p className="text-emerald-950 leading-relaxed">
+                  Measures cognitive speed and deliberation: <strong>System 1 (Intuitive)</strong> relies on rapid pattern recognition and gut feeling, while <strong>System 2 (Reflective)</strong> employs slow, conscious, rule-based reasoning.
+                </p>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 font-medium">
+                <strong>Overall Score Derivation:</strong> The Cognitive Intelligence Score is a weighted composite index combining consistency, domain coverage, and agility across all completed assessments.
+              </div>
+            </div>
+
+            <Button
+              onClick={() => setShowScoreExplainerModal(false)}
+              className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl shadow-lg"
+            >
+              Got It, Close
+            </Button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

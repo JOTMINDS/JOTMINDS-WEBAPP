@@ -371,6 +371,27 @@ html {
     padding: 0;
   }
   
+  /* ===== PRINT HEADER BRANDING ===== */
+  .print-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding-bottom: 12pt !important;
+    margin-bottom: 16pt !important;
+    border-bottom: 3pt solid #6B4C9A !important;
+    font-family: 'Poppins', sans-serif !important;
+  }
+  .print-header .logo-text {
+    font-size: 24pt !important;
+    font-weight: 900 !important;
+    color: #6B4C9A !important;
+  }
+  .print-header .tagline-text {
+    font-size: 10pt !important;
+    color: #475569 !important;
+    font-weight: 600 !important;
+  }
+  
   /* ===== HIDE INTERACTIVE ELEMENTS ===== */
   /* These don't work on paper, so hide them */
   .no-print,

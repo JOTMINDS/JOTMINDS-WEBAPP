@@ -61,12 +61,22 @@ export function ReflectionsViewer({ userId, onViewAssessment }: ReflectionsViewe
     return assessments.find(a => a.id === assessmentId);
   };
 
-  const getAssessmentTypeName = (type: string) => {
+  const getAssessmentTypeName = (type?: string, defaultCategory?: string) => {
+    if (!type && defaultCategory) return `${defaultCategory} Reflection`;
     switch (type) {
-      case 'kolb': return 'Learning Style';
-      case 'sternberg': return 'Thinking Style';
-      case 'dual-process': return 'Decision Style';
-      default: return type;
+      case 'kolb':
+      case 'learning': return 'Learning Style Reflection';
+      case 'sternberg':
+      case 'jhs-thinking':
+      case 'shs-thinking':
+      case 'adult-thinking':
+      case 'child-thinking':
+      case 'children-thinking': return 'Thinking Style Reflection';
+      case 'dual-process':
+      case 'decision': return 'Decision Style Reflection';
+      case 'jtia':
+      case 'teaching-style': return 'Teaching Style (JTIA) Reflection';
+      default: return type ? `${type.charAt(0).toUpperCase() + type.slice(1)} Reflection` : 'General Cognitive Reflection';
     }
   };
 
@@ -254,12 +264,10 @@ export function ReflectionsViewer({ userId, onViewAssessment }: ReflectionsViewe
                     {/* Header */}
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          {assessment && (
-                            <Badge variant="outline">
-                              {getAssessmentTypeName(assessment.type)}
-                            </Badge>
-                          )}
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <Badge className="bg-purple-100 text-purple-900 font-bold border-purple-200">
+                            {getAssessmentTypeName(assessment?.type, (reflection as any).category)}
+                          </Badge>
                           <span className="text-sm text-muted-foreground flex items-center gap-1.5">
                             <Calendar className="h-3.5 w-3.5 inline-block align-text-bottom" />
                             <span className="inline-block align-baseline">{formatDateTime(reflection.createdAt)}</span>

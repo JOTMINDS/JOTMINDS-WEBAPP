@@ -441,12 +441,16 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-violet-50 to-indigo-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-2 sm:p-4">
       <div className="max-w-4xl mx-auto py-4 sm:py-8 space-y-4 sm:space-y-6">
-        {/* Print-only header */}
-        <div className="print-only print-header hidden">
-          <div className="print-title">JOTMINDS COGNITIVE ASSESSMENT</div>
-          <div className="print-subtitle">Personalized Assessment Report</div>
-          <div className="print-meta">
-            <strong>Name:</strong> {userName} | <strong>Date:</strong> {new Date(assessment.completedAt).toLocaleDateString()} | <strong>Assessment ID:</strong> {assessment.id}
+        {/* Print-only branded header */}
+        <div className="print-header hidden">
+          <div>
+            <div className="logo-text">JotMinds</div>
+            <div className="tagline-text">Your brain has a manual, we built it</div>
+          </div>
+          <div className="text-right text-xs">
+            <p className="font-bold text-slate-900">{userName}</p>
+            <p className="text-slate-600">{reportTitle}</p>
+            <p className="text-slate-500">{new Date(assessment.completedAt).toLocaleDateString()}</p>
           </div>
         </div>
 
