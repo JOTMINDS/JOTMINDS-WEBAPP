@@ -13,7 +13,7 @@ import {
   ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, PieChart, Pie, Cell, Legend, LineChart, Line
 } from 'recharts';
-import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher, getRelatedTeacherAccounts } from '../utils/storage';
+import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher, getRelatedTeacherAccounts } from '../utils/storage';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
 import { toast } from 'sonner';
