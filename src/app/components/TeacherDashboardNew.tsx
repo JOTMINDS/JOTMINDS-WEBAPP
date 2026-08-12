@@ -28,6 +28,7 @@ import { AdultThinkingContainer } from './AdultThinkingContainer';
 import { AILessonPlannerContainer } from './lessonPlanner/AILessonPlannerContainer';
 import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
+import { InsightsPortal } from './InsightsPortal';
 
 interface TeacherDashboardNewProps {
   user: User;
@@ -472,12 +473,15 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         )}
       </div>
       <div className="flex items-center gap-2">
-        {onViewTeacherIntelligence && (
-          <Button variant="default" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium shadow-sm flex items-center gap-1.5" size="sm" onClick={onViewTeacherIntelligence}>
-            <Brain className="w-4 h-4" />
-            Intelligence Portal
-          </Button>
-        )}
+        <Button 
+          variant="default" 
+          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium shadow-sm flex items-center gap-1.5" 
+          size="sm" 
+          onClick={() => setActiveTab('teacher-intelligence')}
+        >
+          <Brain className="w-4 h-4" />
+          Insights Portal
+        </Button>
         {onViewInstitutionDashboard && (
           <Button variant="outline" size="sm" onClick={onViewInstitutionDashboard}>
             School Dashboard
@@ -492,11 +496,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       navGroups={teacherNavGroups}
       activeTab={activeTab}
       setActiveTab={(tab: any) => {
-        if (tab === 'teacher-intelligence' || tab === 'intelligence-portal' || tab === 'insights-portal') {
-          if (onViewTeacherIntelligence) onViewTeacherIntelligence();
-        } else {
-          setActiveTab(tab);
-        }
+        setActiveTab(tab);
       }}
       user={user}
       onLogout={onLogout}
@@ -965,6 +965,10 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             students={students}
             teacherProfile={user}
           />
+        )}
+
+        {(activeTab === 'teacher-intelligence' || activeTab === 'intelligence-portal' || activeTab === 'insights-portal') && (
+          <InsightsPortal user={user} onBack={() => setActiveTab('overview')} />
         )}
 
 
