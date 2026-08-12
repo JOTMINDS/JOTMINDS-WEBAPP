@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { User, Assessment } from '../../types';
+import { User, Assessment, TeacherObservation } from '../../types';
+import { saveTeacherObservation } from '../../utils/storage';
+import { MessageSquare } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -58,7 +60,15 @@ export function TeacherIndividualStudentView({ students, assessments, initialStu
   
   const [aiStrategies, setAiStrategies] = useState<AIStudentTeachingStrategies | null>(null);
   const [isLoadingStrategies, setIsLoadingStrategies] = useState(false);
-const [isSendingReminder, setIsSendingReminder] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
+
+  // Teacher Observation Modal State
+  const [showObservationModal, setShowObservationModal] = useState(false);
+  const [concernType, setConcernType] = useState<'Academic Focus' | 'Behavioral / Attention' | 'Social Interaction' | 'Learning Pace' | 'Commendation'>('Academic Focus');
+  const [severity, setSeverity] = useState<'low' | 'medium' | 'high'>('medium');
+  const [subject, setSubject] = useState('');
+  const [observationText, setObservationText] = useState('');
+  const [recommendedAction, setRecommendedAction] = useState('');
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -290,7 +300,16 @@ return (
               </div>
 
               {/* Right: Actions */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="rounded-full text-[13px] font-medium border-purple-200 bg-purple-50 text-purple-900 hover:bg-purple-100 flex-shrink-0"
+                  onClick={() => setShowObservationModal(true)}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2 text-purple-600" />
+                  Teacher Observation
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -625,6 +644,128 @@ return (
           )}
         </div>
       </div>
+
+      {/* Teacher Observation & Concern Modal */}
+      {showObservationModal && selectedStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-4 border-2 border-purple-200">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-purple-600" />
+                <h3 className="text-xl font-extrabold text-slate-900">Record Teacher Observation</h3>
+              </div>
+              <button 
+                onClick={() => setShowObservationModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              Sharing observations for <strong>{selectedStudent.name}</strong>. Notes will be accessible by parents linked to this student to align learning strategies.
+            </p>
+
+            <div className="space-y-3 text-sm">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Observation Category</label>
+                <select 
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium bg-slate-50"
+                  value={concernType}
+                  onChange={(e: any) => setConcernType(e.target.value)}
+                >
+                  <option value="Academic Focus">Academic Focus & Retention</option>
+                  <option value="Behavioral / Attention">Behavioral & Attention Span</option>
+                  <option value="Social Interaction">Social Interaction & Group Work</option>
+                  <option value="Learning Pace">Learning Pace & Homework</option>
+                  <option value="Commendation">Commendation & Special Strength</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Severity Level</label>
+                  <select 
+                    className="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium bg-slate-50"
+                    value={severity}
+                    onChange={(e: any) => setSeverity(e.target.value)}
+                  >
+                    <option value="low">Low (Routine Notice)</option>
+                    <option value="medium">Medium (Needs Attention)</option>
+                    <option value="high">High (Priority Action)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Subject / Area (Optional)</label>
+                  <Input 
+                    placeholder="e.g. Math, Science"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Observation & Concern Notes</label>
+                <textarea 
+                  rows={3}
+                  className="w-full p-3 rounded-xl border border-slate-200 text-sm bg-slate-50 focus:bg-white"
+                  placeholder="Describe your classroom observations, specific behaviors, or academic patterns..."
+                  value={observationText}
+                  onChange={(e) => setObservationText(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Recommended Home Action</label>
+                <textarea 
+                  rows={2}
+                  className="w-full p-3 rounded-xl border border-slate-200 text-sm bg-slate-50 focus:bg-white"
+                  placeholder="What can parents do at home to support this student?"
+                  value={recommendedAction}
+                  onChange={(e) => setRecommendedAction(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowObservationModal(false)} className="rounded-xl">
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (!observationText.trim()) {
+                    toast.error('Please enter observation notes.');
+                    return;
+                  }
+                  const newObs: TeacherObservation = {
+                    id: Date.now().toString(),
+                    teacherId: teacher?.id || 'teacher-1',
+                    teacherName: teacher?.name || 'Class Teacher',
+                    studentId: selectedStudent.id,
+                    studentName: selectedStudent.name,
+                    subject,
+                    concernType,
+                    severity,
+                    observationText,
+                    recommendedAction,
+                    createdAt: new Date().toISOString()
+                  };
+                  saveTeacherObservation(newObs);
+                  setShowObservationModal(false);
+                  setObservationText('');
+                  setRecommendedAction('');
+                  toast.success('Observation recorded and shared with parent portal!');
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl"
+              >
+                Save & Share Observation
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

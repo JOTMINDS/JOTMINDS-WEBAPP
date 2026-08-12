@@ -187,7 +187,7 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
       doc.text('JotMinds', logoRight, 19);
       doc.setFont('Poppins', 'normal');
       doc.setFontSize(9);
-      doc.text('Discover How You Think', logoRight, 26);
+      doc.text('Your brain has a manual, we built it', logoRight, 26);
 
       // Reset text color
       doc.setTextColor(0, 0, 0);
@@ -218,16 +218,29 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
         { name: 'Reflective Depth', value: (profile as any).reflectiveDepth }
       ];
 
-      dimensions.forEach(dim => {
-        if (yPosition > 270) {
+      for (const dim of dimensions) {
+        if (yPosition > doc.internal.pageSize.getHeight() - 30) {
           doc.addPage();
           yPosition = margin;
         }
-        const val = typeof dim.value === 'number' ? dim.value : 75;
-        const levelStr = val >= 80 ? 'Exemplary Mastery' : val >= 65 ? 'Strong Preference' : val >= 45 ? 'Developing Capability' : 'Emerging Focus';
-        yPosition = addText(`• ${dim.name} — ${levelStr}`, margin + 5, yPosition, pageWidth - 2 * margin, 11);
-        yPosition += 7;
-      });
+
+        // Descriptive Mastery Levels instead of cold scores
+        const getMasteryBand = (val: number) => {
+          if (val >= 80) return 'Exemplary Mastery';
+          if (val >= 65) return 'Strong Preference';
+          if (val >= 50) return 'Developing Capability';
+          return 'Emerging Focus';
+        };
+
+        yPosition = addText(
+          `${dim.name}: ${getMasteryBand(dim.value || 0)}`,
+          margin + 5,
+          yPosition,
+          pageWidth - 2 * margin - 10,
+          10
+        );
+        yPosition += 8;
+      }
 
       yPosition += 10;
 

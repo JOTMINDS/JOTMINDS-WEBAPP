@@ -310,3 +310,17 @@ export interface AccessRequest {
   requestedAt: string;
   respondedAt?: string;
 }
+
+export interface TeacherObservation {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  studentId: string;
+  studentName: string;
+  subject?: string;
+  concernType: 'Academic Focus' | 'Behavioral / Attention' | 'Social Interaction' | 'Learning Pace' | 'Commendation';
+  severity: 'low' | 'medium' | 'high';
+  observationText: string;
+  recommendedAction?: string;
+  createdAt: string;
+}

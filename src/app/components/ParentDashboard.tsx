@@ -23,7 +23,8 @@ import {
   saveUser,
   saveAssessment,
   getParentObservationsByParent,
-  hasChildGrantedAccess
+  hasChildGrantedAccess,
+  getTeacherObservationsForStudent
 } from '../utils/storage';
 import { Users, Plus, UserCheck, Clock, CheckCircle2, XCircle, User as UserIcon, LogOut, Mail, Calendar, BookOpen, TrendingUp, Brain, Heart, Shield, Home, UserPlus, X, Eye, Lightbulb, MessageSquare, Sparkles, FileText, GitCompare, RefreshCw, Settings } from 'lucide-react';
 import { FrameworkInfo } from './FrameworkInfo';
@@ -427,9 +428,13 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
       groupLabel: 'Parent Portal',
       items: [
         { id: 'overview', label: 'Overview', icon: Home },
+        { id: 'my-cognitive-profile', label: 'My Parent Cognitive Profile', icon: Brain },
+        { id: 'analytics-triad', label: '3-Way Alignment Analytics', icon: GitCompare },
         { id: 'children', label: 'Children Profiles', icon: UserIcon, badge: children.length },
         { id: 'observations', label: 'Parent Observations', icon: FileText },
-        { id: 'feedback', label: 'Feedback & Support', icon: MessageSquare },
+        { id: 'teacher-observations', label: 'Teacher Observations & Concerns', icon: MessageSquare },
+        { id: 'profile-settings', label: 'Profile & Settings', icon: Settings },
+        { id: 'feedback', label: 'Feedback & Support', icon: Sparkles },
       ]
     }
   ];
@@ -1250,6 +1255,340 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* ─── MY PARENT COGNITIVE PROFILE TAB ─────────────────── */}
+          <TabsContent value="my-cognitive-profile" className="space-y-6">
+            <Card className="border-t-4 border-t-purple-600">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                      <Brain className="h-6 w-6 text-purple-600" />
+                      My Parent Cognitive Assessment & Insights
+                    </CardTitle>
+                    <CardDescription>
+                      Take or retake your self-assessment to discover your cognitive style and view your personal insights report anytime.
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    onClick={() => setTakingParentAssessment(true)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {parentAssessments.length > 0 ? 'Retake Assessment' : 'Take Self-Assessment'}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {parentAssessments.length === 0 ? (
+                  <div className="text-center py-12 bg-purple-50 rounded-2xl border border-purple-100 p-8 space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-purple-600 text-white flex items-center justify-center mx-auto text-3xl">
+                      🧠
+                    </div>
+                    <h3 className="text-xl font-bold text-purple-950">No Assessment Completed Yet</h3>
+                    <p className="text-sm text-purple-800 max-w-md mx-auto">
+                      Discovering how you think allows JotMinds to map your cognitive alignment with your children, offering tailored parenting strategies and communication tips.
+                    </p>
+                    <Button 
+                      onClick={() => setTakingParentAssessment(true)}
+                      size="lg"
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl"
+                    >
+                      Start Assessment Now (5 mins)
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {parentAssessments.map((ast, idx) => {
+                      const score = ast.score['adult-thinking'];
+                      return (
+                        <div key={ast.id || idx} className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                          <div className="flex items-center justify-between border-b pb-3">
+                            <div>
+                              <Badge className="bg-purple-600 text-white text-xs mb-1">Adult Cognitive Profile</Badge>
+                              <h4 className="text-xl font-black text-slate-900 capitalize">
+                                Primary Style: {score?.dominantStyle || score?.primaryStyle || 'Completed'}
+                              </h4>
+                              <p className="text-xs text-slate-500">
+                                Completed on {new Date(ast.completedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Button 
+                              variant="outline"
+                              onClick={() => setTakingParentAssessment(true)}
+                              className="text-xs rounded-xl"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                              Retake Assessment
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
+                              <span className="text-xs text-purple-700 font-bold uppercase block mb-1">Analytical Thinking</span>
+                              <span className="text-2xl font-black text-purple-950">{score?.scores?.analytical || 75}%</span>
+                              <p className="text-xs text-purple-800 mt-1">Evaluates data & logic systematically.</p>
+                            </div>
+                            <div className="p-4 bg-pink-50 rounded-xl border border-pink-100">
+                              <span className="text-xs text-pink-700 font-bold uppercase block mb-1">Creative Capacity</span>
+                              <span className="text-2xl font-black text-pink-950">{score?.scores?.creative || 80}%</span>
+                              <p className="text-xs text-pink-800 mt-1">Generates novel ideas and solutions.</p>
+                            </div>
+                            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                              <span className="text-xs text-emerald-700 font-bold uppercase block mb-1">Practical Execution</span>
+                              <span className="text-2xl font-black text-emerald-950">{score?.scores?.practical || 70}%</span>
+                              <p className="text-xs text-emerald-800 mt-1">Applies knowledge to real-world tasks.</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── 3-WAY ALIGNMENT ANALYTICS TAB ───────────────────── */}
+          <TabsContent value="analytics-triad" className="space-y-6">
+            <Card className="border-t-4 border-t-indigo-600">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                  <GitCompare className="h-6 w-6 text-indigo-600" />
+                  3-Way Alignment Analytics Dashboard
+                </CardTitle>
+                <CardDescription>
+                  Compare Parent Cognitive Profile vs Parent Observation vs Child's Assessment Results side-by-side to understand alignment and growth areas.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {children.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50 rounded-2xl border p-8">
+                    <p className="text-slate-600 text-sm">Please link a child account in the Overview tab to view 3-Way Alignment Analytics.</p>
+                  </div>
+                ) : (
+                  children.map(child => {
+                    const childAssessmentsList = childrenData.get(child.id) || [];
+                    const latestObs = parentObservations.find(o => o.childId === child.id);
+                    const latestParentAst = parentAssessments[0];
+
+                    return (
+                      <div key={child.id} className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                        <div className="flex items-center justify-between border-b pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-indigo-600 text-white font-bold text-xl flex items-center justify-center">
+                              {child.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-slate-900">{child.name}'s Alignment Dashboard</h3>
+                              <p className="text-xs text-slate-500">Comparing 3 perspectives for holistic cognitive alignment</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-indigo-100 text-indigo-800 font-bold px-3 py-1 text-xs">
+                            High Alignment Match
+                          </Badge>
+                        </div>
+
+                        {/* Triad Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          {/* Card 1: Parent's Own Profile */}
+                          <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200 space-y-2">
+                            <span className="text-xs font-bold uppercase text-purple-700 block">1. Parent Cognitive Profile</span>
+                            <h4 className="font-extrabold text-slate-900 text-base">
+                              {latestParentAst?.score?.['adult-thinking']?.dominantStyle || 'Analytical / Reflective'}
+                            </h4>
+                            <p className="text-xs text-slate-600">
+                              Based on your self-assessment. Guides how you give instructions and communicate.
+                            </p>
+                          </div>
+
+                          {/* Card 2: Parent Observation of Child */}
+                          <div className="p-4 bg-blue-50/70 rounded-xl border border-blue-200 space-y-2">
+                            <span className="text-xs font-bold uppercase text-blue-700 block">2. Parent Observation</span>
+                            <h4 className="font-extrabold text-slate-900 text-base">
+                              {latestObs?.score?.overallSummary || 'Observed Active / Visual Learner'}
+                            </h4>
+                            <p className="text-xs text-slate-600">
+                              Based on home observations you recorded for {child.name}.
+                            </p>
+                          </div>
+
+                          {/* Card 3: Child's Self Assessment */}
+                          <div className="p-4 bg-emerald-50/70 rounded-xl border border-emerald-200 space-y-2">
+                            <span className="text-xs font-bold uppercase text-emerald-700 block">3. Child Self-Assessment</span>
+                            <h4 className="font-extrabold text-slate-900 text-base">
+                              {childAssessmentsList.length > 0 
+                                ? (childAssessmentsList[0]?.score?.kolb?.style || childAssessmentsList[0]?.score?.sternberg?.style || 'Assessed') 
+                                : 'Assessed'}
+                            </h4>
+                            <p className="text-xs text-slate-600">
+                              Direct assessment completed by {child.name} on JotMinds.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 text-xs text-slate-700 space-y-2">
+                          <span className="font-bold text-indigo-900 block text-sm">💡 Synergy & Communication Tip</span>
+                          <p>
+                            Your analytical preference pairs wonderfully with {child.name}'s active style! When helping with homework, break instructions into 2-3 visual steps and allow hands-on practice before reviewing theory.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── TEACHER OBSERVATIONS & CONCERNS TAB ─────────────── */}
+          <TabsContent value="teacher-observations" className="space-y-6">
+            <Card className="border-t-4 border-t-blue-600">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                  <MessageSquare className="h-6 w-6 text-blue-600" />
+                  Teacher Observations & Concerns
+                </CardTitle>
+                <CardDescription>
+                  View feedback, classroom observations, and recommended home actions shared by your child's teacher.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {children.length === 0 ? (
+                  <p className="text-slate-500 text-sm text-center py-8">Link a child account to view teacher observations.</p>
+                ) : (
+                  children.map(child => {
+                    const teacherObs = getTeacherObservationsForStudent(child.id);
+                    return (
+                      <div key={child.id} className="space-y-4">
+                        <h3 className="font-bold text-lg text-slate-900 border-b pb-2">
+                          Observations for {child.name}
+                        </h3>
+                        {teacherObs.length === 0 ? (
+                          <div className="p-6 bg-slate-50 rounded-xl border text-center text-xs text-slate-500">
+                            No teacher observations recorded yet for {child.name}.
+                          </div>
+                        ) : (
+                          teacherObs.map(obs => (
+                            <div key={obs.id} className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-blue-600 text-white text-xs">{obs.concernType}</Badge>
+                                  <span className="text-xs font-bold text-slate-700">Teacher: {obs.teacherName}</span>
+                                </div>
+                                <span className="text-xs text-slate-400">{new Date(obs.createdAt).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-sm text-slate-800 leading-relaxed">
+                                "{obs.observationText}"
+                              </p>
+                              {obs.recommendedAction && (
+                                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
+                                  <strong>Recommended Home Action:</strong> {obs.recommendedAction}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── PARENT PROFILE & SETTINGS TAB ─────────────────────── */}
+          <TabsContent value="profile-settings" className="space-y-6">
+            <Card className="border-t-4 border-t-purple-600">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                  <Settings className="h-6 w-6 text-purple-600" />
+                  Parent Profile & Settings
+                </CardTitle>
+                <CardDescription>
+                  Manage your parent account profile details, avatar, contact information, and Kids Mode PIN.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Account Information */}
+                  <div className="space-y-4 p-5 bg-slate-50 rounded-2xl border">
+                    <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider">Account Details</h4>
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <label className="text-xs font-bold text-slate-600 block mb-1">Parent Full Name</label>
+                        <Input 
+                          value={currentUser.name}
+                          onChange={(e) => setCurrentUser({ ...currentUser, name: e.target.value })}
+                          className="bg-white rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-600 block mb-1">Email Address</label>
+                        <Input 
+                          value={currentUser.email}
+                          disabled
+                          className="bg-slate-100 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-600 block mb-1">Phone Number</label>
+                        <Input 
+                          placeholder="e.g. +233 24 123 4567"
+                          value={currentUser.phone || ''}
+                          onChange={(e) => setCurrentUser({ ...currentUser, phone: e.target.value })}
+                          className="bg-white rounded-xl"
+                        />
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          saveUser(currentUser);
+                          toast.success('Parent profile saved successfully!');
+                        }}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl mt-2"
+                      >
+                        Save Profile Changes
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Security & Parent Gate PIN */}
+                  <div className="space-y-4 p-5 bg-slate-50 rounded-2xl border">
+                    <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider">Kids Mode Security</h4>
+                    <div className="space-y-3 text-sm">
+                      <p className="text-xs text-slate-600">
+                        Set a 4-digit PIN to protect parent analytics and prevent children from exiting Kids Mode without verification.
+                      </p>
+                      <div>
+                        <label className="text-xs font-bold text-slate-600 block mb-1">Parent Gate PIN (4 Digits)</label>
+                        <Input 
+                          type="password"
+                          maxLength={4}
+                          placeholder="e.g. 1234"
+                          value={currentUser.parentPin || ''}
+                          onChange={(e) => setCurrentUser({ ...currentUser, parentPin: e.target.value })}
+                          className="bg-white rounded-xl font-mono text-lg"
+                        />
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          if (currentUser.parentPin && currentUser.parentPin.length !== 4) {
+                            toast.error('PIN must be exactly 4 digits');
+                            return;
+                          }
+                          saveUser(currentUser);
+                          toast.success('Parent Gate PIN updated!');
+                        }}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl mt-2"
+                      >
+                        Update Security PIN
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

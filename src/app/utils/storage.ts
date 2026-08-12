@@ -860,3 +860,23 @@ export const getRelatedTeacherAccounts = (teacher: User): User[] => {
   if (related.length === 0) return [teacher];
   return related;
 };
+
+// Teacher Observation Storage Helpers
+const TEACHER_OBSERVATIONS_KEY = 'ts_teacher_observations';
+
+export function getTeacherObservationsForStudent(studentId: string): TeacherObservation[] {
+  const observations = safeParse<TeacherObservation[]>(TEACHER_OBSERVATIONS_KEY, []);
+  return observations.filter(obs => obs.studentId === studentId);
+}
+
+export function getTeacherObservationsForTeacher(teacherId: string): TeacherObservation[] {
+  const observations = safeParse<TeacherObservation[]>(TEACHER_OBSERVATIONS_KEY, []);
+  return observations.filter(obs => obs.teacherId === teacherId);
+}
+
+export function saveTeacherObservation(observation: TeacherObservation): TeacherObservation[] {
+  const observations = safeParse<TeacherObservation[]>(TEACHER_OBSERVATIONS_KEY, []);
+  const updated = [observation, ...observations.filter(o => o.id !== observation.id)];
+  localStorage.setItem(TEACHER_OBSERVATIONS_KEY, JSON.stringify(updated));
+  return updated;
+}
