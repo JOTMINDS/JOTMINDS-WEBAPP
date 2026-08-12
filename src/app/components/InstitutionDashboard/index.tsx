@@ -331,7 +331,7 @@ export function InstitutionDashboard({
       items: [
         { id: 'analytics', label: 'Assessment Analytics', icon: BarChart3 },
         { id: 'reports', label: 'Reporting & Export', icon: Download },
-        { id: 'teacher_styles', label: 'Educator Styles', icon: Brain },
+        { id: 'teacher_styles', label: 'Intelligence Portal (Educator Styles)', icon: Brain, badge: 'AI Insights', badgeVariant: 'default' },
       ]
     },
     {

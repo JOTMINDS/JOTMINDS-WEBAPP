@@ -8,7 +8,7 @@ import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUs
 import { getInstitutionClasses, getInstitutionForMember } from '../utils/institution';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
-import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap } from 'lucide-react';
+import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap, Brain, Sparkles } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -448,6 +448,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         { id: 'individual', label: 'Student Roster', icon: Eye },
         { id: 'analytics-compare', label: 'Class Analytics', icon: BarChart3 },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
+        { id: 'teacher-intelligence', label: 'Intelligence Portal', icon: Brain, badge: 'AI Insights', badgeVariant: 'default' },
       ]
     },
     {
@@ -463,7 +464,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab === 'jtia' ? 'JTIA' : activeTab.replace('-', ' ')}
+          {activeTab === 'jtia' ? 'JTIA' : activeTab === 'teacher-intelligence' ? 'Intelligence Portal' : activeTab.replace('-', ' ')}
         </h2>
         {user.school && (
           <Badge variant="outline" className="border-purple-600 text-purple-700">
@@ -473,8 +474,9 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       </div>
       <div className="flex items-center gap-2">
         {onViewTeacherIntelligence && (
-          <Button variant="default" className="bg-indigo-600 hover:bg-indigo-500 text-white" size="sm" onClick={onViewTeacherIntelligence}>
-            Insights Portal
+          <Button variant="default" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium shadow-sm flex items-center gap-1.5" size="sm" onClick={onViewTeacherIntelligence}>
+            <Brain className="w-4 h-4" />
+            Intelligence Portal
           </Button>
         )}
         {onViewInstitutionDashboard && (
@@ -490,7 +492,13 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <DashboardLayout
       navGroups={teacherNavGroups}
       activeTab={activeTab}
-      setActiveTab={(tab: any) => setActiveTab(tab)}
+      setActiveTab={(tab: any) => {
+        if (tab === 'teacher-intelligence' || tab === 'intelligence-portal' || tab === 'insights-portal') {
+          if (onViewTeacherIntelligence) onViewTeacherIntelligence();
+        } else {
+          setActiveTab(tab);
+        }
+      }}
       user={user}
       onLogout={onLogout}
       brandSubtitle="Educator Portal"
