@@ -333,11 +333,11 @@ export function InsightsPortal({ user, onBack }: InsightsPortalProps) {
       if (res) {
         setAiClassroomReport(res);
       } else {
-        toast.error('AI Insights generation failed.');
+        toast.error('Insights generation failed.');
       }
     }).catch(err => {
       console.error('Classroom AI report error:', err);
-      toast.error('AI Insights generation failed.');
+      toast.error('Insights generation failed.');
     }).finally(() => setIsGeneratingClassAi(false));
   };
 
@@ -635,7 +635,7 @@ export function InsightsPortal({ user, onBack }: InsightsPortalProps) {
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-indigo-600" />
-                  <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds AI Classroom Pedagogical Advisor</CardTitle>
+                  <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds Classroom Pedagogical Advisor</CardTitle>
                 </div>
                 <Button 
                   variant="outline" 
@@ -644,7 +644,7 @@ export function InsightsPortal({ user, onBack }: InsightsPortalProps) {
                   disabled={isGeneratingClassAi}
                   className="bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200 text-xs"
                 >
-                  {isGeneratingClassAi ? 'Generating AI Variation...' : 'Refresh Classroom AI'}
+                  {isGeneratingClassAi ? 'Generating Variation...' : 'Refresh Classroom Analysis'}
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -700,7 +700,7 @@ export function InsightsPortal({ user, onBack }: InsightsPortalProps) {
                 ) : (
                   <div className="py-4 text-center">
                     <Button onClick={triggerClassroomAIAnalysis} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                      Generate Classroom AI Analysis
+                      Generate Classroom Analysis
                     </Button>
                   </div>
                 )}
@@ -712,7 +712,7 @@ export function InsightsPortal({ user, onBack }: InsightsPortalProps) {
                 <div className="flex items-start gap-3">
                   <Lightbulb className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm text-amber-900">AI-Generated Recommendations</p>
+                    <p className="text-sm text-amber-900">Cognitive Recommendations</p>
                     <p className="text-xs text-amber-700 mt-0.5">Suggestions are generated from each student's cognitive assessment data. Review and adapt to your knowledge of the student.</p>
                   </div>
                 </div>

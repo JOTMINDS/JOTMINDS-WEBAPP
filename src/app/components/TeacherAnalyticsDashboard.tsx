@@ -767,7 +767,7 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
                 onChange={(e) => setUseAIGeneratedQuestions(e.target.checked)}
                 className="w-4 h-4 rounded border-gray-300"
               />
-              <label htmlFor="useAIQuestions" className="text-sm font-medium">Use AI-generated questions</label>
+              <label htmlFor="useAIQuestions" className="text-sm font-medium">Use smart generated questions</label>
             </div>
             
             {!useAIGeneratedQuestions && (
@@ -789,25 +789,25 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
                 </div>
               </div>
             )}
-          </div>
 
-          <Button 
-            onClick={handleGenerate} 
-            disabled={!(subject === 'Other' ? otherSubject : subject) || !topic || !grade || isGenerating}
-            className="flex items-center gap-2"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating OpenAI Lesson Plan...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4 text-amber-300" />
-                Generate AI Lesson Plan
-              </>
-            )}
-          </Button>
+            <Button
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+              onClick={handleGenerate}
+              disabled={!(subject === 'Other' ? otherSubject : subject) || !topic || !grade || isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating Differentiated Lesson Plan...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate Lesson Plan
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
       

@@ -43,7 +43,7 @@ interface StudyGoal {
 
 const ANNOUNCEMENTS = [
   { id: 'ann1', title: '🎉 345 Assessment Questions Now Live', body: 'Kolb, Sternberg, and Decision-Making question banks are available. Take your assessments to build your cognitive profile!', priority: 'high' },
-  { id: 'ann2', title: '🧠 AI Learning Coach Available', body: 'Your personalised AI Coach creates study plans, weekly planners, and smart reminders based on your cognitive profile.', priority: 'normal' },
+  { id: 'ann2', title: '🧠 Learning Coach Available', body: 'Your personalised Learning Coach creates study plans, weekly planners, and smart reminders based on your cognitive profile.', priority: 'normal' },
   { id: 'ann3', title: '📊 Teaching Insights & School Analytics', body: 'Head teachers and school admins now have class heatmaps, intervention recommendations, and Jots Code linking.', priority: 'normal' },
 ];
 
@@ -85,7 +85,7 @@ function generateNotifs(user: User): Notification[] {
   if (cxp.level > 1)
     notifs.push({ id: 'n_level', type: 'achievement', title: `Cognitive Level ${cxp.level} reached!`, body: `Unlocked: ${getCognitiveLevel(cxp.totalXP).perks.join(', ')}.`, timestamp: new Date().toISOString(), read: false, icon: '⬆️' });
   if (assessments.length >= 3)
-    notifs.push({ id: 'n_ai', type: 'insight', title: 'AI Coach ready', body: 'Your cognitive profile is complete — check your personalised AI Learning Coach for study tips.', timestamp: new Date().toISOString(), read: false, icon: '🤖' });
+    notifs.push({ id: 'n_ai', type: 'insight', title: 'Learning Coach ready', body: 'Your cognitive profile is complete — check your personalised Learning Coach for study tips.', timestamp: new Date().toISOString(), read: false, icon: '🧠' });
   return notifs;
 }
 
@@ -220,7 +220,7 @@ export function PlatformEssentials({ user, onBack, onNavigate }: PlatformEssenti
   const quickActions = [
     { label: 'Take Assessment', icon: '📋', view: 'dashboard' },
     { label: 'Brain Gym', icon: '🏋️', view: 'skill-builder' },
-    { label: 'AI Coach', icon: '🤖', view: 'ai-coach' },
+    { label: 'Learning Coach', icon: '🧠', view: 'ai-coach' },
     { label: 'Cognitive Growth', icon: '🧠', view: 'cognitive-growth' },
     { label: 'Gamification', icon: '🎮', view: 'gamification' },
     { label: 'Engagement Stats', icon: '📊', view: 'engagement' },
@@ -228,7 +228,7 @@ export function PlatformEssentials({ user, onBack, onNavigate }: PlatformEssenti
 
   const featureList = [
     { label: 'Cognitive Assessments', available: true, desc: 'Kolb, Sternberg, Dual-Process' },
-    { label: 'AI Learning Coach', available: true, desc: 'Personalised study plans' },
+    { label: 'Learning Coach', available: true, desc: 'Personalised study plans' },
     { label: 'Cognitive Growth Tracker', available: true, desc: 'XP, milestones, progress graphs' },
     { label: 'Brain Gym', available: true, desc: 'Daily cognitive exercises' },
     { label: 'Gamification', available: true, desc: 'Badges, streaks, levels' },

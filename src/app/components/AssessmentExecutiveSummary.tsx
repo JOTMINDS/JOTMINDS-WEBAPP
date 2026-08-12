@@ -249,7 +249,7 @@ export function AssessmentExecutiveSummary({ userId }: AssessmentExecutiveSummar
                 className="px-3 py-1.5 rounded-md bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium flex items-center gap-1.5 shadow"
               >
                 {loadingAi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                Generate AI Narrative
+                Generate Narrative Summary
               </button>
               <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2">
                 {completionCount}/3 Complete
@@ -259,10 +259,10 @@ export function AssessmentExecutiveSummary({ userId }: AssessmentExecutiveSummar
         </CardHeader>
         <CardContent className="space-y-4">
           {aiExecutiveSummary && (
-            <div className="bg-purple-100/70 dark:bg-purple-950/60 border border-purple-300 dark:border-purple-800 rounded-xl p-4 space-y-2 text-xs">
-              <div className="flex items-center gap-1.5 font-bold text-purple-900 dark:text-purple-200">
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 text-purple-900 font-bold text-sm">
                 <Sparkles className="w-4 h-4 text-purple-600" />
-                OpenAI Cognitive Narrative Summary
+                Cognitive Narrative Summary
               </div>
               <p className="text-gray-700 dark:text-gray-200 leading-relaxed">
                 {aiExecutiveSummary.narrativeSummary}

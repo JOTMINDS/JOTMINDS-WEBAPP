@@ -53,7 +53,7 @@ export function FeedbackTab() {
             </div>
             <CardTitle className="text-2xl font-bold">Share Your JotMinds Experience</CardTitle>
             <CardDescription className="text-xs sm:text-sm mt-1">
-              Your feedback directly shapes the AI cognitive assessment algorithms and learning tools across Ghana & globally.
+              Your feedback directly shapes the cognitive assessment algorithms and learning tools across Ghana & globally.
             </CardDescription>
           </CardHeader>
 

@@ -1142,7 +1142,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-indigo-600" />
-                <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds AI School Executive Advisor</CardTitle>
+                <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds School Executive Advisor</CardTitle>
               </div>
               <Button 
                 variant="outline" 
@@ -1151,7 +1151,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                 disabled={isGeneratingAiReport}
                 className="bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200 text-xs"
               >
-                {isGeneratingAiReport ? 'Generating AI Variation...' : 'Refresh AI Analysis'}
+                {isGeneratingAiReport ? 'Generating Variation...' : 'Refresh School Analysis'}
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1233,7 +1233,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
               ) : (
                 <div className="py-4 text-center">
                   <Button onClick={triggerSchoolAIAnalysis} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                    Generate Whole-School AI Analysis
+                    Generate Whole-School Analysis
                   </Button>
                 </div>
               )}

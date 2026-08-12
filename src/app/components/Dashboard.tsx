@@ -243,7 +243,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   style={{ borderColor: '#8B5CF6', color: '#8B5CF6' }}
                 >
                   <Zap className="w-4 h-4 mr-2" />
-                  AI Coach
+                  Learning Coach
                 </Button>
               )}
               {onViewGamification && (

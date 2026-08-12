@@ -283,9 +283,9 @@ export function DiscoveryOfTheDay({ userId, userName, showAsWidget = false }: Di
                 {loadingAi ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Sparkles className="w-4 h-4 text-yellow-200" />
+                  <Sparkles className="w-4 h-4" />
                 )}
-                Generate AI Discovery
+                Generate Daily Discovery
               </Button>
               {acknowledged && (
                 <Badge className="bg-green-500 text-white text-base px-4 py-2">
@@ -299,11 +299,11 @@ export function DiscoveryOfTheDay({ userId, userName, showAsWidget = false }: Di
 
         <CardContent className="pt-6 space-y-6">
           {aiDiscovery && (
-            <div className="bg-purple-50 dark:bg-purple-950/50 border-2 border-purple-300 dark:border-purple-700 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2 font-bold text-purple-900 dark:text-purple-200">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-                OpenAI Discovery: {aiDiscovery.title}
-              </div>
+            <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-xl space-y-2">
+              <h4 className="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                Daily Discovery: {aiDiscovery.title}
+              </h4>
               <p className="text-sm text-gray-700 dark:text-gray-200">{aiDiscovery.fact}</p>
               <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-purple-200 dark:border-purple-800 space-y-2">
                 <p className="text-xs font-semibold text-purple-800 dark:text-purple-300">

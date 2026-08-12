@@ -276,7 +276,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
       return `As a ${archetypeData.name}, you naturally excel at ${archetypeData.strengths[0]}.`;
     }
 
-    return `That's an interesting question! As your AI Coach, I recommend focusing on your strengths as a ${archetypeData.name}. Is there a specific area like your study schedule, weaknesses, or techniques you'd like to discuss?`;
+    return `That's an interesting question! As your Learning Coach, I recommend focusing on your strengths as a ${archetypeData.name}. Is there a specific area like your study schedule, weaknesses, or techniques you'd like to discuss?`;
   };
 
   const handleSendMessage = async (text?: string) => {
@@ -308,7 +308,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#6B4C9A' }}></div>
-          <p>Loading AI insights...</p>
+          <p>Loading insights...</p>
         </div>
       </div>
     );
@@ -327,7 +327,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
               Complete Your Assessments
             </CardTitle>
             <CardDescription>
-              AI-powered insights require completed assessment data. Please complete all three assessments to unlock your personalized learning profile.
+              Cognitive insights require completed assessment data. Please complete all three assessments to unlock your personalized learning profile.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -353,8 +353,8 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div>
-                <h1 className="text-2xl mb-0.5" style={{ color: '#6B4C9A' }}>AI Learning Coach</h1>
-                <p className="text-sm text-gray-500">Explainable AI · Personalised for you</p>
+                <h1 className="text-2xl mb-0.5" style={{ color: '#6B4C9A' }}>Learning Coach</h1>
+                <p className="text-sm text-gray-500">Personalised Cognitive Guidance</p>
               </div>
             </div>
             {archetype && (
@@ -372,7 +372,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
               { key: 'recommendations', label: 'Recommendations', icon: Lightbulb },
               { key: 'weekly-planner', label: 'Weekly Planner', icon: Calendar },
               { key: 'reminders', label: 'Reminders', icon: Bell },
-              { key: 'coach', label: 'AI Coach', icon: Brain }
+              { key: 'coach', label: 'Jottie Coach', icon: Brain }
             ] as { key: TabType; label: string; icon: React.ElementType }[]).map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -525,7 +525,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="w-5 h-5" style={{ color: '#6B4C9A' }} />
-                  AI Profile Summary
+                  Cognitive Profile Summary
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -534,7 +534,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                   <div className="flex items-start gap-2">
                     <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-blue-900">
-                      <strong>How we analyse this:</strong> Our AI examines your scores across learning, thinking, and decision-making dimensions to identify patterns and create personalised insights.
+                      <strong>How we analyse this:</strong> Our system examines your scores across learning, thinking, and decision-making dimensions to identify patterns and create personalised insights.
                     </p>
                   </div>
                 </div>
@@ -1186,7 +1186,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="w-5 h-5" style={{ color: '#6B4C9A' }} />
-                  Your AI Learning Coach Says...
+                  Your Learning Coach Says...
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1268,7 +1268,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
               <CardHeader className="pb-3 border-b">
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="w-5 h-5" style={{ color: '#6B4C9A' }} />
-                  Chat with your AI Coach
+                  Chat with Jottie
                 </CardTitle>
                 <CardDescription>Ask questions about your profile or get study advice</CardDescription>
               </CardHeader>
@@ -1282,7 +1282,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                     <div className="bg-purple-100 p-4 rounded-full">
                       <Brain className="w-8 h-8 text-purple-600" />
                     </div>
-                    <p>I'm your AI Learning Coach. How can I help you today?</p>
+                    <p>I'm Jottie, your Learning Coach. How can I help you today?</p>
                     
                     <div className="flex flex-wrap justify-center gap-2 mt-4">
                       <Button 

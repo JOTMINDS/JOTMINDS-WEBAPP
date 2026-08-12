@@ -187,7 +187,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-indigo-600" />
-            <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds AI Organization Executive Advisor</CardTitle>
+            <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds Organization Executive Advisor</CardTitle>
           </div>
           <Button 
             variant="outline" 
@@ -196,7 +196,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
             disabled={isGeneratingOrgAi}
             className="bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200 text-xs"
           >
-            {isGeneratingOrgAi ? 'Generating AI Variation...' : 'Refresh AI Analysis'}
+            {isGeneratingOrgAi ? 'Generating Variation...' : 'Refresh Executive Analysis'}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -252,7 +252,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
           ) : (
             <div className="py-4 text-center">
               <Button onClick={triggerOrgAIAnalysis} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                Generate Organizational AI Analysis
+                Generate Organizational Analysis
               </Button>
             </div>
           )}
@@ -342,7 +342,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
               <CardHeader>
                 <CardTitle>Strategic Insights</CardTitle>
                 <CardDescription>
-                  AI-driven observations based on current data.
+                  Cognitive observations based on current data.
                 </CardDescription>
               </CardHeader>
               <CardContent>

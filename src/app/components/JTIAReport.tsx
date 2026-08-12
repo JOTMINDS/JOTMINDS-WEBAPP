@@ -369,7 +369,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
           }`}
         >
           <Sparkles className="w-4 h-4 text-purple-500" />
-          AI Development Recommendations
+          Professional Development Recommendations
         </button>
       </div>
 
@@ -742,7 +742,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                     className="bg-purple-500/20 text-purple-200 border-purple-500/30 text-xs"
                   >
                     {aiRecommendations
-                      ? "Live AI Variations"
+                      ? "Live Strategy Variations"
                       : "Algorithmic Guidance"}
                   </Badge>
                 </div>
@@ -858,7 +858,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
               </CardTitle>
             </div>
             <CardDescription className="text-xs text-slate-300">
-              AI recommendations and JTIA competency mappings are grounded in
+              Development recommendations and JTIA competency mappings are grounded in
               peer-reviewed cognitive psychology and pedagogical research.
             </CardDescription>
           </CardHeader>

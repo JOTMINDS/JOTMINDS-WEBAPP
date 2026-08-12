@@ -1804,7 +1804,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <h4 className="font-bold text-base text-gray-900 dark:text-white">
-                    Personalized AI Recommendations & Study Tips
+                    Personalised Cognitive Recommendations & Study Tips
                   </h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

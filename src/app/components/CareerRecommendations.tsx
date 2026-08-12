@@ -963,7 +963,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              <CardTitle>OpenAI Dynamic Career Matcher</CardTitle>
+              <CardTitle>Dynamic Career Matcher</CardTitle>
             </div>
             <Button
               size="sm"
@@ -974,24 +974,24 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
               {loadingAi ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Analyzing with OpenAI...
+                  Analyzing cognitive profile...
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  Generate AI Career Insights
+                  Generate Career Insights
                 </>
               )}
             </Button>
           </div>
           <CardDescription>
-            Uses OpenAI gpt-4o-mini to analyze your cognitive profile and match real-world career trajectories
+            Analyzes your cognitive profile to match real-world career trajectories
           </CardDescription>
         </CardHeader>
         {aiAnalysis && (
           <CardContent className="space-y-4">
             <p className="text-sm font-medium text-purple-950 dark:text-purple-200 bg-purple-100 dark:bg-purple-900/50 p-3 rounded-lg">
-              <strong>AI Advice:</strong> {aiAnalysis.advice}
+              <strong>Advisor Guidance:</strong> {aiAnalysis.advice}
             </p>
 
             <div className="grid gap-4 md:grid-cols-3">

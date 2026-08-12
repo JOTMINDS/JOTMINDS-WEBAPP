@@ -448,7 +448,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         { id: 'individual', label: 'Student Roster', icon: Eye },
         { id: 'analytics-compare', label: 'Class Analytics', icon: BarChart3 },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
-        { id: 'teacher-intelligence', label: 'Intelligence Portal', icon: Brain, badge: 'AI Insights', badgeVariant: 'default' },
+        { id: 'teacher-intelligence', label: 'Intelligence Portal', icon: Brain, badge: 'Insights', badgeVariant: 'default' },
       ]
     },
     {

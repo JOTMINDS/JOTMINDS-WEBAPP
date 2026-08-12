@@ -221,9 +221,9 @@ export function GuidedReflection({ cognitiveStyle, assessmentType, onSaveReflect
   const [loadingAi, setLoadingAi] = useState<Record<number, boolean>>({});
 
   const handleGetAIFeedback = async (index: number) => {
-    const text = reflections[index];
-    if (!text || text.trim().length < 10) {
-      toast.error('Please write at least a sentence before requesting AI feedback.');
+    const text = responses[index] || '';
+    if (!text.trim() || text.trim().length < 10) {
+      toast.error('Please write at least a sentence before requesting coaching feedback.');
       return;
     }
 
@@ -232,12 +232,12 @@ export function GuidedReflection({ cognitiveStyle, assessmentType, onSaveReflect
       const result = await generateAIReflectionFeedback(text, prompts[index]?.question);
       if (result) {
         setAiFeedback(prev => ({ ...prev, [index]: result }));
-        toast.success('AI Feedback generated!');
+        toast.success('Reflection feedback generated!');
       } else {
-        toast.error('Could not generate AI feedback. Please try again.');
+        toast.error('Could not generate feedback. Please try again.');
       }
     } catch (e) {
-      console.error('AI Reflection Feedback error:', e);
+      console.error('Reflection Feedback error:', e);
     } finally {
       setLoadingAi(prev => ({ ...prev, [index]: false }));
     }
@@ -318,16 +318,16 @@ export function GuidedReflection({ cognitiveStyle, assessmentType, onSaveReflect
                 ) : (
                   <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                 )}
-                Get AI Coaching Feedback
+                Get Coaching Feedback
               </Button>
             </div>
 
-            {/* AI Feedback Display */}
+            {/* Reflection Feedback Display */}
             {aiFeedback[index] && (
               <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-lg p-4 space-y-2 mt-2">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-800 dark:text-purple-300">
                   <Sparkles className="w-4 h-4 text-purple-600" />
-                  AI Metacognitive Feedback
+                  Metacognitive Feedback
                 </div>
                 <p className="text-xs text-gray-700 dark:text-gray-300">
                   <strong>Encouragement:</strong> {aiFeedback[index].encouragement}

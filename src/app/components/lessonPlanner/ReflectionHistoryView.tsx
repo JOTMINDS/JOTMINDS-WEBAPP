@@ -83,7 +83,7 @@ export const ReflectionHistoryView: React.FC = () => {
               {ref.aiFeedback && (
                 <div className="mt-4 pt-4 border-t border-dashed border-slate-200 dark:border-slate-700">
                   <h4 className="font-semibold text-purple-700 dark:text-purple-400 flex items-center gap-2 mb-2">
-                    <MessageSquare className="w-4 h-4" /> AI Coaching Feedback
+                    <MessageSquare className="w-4 h-4" /> Metacognitive Feedback
                   </h4>
                   <p className="text-slate-700 dark:text-slate-300 italic">{ref.aiFeedback}</p>
                 </div>

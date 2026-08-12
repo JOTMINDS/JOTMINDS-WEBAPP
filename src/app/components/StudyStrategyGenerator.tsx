@@ -33,7 +33,7 @@ export function StudyStrategyGenerator({ cognitiveStyle, assessmentType }: Study
         setAiCustomStrategy(res);
         toast.success('Custom Study Strategy generated successfully!');
       } else {
-        toast.error('Could not generate AI study strategy.');
+        toast.error('Could not generate study strategy.');
       }
     } catch (e) {
       console.error(e);
@@ -173,7 +173,7 @@ export function StudyStrategyGenerator({ cognitiveStyle, assessmentType }: Study
             ) : (
               <Sparkles className="w-3.5 h-3.5 text-purple-600" />
             )}
-            Generate OpenAI Strategy
+            Generate Personalised Strategy
           </Button>
         </div>
         <CardDescription>
@@ -185,7 +185,7 @@ export function StudyStrategyGenerator({ cognitiveStyle, assessmentType }: Study
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800 rounded-lg p-4 space-y-3 mb-4">
             <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900 dark:text-purple-200">
               <Sparkles className="w-4 h-4 text-purple-600" />
-              OpenAI Tailored Study Plan
+              Tailored Cognitive Study Plan
             </div>
             <p className="text-xs text-gray-700 dark:text-gray-300">
               <strong>Weekly Cadence:</strong> {aiCustomStrategy.weeklyRoutine}

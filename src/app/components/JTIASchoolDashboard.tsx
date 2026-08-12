@@ -263,7 +263,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
                   Evidence-Based PD Priorities
                 </CardTitle>
                 <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 text-xs">
-                  {aiPdPriorities ? 'Live AI School Strategy' : 'Algorithmic Priorities'}
+                  {aiPdPriorities ? 'Live School Strategy' : 'Algorithmic Priorities'}
                 </Badge>
               </div>
               <CardDescription className="mt-1">
@@ -278,7 +278,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
               className="gap-1.5 text-xs"
             >
               {isLoadingAi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-              {isLoadingAi ? 'Generating...' : 'AI Variations'}
+              {isLoadingAi ? 'Generating...' : 'Strategy Variations'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
