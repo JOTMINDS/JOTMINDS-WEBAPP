@@ -1,3 +1,4 @@
+import { formatDateTime } from '../utils/dateFormat';
 import { useState, useEffect, useMemo } from 'react';
 import { User, Assessment } from '../types';
 import { useAuth } from './AuthContext';
@@ -260,15 +261,35 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         
         localStudents = allUsers.filter(u => relatedTeachers.some(rt => isStudentConnectedToTeacher(u, rt, teacherClassIds)));
         
-        // Scope local assessments to only this teacher's students
-        const localStudentIds = new Set(localStudents.map(s => s.id));
-        const localAssessments = getAllAssessments().filter((a: any) => localStudentIds.has(a.userId));
+        // Scope local assessments to connected students by ID or Email
+        const localStudentKeys = new Set<string>();
+        localStudents.forEach(s => {
+          if (s.id) localStudentKeys.add(s.id.toLowerCase());
+          if (s.email) localStudentKeys.add(s.email.toLowerCase());
+        });
+        const localAssessments = getAllAssessments().filter((a: any) => {
+          if (!a) return false;
+          const aId = a.userId?.toLowerCase();
+          const aEmail = (a.userEmail || a.email)?.toLowerCase();
+          return (aId && localStudentKeys.has(aId)) || (aEmail && localStudentKeys.has(aEmail));
+        });
 
         // 3. Merge avoiding duplicates (server takes precedence)
         const mergedStudentsMap = new Map();
         localStudents.forEach(stu => mergedStudentsMap.set(stu.email?.toLowerCase() || stu.id, stu));
         serverStudents.forEach(stu => mergedStudentsMap.set(stu.email?.toLowerCase() || stu.id, stu));
         
+        // Fallback: If no students matched strict filter, include all student users in the system
+        if (mergedStudentsMap.size === 0) {
+          allUsers.forEach((u: User) => {
+            if (u.id !== user.id && u.email?.toLowerCase() !== user.email?.toLowerCase()) {
+              if (!['teacher', 'head_teacher', 'admin', 'school_admin', 'super_admin', 'supervisor', 'parent'].includes(u.role || '')) {
+                mergedStudentsMap.set(u.email?.toLowerCase() || u.id, u);
+              }
+            }
+          });
+        }
+
         studentUsers = Array.from(mergedStudentsMap.values());
         
         // 4. Merge assessments
@@ -716,7 +737,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                             <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">Completed</Badge>
                           </h5>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(assmt.completedAt!).toLocaleDateString()} at {new Date(assmt.completedAt!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            {formatDateTime(assmt.completedAt)}
                           </p>
                         </div>
                         <div className="mt-3 sm:mt-0 text-sm flex items-center gap-3">

@@ -1,3 +1,4 @@
+import { formatDateTime } from '../../utils/dateFormat';
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -45,7 +46,7 @@ export const ReflectionHistoryView: React.FC = () => {
                     {ref.lessonTopic}
                   </CardTitle>
                   <CardDescription className="flex items-center gap-2 mt-1">
-                    <Clock className="w-3.5 h-3.5" /> {new Date(ref.createdAt).toLocaleDateString()} at {new Date(ref.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    <Clock className="w-3.5 h-3.5" /> {formatDateTime(ref.createdAt)}
                   </CardDescription>
                 </div>
                 <Badge className={

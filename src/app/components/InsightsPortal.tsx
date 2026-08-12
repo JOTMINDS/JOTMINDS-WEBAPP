@@ -77,7 +77,19 @@ function getMaxForDim(dim: string): number {
 }
 
 function buildStudentProfile(user: User, assessmentsMap?: Map<string, any[]>): StudentProfile {
-  const localAssessments = getAssessmentsByUserId(user.id) || [];
+  const allLocal = getAllAssessments();
+  const uid = user.id?.toLowerCase();
+  const uemail = user.email?.toLowerCase();
+
+  const localAssessments = allLocal.filter((a: any) => {
+    if (!a) return false;
+    const aUid = a.userId?.toLowerCase();
+    const aEmail = (a.userEmail || a.email)?.toLowerCase();
+    if (uid && (aUid === uid || aEmail === uid)) return true;
+    if (uemail && (aUid === uemail || aEmail === uemail)) return true;
+    return false;
+  });
+
   const serverAssessments = assessmentsMap?.get(user.id) || (user.email ? assessmentsMap?.get(user.email.toLowerCase()) : []) || [];
 
   const assessmentMap = new Map();
@@ -217,6 +229,17 @@ export function InsightsPortal({ user, onBack }: InsightsPortalProps) {
       serverStudents.forEach(stu => {
         mergedMap.set(stu.email?.toLowerCase() || stu.id, stu);
       });
+
+      // Fallback: If no students matched strict filter, include all student users
+      if (mergedMap.size === 0) {
+        allUsers.forEach((u: User) => {
+          if (u.id !== user.id && u.email?.toLowerCase() !== user.email?.toLowerCase()) {
+            if (!['teacher', 'head_teacher', 'admin', 'school_admin', 'super_admin', 'supervisor', 'parent'].includes(u.role || '')) {
+              mergedMap.set(u.email?.toLowerCase() || u.id, u);
+            }
+          }
+        });
+      }
 
       const finalStudents: User[] = Array.from(mergedMap.values()).slice(0, 100);
       setStudents(finalStudents);

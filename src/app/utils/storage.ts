@@ -218,11 +218,16 @@ export function mapStudentsToTeacher(teacherId: string): User {
 
 // Universal helper to check if a student should be synced and appear to a teacher
 export function isStudentConnectedToTeacher(student: User, teacher: User, teacherClassIds?: Set<string>): boolean {
-  if (!student || student.role !== 'student' || !teacher) return false;
+  if (!student || !teacher) return false;
+
+  // Exclude non-student accounts (teachers, admins, parents, etc.)
+  if (student.role && ['teacher', 'head_teacher', 'admin', 'school_admin', 'super_admin', 'supervisor', 'parent'].includes(student.role)) {
+    return false;
+  }
 
   // 1. Explicit Teacher ID match
-  if (student.teacherId === teacher.id) return true;
-  if (Array.isArray(student.linkedTeachers) && student.linkedTeachers.includes(teacher.id)) return true;
+  if (student.teacherId === teacher.id || (teacher.email && student.teacherId === teacher.email)) return true;
+  if (Array.isArray(student.linkedTeachers) && (student.linkedTeachers.includes(teacher.id) || (teacher.email && student.linkedTeachers.includes(teacher.email)))) return true;
 
   // 2. Teacher Email match
   if (student.teacherEmail && teacher.email && student.teacherEmail.trim().toLowerCase() === teacher.email.trim().toLowerCase()) return true;
@@ -245,6 +250,11 @@ export function isStudentConnectedToTeacher(student: User, teacher: User, teache
     for (const ts of teacherSchools) {
       if (ts && studentSchools.includes(ts)) return true;
     }
+  }
+
+  // 6. Universal fallback for standalone/unlinked students in prototype or teacher portal
+  if (!student.teacherId && !student.teacherEmail && (!student.school || !teacher.school)) {
+    return true;
   }
 
   return false;
