@@ -659,25 +659,23 @@ export async function generateOTP(contact: string): Promise<string> {
 
   const isEmail = contact.includes('@');
 
-  // Attempt server dispatch if available
-  try {
-    const token = await getAuthToken();
-    if (isEmail && BASE_URL && !BASE_URL.includes('make-server-fc8eb847')) {
-      const response = await fetch(`${BASE_URL}/send-otp`, {
+  // Dispatch real email via /api/send-otp (Resend integration)
+  if (isEmail) {
+    try {
+      const response = await fetch('/api/send-otp', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || publicAnonKey}` 
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: contact, otp })
       });
 
       if (!response.ok) {
-        console.warn('[OTP] Remote server send-otp non-200 status, using local fallback OTP');
+        console.warn('[OTP] /api/send-otp returned non-200 status, using local fallback OTP');
+      } else {
+        console.log('[OTP] Verification code sent successfully via Resend to:', contact);
       }
+    } catch (error: any) {
+      console.warn('[OTP] /api/send-otp error, using local fallback OTP:', error?.message);
     }
-  } catch (error: any) {
-    console.warn('[OTP] Remote server send-otp error, using local fallback OTP:', error?.message);
   }
 
   console.log(`[OTP] Generated verification code for ${contact}: ${otp}`);
