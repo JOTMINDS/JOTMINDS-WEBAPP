@@ -274,7 +274,7 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
       <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-3 px-4 flex items-center justify-between gap-3 text-xs text-emerald-800 dark:text-emerald-300">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span><strong>Designed for Development, Not Ranking:</strong> Your responses evaluate cognitive and pedagogical style to generate personalized growth pathways.</span>
+          <span><strong>Designed for Development, Not Ranking:</strong> Your responses evaluate cognitive and teaching style to generate personalized growth pathways.</span>
         </div>
       </div>
 

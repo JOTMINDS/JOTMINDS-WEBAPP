@@ -327,7 +327,7 @@ export function InstitutionDashboard({
       ]
     },
     {
-      groupLabel: 'Pedagogical & Analytics',
+      groupLabel: 'Teaching & Analytics',
       items: [
         { id: 'analytics', label: 'Assessment Analytics', icon: BarChart3 },
         { id: 'reports', label: 'Reporting & Export', icon: Download },

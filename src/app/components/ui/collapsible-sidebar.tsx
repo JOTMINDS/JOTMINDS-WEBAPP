@@ -267,7 +267,7 @@ export function CollapsibleSidebar({
                         )}
                       />
                       {!isCollapsed && (
-                        <span className="text-sm truncate">{item.label}</span>
+                        <span className="text-xs font-medium text-left leading-snug">{item.label}</span>
                       )}
                     </div>
 

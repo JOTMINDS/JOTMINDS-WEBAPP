@@ -685,7 +685,15 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
   };
 
   const subjects = ['Mathematics', 'English Language', 'Science', 'Social Studies', 'ICT', 'Creative Arts', 'French', 'Ghanaian Language (Twi/Ga/Ewe)', 'Religious & Moral Education', 'Other'];
-  const curricula = ['NaCCA / GES (Ghana)', 'Cambridge International', 'International Baccalaureate (IB)', 'National Standard'];
+  const curricula = [
+    'NaCCA / GES (Ghana - Primary, JHS, SHS)',
+    'WAEC (WASSCE / BECE)',
+    'Cambridge International (IGCSE / A-Levels)',
+    'International Baccalaureate (IB - PYP/MYP/DP)',
+    'UK National Curriculum (Key Stages 1-4)',
+    'US Common Core & NGSS Science',
+    'National Standard / Custom Curriculum'
+  ];
 
   return (
     <div className="space-y-6">

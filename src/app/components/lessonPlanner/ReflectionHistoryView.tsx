@@ -32,7 +32,7 @@ export const ReflectionHistoryView: React.FC = () => {
           <BookOpen className="w-5 h-5 text-purple-400" /> Reflection History
         </h2>
         <p className="text-sm text-slate-300 mt-2">
-          Review your previous post-lesson reflections to track your pedagogical growth and classroom insights.
+          Review your previous post-lesson reflections to track your instructional growth and classroom insights.
         </p>
       </div>
 

@@ -257,52 +257,59 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             JotMinds Teaching Insights Assessment
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-2xl">
-            Understanding the cognitive styles and pedagogical strengths behind
+            Understanding the cognitive styles and instructional strengths behind
             great teaching. A holistic, non-competitive analysis of your
             classroom decision-making.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 no-print-btn">
+        <div className="flex flex-wrap items-center gap-2 no-print-btn mt-3 md:mt-0 justify-start md:justify-end">
           {onBack && (
             <Button
               variant="outline"
+              size="sm"
               onClick={onBack}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs px-3 py-1.5 flex items-center gap-1.5"
             >
-              Back to Dashboard
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back
             </Button>
           )}
           <Button
+            size="sm"
             onClick={handlePrint}
             variant="outline"
-            className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+            className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs px-3 py-1.5 flex items-center gap-1.5"
           >
-            <Printer className="w-4 h-4 mr-2" />
-            Print / Save as PDF
+            <Printer className="w-3.5 h-3.5" />
+            PDF Report
           </Button>
           <Button
+            size="sm"
             onClick={handleExportCSV}
             variant="outline"
-            className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+            className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs px-3 py-1.5 flex items-center gap-1.5"
           >
-            <FileText className="w-4 h-4 mr-2" />
-            Export CSV
+            <FileText className="w-3.5 h-3.5" />
+            CSV Export
           </Button>
           <Button
-            onClick={() => toast.success("Report shared with admin.")}
+            size="sm"
+            onClick={() => toast.success("Report shared with school administration.")}
             variant="outline"
-            className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+            className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs px-3 py-1.5 flex items-center gap-1.5"
           >
-            <Share2 className="w-4 h-4 mr-2" />
-            Share with Admin
+            <Share2 className="w-3.5 h-3.5" />
+            Share Admin
           </Button>
           {onRetake && (
             <Button
+              size="sm"
               onClick={onRetake}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 flex items-center gap-1.5 shadow-sm"
             >
-              Retake Assessment
+              <RotateCcw className="w-3.5 h-3.5" />
+              Retake JTIA
             </Button>
           )}
         </div>
@@ -369,7 +376,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
           }`}
         >
           <Sparkles className="w-4 h-4 text-purple-500" />
-          Professional Development Recommendations
+          Development Recommendations
         </button>
       </div>
 
@@ -859,13 +866,13 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             </div>
             <CardDescription className="text-xs text-slate-300">
               Development recommendations and JTIA competency mappings are grounded in
-              peer-reviewed cognitive psychology and pedagogical research.
+              peer-reviewed cognitive psychology and educational research.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-0 text-xs text-slate-300">
             <div className="bg-white/5 p-3 rounded-lg border border-white/10">
               <p className="font-semibold text-indigo-200 mb-1">
-                Pedagogical Content Knowledge (PCK)
+                Instructional Content Knowledge (ICK)
               </p>
               <p className="text-[11px] leading-relaxed text-slate-300">
                 Grounds instructional intelligence in Shulman's framework

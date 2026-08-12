@@ -635,7 +635,7 @@ export function InsightsPortal({ user, onBack }: InsightsPortalProps) {
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-indigo-600" />
-                  <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds Classroom Pedagogical Advisor</CardTitle>
+                  <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds Classroom Teaching & Learning Advisor</CardTitle>
                 </div>
                 <Button 
                   variant="outline" 
@@ -675,7 +675,7 @@ export function InsightsPortal({ user, onBack }: InsightsPortalProps) {
 
                       <div className="p-3 bg-white/90 rounded-lg border border-amber-100">
                         <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Pedagogical Alerts
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Instructional Alerts
                         </h4>
                         <ul className="space-y-1.5 text-xs text-gray-700">
                           {aiClassroomReport.strategicAlerts.map((alt, idx) => (

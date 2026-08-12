@@ -309,9 +309,10 @@ export interface JTIASchoolAggregatedInsights {
 export function generateSchoolJTIAInsights(reports: JTIAReportData[] = []): JTIASchoolAggregatedInsights {
   if (!reports || reports.length === 0) {
     return {
+      totalTeachersAssessed: 0,
       overallSchoolIntelligence: 0,
       domainAverages: { cognitive: 0, instructional: 0, leadership: 0, relationship: 0, professional: 0 },
-      topStrengths: [],
+      competencyHeatmap: [],
       pdPriorities: [],
       growthPatterns: {
         highSynergyDomains: [],

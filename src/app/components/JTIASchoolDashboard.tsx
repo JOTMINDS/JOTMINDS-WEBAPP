@@ -49,9 +49,10 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
 
   const displayedPdPriorities = aiPdPriorities || insights.pdPriorities;
 
+  const heatmapList = insights?.competencyHeatmap || [];
   const filteredHeatmap = selectedDomain === 'ALL'
-    ? insights.competencyHeatmap
-    : insights.competencyHeatmap.filter(item => item.domain === selectedDomain);
+    ? heatmapList
+    : heatmapList.filter(item => item.domain === selectedDomain);
 
   const radarData = [
     { domain: 'Cognitive', full: 'Cognitive Intelligence', score: insights.domainAverages.cognitive },
@@ -237,7 +238,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
               Institutional Intelligence Map
             </CardTitle>
             <CardDescription>
-              Average across 5 core pedagogical intelligence domains
+              Average across 5 core teaching intelligence domains
             </CardDescription>
           </CardHeader>
           <CardContent className="h-72">

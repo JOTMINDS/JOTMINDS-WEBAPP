@@ -1198,7 +1198,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   {aiSchoolReport.pedagogicalAlignment && (
                     <div className="p-3 bg-indigo-100/50 rounded-lg border border-indigo-200">
                       <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                        <Target className="w-3.5 h-3.5 text-indigo-700" /> Whole-School Pedagogical Alignment
+                        <Target className="w-3.5 h-3.5 text-indigo-700" /> Whole-School Instructional Strategy Alignment
                       </h4>
                       <p className="text-xs text-indigo-950 leading-relaxed">{aiSchoolReport.pedagogicalAlignment}</p>
                     </div>

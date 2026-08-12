@@ -245,7 +245,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                     </div>
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
                       <p className="text-sm text-slate-700 leading-relaxed">
-                        Your highest synergy is in <strong>{tJtiaReport.topSynergyDomain || 'Pedagogical Adaptability'}</strong>.
+                        Your highest synergy is in <strong>{tJtiaReport.topSynergyDomain || 'Teaching Adaptability'}</strong>.
                         Combine this with your {alignmentScore}% alignment score to see where you might stretch your approach across the 5 JTIA domains to reach students with different cognitive preferences.
                       </p>
                     </div>

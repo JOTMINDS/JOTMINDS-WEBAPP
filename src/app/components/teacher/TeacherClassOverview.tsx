@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { User, Assessment } from '../../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -8,7 +9,8 @@ import {
   Brain, 
   Target,
   Award,
-  Clock
+  Clock,
+  Filter
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
@@ -26,7 +28,34 @@ const COLORS = {
   pink: '#EC4899'
 };
 
-export function TeacherClassOverview({ students, assessments }: TeacherClassOverviewProps) {
+export function TeacherClassOverview({ students: rawStudents, assessments: rawAssessments }: TeacherClassOverviewProps) {
+  const [selectedClass, setSelectedClass] = useState<string>('ALL');
+
+  const availableClasses = useMemo(() => {
+    const set = new Set<string>();
+    rawStudents.forEach((s: any) => {
+      if (s.className) set.add(s.className);
+      if (s.class) set.add(s.class);
+      if (s.grade) set.add(s.grade);
+    });
+    return Array.from(set).sort();
+  }, [rawStudents]);
+
+  const students = useMemo(() => {
+    if (selectedClass === 'ALL') return rawStudents;
+    return rawStudents.filter((s: any) => 
+      s.className === selectedClass || 
+      s.class === selectedClass || 
+      s.grade === selectedClass
+    );
+  }, [rawStudents, selectedClass]);
+
+  const filteredStudentIds = useMemo(() => new Set(students.map(s => s.id)), [students]);
+
+  const assessments = useMemo(() => {
+    return rawAssessments.filter(a => filteredStudentIds.has(a.userId));
+  }, [rawAssessments, filteredStudentIds]);
+
   // Calculate class statistics
   const totalStudents = students.length;
   
@@ -126,6 +155,26 @@ export function TeacherClassOverview({ students, assessments }: TeacherClassOver
   return (
     <div className="min-h-screen bg-[#F5F7FF]">
       <div className="px-4 lg:px-6 py-4 space-y-6 max-w-[960px] mx-auto">
+        {/* Class Filter Bar */}
+        <div className="flex items-center justify-between gap-3 flex-wrap bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-indigo-600" />
+            <span className="font-bold text-sm text-slate-800 dark:text-white">Filter View by Class / Grade:</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value="ALL">All Classes ({rawStudents.length} Total Students)</option>
+              {availableClasses.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Class Stats Header */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="rounded-2xl shadow-sm">

@@ -55,7 +55,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const [initialQuestions, setInitialQuestions] = useState<any[]>([]);
   const [initialPage, setInitialPage] = useState<number>(0);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
-  const [jtiaSubTab, setJtiaSubTab] = useState<'profile' | 'school'>('profile');
+  const [jtiaSubTab, setJtiaSubTab] = useState<'profile' | 'cognitive' | 'school'>('profile');
   const [targetStudentId, setTargetStudentId] = useState<string | null>(null);
   const [showingThinkingAssessment, setShowingThinkingAssessment] = useState(false);
   const [serverAssessments, setServerAssessments] = useState<any[]>([]);
@@ -444,18 +444,17 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     {
       groupLabel: 'Educator Tools',
       items: [
-        { id: 'overview', label: 'Class Overview & Student Management', icon: Users, badge: students.length },
-        { id: 'individual', label: 'Student Roster', icon: Eye },
+        { id: 'overview', label: 'Class Roster & Overview', icon: Users, badge: students.length },
+        { id: 'individual', label: 'Student Profiles', icon: Eye },
         { id: 'analytics-compare', label: 'Class Analytics', icon: BarChart3 },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
-        { id: 'teacher-intelligence', label: 'Intelligence Portal', icon: Brain, badge: 'Insights', badgeVariant: 'default' },
+        { id: 'teacher-intelligence', label: 'Insights Portal', icon: Brain, badge: 'Insights', badgeVariant: 'default' },
       ]
     },
     {
       groupLabel: 'Professional Development',
       items: [
-        { id: 'my-style', label: 'Cognitive Profile', icon: History },
-        { id: 'jtia', label: 'Teaching Insights (JTIA)', icon: GraduationCap },
+        { id: 'jtia', label: 'Teaching Insights & Cognitive Profile', icon: GraduationCap },
       ]
     }
   ];
@@ -821,7 +820,17 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  My JTIA Profile (5 Domains)
+                  Teaching Insights (JTIA)
+                </button>
+                <button
+                  onClick={() => setJtiaSubTab('cognitive')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    jtiaSubTab === 'cognitive'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Cognitive Profile
                 </button>
                 <button
                   onClick={() => setJtiaSubTab('school')}
@@ -849,6 +858,54 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
           {jtiaSubTab === 'school' ? (
             <JTIASchoolDashboard schoolName={user.school || user.organizationName || 'Partner Educational Institution'} />
+          ) : jtiaSubTab === 'cognitive' ? (
+            <div id="teacher-cognitive-report" className="space-y-6">
+              {(() => {
+                const completed = allMyAssessments.filter(a => a.completedAt && a.score);
+                const kolbA = completed.filter(a => a.type === 'kolb' || a.type === 'learning').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+                const kolb = kolbA?.score?.kolb || kolbA?.score?.learning;
+                const thinkA = completed.filter(a => ['sternberg','adult-thinking','shs-thinking','jhs-thinking','thinking'].includes(a.type)).sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+                const thinkRaw = thinkA?.score?.sternberg || thinkA?.score?.['adult-thinking'] || thinkA?.score?.['shs-thinking'] || thinkA?.score?.['jhs-thinking'] || thinkA?.score?.thinking;
+                const thinkStyle = thinkRaw?.style || thinkRaw?.primaryStyle || thinkRaw?.dominantStyle || null;
+                const dualA = completed.filter(a => a.type === 'dual-process' || a.type === 'decision').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+                const dual = dualA?.score?.dualProcess || dualA?.score?.decision || dualA?.score?.['dual-process'];
+                const doneCount = [!!kolb, !!thinkStyle, !!dual].filter(Boolean).length;
+
+                return (
+                  <Card className="border-2 border-[#6B4C9A]/20">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 text-base">
+                          <span>🧬</span> Educator Cognitive Profile Summary
+                        </div>
+                        <Badge style={{ backgroundColor: doneCount === 3 ? '#1E8A6E20' : '#E0A02020', color: doneCount === 3 ? '#1E8A6E' : '#E0A020' }}>
+                          {doneCount}/3 Core Assessments Complete
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription>
+                        Overview of your baseline learning, thinking, and decision-making styles.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-800/40">
+                          <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-1">Learning Style (Kolb)</p>
+                          <p className="text-lg font-bold text-purple-950 dark:text-purple-100">{kolb?.style || 'Not Assessed Yet'}</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-800/40">
+                          <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider mb-1">Thinking Style (Sternberg)</p>
+                          <p className="text-lg font-bold text-blue-950 dark:text-blue-100">{thinkStyle || 'Not Assessed Yet'}</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40">
+                          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider mb-1">Decision Style (Dual-Process)</p>
+                          <p className="text-lg font-bold text-emerald-950 dark:text-emerald-100">{dual?.dominantStyle || 'Not Assessed Yet'}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+            </div>
           ) : displayedAssessment ? (
             <div className="space-y-8">
               {selectedHistoryId && (
