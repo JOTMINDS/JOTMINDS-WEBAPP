@@ -203,7 +203,7 @@ export function CollapsibleSidebar({
       <aside
         className={cn(
           "hidden md:flex flex-col bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 h-screen sticky top-0 transition-all duration-300 ease-in-out z-30 select-none",
-          isCollapsed ? "w-20" : "w-64",
+          isCollapsed ? "w-20" : "w-72",
           className
         )}
       >

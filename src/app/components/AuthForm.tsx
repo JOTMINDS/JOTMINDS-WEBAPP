@@ -1000,25 +1000,25 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
 
                   {role === 'student' && (
                     <div className="space-y-2">
-                      <Label htmlFor="studentJotsCode">School Jots Code or Class Code (Optional)</Label>
+                      <Label htmlFor="studentJotsCode" className="font-bold text-indigo-900">Teacher Code or Class Code</Label>
                       <div className="flex gap-2">
                         <Input
                           id="studentJotsCode"
                           type="text"
-                          placeholder="JOTM-XXXXXX"
+                          placeholder="Enter code given by teacher (e.g. JOTM-XXXXXX)"
                           value={organizationCode}
                           onChange={e => { setOrganizationCode(e.target.value.toUpperCase()); setVerifiedOrgName(''); }}
                           disabled={!!verifiedOrgName}
                         />
-                        <Button type="button" onClick={validateOrgCode} disabled={verifyingCode || !!verifiedOrgName || !organizationCode} className="whitespace-nowrap">
-                          {verifyingCode ? <Loader className="h-4 w-4 animate-spin" /> : verifiedOrgName ? <CheckCircle2 className="h-4 w-4" /> : 'Verify'}
+                        <Button type="button" onClick={validateOrgCode} disabled={verifyingCode || !!verifiedOrgName || !organizationCode} className="whitespace-nowrap bg-indigo-600 hover:bg-indigo-500 text-white">
+                          {verifyingCode ? <Loader className="h-4 w-4 animate-spin" /> : verifiedOrgName ? <CheckCircle2 className="h-4 w-4" /> : 'Verify Code'}
                         </Button>
                       </div>
                       {verifiedOrgName && (
                         <Alert><CheckCircle2 className="h-4 w-4" style={{ color: '#10B981' }} /><AlertDescription>Linked to: <strong>{verifiedOrgName}</strong></AlertDescription></Alert>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        If your school provided a Jots Code, enter it here to link your account. You can leave this blank and add it later.
+                        Enter the code provided by your teacher to link your student account to your class roster.
                       </p>
                     </div>
                   )}

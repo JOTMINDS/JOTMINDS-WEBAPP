@@ -33,6 +33,7 @@ export function KidsDashboard({
   onParentAccess,
   newlyCompletedAssessment
 }: KidsDashboardProps) {
+  const [showAccountModal, setShowAccountModal] = useState(false);
   const [showRewardAnimation, setShowRewardAnimation] = useState(!!newlyCompletedAssessment);
   const [rewardData, setRewardData] = useState(newlyCompletedAssessment);
   const [isMuted, setIsMuted] = useState(() => {
@@ -312,32 +313,52 @@ export function KidsDashboard({
 
       <div className="max-w-5xl w-full">
         {/* Top Controls Bar */}
-        <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={handleToggleMute}
-            className="flex items-center gap-2 bg-white/80 hover:bg-white text-purple-900 px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
-            title={isMuted ? "Unmute sound" : "Mute sound"}
-          >
-            {isMuted ? (
-              <>
-                <VolumeX className="w-6 h-6 text-red-500" />
-                <span>Sound OFF</span>
-              </>
-            ) : (
-              <>
-                <Volume2 className="w-6 h-6 text-green-600" />
-                <span>Sound ON</span>
-              </>
-            )}
-          </button>
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleMute}
+              className="flex items-center gap-2 bg-white/90 hover:bg-white text-purple-900 px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
+              title={isMuted ? "Unmute sound" : "Mute sound"}
+            >
+              {isMuted ? (
+                <>
+                  <VolumeX className="w-5 h-5 text-red-500" />
+                  <span>Sound OFF</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-5 h-5 text-green-600" />
+                  <span>Sound ON</span>
+                </>
+              )}
+            </button>
 
-          <button
-            onClick={handleParentClick}
-            className="flex items-center gap-2 bg-white/80 hover:bg-white text-purple-900 px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
-          >
-            <Settings className="w-5 h-5 text-purple-600" />
-            <span>Parent Gate</span>
-          </button>
+            <button
+              onClick={() => setShowAccountModal(true)}
+              className="flex items-center gap-2 bg-white/90 hover:bg-white text-purple-900 px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
+            >
+              <UserIcon className="w-5 h-5 text-indigo-600" />
+              <span>My Info</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleParentClick}
+              className="flex items-center gap-2 bg-white/90 hover:bg-white text-purple-900 px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
+            >
+              <Settings className="w-5 h-5 text-purple-600" />
+              <span>Parent Gate</span>
+            </button>
+
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>Log Out</span>
+            </button>
+          </div>
         </div>
 
         {/* Large Mascot at Top */}
@@ -800,6 +821,54 @@ export function KidsDashboard({
           )}
         </motion.div>
       </div>
+
+      {/* Account Details Modal */}
+      {showAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border-4 border-purple-400 space-y-5 text-slate-800"
+          >
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-3xl">👤</span>
+                <h3 className="text-xl font-extrabold text-purple-900">Student Account Info</h3>
+              </div>
+              <button 
+                onClick={() => setShowAccountModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 font-bold hover:bg-gray-200 text-gray-600 flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-sm">
+              <div className="p-3 bg-purple-50 rounded-2xl border border-purple-100">
+                <span className="text-xs text-purple-700 font-bold uppercase tracking-wider block">Student Name</span>
+                <span className="text-lg font-black text-purple-950">{user.name}</span>
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100">
+                <span className="text-xs text-blue-700 font-bold uppercase tracking-wider block">Date of Birth / Age</span>
+                <span className="text-base font-bold text-blue-950">{user.dateOfBirth || (user.age ? `${user.age} years old` : 'Age 6-12')}</span>
+              </div>
+
+              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
+                <span className="text-xs text-emerald-700 font-bold uppercase tracking-wider block">School / Class Code</span>
+                <span className="text-base font-bold text-emerald-950">{user.className || 'Class Code'} ({user.organizationName || user.school || 'School Partner'})</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowAccountModal(false)}
+              className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl shadow-lg transition-all"
+            >
+              Close
+            </button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

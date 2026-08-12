@@ -343,27 +343,49 @@ export function KidsCognitiveProfile({ user, onClose, isParentView = false }: Ki
             </div>
             <button
               onClick={onClose}
-              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-2xl flex items-center justify-center transition-colors"
             >
-              <X className="w-8 h-8 text-white" />
+              ✕
             </button>
           </div>
+        </div>
 
-          {/* Stars Progress */}
-          <div className="flex items-center gap-3 mt-4 bg-white/20 rounded-2xl px-6 py-3">
+        {/* Parent Account Connection Banner */}
+        <div className="bg-gradient-to-r from-purple-100 via-indigo-100 to-pink-100 p-5 border-b border-purple-200 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-lg">
+              👨‍👩‍👧
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm text-purple-950">Parent Analytics & Remote Monitoring</h4>
+              <p className="text-xs text-purple-800">
+                Connect your parent account to view full child analytics, progress trends, and learning recommendations on your own device.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              onClose();
+              toast.info('Parent Connection Code: ' + (user.id || 'JOT-PARENT'));
+            }}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+          >
+            Connect Parent Account
+          </button>
+        </div>
+
+        {/* Stars Progress */}
+        <div className="flex items-center gap-3 mt-4 bg-white/20 rounded-2xl px-6 py-3">
             <Star className="w-8 h-8 text-yellow-300 fill-yellow-300" />
             <span className="text-2xl font-black text-white">
               {totalStars} Stars Earned!
             </span>
-            <div className="flex gap-1 ml-auto">
               {[...Array(5)].map((_, i) => (
                 <span key={i} className="text-3xl">
                   {i < totalCompleted ? '⭐' : '☆'}
                 </span>
               ))}
             </div>
-          </div>
-        </div>
 
         {/* Content */}
         <div className="p-8 space-y-8">

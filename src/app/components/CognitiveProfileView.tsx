@@ -223,7 +223,9 @@ export function CognitiveProfileView({ onBack, onNavigateToCareers }: Props) {
           doc.addPage();
           yPosition = margin;
         }
-        yPosition = addText(`${dim.name}: ${dim.value}/100`, margin + 5, yPosition, pageWidth - 2 * margin, 11);
+        const val = typeof dim.value === 'number' ? dim.value : 75;
+        const levelStr = val >= 80 ? 'Exemplary Mastery' : val >= 65 ? 'Strong Preference' : val >= 45 ? 'Developing Capability' : 'Emerging Focus';
+        yPosition = addText(`• ${dim.name} — ${levelStr}`, margin + 5, yPosition, pageWidth - 2 * margin, 11);
         yPosition += 7;
       });
 

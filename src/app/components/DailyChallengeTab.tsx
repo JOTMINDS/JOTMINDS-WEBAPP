@@ -144,24 +144,37 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
       ],
       teen: [
         {
-          question: "When faced with a complex assignment, how do you typically approach it?",
+          domainLabel: "Learning Style (Kolb)",
+          question: "When reviewing complex study material for an exam, how do you learn best?",
           options: [
-            "Brainstorm innovative solutions and unique angles",
-            "Research thoroughly and analyze all aspects",
-            "Apply proven methods and practical strategies",
-            "Consider the deeper meaning and implications"
+            "Visual diagrams, flowcharts, and mind maps (Visual / Abstract)",
+            "Hands-on practice problems and physical experiments (Concrete / Active)",
+            "Quiet reflection and watching video walkthroughs (Reflective Observation)",
+            "Reading comprehensive notes and organizing theoretical concepts (Assimilating)"
           ],
-          dimension: ['creative', 'analytical', 'practical', 'reflective']
+          dimension: ['visual', 'kinesthetic', 'reflective', 'analytical']
         },
         {
-          question: "In class discussions, you're most likely to:",
+          domainLabel: "Thinking Style (Sternberg)",
+          question: "When tasked with analyzing a multi-step project, what is your primary approach?",
           options: [
-            "Propose new perspectives and unconventional ideas",
-            "Question assumptions and examine evidence",
-            "Share real-world applications and examples",
-            "Connect concepts to broader philosophical questions"
+            "Break down data logically and evaluate evidence (Analytical)",
+            "Brainstorm innovative ideas and non-traditional angles (Creative)",
+            "Focus on real-world execution and practical steps (Practical)",
+            "Connect the project to broader goals and ethical outcomes (Reflective)"
           ],
-          dimension: ['creative', 'analytical', 'practical', 'reflective']
+          dimension: ['analytical', 'creative', 'practical', 'reflective']
+        },
+        {
+          domainLabel: "Decision Style (Dual-Process)",
+          question: "When making a decision under time pressure, how do you balance speed and accuracy?",
+          options: [
+            "Rely on rapid gut intuition and pattern matching (Intuitive - System 1)",
+            "Pause to deliberate, compare options, and double-check facts (Deliberate - System 2)",
+            "Consult peers or mentors before reaching a conclusion (Collaborative)",
+            "Combine initial intuition with a quick mental logic check (Balanced)"
+          ],
+          dimension: ['intuitive', 'deliberate', 'collaborative', 'balanced']
         }
       ],
       adult: [
@@ -189,13 +202,12 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
     };
 
     const questions = questionSets[ageGroup as keyof typeof questionSets];
-    const randomQuestions = questions.sort(() => Math.random() - 0.5).slice(0, 2);
 
     return {
       id: `questions-${Date.now()}`,
       type: 'questions',
       content: {
-        questions: randomQuestions
+        questions: questions
       },
       points: 20
     };
