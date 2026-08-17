@@ -266,14 +266,14 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
     }
     
     if (lowerMsg.includes('archetype') || lowerMsg.includes('profile')) {
-      return `You are a ${archetypeData.name}. ${archetypeData.tagline || ''} This means your natural strengths include ${archetypeData.strengths.slice(0,2).join(' and ')}. Focus on learning environments that support this!`;
+      return `You are a ${archetypeData.name}. ${archetypeData.tagline || ''} This means your natural strengths include ${(archetypeData?.strengths || ['learning']).slice(0,2).join(' and ')}. Focus on learning environments that support this!`;
     }
 
     if (lowerMsg.includes('strength')) {
       if (profileInterpretation?.strengths && profileInterpretation.strengths.length > 0) {
         return `Your biggest strength is ${profileInterpretation.strengths[0].area}. Use this to your advantage when tackling new subjects!`;
       }
-      return `As a ${archetypeData.name}, you naturally excel at ${archetypeData.strengths[0]}.`;
+      return `As a ${archetypeData.name}, you naturally excel at ${(archetypeData?.strengths || ['learning'])[0]}.`;
     }
 
     return `That's an interesting question! As your Learning Coach, I recommend focusing on your strengths as a ${archetypeData.name}. Is there a specific area like your study schedule, weaknesses, or techniques you'd like to discuss?`;
@@ -421,7 +421,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <p className="text-sm text-green-900 mb-2"><CheckCircle2 className="w-4 h-4 inline mr-1 text-green-600" /><strong>Natural Strengths</strong></p>
                       <div className="space-y-1">
-                        {archetype.strengths.map((s, i) => (
+                        {(archetype.strengths || []).map((s, i) => (
                           <div key={i} className="flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
                             <p className="text-sm text-green-800">{s}</p>
@@ -432,7 +432,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                       <p className="text-sm text-orange-900 mb-2"><AlertCircle className="w-4 h-4 inline mr-1 text-orange-600" /><strong>Watch Out For</strong></p>
                       <div className="space-y-1">
-                        {archetype.challenges.map((c, i) => (
+                        {(archetype.challenges || []).map((c, i) => (
                           <div key={i} className="flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />
                             <p className="text-sm text-orange-800">{c}</p>
@@ -443,7 +443,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                       <p className="text-sm text-purple-900 mb-2"><Star className="w-4 h-4 inline mr-1 text-purple-600" /><strong>Career Affinities</strong></p>
                       <div className="flex flex-wrap gap-1.5">
-                        {archetype.careerAffinities.map((c, i) => (
+                        {(archetype.careerAffinities || []).map((c, i) => (
                           <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">{c}</span>
                         ))}
                       </div>
@@ -1239,7 +1239,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
             </Card>
 
             {/* Compatible learning partners */}
-            {archetype && archetype.compatibleArchetypes.length > 0 && (
+            {archetype && (archetype.compatibleArchetypes || []).length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1250,7 +1250,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {archetype.compatibleArchetypes.map((name, i) => (
+                    {(archetype.compatibleArchetypes || []).map((name, i) => (
                       <span key={i} className="px-3 py-1.5 rounded-full text-sm border bg-white text-gray-700">
                         {name}
                       </span>

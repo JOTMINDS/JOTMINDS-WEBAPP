@@ -83,7 +83,7 @@ function generateNotifs(user: User): Notification[] {
   if (gam?.currentStreak && gam.currentStreak >= 3)
     notifs.push({ id: 'n_streak', type: 'achievement', title: `🔥 ${gam.currentStreak}-day streak!`, body: "Keep logging in daily to maintain your streak and earn XP.", timestamp: new Date().toISOString(), read: false, icon: '🔥' });
   if (cxp.level > 1)
-    notifs.push({ id: 'n_level', type: 'achievement', title: `Cognitive Level ${cxp.level} reached!`, body: `Unlocked: ${getCognitiveLevel(cxp.totalXP).perks.join(', ')}.`, timestamp: new Date().toISOString(), read: false, icon: '⬆️' });
+    notifs.push({ id: 'n_level', type: 'achievement', title: `Cognitive Level ${cxp.level} reached!`, body: `Unlocked: ${(getCognitiveLevel(cxp.totalXP)?.perks || []).join(', ')}.`, timestamp: new Date().toISOString(), read: false, icon: '⬆️' });
   if (assessments.length >= 3)
     notifs.push({ id: 'n_ai', type: 'insight', title: 'Learning Coach ready', body: 'Your cognitive profile is complete — check your personalised Learning Coach for study tips.', timestamp: new Date().toISOString(), read: false, icon: '🧠' });
   return notifs;
