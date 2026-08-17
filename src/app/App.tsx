@@ -39,7 +39,6 @@ import { DailyChallengeRunner } from './components/DailyChallengeRunner';
 import { LessonViewer } from './components/LessonViewer';
 import { AILearningCoach } from './components/AILearningCoach';
 import { CognitiveGrowthDashboard } from './components/CognitiveGrowthDashboard';
-import { InsightsPortal } from './components/InsightsPortal';
 import { SchoolAnalyticsDashboard } from './components/SchoolAnalyticsDashboard';
 import { PlatformEssentials } from './components/PlatformEssentials';
 import { SchoolTeacherStylesView } from './components/SchoolTeacherStylesView';
@@ -758,14 +757,6 @@ function AppContent() {
     case 'cognitive-growth':
       return user ? (
         <CognitiveGrowthDashboard
-          user={impersonatedUser || user}
-          onBack={handleBackToDashboard}
-        />
-      ) : null;
-
-    case 'teacher-intelligence':
-      return user ? (
-        <InsightsPortal
           user={impersonatedUser || user}
           onBack={handleBackToDashboard}
         />

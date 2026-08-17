@@ -40,7 +40,7 @@ import { TransferMemberModal } from './TransferMemberModal';
 import { BulkUploadModal } from './BulkUploadModal';
 import { TeacherManagementModal } from './TeacherManagementModal';
 import ClassManagement from './ClassManagement';
-import { TeacherStudentManagement } from '../TeacherStudentManagement';
+import { CentralStudentManagement } from '../CentralStudentManagement';
 // Shared siblings
 import { SchoolAnalyticsDashboard } from '../SchoolAnalyticsDashboard';
 import { InstitutionReporting } from '../InstitutionReporting';
@@ -469,10 +469,17 @@ export function InstitutionDashboard({
         )}
 
         {tab === 'manage_students' && (
-          <TeacherStudentManagement 
+          <CentralStudentManagement 
             teacher={user} 
-            isInstitutionAdmin={true}
-            institutionStudents={allPlatformUsers.filter(u => u.role === 'student' && members.some(m => m.userId === u.id))}
+            assessments={memberAssessments}
+            students={allPlatformUsers.filter(u => u.role === 'student' && members.some(m => m.userId === u.id)).map(stu => {
+              // Add basic assessment status so CentralStudentManagement works
+              const stuAssessments = memberAssessments.filter(a => a.userId === stu.id && a.score);
+              return {
+                ...stu,
+                hasCompletedAssessment: stuAssessments.length > 0
+              };
+            })}
           />
         )}
 

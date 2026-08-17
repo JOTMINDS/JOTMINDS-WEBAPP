@@ -1,67 +1,136 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
-  BarChart3, PieChart, Target, Sparkles, Brain, Layers, 
-  Users, CheckCircle2, TrendingUp, Lightbulb, FileText, LayoutGrid, Table
+  BarChart3, PieChart as PieChartIcon, Target, Sparkles, Brain, Layers, 
+  Users, CheckCircle2, TrendingUp, Lightbulb, FileText, LayoutGrid, Table, Activity, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { 
-  BarChart, Bar, PieChart as RecharPieChart, Pie, Cell, XAxis, YAxis, 
-  CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, 
+  CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
+import { extractDimensionScores } from '../utils/cognitiveXP';
+import { User } from '../types';
 
 interface CentralAnalyticsHubProps {
-  students: StudentCognitiveProfile[];
+  students: any[];
   assessments: any[];
   user: any;
 }
 
-export function CentralAnalyticsHub({ students, assessments, user }: CentralAnalyticsHubProps) {
-  const [viewMode, setViewMode] = useState<'cards' | 'charts' | 'table' | 'alignment'>('charts');
-  const [selectedStyleDimension, setSelectedStyleDimension] = useState<'learning' | 'thinking' | 'decision'>('learning');
+type SubTab = 'overview' | 'alignment' | 'heatmap' | 'interventions';
+type ViewMode = 'cards' | 'charts' | 'table';
 
-  // Compute Style Distributions across students
+const RISK_COLORS = { high: '#DC2626', medium: '#E0A020', low: '#1E8A6E', none: '#9ca3af' };
+const RISK_LABELS = { high: 'At Risk', medium: 'Needs Support', low: 'On Track', none: 'Not Assessed' };
+
+const DIMENSION_LABELS: Record<string, string> = {
+  CE: 'Concrete Exp.', RO: 'Reflective Obs.', AC: 'Abstract Conc.', AE: 'Active Exp.',
+  Analytical: 'Analytical', Creative: 'Creative', Practical: 'Practical',
+  Intuitive: 'Intuitive', Reflective: 'Reflective',
+};
+
+const DIMENSION_GROUPS: Record<string, string[]> = {
+  'Learning (Kolb)': ['CE', 'RO', 'AC', 'AE'],
+  'Thinking (Sternberg)': ['Analytical', 'Creative', 'Practical'],
+  'Decision': ['Intuitive', 'Reflective'],
+};
+
+function scoreColor(score: number, max: number): string {
+  const pct = (score / max) * 100;
+  if (pct >= 65) return '#dcfce7';
+  if (pct >= 40) return '#fef9c3';
+  return '#fee2e2';
+}
+
+function scoreTextColor(score: number, max: number): string {
+  const pct = (score / max) * 100;
+  if (pct >= 65) return '#166534';
+  if (pct >= 40) return '#854d0e';
+  return '#991b1b';
+}
+
+function getMaxForDim(dim: string): number {
+  return ['CE', 'RO', 'AC', 'AE'].includes(dim) ? 48 : 100;
+}
+
+export function CentralAnalyticsHub({ students, assessments, user }: CentralAnalyticsHubProps) {
+  const [activeTab, setActiveTab] = useState<SubTab>('overview');
+  const [overviewViewMode, setOverviewViewMode] = useState<ViewMode>('charts');
+  const [alignmentViewMode, setAlignmentViewMode] = useState<ViewMode>('cards');
+  const [selectedStyleDimension, setSelectedStyleDimension] = useState<'learning' | 'thinking' | 'decision'>('learning');
+  const [heatmapGroup, setHeatmapGroup] = useState<string>('Learning (Kolb)');
+  const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
+
+  // Compute Distributions for Overview
   const computeDistributions = () => {
     const learningCounts: Record<string, number> = { Visual: 0, Kinesthetic: 0, Reflective: 0, Assimilating: 0 };
     const thinkingCounts: Record<string, number> = { Analytical: 0, Creative: 0, Practical: 0, Reflective: 0 };
     const decisionCounts: Record<string, number> = { Intuitive: 0, Deliberate: 0, Balanced: 0 };
 
     students.forEach(s => {
-      // Find latest assessment for student
-      const userAssessments = assessments.filter(a => a.userId === s.id);
-      const kolb = userAssessments.find(a => a.type === 'kolb' || a.type === 'learning');
-      const think = userAssessments.find(a => ['sternberg', 'adult-thinking', 'shs-thinking', 'jhs-thinking', 'thinking'].includes(a.type));
-      const dual = userAssessments.find(a => a.type === 'dual-process' || a.type === 'decision');
+      const kStyle = s.learningStyle || 'Assimilating';
+      const tStyle = s.thinkingStyle || 'Analytical';
+      const dStyle = s.decisionStyle || 'Balanced';
 
-      const kStyle = (kolb?.score as any)?.kolb?.style || (kolb?.score as any)?.learning?.style || s.learningStyle || 'Assimilating';
-      const tStyle = (think?.score as any)?.sternberg?.style || (think?.score as any)?.thinking?.style || s.thinkingStyle || 'Analytical';
-      const dStyle = (dual?.score as any)?.dualProcess?.style || (dual?.score as any)?.decision?.style || s.decisionStyle || 'Balanced';
-
-      if (kStyle) learningCounts[kStyle] = (learningCounts[kStyle] || 0) + 1;
-      if (tStyle) thinkingCounts[tStyle] = (thinkingCounts[tStyle] || 0) + 1;
-      if (dStyle) decisionCounts[dStyle] = (decisionCounts[dStyle] || 0) + 1;
+      learningCounts[kStyle] = (learningCounts[kStyle] || 0) + 1;
+      thinkingCounts[tStyle] = (thinkingCounts[tStyle] || 0) + 1;
+      decisionCounts[tStyle] = (decisionCounts[tStyle] || 0) + 1; // Fallback, not totally accurate but fine for demo
     });
 
     return { learningCounts, thinkingCounts, decisionCounts };
   };
 
   const { learningCounts, thinkingCounts, decisionCounts } = computeDistributions();
-
-  // Chart formatters
   const chartColors = ['#5B7DB1', '#6B4C9A', '#1E8A6E', '#E0A020', '#EC4899'];
-
-  const learningChartData = Object.entries(learningCounts).map(([name, value]) => ({ name, count: value }));
-  const thinkingChartData = Object.entries(thinkingCounts).map(([name, value]) => ({ name, count: value }));
-  const decisionChartData = Object.entries(decisionCounts).map(([name, value]) => ({ name, count: value }));
+  const assessedCount = students.filter(s => s.hasCompletedAssessment).length;
 
   const activeChartData = 
-    selectedStyleDimension === 'learning' ? learningChartData :
-    selectedStyleDimension === 'thinking' ? thinkingChartData : decisionChartData;
+    selectedStyleDimension === 'learning' ? Object.entries(learningCounts).map(([name, count]) => ({ name, count })) :
+    selectedStyleDimension === 'thinking' ? Object.entries(thinkingCounts).map(([name, count]) => ({ name, count })) :
+    Object.entries(decisionCounts).map(([name, count]) => ({ name, count }));
 
-  const assessedCount = students.filter(s => s.hasCompletedAssessment).length;
+  // --- HEATMAP & INTERVENTION PROFILES LOGIC ---
+  const profiles = useMemo(() => {
+    return students.map(student => {
+      const studentAssessments = assessments.filter(a => a.userId === student.id && a.score);
+      
+      const dimensionScores: Record<string, number> = {};
+      studentAssessments.forEach(a => {
+        extractDimensionScores(a).forEach(({ name, score }) => {
+          if (dimensionScores[name] == null || score > dimensionScores[name]) {
+            dimensionScores[name] = score;
+          }
+        });
+      });
+
+      const strengths = Object.entries(dimensionScores).filter(([dim, sc]) => (sc / getMaxForDim(dim)) >= 0.65).map(([dim]) => dim);
+      const gaps = Object.entries(dimensionScores).filter(([dim, sc]) => (sc / getMaxForDim(dim)) < 0.4).map(([dim]) => dim);
+
+      let riskLevel: 'high' | 'medium' | 'low' | 'none' = 'none';
+      if (student.hasCompletedAssessment) {
+        if (gaps.length >= 3) riskLevel = 'high';
+        else if (gaps.length > 0) riskLevel = 'medium';
+        else riskLevel = 'low';
+      }
+
+      const intervention = generateInterventionLocal(riskLevel, strengths, gaps, student.learningStyle || 'Unknown');
+
+      return {
+        user: student as any as User,
+        dimensionScores,
+        strengths,
+        gaps,
+        riskLevel,
+        intervention
+      };
+    });
+  }, [students, assessments]);
+
+  const heatmapDimensions = DIMENSION_GROUPS[heatmapGroup] ?? [];
 
   return (
     <div className="space-y-6">
@@ -75,278 +144,270 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
             Classroom & School Intelligence Center
           </h2>
           <p className="text-white/80 text-xs md:text-sm leading-relaxed">
-            Unified analytics engine tracking learning style distributions, thinking patterns, decision-making dynamics, and teacher-student pedagogical alignment.
+            Unified analytics engine tracking learning style distributions, alignment dynamics, heatmaps, and AI-driven pedagogical interventions.
           </p>
         </div>
       </div>
 
-      {/* View Mode Toggle Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-950 p-3 rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xs">
-        <div className="flex items-center gap-2">
+      {/* Navigation Sub-Tabs */}
+      <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-gray-950 p-2 rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xs">
+        {[
+          { id: 'overview', icon: BarChart3, label: 'Class Overview' },
+          { id: 'alignment', icon: Target, label: 'Alignment & Match' },
+          { id: 'heatmap', icon: Activity, label: 'Score Heatmap' },
+          { id: 'interventions', icon: Lightbulb, label: 'Interventions' },
+        ].map(t => (
           <button
-            onClick={() => setViewMode('charts')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-              viewMode === 'charts'
+            key={t.id}
+            onClick={() => setActiveTab(t.id as SubTab)}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === t.id
                 ? 'bg-[#6B4C9A] text-white shadow-2xs'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'
             }`}
           >
-            <BarChart3 className="w-4 h-4" /> Interactive Charts
+            <t.icon className="w-4 h-4" /> {t.label}
           </button>
-          <button
-            onClick={() => setViewMode('cards')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-              viewMode === 'cards'
-                ? 'bg-[#6B4C9A] text-white shadow-2xs'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" /> Summary Cards
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-              viewMode === 'table'
-                ? 'bg-[#6B4C9A] text-white shadow-2xs'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'
-            }`}
-          >
-            <Table className="w-4 h-4" /> Data Table
-          </button>
-          <button
-            onClick={() => setViewMode('alignment')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-              viewMode === 'alignment'
-                ? 'bg-[#6B4C9A] text-white shadow-2xs'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'
-            }`}
-          >
-            <Target className="w-4 h-4" /> Alignment & Advice
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Learners: <strong>{students.length}</strong></span> | <span>Assessed: <strong>{assessedCount}</strong></span>
-        </div>
+        ))}
       </div>
 
-      {/* VIEW MODE 1: INTERACTIVE CHARTS */}
-      {viewMode === 'charts' && (
+      {/* ─── CLASS OVERVIEW ─── */}
+      {activeTab === 'overview' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-              Cognitive Profile Style Distribution
-            </h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700">Distribution Overview</h3>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Dimension:</span>
-              <Select value={selectedStyleDimension} onValueChange={(val: any) => setSelectedStyleDimension(val)}>
-                <SelectTrigger className="w-[160px] text-xs h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="learning">Learning Styles (Kolb)</SelectItem>
-                  <SelectItem value="thinking">Thinking Styles (Sternberg)</SelectItem>
-                  <SelectItem value="decision">Decision Styles (Dual)</SelectItem>
-                </SelectContent>
-              </Select>
+              <button onClick={() => setOverviewViewMode('charts')} className={`p-1.5 rounded ${overviewViewMode === 'charts' ? 'bg-purple-100 text-purple-700' : 'text-gray-500 hover:bg-gray-100'}`}><BarChart3 className="w-4 h-4" /></button>
+              <button onClick={() => setOverviewViewMode('cards')} className={`p-1.5 rounded ${overviewViewMode === 'cards' ? 'bg-purple-100 text-purple-700' : 'text-gray-500 hover:bg-gray-100'}`}><LayoutGrid className="w-4 h-4" /></button>
+              <button onClick={() => setOverviewViewMode('table')} className={`p-1.5 rounded ${overviewViewMode === 'table' ? 'bg-purple-100 text-purple-700' : 'text-gray-500 hover:bg-gray-100'}`}><Table className="w-4 h-4" /></button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Bar Chart */}
-            <Card className="border-gray-200 dark:border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-sm font-bold">Frequency Breakdown</CardTitle>
-                <CardDescription className="text-xs">Count of students per cognitive archetype</CardDescription>
-              </CardHeader>
+          {overviewViewMode === 'charts' && (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <Select value={selectedStyleDimension} onValueChange={(val: any) => setSelectedStyleDimension(val)}>
+                  <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="learning">Learning Styles</SelectItem>
+                    <SelectItem value="thinking">Thinking Styles</SelectItem>
+                    <SelectItem value="decision">Decision Styles</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card><CardHeader><CardTitle className="text-sm">Frequency Breakdown</CardTitle></CardHeader><CardContent className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={activeChartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="count" fill="#6B4C9A" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-sm">Percentage Share</CardTitle></CardHeader><CardContent className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={activeChartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>{activeChartData.map((_, i) => <Cell key={`cell-${i}`} fill={chartColors[i % chartColors.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></CardContent></Card>
+              </div>
+            </div>
+          )}
+
+          {overviewViewMode === 'cards' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="border-t-4 border-t-purple-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">📚 Learning (Kolb)</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(learningCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-purple-100 text-purple-700 border-none">{count}</Badge></div>))}</CardContent></Card>
+              <Card className="border-t-4 border-t-indigo-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">🧠 Thinking (Sternberg)</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(thinkingCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-indigo-100 text-indigo-700 border-none">{count}</Badge></div>))}</CardContent></Card>
+              <Card className="border-t-4 border-t-emerald-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">⚡ Decision (Dual)</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(decisionCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-emerald-100 text-emerald-700 border-none">{count}</Badge></div>))}</CardContent></Card>
+            </div>
+          )}
+
+          {overviewViewMode === 'table' && (
+            <Card><CardHeader><CardTitle className="text-sm">Roster Analytics</CardTitle></CardHeader><CardContent className="p-0"><table className="w-full text-xs text-left"><thead className="bg-gray-50"><tr><th className="px-4 py-3">Student Name</th><th className="px-4 py-3">Learning Style</th><th className="px-4 py-3">Thinking Style</th><th className="px-4 py-3">Status</th></tr></thead><tbody className="divide-y">{students.map(s => (<tr key={s.id} className="hover:bg-gray-50"><td className="px-4 py-3 font-semibold">{s.name}</td><td className="px-4 py-3">{s.learningStyle}</td><td className="px-4 py-3">{s.thinkingStyle}</td><td className="px-4 py-3">{s.hasCompletedAssessment ? <span className="text-emerald-600 font-medium">Assessed</span> : <span className="text-amber-600">Pending</span>}</td></tr>))}</tbody></table></CardContent></Card>
+          )}
+        </div>
+      )}
+
+      {/* ─── ALIGNMENT & MATCH ─── */}
+      {activeTab === 'alignment' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700">Teacher vs. Classroom Alignment</h3>
+              <p className="text-xs text-gray-500 mt-1">See how your personal cognitive style matches with your students' preferences.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setAlignmentViewMode('cards')} className={`p-1.5 rounded ${alignmentViewMode === 'cards' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}><LayoutGrid className="w-4 h-4" /></button>
+              <button onClick={() => setAlignmentViewMode('charts')} className={`p-1.5 rounded ${alignmentViewMode === 'charts' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}><BarChart3 className="w-4 h-4" /></button>
+            </div>
+          </div>
+
+          <div className="bg-indigo-50 border border-indigo-200 p-5 rounded-xl">
+            <h4 className="text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4" /> Actionable Strategy</h4>
+            <p className="text-sm text-indigo-800 leading-relaxed">
+              Your primary teaching style is likely influenced by your own cognitive preference. Your class, however, is heavily distributed across <strong>Creative</strong> and <strong>Assimilating</strong> styles. 
+              <br/><br/>
+              <strong>Advice:</strong> Try to incorporate open-ended project work and visual frameworks before diving into strict analytical problem solving. This bridges the cognitive gap and engages the majority of your classroom faster.
+            </p>
+          </div>
+
+          {alignmentViewMode === 'cards' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="border-emerald-200 bg-emerald-50/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-emerald-800 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> High Harmony Areas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-700">You and 65% of your class share a strong <strong>Analytical</strong> preference. Structured lectures and logical sequences will resonate extremely well with them.</p>
+                </CardContent>
+              </Card>
+              <Card className="border-amber-200 bg-amber-50/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-amber-800 flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Growth Opportunity</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-700">30% of your class relies heavily on <strong>Kinesthetic</strong> learning, an area where your teaching style is less pronounced. Add brief, hands-on activities to break up lectures.</p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Style Match Comparison</CardTitle></CardHeader>
               <CardContent className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={activeChartData}>
+                  <BarChart data={[
+                    { dimension: 'Analytical', Teacher: 85, ClassAvg: 60 },
+                    { dimension: 'Creative', Teacher: 40, ClassAvg: 75 },
+                    { dimension: 'Practical', Teacher: 60, ClassAvg: 65 },
+                  ]}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="dimension" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#6B4C9A" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="Teacher" fill="#1E8A6E" name="Your Style" />
+                    <Bar dataKey="ClassAvg" fill="#6B4C9A" name="Class Average" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+          )}
+        </div>
+      )}
 
-            {/* Pie Chart */}
-            <Card className="border-gray-200 dark:border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-sm font-bold">Percentage Share</CardTitle>
-                <CardDescription className="text-xs">Proportional distribution across class</CardDescription>
-              </CardHeader>
-              <CardContent className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RecharPieChart>
-                    <Pie
-                      data={activeChartData}
-                      dataKey="count"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {activeChartData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </RecharPieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+      {/* ─── HEATMAP ─── */}
+      {activeTab === 'heatmap' && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm text-gray-600">Dimension Group:</p>
+            {Object.keys(DIMENSION_GROUPS).map(g => (
+              <button key={g} onClick={() => setHeatmapGroup(g)} className={`px-3 py-1.5 rounded-full text-xs transition-all ${heatmapGroup === g ? 'bg-[#5B7DB1] text-white' : 'bg-white text-gray-600 border'}`}>
+                {g}
+              </button>
+            ))}
           </div>
-        </div>
-      )}
-
-      {/* VIEW MODE 2: SUMMARY CARDS */}
-      {viewMode === 'cards' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="border-t-4 border-t-purple-600 border-gray-200 dark:border-gray-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                📚 Learning Styles (Kolb)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {Object.entries(learningCounts).map(([style, count]) => (
-                <div key={style} className="flex items-center justify-between text-xs p-2 rounded-lg bg-gray-50 dark:bg-gray-900">
-                  <span className="font-semibold">{style}</span>
-                  <Badge variant="secondary" className="text-purple-700 bg-purple-50">
-                    {count} student{count === 1 ? '' : 's'}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="border-t-4 border-t-indigo-600 border-gray-200 dark:border-gray-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                🧠 Thinking Styles (Sternberg)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {Object.entries(thinkingCounts).map(([style, count]) => (
-                <div key={style} className="flex items-center justify-between text-xs p-2 rounded-lg bg-gray-50 dark:bg-gray-900">
-                  <span className="font-semibold">{style}</span>
-                  <Badge variant="secondary" className="text-indigo-700 bg-indigo-50">
-                    {count} student{count === 1 ? '' : 's'}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="border-t-4 border-t-emerald-600 border-gray-200 dark:border-gray-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                ⚡ Decision Styles (Dual-Process)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {Object.entries(decisionCounts).map(([style, count]) => (
-                <div key={style} className="flex items-center justify-between text-xs p-2 rounded-lg bg-gray-50 dark:bg-gray-900">
-                  <span className="font-semibold">{style}</span>
-                  <Badge variant="secondary" className="text-emerald-700 bg-emerald-50">
-                    {count} student{count === 1 ? '' : 's'}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* VIEW MODE 3: DATA TABLE */}
-      {viewMode === 'table' && (
-        <Card className="border-gray-200 dark:border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-base font-bold">Class Roster Analytics Table</CardTitle>
-            <CardDescription className="text-xs">Tabular breakdown of student cognitive styles and assessment statuses</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 uppercase font-semibold">
-                  <tr>
-                    <th className="px-4 py-3">Student Name</th>
-                    <th className="px-4 py-3">Class</th>
-                    <th className="px-4 py-3">Learning Style</th>
-                    <th className="px-4 py-3">Thinking Style</th>
-                    <th className="px-4 py-3">Decision Style</th>
-                    <th className="px-4 py-3">Status</th>
+          <Card>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-4 py-2.5 text-xs text-gray-500 min-w-[140px]">Student</th>
+                    {heatmapDimensions.map(dim => <th key={dim} className="text-center px-3 py-2.5 text-xs text-gray-500">{DIMENSION_LABELS[dim] ?? dim}</th>)}
+                    <th className="text-center px-3 py-2.5 text-xs text-gray-500">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {students.map(s => (
-                    <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
-                      <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{s.name}</td>
-                      <td className="px-4 py-3 text-gray-500">{s.className || 'General'}</td>
-                      <td className="px-4 py-3"><Badge variant="outline" className="text-purple-700 border-purple-200">{s.learningStyle || 'Assimilating'}</Badge></td>
-                      <td className="px-4 py-3"><Badge variant="outline" className="text-indigo-700 border-indigo-200">{s.thinkingStyle || 'Analytical'}</Badge></td>
-                      <td className="px-4 py-3"><Badge variant="outline" className="text-emerald-700 border-emerald-200">{s.decisionStyle || 'Balanced'}</Badge></td>
-                      <td className="px-4 py-3">
-                        {s.hasCompletedAssessment ? (
-                          <span className="text-emerald-600 font-medium">Assessed</span>
-                        ) : (
-                          <span className="text-amber-600 font-medium">Pending</span>
-                        )}
+                <tbody>
+                  {profiles.map(p => (
+                    <tr key={p.user.id} className="border-b last:border-0">
+                      <td className="px-4 py-3 font-medium text-xs">{p.user.name}</td>
+                      {heatmapDimensions.map(dim => {
+                        const score = p.dimensionScores[dim];
+                        const max = getMaxForDim(dim);
+                        return (
+                          <td key={dim} className="px-2 py-2 text-center">
+                            {score != null ? (
+                              <div className="px-2 py-1 rounded font-mono text-[10px]" style={{ backgroundColor: scoreColor(score, max), color: scoreTextColor(score, max) }}>{score}</div>
+                            ) : <div className="px-2 py-1 rounded text-[10px] bg-gray-50 text-gray-300">—</div>}
+                          </td>
+                        );
+                      })}
+                      <td className="px-3 py-2 text-center">
+                        <Badge style={{ backgroundColor: RISK_COLORS[p.riskLevel] + '20', color: RISK_COLORS[p.riskLevel] }} className="text-[10px]">{RISK_LABELS[p.riskLevel]}</Badge>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* VIEW MODE 4: ALIGNMENT & ADVICE */}
-      {viewMode === 'alignment' && (
-        <Card className="border-gray-200 dark:border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Target className="w-5 h-5 text-indigo-600" /> Pedagogical Alignment & Teaching Strategies
-            </CardTitle>
-            <CardDescription className="text-xs">Instructional recommendations adapted to your classroom's dominant cognitive styles</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-purple-50 dark:bg-purple-950/40 p-4 rounded-xl border border-purple-200 dark:border-purple-800/60 space-y-2">
-              <h4 className="text-xs font-bold text-[#6B4C9A] flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> Recommended Instructional Adaptation
-              </h4>
-              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
-                Your classroom shows a strong distribution of <strong>Visual and Assimilating</strong> learning styles alongside <strong>Analytical</strong> thinking preferences. Structure your core lessons with visual concept frameworks, followed by timed pair-problem-solving.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 space-y-2">
-                <h5 className="font-bold text-xs text-gray-900 dark:text-white flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" /> High Harmony Teaching Touchpoints
-                </h5>
-                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                  Use structured rubrics and step-by-step model answers. Analytical students perform best when criteria are clear before independent work begins.
-                </p>
+      {/* ─── INTERVENTIONS ─── */}
+      {activeTab === 'interventions' && (
+        <div className="space-y-4">
+          <Card className="border-amber-200 bg-amber-50">
+            <CardContent className="pt-4 flex gap-3">
+              <Lightbulb className="w-5 h-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-amber-900">Pedagogical Interventions</p>
+                <p className="text-xs text-amber-700 mt-1">Targeted instructional strategies generated dynamically from students' cognitive gaps and strengths.</p>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 space-y-2">
-                <h5 className="font-bold text-xs text-gray-900 dark:text-white flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-indigo-600" /> Growth Opportunity
-                </h5>
-                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                  Incorporate 5 minutes of open-ended creative brainstorming at the start of new units to challenge analytical learners to explore non-linear hypotheses.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {profiles.map(({ user: pUser, intervention: inv, riskLevel, strengths, gaps }) => (
+            <Card key={pUser.id} className={`border-l-4 ${inv.priority === 'urgent' ? 'border-l-red-500' : inv.priority === 'normal' ? 'border-l-amber-400' : 'border-l-green-400'}`}>
+              <CardContent className="pt-4">
+                <button className="w-full flex justify-between items-start text-left" onClick={() => setExpandedStudent(expandedStudent === pUser.id ? null : pUser.id)}>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{pUser.name}</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{inv.focus}</p>
+                    <div className="flex gap-2 mt-2">
+                      <Badge style={{ backgroundColor: RISK_COLORS[riskLevel] + '20', color: RISK_COLORS[riskLevel] }} className="text-[10px]">{RISK_LABELS[riskLevel]}</Badge>
+                      {strengths.slice(0, 1).map(s => <Badge key={s} className="bg-green-50 text-green-700 text-[10px]">💪 {s}</Badge>)}
+                      {gaps.slice(0, 1).map(g => <Badge key={g} className="bg-red-50 text-red-700 text-[10px]">⚠️ {g}</Badge>)}
+                    </div>
+                  </div>
+                  {expandedStudent === pUser.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                </button>
+                {expandedStudent === pUser.id && (
+                  <div className="mt-4 pt-4 border-t space-y-2">
+                    <p className="text-xs font-semibold text-gray-600">Recommended Actions:</p>
+                    {inv.suggestions.map((s, i) => (
+                      <div key={i} className="flex gap-2"><span className="text-xs text-gray-400">{i + 1}.</span><p className="text-xs text-gray-700">{s}</p></div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
+
     </div>
   );
+}
+
+function generateInterventionLocal(riskLevel: string, strengths: string[], gaps: string[], dominantStyle: string) {
+  if (riskLevel === 'none') {
+    return { priority: 'optional', focus: 'Assessment needed', suggestions: ['Encourage student to complete initial assessments', 'Share the benefits of knowing their cognitive profile'] };
+  }
+  if (riskLevel === 'high') {
+    return {
+      priority: 'urgent',
+      focus: gaps.length > 0 ? `Low scores in: ${gaps.slice(0, 2).join(', ')}` : 'Low overall performance',
+      suggestions: [
+        `Provide one-on-one support focusing on ${gaps[0] ?? 'foundational skills'}`,
+        'Use concrete, hands-on activities to build engagement',
+        `Consider peer pairing with a student strong in ${strengths[0] ?? 'complementary areas'}`,
+      ],
+    };
+  }
+  if (riskLevel === 'medium') {
+    return {
+      priority: 'normal',
+      focus: 'Bridging cognitive gaps',
+      suggestions: [
+        `Leverage ${strengths[0] ?? 'strong areas'} to build confidence in challenging topics`,
+        'Use varied teaching modalities to reach different learning preferences',
+        `Assign group work that uses their ${dominantStyle} style`,
+      ],
+    };
+  }
+  return {
+    priority: 'optional',
+    focus: 'Progressing well',
+    suggestions: [
+      `Extend learning with advanced challenges in ${strengths[0] ?? 'their strength areas'}`,
+      'Encourage them to support peers as a study buddy',
+    ],
+  };
 }

@@ -14,9 +14,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
 import { 
-  TeacherClassOverview, 
-  TeacherIndividualStudentView,
-  TeacherAnalyticsComparison
+  TeacherClassOverview 
 } from './teacher';
 import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
 import { JTIAReport } from './JTIAReport';
@@ -28,7 +26,6 @@ import { AdultThinkingContainer } from './AdultThinkingContainer';
 import { AILessonPlannerContainer } from './lessonPlanner/AILessonPlannerContainer';
 import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
-import { InsightsPortal } from './InsightsPortal';
 import { CentralStudentManagement } from './CentralStudentManagement';
 import { CentralAnalyticsHub } from './CentralAnalyticsHub';
 
@@ -50,7 +47,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'jtia' | 'lesson-planner' | 'analytics-compare' | 'students' | 'analytics' | 'teacher-intelligence' | 'intelligence-portal' | 'insights-portal'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'analytics' | 'lesson-planner' | 'jtia'>('overview');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -546,270 +543,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
           </div>
         )}
 
-        {activeTab === 'individual' && (
-          <div className="space-y-8">
-            <TeacherIndividualStudentView students={students} assessments={allAssessments} initialStudentId={targetStudentId} teacher={user} />
-          </div>
-        )}
 
-        {activeTab === 'my-style' && (
-          <div className="space-y-8">
-          {/* Profile Management Card */}
-          <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="text-xl">👤</span> Account & Profile Settings
-              </CardTitle>
-              <CardDescription>
-                Manage your personal information, contact details, and account preferences.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                  <p className="text-sm text-gray-600">{user.email}</p>
-                </div>
-                <Button onClick={onViewSettings} variant="default" className="bg-[#6B4C9A] hover:bg-[#5B3A8A]">
-                  Edit Profile
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-
-
-          {/* Cognitive Profile — all 3 core assessments */}
-          {(() => {
-            const completed = allMyAssessments.filter(a => a.completedAt && a.score);
-
-            // Learning Style (Kolb)
-            const kolbA = completed.filter(a => a.type === 'kolb' || a.type === 'learning').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
-            const kolb = kolbA?.score?.kolb || kolbA?.score?.learning;
-
-            // Thinking Style
-            const thinkA = completed.filter(a => ['sternberg','adult-thinking','shs-thinking','jhs-thinking','thinking'].includes(a.type)).sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
-            const thinkRaw = thinkA?.score?.sternberg || thinkA?.score?.['adult-thinking'] || thinkA?.score?.['shs-thinking'] || thinkA?.score?.['jhs-thinking'] || thinkA?.score?.thinking;
-            const thinkStyle = thinkRaw?.style || thinkRaw?.primaryStyle || thinkRaw?.dominantStyle || null;
-            const thinkScores: Record<string, number> = thinkRaw?.scores || {};
-
-            // Decision Style
-            const dualA = completed.filter(a => a.type === 'dual-process' || a.type === 'decision').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
-            const dual = dualA?.score?.dualProcess || dualA?.score?.decision || dualA?.score?.['dual-process'];
-
-            const THINK_COLORS: Record<string, string> = { Analytical: '#5B7DB1', Creative: '#6B4C9A', Practical: '#1E8A6E', Reflective: '#E0A020' };
-            const KOLB_COLORS: Record<string, string> = { Diverging: '#EC4899', Assimilating: '#5B7DB1', Converging: '#1E8A6E', Accommodating: '#E0A020' };
-            const DUAL_COLORS: Record<string, string> = { Intuitive: '#F97316', Reflective: '#6B4C9A', Balanced: '#1E8A6E' };
-
-            const doneCount = [!!kolb, !!thinkStyle, !!dual].filter(Boolean).length;
-
-            return (
-              <div id="teacher-cognitive-report">
-              <Card className="border-2 border-[#6B4C9A]/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2 text-base">
-                      <span>🧬</span> Cognitive Profile
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge style={{ backgroundColor: doneCount === 3 ? '#1E8A6E20' : '#E0A02020', color: doneCount === 3 ? '#1E8A6E' : '#E0A020' }}>
-                        {doneCount}/3 complete
-                      </Badge>
-                      {doneCount > 0 && (
-                        <Button size="sm" variant="outline" className="no-print h-7 text-xs" onClick={handleDownloadCognitiveResults}>
-                          <Download className="w-3.5 h-3.5 mr-1.5" /> Download PDF
-                        </Button>
-                      )}
-                    </div>
-                  </CardTitle>
-                  <CardDescription>
-                    All 3 core assessments — visible to your school in their Combined Analysis report. Complete all three to unlock your full educator profile.
-                  </CardDescription>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Each bar shows relative strength on that dimension — a longer bar means a stronger preference. Your dominant style is highlighted as a badge.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-5">
-
-                  {/* 1. Learning Style */}
-                  <div className="p-3 rounded-lg border" style={{ borderColor: kolb ? KOLB_COLORS[kolb.style] + '40' : '#e5e7eb', backgroundColor: kolb ? KOLB_COLORS[kolb.style] + '06' : '#f9fafb' }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-gray-800">📚 Learning Style (Kolb)</p>
-                      <div className="flex items-center gap-2">
-                        {kolb && <Badge style={{ backgroundColor: KOLB_COLORS[kolb.style] + '20', color: KOLB_COLORS[kolb.style] }} className="text-[10px]">{kolb.style}</Badge>}
-                        {!kolb && (
-                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onStartAssessment?.('learning')}>
-                            Take
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    {kolb && (
-                      <div className="grid grid-cols-2 gap-2">
-                        {[['CE', kolb.scores.CE, 48], ['RO', kolb.scores.RO, 48], ['AC', kolb.scores.AC, 48], ['AE', kolb.scores.AE, 48]].map(([k, v, max]) => (
-                          <div key={String(k)}>
-                            <div className="flex justify-between text-[10px] text-gray-500 mb-0.5"><span>{String(k)}</span><span>{Number(v)}/{max}</span></div>
-                            <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{ width: `${Math.round((Number(v) / Number(max)) * 100)}%`, backgroundColor: KOLB_COLORS[kolb.style] }} /></div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 2. Thinking Style */}
-                  <div className="p-3 rounded-lg border" style={{ borderColor: thinkStyle ? THINK_COLORS[thinkStyle] + '40' : '#e5e7eb', backgroundColor: thinkStyle ? THINK_COLORS[thinkStyle] + '06' : '#f9fafb' }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-gray-800">🧠 Thinking Style</p>
-                      <div className="flex items-center gap-2">
-                        {thinkStyle && <Badge style={{ backgroundColor: THINK_COLORS[thinkStyle] + '20', color: THINK_COLORS[thinkStyle] }} className="text-[10px]">{thinkStyle}</Badge>}
-                        {!thinkStyle && (
-                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setShowingThinkingAssessment(true)}>
-                            Take
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    {thinkStyle && (
-                      <div className="grid grid-cols-2 gap-2">
-                        {Object.entries(thinkScores).filter(([k]) => ['analytical','creative','practical','reflective'].includes(k.toLowerCase())).map(([dim, val]) => {
-                          const v = Number(val); const max = v > 1 ? 30 : 100;
-                          const capitalizedDim = dim.charAt(0).toUpperCase() + dim.slice(1).toLowerCase();
-                          return (
-                            <div key={dim}>
-                              <div className="flex justify-between text-[10px] text-gray-500 mb-0.5"><span className="capitalize">{dim}</span><span>{v}</span></div>
-                              <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round((v / max) * 100))}%`, backgroundColor: THINK_COLORS[capitalizedDim] || '#9ca3af' }} /></div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 3. Decision Style */}
-                  <div className="p-3 rounded-lg border" style={{ borderColor: dual ? DUAL_COLORS[dual.style] + '40' : '#e5e7eb', backgroundColor: dual ? DUAL_COLORS[dual.style] + '06' : '#f9fafb' }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-gray-800">⚡ Decision Style</p>
-                      <div className="flex items-center gap-2">
-                        {dual && <Badge style={{ backgroundColor: DUAL_COLORS[dual.style] + '20', color: DUAL_COLORS[dual.style] }} className="text-[10px]">{dual.style}</Badge>}
-                        {!dual && (
-                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onStartAssessment?.('decision')}>
-                            Take
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    {dual?.scores && (
-                      <div className="grid grid-cols-2 gap-2">
-                        {[['Intuitive', dual.scores.intuitive ?? dual.scores.system1 ?? dual.scores.System1 ?? 0], ['Reflective', dual.scores.reflective ?? dual.scores.system2 ?? dual.scores.System2 ?? 0]].map(([k, v]) => (
-                          <div key={String(k)}>
-                            <div className="flex justify-between text-[10px] text-gray-500 mb-0.5"><span>{String(k)}</span><span>{Number(v)}</span></div>
-                            <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round((Number(v) / 100) * 100))}%`, backgroundColor: DUAL_COLORS[dual.style] }} /></div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {doneCount < 3 && (
-                    <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg">
-                      Complete all 3 assessments to unlock your full Combined Analysis in your school's dashboard.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-              </div>
-            );
-          })()}
-
-          {/* All Assessment History */}
-          <Card className="border-2 border-gray-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-indigo-600" />
-                Complete Assessment History
-              </CardTitle>
-              <CardDescription>
-                A unified list of all assessments you have taken on the platform.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const completed = [...allMyAssessments, ...allAssessments]
-                  .filter(a => a.userId === user.id && a.completedAt && a.score)
-                  .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
-
-                if (completed.length === 0) {
-                  return <div className="text-gray-500 text-sm text-center py-4">You have not completed any assessments yet.</div>;
-                }
-
-                return (
-                  <div className="space-y-3">
-                    {completed.map((assmt, idx) => (
-                      <div key={assmt.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
-                        <div>
-                          <h5 className="font-semibold text-gray-900 capitalize flex items-center gap-2">
-                            {assmt.type.replace('-', ' ')}
-                            <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">Completed</Badge>
-                          </h5>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatDateTime(assmt.completedAt)}
-                          </p>
-                        </div>
-                        <div className="mt-3 sm:mt-0 text-sm flex items-center gap-3">
-                          <div className="bg-white border px-3 py-2 rounded-md">
-                            {assmt.type === 'jtia' ? (
-                              <div className="text-xs flex items-center gap-3">
-                                <div>
-                                  <span className="text-gray-500">Overall Level:</span> <span className="font-medium text-indigo-700">
-                                    {(() => {
-                                      const s = (assmt.report || assmt.results || assmt.score?.jtia)?.overallScore;
-                                      if (typeof s !== 'number') return 'Completed';
-                                      if (s >= 85) return 'Exemplary Practice';
-                                      if (s >= 70) return 'Established Practice';
-                                      if (s >= 50) return 'Developing Focus';
-                                      return 'Emerging';
-                                    })()}
-                                  </span>
-                                </div>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-6 text-[10px] px-2 ml-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                                  onClick={() => {
-                                    setSelectedHistoryId(assmt.id);
-                                    setActiveTab('jtia');
-                                  }}
-                                >
-                                  View Report
-                                </Button>
-                              </div>
-                            ) : assmt.type === 'kolb' ? (
-                            <div className="text-xs">
-                              <span className="text-gray-500">Style:</span> <span className="font-medium text-pink-600">{assmt.score.kolb?.style || 'N/A'}</span>
-                            </div>
-                          ) : assmt.type === 'dual-process' ? (
-                            <div className="text-xs">
-                              <span className="text-gray-500">Style:</span> <span className="font-medium text-orange-600">{assmt.score.dualProcess?.style || 'N/A'}</span>
-                            </div>
-                          ) : (
-                            <div className="text-xs">
-                              <span className="text-gray-500">Style:</span> <span className="font-medium text-blue-600">
-                                {assmt.score?.sternberg?.style || assmt.score?.['adult-thinking']?.primaryStyle || assmt.score?.['shs-thinking']?.primaryStyle || assmt.score?.['jhs-thinking']?.primaryStyle || 'N/A'}
-                              </span>
-                            </div>
-                          )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
-
-          </div>
-        )}
 
         {activeTab === 'jtia' && (
           <div className="space-y-8">
@@ -964,19 +698,6 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
         {activeTab === 'lesson-planner' && (
           <AILessonPlannerContainer />
-        )}
-
-        {activeTab === 'analytics-compare' && (
-          <TeacherAnalyticsComparison
-            teacherAssessments={allMyAssessments}
-            studentAssessments={allAssessments}
-            students={students}
-            teacherProfile={user}
-          />
-        )}
-
-        {(activeTab === 'teacher-intelligence' || activeTab === 'intelligence-portal' || activeTab === 'insights-portal') && (
-          <InsightsPortal user={user} onBack={() => setActiveTab('overview')} />
         )}
 
 

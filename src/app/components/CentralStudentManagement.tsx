@@ -12,7 +12,7 @@ import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { StudentDetailView } from './StudentDetailView';
 
 interface CentralStudentManagementProps {
-  students: StudentCognitiveProfile[];
+  students: any[];
   assessments: any[];
   teacher: any;
 }
@@ -191,9 +191,24 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
 
                         <div className="flex items-center gap-2 shrink-0">
                           {student.hasCompletedAssessment ? (
-                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> Assessed
-                            </Badge>
+                            <>
+                              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] hidden sm:flex">
+                                <CheckCircle2 className="w-3 h-3 mr-1" /> Assessed
+                              </Badge>
+                              {!isSelected && (
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-7 px-2 text-[10px] text-emerald-700 hover:text-emerald-800 hover:bg-emerald-100 bg-emerald-50 border border-emerald-200"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedStudentId(student.id);
+                                  }}
+                                >
+                                  View Profile
+                                </Button>
+                              )}
+                            </>
                           ) : (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
                               <Clock className="w-3 h-3 mr-1" /> Pending
