@@ -2974,7 +2974,7 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
       type,
     });
 
-    console.log(`[send-otp] Stored OTP for ${cleanEmail}: ${code}`);
+    console.log(`[send-otp] OTP stored for ${cleanEmail}`);
 
     // Determine subject & template content based on email type
     let subject = '✨ JotMinds — Account Verification Code';
@@ -3052,7 +3052,6 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
 
     return c.json({
       success: true,
-      otp: code,
       emailSent,
       message: emailSent ? `Verification code sent to ${cleanEmail}` : `Verification code generated for ${cleanEmail}`
     });
@@ -3074,9 +3073,8 @@ app.post('/make-server-fc8eb847/verify-otp', async (c) => {
     const cleanOtp = otp.trim();
 
     const stored = await kv.get(`otp:${cleanEmail}`);
-    const isMasterCode = cleanOtp === '123456' || cleanOtp === '000000';
 
-    if ((stored && stored.otp === cleanOtp) || isMasterCode) {
+    if (stored && stored.otp === cleanOtp) {
       // Clear OTP after successful use
       if (stored) await kv.del(`otp:${cleanEmail}`);
       return c.json({ verified: true, message: 'OTP verified successfully' });
@@ -3104,7 +3102,7 @@ app.post('/make-server-fc8eb847/request-password-reset', async (c) => {
       createdAt: new Date().toISOString()
     });
 
-    console.log(`[request-password-reset] Reset code generated for ${cleanEmail}: ${otp}`);
+    console.log(`[request-password-reset] Reset code stored for ${cleanEmail}`);
 
     // Try sending email via Resend
     const resendKey = Deno.env.get('RESEND_API_KEY') || '';
@@ -3147,7 +3145,6 @@ app.post('/make-server-fc8eb847/request-password-reset', async (c) => {
 
     return c.json({
       success: true,
-      otp,
       emailSent,
       message: `Password reset code sent to ${cleanEmail}`
     });

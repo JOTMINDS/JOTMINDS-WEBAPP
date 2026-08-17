@@ -646,20 +646,11 @@ export function getMemberCountsByStatus(members: InstitutionMember[]): { total: 
 
 // ─── OTP (Backend OTP Verification Integrations) ──────────────────────────────
 
-export async function generateOTP(contact: string, type: string = 'login'): Promise<string> {
+export async function generateOTP(contact: string, type: string = 'login'): Promise<void> {
   const cleanContact = contact.trim().toLowerCase();
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  
-  // Store locally for fallback verification
-  try {
-    localStorage.setItem(`jotminds_otp_${cleanContact}`, JSON.stringify({ otp, createdAt: Date.now() }));
-  } catch (e) {
-    console.warn('[OTP] Local storage write warning:', e);
-  }
-
   const isEmail = contact.includes('@');
 
-  // Dispatch real email via backend /send-otp route (Resend + Supabase Auth Admin integration)
+  // Dispatch email via backend /send-otp route (Resend + Supabase Auth Admin integration)
   if (isEmail) {
     try {
       const response = await fetch(`${BASE_URL}/send-otp`, {
@@ -668,62 +659,33 @@ export async function generateOTP(contact: string, type: string = 'login'): Prom
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${publicAnonKey}`
         },
-        body: JSON.stringify({ email: cleanContact, otp, type })
+        body: JSON.stringify({ email: cleanContact, type })
       });
 
       if (!response.ok) {
-        console.warn('[OTP] Backend /send-otp returned status:', response.status);
-      } else {
-        console.log('[OTP] Verification code sent successfully to:', cleanContact);
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed to send verification code (${response.status})`);
       }
-    } catch (error: any) {
-      console.warn('[OTP] Backend /send-otp error:', error?.message);
-    }
-  }
 
-  console.log(`[OTP] Generated verification code for ${contact}: ${otp}`);
-  return otp;
+      const data = await response.json();
+      if (!data.emailSent) {
+        console.warn('[OTP] Server processed request but email delivery may be pending');
+      }
+      console.log('[OTP] Verification code sent to:', cleanContact);
+    } catch (error: any) {
+      console.error('[OTP] Backend /send-otp error:', error?.message);
+      throw error;
+    }
+  } else {
+    throw new Error('OTP via email only. Please provide a valid email address.');
+  }
 }
 
 export async function verifyOTP(contact: string, entered: string): Promise<boolean> {
   if (!entered) return false;
-  const cleanContact = contact.trim().toLowerCase();
   const cleanEntered = entered.trim();
 
-  // 1. Check direct local storage OTP record
-  try {
-    const storedRaw = localStorage.getItem(`jotminds_otp_${cleanContact}`);
-    if (storedRaw) {
-      const stored = JSON.parse(storedRaw);
-      if (stored && stored.otp === cleanEntered) {
-        localStorage.removeItem(`jotminds_otp_${cleanContact}`);
-        return true;
-      }
-    }
-  } catch (e) {
-    console.warn('[OTP] Local verification check warning:', e);
-  }
-
-  // 2. Scan all local storage OTP keys in case contact format varies (e.g. phone formatting differences)
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('jotminds_otp_')) {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const stored = JSON.parse(raw);
-          if (stored && stored.otp === cleanEntered) {
-            localStorage.removeItem(key);
-            return true;
-          }
-        }
-      }
-    }
-  } catch (e) {
-    console.warn('[OTP] Storage scan warning:', e);
-  }
-
-  // 3. Attempt server verification as secondary check
+  // Server-side verification only via KV store
   try {
     const token = await getAuthToken();
     const res = await fetch(`${BASE_URL}/verify-otp`, {
@@ -732,15 +694,15 @@ export async function verifyOTP(contact: string, entered: string): Promise<boole
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token || publicAnonKey}` 
       },
-      body: JSON.stringify({ email: contact, otp: cleanEntered })
+      body: JSON.stringify({ email: contact.trim().toLowerCase(), otp: cleanEntered })
     });
     
     if (res.ok) {
       const data = await res.json();
       if (data.verified) return true;
     }
-  } catch {
-    // Ignore server error and fallback
+  } catch (err) {
+    console.error('[OTP] Server verification error:', err);
   }
 
   return false;

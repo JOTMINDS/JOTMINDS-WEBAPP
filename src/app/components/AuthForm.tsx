@@ -53,7 +53,6 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
   
   // OTP States
   const [signupOTP, setSignupOTP] = useState('');
-  const [simulatedSignupOTP, setSimulatedSignupOTP] = useState('');
 
   const [inviteToken, setInviteToken] = useState('');
   const [inviteEmailLocked, setInviteEmailLocked] = useState(false);
@@ -314,10 +313,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
     if (!email.trim()) return;
     try {
       const cleanEmail = email.trim().toLowerCase();
-      const code = await generateOTP(cleanEmail);
-      if (code) {
-        setSimulatedSignupOTP(code);
-      }
+      await generateOTP(cleanEmail);
       toast.success('Verification code sent! Check your inbox.');
     } catch (err: any) {
       setError(err.message || 'Failed to resend code');
@@ -344,7 +340,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         if (loginMethod === 'otp') {
           if (!otpSent) {
             console.log('[AuthForm] Requesting OTP...');
-            const code = await generateOTP(cleanEmail);
+            await generateOTP(cleanEmail);
             setOtpSent(true);
             setError('');
             toast.success(`6-digit verification code sent to ${cleanEmail}`);
@@ -446,10 +442,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         if (registrationStep === 4) {
           console.log('[AuthForm] Step 4 complete. Sending 6-digit OTP verification code to:', cleanEmail);
           try {
-            const code = await generateOTP(cleanEmail);
-            if (code) {
-              setSimulatedSignupOTP(code);
-            }
+            await generateOTP(cleanEmail);
             setRegistrationStep(5);
             setError('');
           } catch (otpErr: any) {

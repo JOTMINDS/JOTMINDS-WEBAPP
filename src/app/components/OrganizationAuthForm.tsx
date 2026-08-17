@@ -49,14 +49,13 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
   const [phoneSent, setPhoneSent] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
-  const [simulatedEmailOTP, setSimulatedEmailOTP] = useState('');
-  const [simulatedPhoneOTP, setSimulatedPhoneOTP] = useState('');
+
 
   // Login OTP States
   const [loginOTPMode, setLoginOTPMode] = useState(false);
   const [loginOTP, setLoginOTP] = useState('');
   const [loginOTPSent, setLoginOTPSent] = useState(false);
-  const [simulatedLoginOTP, setSimulatedLoginOTP] = useState('');
+
   const [pendingSession, setPendingSession] = useState<any>(null);
 
   // Step validation functions
@@ -143,8 +142,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
     if (sendingPhone) return;
     try {
       setSendingPhone(true);
-      const otp = await generateOTP(phone);
-      setSimulatedPhoneOTP(otp);
+      await generateOTP(phone);
       setPhoneSent(true);
       setError('');
     } catch (err) {

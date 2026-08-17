@@ -35,9 +35,9 @@ export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormPro
 
       const cleanEmail = email.trim().toLowerCase();
       
-      // Send OTP code via generateOTP (calls backend /send-otp and Resend)
-      const code = await generateOTP(cleanEmail);
-      console.log('[ForgotPassword] Code generated for', cleanEmail, ':', code);
+      // Send OTP code via backend /send-otp route (Resend email)
+      await generateOTP(cleanEmail, 'password-reset');
+      console.log('[ForgotPassword] Verification code sent to', cleanEmail);
 
       // Also trigger Supabase native reset as secondary attempt
       try {

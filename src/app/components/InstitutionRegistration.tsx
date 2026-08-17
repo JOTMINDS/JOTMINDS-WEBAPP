@@ -114,8 +114,7 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
   const [phoneSent, setPhoneSent] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
-  const [simulatedEmailOTP, setSimulatedEmailOTP] = useState('');
-  const [simulatedPhoneOTP, setSimulatedPhoneOTP] = useState('');
+
 
   // Step 4 — Profile
   const [logo, setLogo] = useState('');
@@ -172,8 +171,7 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
     if (sendingPhone) return;
     try {
       setSendingPhone(true);
-      const otp = await generateOTP(phone);
-      setSimulatedPhoneOTP(otp); // In production, send via SMS
+      await generateOTP(phone);
       setPhoneSent(true);
       setError('');
     } catch (err) {
