@@ -211,7 +211,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
   };
 
   const getChartData = () => {
-    if (assessment.score.kolb) {
+    if (assessment?.score?.kolb?.scores) {
       return [
         { 
           name: 'Concrete Experience', 
@@ -242,7 +242,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           description: 'Learning through doing and testing'
         },
       ];
-    } else if (assessment.score.sternberg) {
+    } else if (assessment?.score?.sternberg?.scores) {
       return [
         { 
           name: 'Analytical', 
@@ -263,8 +263,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           description: 'Real-world application and common sense'
         },
       ];
-    } else if (assessment.score.dualProcess) {
-      // Handle both naming conventions: system1/system2 (old) and Intuitive/Reflective (new from server)
+    } else if (assessment?.score?.dualProcess?.scores) {
       const scores = assessment.score.dualProcess.scores;
       const system1Score = scores.system1 || (scores as any).Intuitive || 0;
       const system2Score = scores.system2 || (scores as any).Reflective || 0;
@@ -812,7 +811,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                   </h4>
                   <div className="text-indigo-900 font-medium">{((insights as any)?.organizationalFit?.recommendedRoles || []).join(', ')}</div>
                   <div className="space-y-2">
-                    {((insights as any).organizationalFit.details || []).map((fit: string, index: number) => (
+                    {(((insights as any)?.organizationalFit?.details || (Array.isArray((insights as any)?.organizationalFit) ? (insights as any)?.organizationalFit : []))).map((fit: string, index: number) => (
                       <div key={index} className="flex items-start gap-2">
                         <span className="text-purple-600 dark:text-purple-400 mt-0.5">•</span>
                         <p className="text-sm text-[rgb(133,13,242)] dark:text-purple-300 flex-1">
@@ -830,7 +829,11 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     Overall Assessment
                   </h4>
                   <p className="text-sm opacity-95">
-                    {getOrganizationalAssessmentText(assessment.type, mainStyle, (insights as any).organizationalFit[0]?.split(':')[1]?.trim() || '')}
+                    {getOrganizationalAssessmentText(
+                      assessment.type, 
+                      mainStyle, 
+                      (Array.isArray((insights as any)?.organizationalFit) ? (insights as any)?.organizationalFit[0] : (insights as any)?.organizationalFit?.details?.[0])?.split?.(':')[1]?.trim() || ''
+                    )}
                   </p>
                 </div>
               </>
@@ -1255,7 +1258,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
         {!isOrganizational && (
           <>
             {/* Profile Badge */}
-            {assessment.score.kolb && (
+            {assessment?.score?.kolb?.scores && (
               <ProfileBadge
                 style={mainStyle}
                 level={0}
@@ -1268,7 +1271,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                 maxScore={60}
               />
             )}
-            {assessment.score.sternberg && (
+            {assessment?.score?.sternberg?.scores && (
               <ProfileBadge
                 style={mainStyle}
                 level={0}
@@ -1280,7 +1283,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                 maxScore={60}
               />
             )}
-            {assessment.score.dualProcess && (
+            {assessment?.score?.dualProcess?.scores && (
               <ProfileBadge
                 style={mainStyle}
                 level={0}
@@ -1295,21 +1298,21 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
             {/* Radar Chart Visualization */}
             <Card>
               <CardContent className="pt-6">
-                {assessment.score.kolb && (
+                {assessment?.score?.kolb?.scores && (
                   <RadarChartWidget
                     data={prepareKolbRadarData(assessment.score.kolb.scores)}
                     title="Your Learning Profile Spectrum"
                     description="Visual representation of your learning dimensions"
                   />
                 )}
-                {assessment.score.sternberg && (
+                {assessment?.score?.sternberg?.scores && (
                   <RadarChartWidget
                     data={prepareSternbergRadarData(assessment.score.sternberg.scores)}
                     title="Your Thinking Style Spectrum"
                     description="Visual representation of your thinking dimensions"
                   />
                 )}
-                {assessment.score.dualProcess && (
+                {assessment?.score?.dualProcess?.scores && (
                   <RadarChartWidget
                     data={prepareDualProcessRadarData(assessment.score.dualProcess.scores)}
                     title="Your Decision Style Spectrum"
@@ -1322,7 +1325,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
             {/* Peer Comparison */}
             <Card>
               <CardContent className="pt-6">
-                {assessment.score.kolb && (
+                {assessment?.score?.kolb?.scores && (
                   <PeerComparison
                     data={generatePeerComparisonData(
                       {
@@ -1335,7 +1338,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     )}
                   />
                 )}
-                {assessment.score.sternberg && (
+                {assessment?.score?.sternberg?.scores && (
                   <PeerComparison
                     data={generatePeerComparisonData(
                       assessment.score.sternberg.scores,
@@ -1343,7 +1346,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     )}
                   />
                 )}
-                {assessment.score.dualProcess && (
+                {assessment?.score?.dualProcess?.scores && (
                   <PeerComparison
                     data={generatePeerComparisonData(
                       {

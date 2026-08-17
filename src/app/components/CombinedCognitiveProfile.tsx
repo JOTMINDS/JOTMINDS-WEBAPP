@@ -131,37 +131,37 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
   const radarData = [
     {
       dimension: 'Concrete Experience',
-      value: latestKolb.score.kolb?.scores.CE || 0,
+      value: latestKolb?.score?.kolb?.scores?.CE || 0,
       fullMark: 48,
     },
     {
       dimension: 'Reflective Observation',
-      value: latestKolb.score.kolb?.scores.RO || 0,
+      value: latestKolb?.score?.kolb?.scores?.RO || 0,
       fullMark: 48,
     },
     {
       dimension: 'Abstract Conceptualization',
-      value: latestKolb.score.kolb?.scores.AC || 0,
+      value: latestKolb?.score?.kolb?.scores?.AC || 0,
       fullMark: 48,
     },
     {
       dimension: 'Active Experimentation',
-      value: latestKolb.score.kolb?.scores.AE || 0,
+      value: latestKolb?.score?.kolb?.scores?.AE || 0,
       fullMark: 48,
     },
     {
       dimension: 'Analytical Thinking',
-      value: latestSternberg.score.sternberg?.scores.analytical || 0,
+      value: latestSternberg?.score?.sternberg?.scores?.analytical || 0,
       fullMark: 35,
     },
     {
       dimension: 'Creative Thinking',
-      value: latestSternberg.score.sternberg?.scores.creative || 0,
+      value: latestSternberg?.score?.sternberg?.scores?.creative || 0,
       fullMark: 35,
     },
     {
       dimension: 'Practical Thinking',
-      value: latestSternberg.score.sternberg?.scores.practical || 0,
+      value: latestSternberg?.score?.sternberg?.scores?.practical || 0,
       fullMark: 35,
     },
     {
@@ -182,16 +182,16 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
   const comparisonData = [
     {
       framework: 'Learning',
-      CE: latestKolb.score.kolb?.scores.CE || 0,
-      RO: latestKolb.score.kolb?.scores.RO || 0,
-      AC: latestKolb.score.kolb?.scores.AC || 0,
-      AE: latestKolb.score.kolb?.scores.AE || 0,
+      CE: latestKolb?.score?.kolb?.scores?.CE || 0,
+      RO: latestKolb?.score?.kolb?.scores?.RO || 0,
+      AC: latestKolb?.score?.kolb?.scores?.AC || 0,
+      AE: latestKolb?.score?.kolb?.scores?.AE || 0,
     },
     {
       framework: 'Thinking',
-      Analytical: latestSternberg.score.sternberg?.scores.analytical || 0,
-      Creative: latestSternberg.score.sternberg?.scores.creative || 0,
-      Practical: latestSternberg.score.sternberg?.scores.practical || 0,
+      Analytical: latestSternberg?.score?.sternberg?.scores?.analytical || 0,
+      Creative: latestSternberg?.score?.sternberg?.scores?.creative || 0,
+      Practical: latestSternberg?.score?.sternberg?.scores?.practical || 0,
     },
     {
       framework: 'Decision',

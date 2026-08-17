@@ -67,18 +67,18 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
         date: formatChartDate(assessment.completedAt)
       };
 
-      if (type === 'kolb' && assessment.score.kolb) {
-        dataPoint.CE = assessment.score.kolb.scores.CE;
-        dataPoint.RO = assessment.score.kolb.scores.RO;
-        dataPoint.AC = assessment.score.kolb.scores.AC;
-        dataPoint.AE = assessment.score.kolb.scores.AE;
-      } else if (type === 'sternberg' && assessment.score.sternberg) {
-        dataPoint.Analytical = assessment.score.sternberg.scores.analytical;
-        dataPoint.Creative = assessment.score.sternberg.scores.creative;
-        dataPoint.Practical = assessment.score.sternberg.scores.practical;
-      } else if (type === 'dual-process' && assessment.score.dualProcess) {
-        dataPoint.Intuitive = assessment.score.dualProcess.scores.system1;
-        dataPoint.Reflective = assessment.score.dualProcess.scores.system2;
+      if (type === 'kolb' && assessment?.score?.kolb?.scores) {
+        dataPoint.CE = assessment.score.kolb.scores.CE || 0;
+        dataPoint.RO = assessment.score.kolb.scores.RO || 0;
+        dataPoint.AC = assessment.score.kolb.scores.AC || 0;
+        dataPoint.AE = assessment.score.kolb.scores.AE || 0;
+      } else if (type === 'sternberg' && assessment?.score?.sternberg?.scores) {
+        dataPoint.Analytical = assessment.score.sternberg.scores.analytical || 0;
+        dataPoint.Creative = assessment.score.sternberg.scores.creative || 0;
+        dataPoint.Practical = assessment.score.sternberg.scores.practical || 0;
+      } else if (type === 'dual-process' && assessment?.score?.dualProcess?.scores) {
+        dataPoint.Intuitive = assessment.score.dualProcess.scores.system1 || (assessment.score.dualProcess.scores as any).Intuitive || 0;
+        dataPoint.Reflective = assessment.score.dualProcess.scores.system2 || (assessment.score.dualProcess.scores as any).Reflective || 0;
       }
 
       return dataPoint;
