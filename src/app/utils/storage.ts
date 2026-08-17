@@ -1,4 +1,4 @@
-import { User, Assessment, Reflection, AssessmentProgress, SupervisorReviewData, ParentObservationAssessment, ChildSharingConsent, Class, TeacherClassAssignment } from '../types';
+import { User, Assessment, Reflection, AssessmentProgress, SupervisorReviewData, ParentObservationAssessment, ChildSharingConsent, Class, TeacherClassAssignment, TeacherObservation } from '../types';
 import { createClient } from './supabase/client';
 import { projectId } from './supabase/info';
 import { calculateAge } from './dateUtils';

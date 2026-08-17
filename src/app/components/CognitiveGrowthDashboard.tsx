@@ -440,7 +440,7 @@ export function CognitiveGrowthDashboard({ user, onBack }: CognitiveGrowthDashbo
                     const dims = extractDimensionScores(a);
                     const avg = dims.length ? Math.round(dims.reduce((s, d) => s + d.score, 0) / dims.length) : 0;
                     const assessmentLabels: Record<string, string> = {
-                      kolb: 'Learning Style (Kolb)', sternberg: 'Thinking Style (Sternberg)',
+                      kolb: 'Learning Style', sternberg: 'Thinking Style',
                       'dual-process': 'Decision Style', 'jhs-thinking': 'Thinking (JHS)',
                       'shs-thinking': 'Thinking (SHS)', 'adult-thinking': 'Thinking (Adult)',
                     };

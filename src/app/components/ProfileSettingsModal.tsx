@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, User, Phone, Mail, Save, Loader, Building2, Upload, Link as LinkIcon, Power, PowerOff } from 'lucide-react';
+import { X, User, Phone, Mail, Save, Loader, Building2, Upload, Link as LinkIcon, Power, PowerOff, ShieldCheck } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';

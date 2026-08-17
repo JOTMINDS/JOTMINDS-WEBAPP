@@ -39,21 +39,21 @@ export function ProfessionalAssessmentReport({
   };
 
   // Get all three assessments if available
-  const kolbStyle = assessment.score.kolb?.style || 'N/A';
-  const sternbergStyle = assessment.score.sternberg?.style || 'N/A';
-  const dualProcessStyle = assessment.score.dualProcess?.style || 'N/A';
+  const kolbStyle = assessment?.score?.kolb?.style || 'N/A';
+  const sternbergStyle = assessment?.score?.sternberg?.style || 'N/A';
+  const dualProcessStyle = assessment?.score?.dualProcess?.style || 'N/A';
 
   const getOverallCognitiveProfile = (): string => {
     const parts: string[] = [];
     
-    if (assessment.score.sternberg) {
+    if (assessment?.score?.sternberg?.style) {
       parts.push(assessment.score.sternberg.style);
     }
-    if (assessment.score.kolb) {
+    if (assessment?.score?.kolb?.style) {
       const kolbSimplified = assessment.score.kolb.style.replace('ing', '').toLowerCase();
       parts.push(kolbSimplified);
     }
-    if (assessment.score.dualProcess) {
+    if (assessment?.score?.dualProcess?.style) {
       parts.push(assessment.score.dualProcess.style.toLowerCase());
     }
 
@@ -61,9 +61,9 @@ export function ProfessionalAssessmentReport({
   };
 
   const getDetailedProfileDescription = (): string => {
-    const kolbDesc = assessment.score.kolb ? getStyleDescription('kolb', assessment.score.kolb.style as any).split('.')[0] : '';
-    const sternbergDesc = assessment.score.sternberg ? getStyleDescription('sternberg', assessment.score.sternberg.style as any).split('.')[0] : '';
-    const dualDesc = assessment.score.dualProcess ? getStyleDescription('dual-process', assessment.score.dualProcess.style as any).split('.')[0] : '';
+    const kolbDesc = assessment?.score?.kolb?.style ? getStyleDescription('kolb', assessment.score.kolb.style as any).split('.')[0] : '';
+    const sternbergDesc = assessment?.score?.sternberg?.style ? getStyleDescription('sternberg', assessment.score.sternberg.style as any).split('.')[0] : '';
+    const dualDesc = assessment?.score?.dualProcess?.style ? getStyleDescription('dual-process', assessment.score.dualProcess.style as any).split('.')[0] : '';
     
     return `${sternbergDesc} ${kolbDesc ? '— ' + kolbDesc.toLowerCase() : ''} ${dualDesc ? 'with ' + dualDesc.toLowerCase() : ''}`;
   };

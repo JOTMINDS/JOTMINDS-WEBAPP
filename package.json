@@ -85,5 +85,6 @@
     "vite": "^8.2.1"
   },
   "readme": "ERROR: No README data found!",
-  "_id": "@figma/my-make-file@0.0.1"
+  "_id": "@figma/my-make-file@0.0.1",
+  "workspaces": ["."]
 }

@@ -6,11 +6,12 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { createClient } from '../utils/supabase/client';
+import { generateOTP, verifyOTP } from '../utils/institution';
 import { Logo } from './Logo';
 
 interface ForgotPasswordFormProps {
   onBack: () => void;
-  onVerified?: () => void;
+  onVerified?: (email: string) => void;
 }
 
 export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormProps) {
@@ -33,15 +34,17 @@ export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormPro
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      const supabase = createClient();
       
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail);
+      // Send OTP code via generateOTP (calls backend /send-otp and Resend)
+      const code = await generateOTP(cleanEmail);
+      console.log('[ForgotPassword] Code generated for', cleanEmail, ':', code);
 
-      if (resetError) {
-        console.error('[ForgotPassword] Error:', resetError);
-        setError(resetError.message || 'Failed to send password reset code. Please try again or contact support.');
-        setLoading(false);
-        return;
+      // Also trigger Supabase native reset as secondary attempt
+      try {
+        const supabase = createClient();
+        await supabase.auth.resetPasswordForEmail(cleanEmail);
+      } catch (sbErr) {
+        console.warn('[ForgotPassword] Supabase reset notice:', sbErr);
       }
 
       setStep('otp');
@@ -65,24 +68,33 @@ export function ForgotPasswordForm({ onBack, onVerified }: ForgotPasswordFormPro
         return;
       }
 
-      const supabase = createClient();
-      
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'recovery'
-      });
+      const cleanEmail = email.trim().toLowerCase();
+      const verified = await verifyOTP(cleanEmail, otp);
 
-      if (verifyError) {
-        console.error('[ForgotPassword] OTP Verify Error:', verifyError);
-        setError(verifyError.message || 'Invalid or expired code. Please try again.');
-        setLoading(false);
-        return;
+      if (!verified) {
+        // Try Supabase OTP verification as secondary check
+        try {
+          const supabase = createClient();
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            email: cleanEmail,
+            token: otp,
+            type: 'recovery'
+          });
+          if (verifyError) {
+            setError('Invalid or expired 6-digit code. Please check and try again.');
+            setLoading(false);
+            return;
+          }
+        } catch {
+          setError('Invalid or expired 6-digit code. Please check and try again.');
+          setLoading(false);
+          return;
+        }
       }
 
       // Success! Move to reset password view
       if (onVerified) {
-        onVerified();
+        onVerified(cleanEmail);
       }
     } catch (err: any) {
       console.error('[ForgotPassword] Unexpected verify error:', err);

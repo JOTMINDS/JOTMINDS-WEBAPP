@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import {
-  ArrowLeft, Building2, QrCode, Users, BarChart3, Download, Settings, Shield, Loader, LogOut, Brain
+  ArrowLeft, Building2, Users, BarChart3, Download, Settings, Shield, Loader, LogOut, Brain, RefreshCw, BookOpen, Clock, GraduationCap
 } from 'lucide-react';
 import { DashboardLayout } from '../ui/dashboard-layout';
 import { NavGroup } from '../ui/collapsible-sidebar';
@@ -34,6 +34,7 @@ import { InstitutionOverview } from './InstitutionOverview';
 import { InstitutionCodeManager } from './InstitutionCodeManager';
 import { InstitutionMembers } from './InstitutionMembers';
 import { InstitutionSettings } from './InstitutionSettings';
+import { TrainingPage } from './TrainingPage';
 import { InviteMemberModal } from './InviteMemberModal';
 import { TransferMemberModal } from './TransferMemberModal';
 import { BulkUploadModal } from './BulkUploadModal';
@@ -45,6 +46,7 @@ import { SchoolAnalyticsDashboard } from '../SchoolAnalyticsDashboard';
 import { InstitutionReporting } from '../InstitutionReporting';
 import { ProfileSettingsModal } from '../ProfileSettingsModal';
 import { SchoolTeacherStylesView } from '../SchoolTeacherStylesView';
+import { TeacherDashboardNew } from '../TeacherDashboardNew';
 
 interface InstitutionDashboardProps {
   user: User;
@@ -54,7 +56,7 @@ interface InstitutionDashboardProps {
   onProfileUpdate?: () => void;
 }
 
-type Tab = 'overview' | 'code' | 'members' | 'manage_students' | 'classes' | 'analytics' | 'reports' | 'settings' | 'profile' | 'teacher_styles';
+type Tab = 'overview' | 'members' | 'manage_students' | 'classes' | 'analytics' | 'reports' | 'settings' | 'profile' | 'teacher_styles' | 'training' | 'teacher_workspace';
 
 export function InstitutionDashboard({
   user,
@@ -85,6 +87,9 @@ export function InstitutionDashboard({
   const [performanceTargetId, setPerformanceTargetId] = useState<string | null>(null);
 
   const [copied, setCopied] = useState(false);
+  const [isCodeManagerOpen, setIsCodeManagerOpen] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Initialize Institution
   useEffect(() => {
@@ -236,6 +241,25 @@ export function InstitutionDashboard({
     }
   };
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await loadData();
+      setLastRefresh(new Date());
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [institution?.id]);
+
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    if (!institution) return;
+    const interval = setInterval(() => {
+      loadData().then(() => setLastRefresh(new Date()));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [institution?.id]);
+
   const handlePromoteMember = async (userId: string) => {
     if (!institution) return;
     try {
@@ -320,28 +344,35 @@ export function InstitutionDashboard({
       groupLabel: 'School Administration',
       items: [
         { id: 'overview', label: 'School Overview', icon: Building2 },
-        ...(isPrimaryAdmin ? [{ id: 'code', label: 'School Codes', icon: QrCode }] : []),
-        { id: 'members', label: 'Teacher Roster', icon: Users },
-        { id: 'manage_students', label: 'Student Directory', icon: Users },
+        { id: 'members', label: 'Members & Roster', icon: Users },
         ...(isPrimaryAdmin || isCoAdmin ? [{ id: 'classes', label: 'Classes & Groups', icon: Building2 }] : []),
       ]
     },
     {
-      groupLabel: 'Teaching & Analytics',
+      groupLabel: 'Analytics & Insights',
       items: [
-        { id: 'analytics', label: 'Assessment Analytics', icon: BarChart3 },
-        { id: 'reports', label: 'Reporting & Export', icon: Download },
-        { id: 'teacher_styles', label: 'Intelligence Portal (Educator Styles)', icon: Brain, badge: 'Insights', badgeVariant: 'default' },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'reports', label: 'Reports & Export', icon: Download },
+        { id: 'teacher_styles', label: 'Insights Portal', icon: Brain, badge: 'Insights', badgeVariant: 'default' },
       ]
     },
     {
       groupLabel: 'Account & Settings',
       items: [
         ...(isPrimaryAdmin ? [{ id: 'settings', label: 'School Settings', icon: Settings }] : []),
-        { id: 'profile', label: 'My Profile', icon: Shield },
+        { id: 'training', label: 'Training & Resources', icon: BookOpen },
+        { id: 'teacher_workspace', label: 'My Teacher Workspace', icon: GraduationCap, badge: 'Teacher Mode', badgeVariant: 'default' },
+        { id: 'profile', label: 'My Personal Portal', icon: Shield, badge: 'Personal', badgeVariant: 'secondary' },
       ]
     }
   ];
+
+  const getTimeSinceRefresh = () => {
+    const diff = Math.floor((Date.now() - lastRefresh.getTime()) / 1000);
+    if (diff < 60) return 'Just now';
+    const mins = Math.floor(diff / 60);
+    return `${mins}m ago`;
+  };
 
   const institutionHeaderContent = (
     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -352,7 +383,7 @@ export function InstitutionDashboard({
           {institution.name.charAt(0)}
         </div>
       )}
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <h1 className="text-base text-gray-900 font-semibold truncate">{institution.name}</h1>
         <div className="flex items-center gap-2">
           <Badge
@@ -366,6 +397,20 @@ export function InstitutionDashboard({
           </Badge>
           <span className="text-xs text-gray-500">{institution.type} · {institution.region}</span>
         </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="text-[10px] text-gray-400 flex items-center gap-1">
+          <Clock className="w-3 h-3" /> {getTimeSinceRefresh()}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="h-8 w-8 p-0"
+        >
+          <RefreshCw className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
     </div>
   );
@@ -392,20 +437,7 @@ export function InstitutionDashboard({
             handleCopyCode={handleCopyCode}
             handleShare={handleShare}
             setTab={setTab}
-          />
-        )}
-
-        {tab === 'code' && (
-          <InstitutionCodeManager
-            institution={institution}
-            expired={expired}
-            daysLeft={daysLeft}
-            expiryDate={expiryDate}
-            totalMembersCount={members.length}
-            copied={copied}
-            handleCopyCode={handleCopyCode}
-            handleShare={handleShare}
-            onInstitutionUpdate={setInstitution}
+            onManageCodes={isPrimaryAdmin ? () => setIsCodeManagerOpen(true) : undefined}
           />
         )}
 
@@ -472,12 +504,36 @@ export function InstitutionDashboard({
           <InstitutionSettings institution={institution} onInstitutionUpdate={setInstitution} />
         )}
 
+        {tab === 'training' && (
+          <TrainingPage />
+        )}
+
         {tab === 'teacher_styles' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px] relative">
             <SchoolTeacherStylesView 
               admin={user} 
               teachers={members.filter(m => m.status === 'approved' && m.role === 'teacher').map(m => allPlatformUsers.find(u => u.id === m.userId)).filter(Boolean) as User[]}
               onBack={() => setTab('members')} 
+            />
+          </div>
+        )}
+
+        {tab === 'teacher_workspace' && (
+          <div className="space-y-4">
+            <div className="bg-[#5B7DB1]/10 border border-[#5B7DB1]/30 rounded-xl p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#5B7DB1]">
+                <Badge className="bg-[#5B7DB1] text-white">Teacher Mode</Badge>
+                <span>Managing your personal classes & students for {user.name}</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setTab('overview')} className="text-xs text-[#5B7DB1] border-[#5B7DB1]">
+                ← Back to School Admin
+              </Button>
+            </div>
+            <TeacherDashboardNew
+              user={user}
+              onLogout={onLogout}
+              onViewSettings={() => setTab('profile')}
+              onViewInstitutionDashboard={() => setTab('overview')}
             />
           </div>
         )}
@@ -536,6 +592,30 @@ export function InstitutionDashboard({
           allPlatformUsers={allPlatformUsers}
           onRefresh={loadData}
         />
+      )}
+
+      {isCodeManagerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-900">Manage School Codes</h2>
+              <Button variant="ghost" size="sm" onClick={() => setIsCodeManagerOpen(false)}>✕</Button>
+            </div>
+            <div className="p-4">
+              <InstitutionCodeManager
+                institution={institution}
+                expired={expired}
+                daysLeft={daysLeft}
+                expiryDate={expiryDate}
+                totalMembersCount={members.length}
+                copied={copied}
+                handleCopyCode={handleCopyCode}
+                handleShare={handleShare}
+                onInstitutionUpdate={setInstitution}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );

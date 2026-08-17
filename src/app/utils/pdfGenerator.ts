@@ -502,3 +502,133 @@ export async function exportReportToPDF(elementId: string, filename: string = 'J
     return false;
   }
 }
+
+export async function generateSchoolSummaryPDF(
+  institutionName: string,
+  stats: {
+    totalStudents: number;
+    totalAssessments: number;
+    studentCount: number;
+    teacherCount: number;
+  },
+  assessmentRecords: Array<{
+    date: string;
+    studentName: string;
+    className: string;
+    teacherName: string;
+    type: string;
+  }>
+): Promise<boolean> {
+  try {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 16;
+    let yPos = 20;
+
+    // Header bar
+    doc.setFillColor(...BRAND.dark);
+    doc.rect(0, 0, pageWidth, 36, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text(institutionName, margin, 20);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(200, 210, 230);
+    doc.text('Official Cognitive & Educational Summary Report', margin, 28);
+
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, pageWidth - margin - 40, 28);
+
+    yPos = 48;
+
+    // Stats Grid Box
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(...BRAND.hairline);
+    doc.roundedRect(margin, yPos, pageWidth - (margin * 2), 28, 3, 3, 'FD');
+
+    const colWidth = (pageWidth - (margin * 2)) / 4;
+    const statItems = [
+      { label: 'Total Students', val: stats.studentCount.toString() },
+      { label: 'Total Teachers', val: stats.teacherCount.toString() },
+      { label: 'Completed Tests', val: stats.totalAssessments.toString() },
+      { label: 'School Status', val: 'Active' },
+    ];
+
+    statItems.forEach((item, idx) => {
+      const x = margin + (idx * colWidth) + 8;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...BRAND.muted);
+      doc.text(item.label.toUpperCase(), x, yPos + 10);
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...BRAND.dark);
+      doc.text(item.val, x, yPos + 22);
+    });
+
+    yPos += 38;
+
+    // Table Title
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...BRAND.dark);
+    doc.text(`Assessment Activity Log (${assessmentRecords.length} records)`, margin, yPos);
+    yPos += 8;
+
+    // Table Header
+    doc.setFillColor(...BRAND.indigo);
+    doc.rect(margin, yPos, pageWidth - (margin * 2), 10, 'F');
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+
+    doc.text('Date', margin + 4, yPos + 7);
+    doc.text('Student', margin + 30, yPos + 7);
+    doc.text('Class', margin + 85, yPos + 7);
+    doc.text('Teacher', margin + 120, yPos + 7);
+    doc.text('Assessment Type', margin + 155, yPos + 7);
+
+    yPos += 10;
+
+    // Table Rows
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...BRAND.ink);
+
+    const maxRows = Math.min(25, assessmentRecords.length);
+    for (let i = 0; i < maxRows; i++) {
+      const rec = assessmentRecords[i];
+      const rowY = yPos + (i * 8);
+
+      if (rowY > 270) break; // page overflow guard
+
+      if (i % 2 === 1) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(margin, rowY - 5, pageWidth - (margin * 2), 8, 'F');
+      }
+
+      doc.text(rec.date, margin + 4, rowY);
+      doc.text(rec.studentName.substring(0, 22), margin + 30, rowY);
+      doc.text(rec.className.substring(0, 15), margin + 85, rowY);
+      doc.text(rec.teacherName.substring(0, 16), margin + 120, rowY);
+      doc.text(rec.type.substring(0, 20), margin + 155, rowY);
+    }
+
+    // Footer
+    const footerY = 285;
+    doc.setFontSize(8);
+    doc.setTextColor(...BRAND.muted);
+    doc.text('JotMinds Educational Cognitive Platform · Confidential Official Report', margin, footerY);
+
+    doc.save(`${institutionName.replace(/[^a-zA-Z0-9]/g, '_')}_School_Report.pdf`);
+    return true;
+  } catch (err) {
+    console.error('Failed to generate school summary PDF:', err);
+    return false;
+  }
+}

@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { User } from '../../types/index';
 import { X, Award, Brain, Lightbulb, Target, Puzzle, Users, Star } from 'lucide-react';
+import { toast } from 'sonner';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
 
 interface KidsCognitiveProfileProps {

@@ -4,22 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Download, Filter, Search, Calendar } from 'lucide-react';
+import { Download, Filter, Search, Calendar, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import { getAllAssessmentResults } from '../utils/api';
 import { getAllUsers, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { InstitutionMember } from '../utils/institution';
+import { generateSchoolSummaryPDF } from '../utils/pdfGenerator';
 
 export const formatAssessmentType = (type: string) => {
-  if (!type || type === 'unknown') return 'Cognitive Profile';
+  if (!type || type === 'unknown') return 'Assessment';
   const map: Record<string, string> = {
-    'kolb': 'Kolb Learning Style',
-    'sternberg': 'Sternberg Thinking Style',
-    'dual-process': 'Dual Process Decision Style',
+    'kolb': 'Learning Style',
+    'sternberg': 'Thinking Style',
+    'dual-process': 'Decision Style',
     'jhs-thinking': 'JHS Thinking Style',
     'shs-thinking': 'SHS Thinking Style',
     'adult-thinking': 'Adult Thinking Style',
     'children-thinking': 'Children Thinking Style',
-    'jtia': 'Teaching Insights (JTIA)',
+    'jtia': 'Teaching Insights',
   };
   return map[type] || type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 };
@@ -277,8 +279,34 @@ export function InstitutionReporting({ institutionId, institutionName, members =
               <Label>End Date</Label>
               <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="mt-1" />
             </div>
-            <div className="flex items-end">
-              <Button className="w-full h-10" style={{ backgroundColor: '#1E8A6E' }} onClick={handleExportCSV}>
+            <div className="flex items-end gap-2 md:col-span-4 justify-end pt-2 border-t mt-2">
+              <Button variant="outline" className="h-10 text-[#6B4C9A] border-[#6B4C9A]/30 hover:bg-[#6B4C9A]/10" onClick={async () => {
+                toast.loading('Generating Official School PDF Report...', { id: 'school-pdf' });
+                const records = filteredData.assessments.map(a => {
+                  const student = filteredData.users.find(u => u.id === a.userId);
+                  const studentClass = student?.classId ? getAllClasses().find(c => c.id === student.classId) : null;
+                  const teacher = studentClass ? teachers.find(t => t.userId === studentClass.classTeacherId) : null;
+                  return {
+                    date: a.completedAt ? new Date(a.completedAt).toLocaleDateString() : 'Unknown',
+                    studentName: student?.name || 'Unknown Student',
+                    className: studentClass?.name || 'Unassigned',
+                    teacherName: teacher?.userName || teacher?.userEmail || 'Unassigned',
+                    type: formatAssessmentType(a.type),
+                  };
+                });
+                const ok = await generateSchoolSummaryPDF(institutionName, {
+                  totalStudents: members.filter(m => m.role === 'student').length,
+                  totalAssessments: allAssessments.length,
+                  studentCount: members.filter(m => m.role === 'student' && m.status === 'approved').length,
+                  teacherCount: teachers.length,
+                }, records);
+                if (ok) toast.success('School PDF Summary downloaded!', { id: 'school-pdf' });
+                else toast.error('Failed to generate PDF', { id: 'school-pdf' });
+              }}>
+                <FileText className="h-4 w-4 mr-2" />
+                Export School PDF Report
+              </Button>
+              <Button className="h-10" style={{ backgroundColor: '#1E8A6E' }} onClick={handleExportCSV}>
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV Report
               </Button>

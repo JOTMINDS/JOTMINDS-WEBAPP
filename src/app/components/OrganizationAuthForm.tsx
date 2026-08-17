@@ -239,28 +239,25 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
       
       if (loginOTPMode) {
         if (!loginOTPSent) {
-          console.log('[OrganizationAuth] Requesting OTP...');
-          const { error } = await supabase.auth.signInWithOtp({ email: cleanEmail });
-          if (error) {
-            console.error('[OrganizationAuth] OTP request error:', error.message);
-            setError(error.message);
-          } else {
-            setLoginOTPSent(true);
-            setError('');
-          }
+          console.log('[OrganizationAuth] Requesting 6-digit OTP code...');
+          await generateOTP(cleanEmail, 'login');
+          setLoginOTPSent(true);
+          setError('');
           setLoading(false);
           return;
         } else {
-          console.log('[OrganizationAuth] Verifying OTP...');
-          const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: loginOTP, type: 'email' });
-          if (error) {
-            console.error('[OrganizationAuth] OTP verification error:', error.message);
-            setError(error.message);
+          console.log('[OrganizationAuth] Verifying 6-digit OTP code...');
+          const verified = await verifyOTP(cleanEmail, loginOTP);
+          if (!verified) {
+            console.error('[OrganizationAuth] Invalid 6-digit OTP code');
+            setError('Invalid or expired 6-digit verification code. Please check your inbox and try again.');
             setLoading(false);
             return;
           }
-          console.log('[OrganizationAuth] OTP verification successful');
-          await finalizeLogin(data.session);
+          console.log('[OrganizationAuth] 6-digit OTP verification successful!');
+          
+          // Finalize organization login
+          await finalizeLogin(null);
           setLoading(false);
           return;
         }

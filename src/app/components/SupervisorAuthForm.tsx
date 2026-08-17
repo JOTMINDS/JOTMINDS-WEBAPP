@@ -11,6 +11,7 @@ import { AlertCircle, ShieldCheck, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { createClient } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Logo } from './Logo';
+import { generateOTP, verifyOTP } from '../utils/institution';
 
 interface SupervisorAuthFormProps {
   onLogin: (user: User) => void;
@@ -48,29 +49,30 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
 
         if (loginMethod === 'otp') {
           if (!otpSent) {
-            console.log('[SupervisorAuth] Requesting OTP...');
-            const { error } = await supabase.auth.signInWithOtp({ email: cleanEmail });
-            if (error) {
-              console.error('[SupervisorAuth] OTP request error:', error.message);
-              setError(error.message);
-            } else {
-              setOtpSent(true);
-              setError('');
-            }
+            console.log('[SupervisorAuth] Requesting 6-digit OTP code...');
+            await generateOTP(cleanEmail, 'login');
+            setOtpSent(true);
+            setError('');
             setLoading(false);
             return;
           } else {
-            console.log('[SupervisorAuth] Verifying OTP...');
-            const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: otpToken, type: 'email' });
-            if (error) {
-              console.error('[SupervisorAuth] OTP verification error:', error.message);
-              setError(error.message);
+            console.log('[SupervisorAuth] Verifying 6-digit OTP code...');
+            const verified = await verifyOTP(cleanEmail, otpToken);
+            if (!verified) {
+              console.error('[SupervisorAuth] Invalid 6-digit OTP code');
+              setError('Invalid or expired 6-digit verification code. Please check your inbox and try again.');
               setLoading(false);
               return;
             }
-            console.log('[SupervisorAuth] OTP verification successful');
-            authData = data.user;
-            authSession = data.session;
+            console.log('[SupervisorAuth] 6-digit OTP verification successful');
+            authData = {
+              id: `user-${Date.now()}`,
+              email: cleanEmail,
+              user_metadata: {
+                name: cleanEmail.split('@')[0],
+                role: 'supervisor'
+              }
+            };
           }
         } else {
           // Sign in using Supabase client

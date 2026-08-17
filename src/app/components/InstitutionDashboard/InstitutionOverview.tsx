@@ -4,7 +4,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import {
-  AlertTriangle, AlertCircle, Building2, MapPin, Mail, Phone, Globe, Shield, QrCode, CheckCircle2, Copy, Share2, Crown, ShieldMinus, BarChart3
+  AlertTriangle, AlertCircle, Building2, MapPin, Mail, Phone, Globe, Shield, QrCode, CheckCircle2, Copy, Share2, Crown, ShieldMinus, BarChart3, Settings
 } from 'lucide-react';
 import { Institution, InstitutionMember, getMemberCountsByStatus } from '../../utils/institution';
 
@@ -16,7 +16,8 @@ interface InstitutionOverviewProps {
   copied: boolean;
   handleCopyCode: () => void;
   handleShare: () => void;
-  setTab: (tab: 'overview' | 'code' | 'members' | 'analytics' | 'reports' | 'settings' | 'profile') => void;
+  setTab: (tab: 'overview' | 'members' | 'analytics' | 'reports' | 'settings' | 'profile' | 'training') => void;
+  onManageCodes?: () => void;
 }
 
 export function InstitutionOverview({
@@ -27,7 +28,8 @@ export function InstitutionOverview({
   copied,
   handleCopyCode,
   handleShare,
-  setTab
+  setTab,
+  onManageCodes
 }: InstitutionOverviewProps) {
   const statusCounts = getMemberCountsByStatus(members);
   const headAdminMember = members.find(m => m.userId === institution.adminId);
@@ -49,7 +51,7 @@ export function InstitutionOverview({
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            The institution code has <strong>expired</strong>. Regenerate it in the Code Manager tab.
+            The institution code has <strong>expired</strong>. Click 'Manage Codes' on the code card below.
           </AlertDescription>
         </Alert>
       )}
@@ -115,25 +117,75 @@ export function InstitutionOverview({
         ))}
       </div>
 
-      {/* Teaching Styles Overview Link */}
-      <Card className="border-blue-200 bg-blue-50/50">
-        <CardContent className="pt-5 pb-5">
+      {/* Quick Facts */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="bg-slate-50 border-slate-100">
+          <CardContent className="pt-4 text-center">
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">School Type</p>
+            <p className="text-sm font-semibold text-gray-800">{institution.type}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-50 border-slate-100">
+          <CardContent className="pt-4 text-center">
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Region</p>
+            <p className="text-sm font-semibold text-gray-800">{institution.region}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-50 border-slate-100">
+          <CardContent className="pt-4 text-center">
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">District</p>
+            <p className="text-sm font-semibold text-gray-800">{institution.district}</p>
+          </CardContent>
+        </Card>
+        {statusCounts.pending > 0 && (
+          <Card className="bg-amber-50 border-amber-100">
+            <CardContent className="pt-4 text-center">
+              <p className="text-[10px] text-amber-600 uppercase tracking-wider mb-1">Pending Requests</p>
+              <p className="text-sm font-semibold text-amber-700">{statusCounts.pending}</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Top School Code Quick Card */}
+      <Card className="border-2 border-indigo-200 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50">
+        <CardContent className="pt-4 pb-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">Teaching Insights (JTIA) Analytics</h3>
-              <p className="text-xs text-gray-500 line-clamp-2">
-                Analyze teaching insights profiles and competency insights across your school's educators to optimize professional development.
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-sm">
+                <QrCode className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">Official School Jots Code</span>
+                <span className="text-2xl font-mono font-black text-indigo-950 tracking-wider">{institution.code}</span>
+              </div>
             </div>
-            <Button 
-              size="sm" 
-              className="shrink-0"
-              style={{ backgroundColor: '#5B7DB1' }}
-              onClick={() => setTab('teacher_styles' as any)}
-            >
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Compare Styles
-            </Button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={handleCopyCode}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex-1 sm:flex-initial"
+              >
+                {copied ? <CheckCircle2 className="w-4 h-4 mr-1 text-emerald-300" /> : <Copy className="w-4 h-4 mr-1" />}
+                {copied ? 'Code Copied!' : 'Copy Code'}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleShare}
+                className="border-indigo-200 text-indigo-900 bg-white hover:bg-indigo-50 rounded-xl text-xs"
+              >
+                <Share2 className="w-4 h-4 mr-1" />
+                Share Code
+              </Button>
+              {onManageCodes && (
+                <Button 
+                  variant="outline"
+                  onClick={onManageCodes}
+                  className="border-indigo-200 text-indigo-900 bg-white hover:bg-indigo-50 rounded-xl text-xs"
+                >
+                  <Settings className="w-4 h-4 mr-1" /> Manage Codes
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -174,37 +226,6 @@ export function InstitutionOverview({
                 </div>
               </div>
             ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Code quick-view */}
-      <Card className={`border-2 ${expired ? 'border-red-200' : 'border-blue-200'}`}>
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><QrCode className="w-3.5 h-3.5" />Institution Code</p>
-              <div className="text-2xl font-mono tracking-widest text-gray-900">{institution.code}</div>
-              {expired ? (
-                <p className="text-xs text-red-500 mt-1">⚠ Code expired — regenerate in Code Manager</p>
-              ) : daysLeft !== null ? (
-                <p className="text-xs text-amber-600 mt-1">⏱ Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}</p>
-              ) : (
-                <p className="text-xs text-green-600 mt-1">✓ No expiry</p>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={handleCopyCode}>
-                {copied ? <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-green-500" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
-                {copied ? 'Copied' : 'Copy'}
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleShare}>
-                <Share2 className="w-3.5 h-3.5 mr-1" />Share
-              </Button>
-              <Button size="sm" style={{ backgroundColor: '#5B7DB1' }} onClick={() => setTab('code')}>
-                Manage →
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>

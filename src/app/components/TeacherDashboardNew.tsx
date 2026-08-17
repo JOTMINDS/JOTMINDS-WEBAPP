@@ -29,6 +29,8 @@ import { AILessonPlannerContainer } from './lessonPlanner/AILessonPlannerContain
 import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
 import { InsightsPortal } from './InsightsPortal';
+import { CentralStudentManagement } from './CentralStudentManagement';
+import { CentralAnalyticsHub } from './CentralAnalyticsHub';
 
 interface TeacherDashboardNewProps {
   user: User;
@@ -48,7 +50,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'jtia' | 'lesson-planner' | 'analytics-compare'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'jtia' | 'lesson-planner' | 'analytics-compare' | 'students' | 'analytics' | 'teacher-intelligence' | 'intelligence-portal' | 'insights-portal'>('overview');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -443,19 +445,13 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
   const teacherNavGroups: NavGroup[] = [
     {
-      groupLabel: 'Educator Tools',
+      groupLabel: 'Educator Portal',
       items: [
-        { id: 'overview', label: 'Class Roster & Overview', icon: Users, badge: students.length },
-        { id: 'individual', label: 'Student Profiles', icon: Eye },
-        { id: 'analytics-compare', label: 'Class Analytics', icon: BarChart3 },
+        { id: 'overview', label: 'Overview', icon: Users },
+        { id: 'students', label: 'Students', icon: Eye, badge: students.length },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
-        { id: 'teacher-intelligence', label: 'Insights Portal', icon: Brain, badge: 'Insights', badgeVariant: 'default' },
-      ]
-    },
-    {
-      groupLabel: 'Professional Development',
-      items: [
-        { id: 'jtia', label: 'Teaching Insights & Cognitive Profile', icon: GraduationCap },
+        { id: 'jtia', label: 'Teaching Insights', icon: GraduationCap },
       ]
     }
   ];
@@ -464,7 +460,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab === 'jtia' ? 'JTIA' : activeTab === 'teacher-intelligence' ? 'Intelligence Portal' : activeTab.replace('-', ' ')}
+          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab.replace('-', ' ')}
         </h2>
         {user.school && (
           <Badge variant="outline" className="border-purple-600 text-purple-700">
@@ -477,10 +473,10 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
           variant="default" 
           className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium shadow-sm flex items-center gap-1.5" 
           size="sm" 
-          onClick={() => setActiveTab('teacher-intelligence')}
+          onClick={() => setActiveTab('analytics')}
         >
           <Brain className="w-4 h-4" />
-          Insights Portal
+          Central Analytics Hub
         </Button>
         {onViewInstitutionDashboard && (
           <Button variant="outline" size="sm" onClick={onViewInstitutionDashboard}>
@@ -507,7 +503,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       <div className="max-w-5xl mx-auto w-full space-y-6">
 
         {/* Students connected banner — visible on class-related tabs */}
-        {['overview', 'individual', 'analytics-compare'].includes(activeTab) && (
+        {['overview', 'students', 'analytics'].includes(activeTab) && (
           <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>
             <span className="text-xl" aria-hidden>👥</span>
             <div>
@@ -535,6 +531,18 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         {activeTab === 'overview' && (
           <div className="space-y-8">
             <TeacherClassOverview students={students} assessments={allAssessments} />
+          </div>
+        )}
+
+        {(activeTab as string) === 'students' && (
+          <div className="space-y-8">
+            <CentralStudentManagement students={students as any} assessments={allAssessments} teacher={user} />
+          </div>
+        )}
+
+        {(activeTab as string) === 'analytics' && (
+          <div className="space-y-8">
+            <CentralAnalyticsHub students={students as any} assessments={allAssessments} user={user} />
           </div>
         )}
 

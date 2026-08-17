@@ -27,8 +27,10 @@ type Step = 1 | 2 | 3 | 4 | 5;
 
 const INSTITUTION_TYPES: { value: InstitutionType; label: string }[] = [
   { value: 'Primary', label: 'Primary School (Basic 1–6)' },
-  { value: 'JHS', label: 'Junior High School (JHS)' },
-  { value: 'SHS', label: 'Senior High School (SHS)' },
+  { value: 'JHS', label: 'Junior High School (JHS 1–3)' },
+  { value: 'SHS', label: 'Senior High School (SHS 1–3)' },
+  { value: 'Primary-JHS', label: 'Primary — JHS (Nursery/KG to JHS 3)' },
+  { value: 'Primary-SHS', label: 'Primary — SHS (Nursery/KG to SHS 3)' },
   { value: 'Tertiary', label: 'Tertiary / University' },
   { value: 'Vocational', label: 'Vocational / Technical' },
   { value: 'Other', label: 'Other Institution' },

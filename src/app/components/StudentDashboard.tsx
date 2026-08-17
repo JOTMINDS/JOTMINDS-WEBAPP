@@ -24,6 +24,8 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { FeedbackTab } from './StudentDashboardTabs/FeedbackTab';
 import { ProfileTab } from './StudentDashboardTabs/ProfileTab';
+import { RecommendationsTab } from './StudentDashboardTabs/RecommendationsTab';
+import { SchoolPortalTab } from './StudentDashboardTabs/SchoolPortalTab';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { toast } from 'sonner';
 import { formatMonthYear, formatDate, formatChartDate } from '../utils/dateFormat';
@@ -1943,155 +1945,16 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
           
           {/* School Profile Tab */}
           <TabsContent value="school-profile" className="space-y-6">
-            <Card className="border-t-4 border-t-[#6B4C9A]">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-[#6B4C9A]/10 rounded-lg">
-                    <Building2 className="h-6 w-6 text-[#6B4C9A]" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl">School Profile</CardTitle>
-                    <CardDescription>Details about your school and class</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
-                      <p className="text-sm text-muted-foreground mb-1">Institution</p>
-                      <p className="font-semibold text-lg flex items-center gap-2">
-                        {user.organizationName || user.school || 'Not assigned to a school'}
-                      </p>
-                    </div>
-                    
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
-                      <p className="text-sm text-muted-foreground mb-1">Your Teacher / Class</p>
-                      <p className="font-semibold text-lg flex items-center gap-2">
-                        <UserIcon className="h-5 w-5 text-muted-foreground" />
-                        {(() => {
-                          if (user.teacherName) return user.teacherName;
-                          if (!user.teacherId) return 'No Teacher Assigned';
-                          const allUsers = getAllUsers();
-                          const teacher = allUsers.find(u => u.id === user.teacherId);
-                          return teacher ? teacher.name : 'Unknown Teacher';
-                        })()}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6 bg-gradient-to-br from-[#6B4C9A]/10 to-[#7B61FF]/10 rounded-lg border flex flex-col items-center justify-center text-center">
-                    <GraduationCap className="h-16 w-16 text-[#6B4C9A] mb-4 opacity-80" />
-                    <h3 className="font-bold text-xl mb-2 text-[#6B4C9A]">JotMinds Scholar</h3>
-                    <p className="text-muted-foreground">
-                      Your assessments and progress are connected to your school. Keep completing challenges to show your class what you can do!
-                    </p>
-                  </div>
-                </div>
-
-                {/* Personalized Lesson Summaries & Practice Questions */}
-                <div className="mt-8 pt-6 border-t space-y-4">
-                  <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-                    <BookOpen className="w-5 h-5 text-indigo-600" />
-                    Classroom Lesson Summaries & Personalized Practice
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-800/40">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge className="bg-indigo-600 text-white text-xs">Mathematics • Algebra</Badge>
-                        <span className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold">Matched to Your Visual Style</span>
-                      </div>
-                      <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Quadratic Equations & Step-by-Step Factoring</h4>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
-                        Key Summary: Use the visual parabolic graph method to locate roots at x-intercepts. Factor expressions using the box/grid method.
-                      </p>
-                      <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs">
-                        Start Practice Set (3 Questions)
-                      </Button>
-                    </div>
-
-                    <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-800/40">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge className="bg-emerald-600 text-white text-xs">Integrated Science</Badge>
-                        <span className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold">Matched to Practical Style</span>
-                      </div>
-                      <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Cellular Respiration & ATP Energy Production</h4>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
-                        Key Summary: Mitochondria convert glucose into cellular energy (ATP). Compare aerobic vs. anaerobic processes through real-life muscle fatigue examples.
-                      </p>
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs">
-                        Start Practice Set (3 Questions)
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <SchoolPortalTab user={user} assessments={assessments} />
           </TabsContent>
 
-          {/* ─── DEDICATED RECOMMENDATIONS TAB ──────────────────────── */}
+          {/* Recommendations Tab */}
           <TabsContent value="recommendations" className="space-y-6">
-            <Card className="border-t-4 border-t-indigo-600">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                      <Target className="w-6 h-6 text-indigo-600" />
-                      Personalized Cognitive Recommendations & Study Tips
-                    </CardTitle>
-                    <CardDescription>
-                      Tailored strategies to optimize how you study, solve problems, and prepare for exams.
-                    </CardDescription>
-                  </div>
-                  <Badge className="bg-indigo-100 text-indigo-800 font-bold px-3 py-1">SHS / JHS Customized</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-slate-900 border border-indigo-100 dark:border-indigo-800/40">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg mb-3">📖</div>
-                    <h3 className="font-bold text-indigo-950 dark:text-indigo-100 text-base mb-1">Learning & Memory</h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Convert dense text notes into visual concept maps and 5-minute flashcard reviews before bed for long-term retention.
-                    </p>
-                  </div>
-
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-slate-900 border border-purple-100 dark:border-purple-800/40">
-                    <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-lg mb-3">🧠</div>
-                    <h3 className="font-bold text-purple-950 dark:text-purple-100 text-base mb-1">Problem-Solving</h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Deconstruct multi-step STEM questions into 3 clear phases: Given Values, Target Variable, and Formula Application.
-                    </p>
-                  </div>
-
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-slate-900 border border-emerald-100 dark:border-emerald-800/40">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg mb-3">⚡</div>
-                    <h3 className="font-bold text-emerald-950 dark:text-emerald-100 text-base mb-1">Exam Performance</h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Use the 2-Pass Exam Technique: Answer immediate high-confidence questions first, then revisit complex analytical problems.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-                  <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-3">Daily Metacognitive Checklist</h4>
-                  <div className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="rounded text-indigo-600 focus:ring-indigo-500" />
-                      <span>Reviewed 3 key formulas or vocabulary terms using my primary learning style.</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="rounded text-indigo-600 focus:ring-indigo-500" />
-                      <span>Completed 1 past examination practice question under timed conditions.</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="rounded text-indigo-600 focus:ring-indigo-500" />
-                      <span>Reflected on one mistake made during practice and logged the corrective step.</span>
-                    </label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <RecommendationsTab 
+              user={user} 
+              assessments={assessments} 
+              onNavigateToTab={(tabId) => setActiveTab(tabId)} 
+            />
           </TabsContent>
 
           {/* ─── MERGED SETTINGS TAB ──────────────────────── */}
@@ -2141,7 +2004,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                     <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                       Allow your parent or guardian to view your cognitive profile progress, study streaks, and assessment reports.
                     </p>
-                    <ParentAccessRequests studentId={user.id} studentName={user.name} />
+                    <ParentAccessRequests userId={user.id} />
                   </div>
                 </div>
               </CardContent>

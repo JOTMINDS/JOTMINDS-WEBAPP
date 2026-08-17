@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
-  Users, Upload, UserPlus, AlertCircle, CheckCircle2, Trash2, Mail, Clock, RefreshCw, Loader, BarChart3, Crown, ShieldMinus, Brain, Download
+  Users, Upload, UserPlus, AlertCircle, CheckCircle2, Trash2, Mail, Clock, RefreshCw, Loader, BarChart3, Crown, ShieldMinus, Brain, Download, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { generatePDF } from '../../utils/pdfGenerator';
 import { formatAssessmentType } from '../InstitutionReporting';
@@ -67,12 +67,24 @@ export function InstitutionMembers({
 
   // Invitation tracking state
   const [showInvitations, setShowInvitations] = useState(false);
+  const [cancelledInvitationIds, setCancelledInvitationIds] = useState<Set<string>>(new Set());
 
   // Pagination state
   const [membersPage, setMembersPage] = useState(1);
 
   // Loading state for member operations
   const [processingMemberId, setProcessingMemberId] = useState<string | null>(null);
+
+  // Collapsible groups state
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['admin', 'teacher', 'student']));
+  const toggleGroup = (group: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  };
 
   // Reset pagination when search/filter changes
   useEffect(() => {
@@ -103,12 +115,21 @@ export function InstitutionMembers({
     [filteredMembers]
   );
 
-  // Pagination for approved members
-  const paginatedMembers = useMemo(
-    () => approvedMembers.slice((membersPage - 1) * MEMBERS_PER_PAGE, membersPage * MEMBERS_PER_PAGE),
-    [approvedMembers, membersPage]
+  const visibleInvitations = useMemo(
+    () => institutionInvitations.filter(inv => !cancelledInvitationIds.has(inv.id)),
+    [institutionInvitations, cancelledInvitationIds]
   );
-  const totalPages = Math.ceil(approvedMembers.length / MEMBERS_PER_PAGE);
+
+  const adminMembers = useMemo(() => approvedMembers.filter(m => m.role === 'admin'), [approvedMembers]);
+  const teacherMembers = useMemo(() => approvedMembers.filter(m => m.role === 'teacher'), [approvedMembers]);
+  const studentMembers = useMemo(() => approvedMembers.filter(m => m.role === 'student'), [approvedMembers]);
+
+  // Pagination for student members only
+  const paginatedStudentMembers = useMemo(
+    () => studentMembers.slice((membersPage - 1) * MEMBERS_PER_PAGE, membersPage * MEMBERS_PER_PAGE),
+    [studentMembers, membersPage]
+  );
+  const totalPages = Math.ceil(studentMembers.length / MEMBERS_PER_PAGE);
 
   const counts = getMemberCounts(members);
 
@@ -224,6 +245,222 @@ export function InstitutionMembers({
       setProcessingMemberId(null);
     }
   };
+
+  const renderRoleGroup = (roleMembers: InstitutionMember[], roleLabel: string, roleKey: string, roleColor: string) => (
+    roleMembers.length > 0 && (
+      <Card key={roleKey}>
+        <CardContent className="pt-0 pb-0">
+          <button
+            onClick={() => toggleGroup(roleKey)}
+            className="w-full flex items-center justify-between py-3 text-left"
+          >
+            <div className="flex items-center gap-2">
+              {expandedGroups.has(roleKey) ? (
+                <ChevronDown className="w-4 h-4 text-gray-500" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-gray-500" />
+              )}
+              <span className="text-sm font-semibold text-gray-800">{roleLabel}</span>
+              <Badge style={{ backgroundColor: roleColor + '20', color: roleColor }} className="text-[10px]">
+                {roleMembers.length}
+              </Badge>
+            </div>
+          </button>
+          {expandedGroups.has(roleKey) && (
+            <div className="border-t">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-gray-50/50">
+                    <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider px-3 py-2">Name</th>
+                    <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider px-3 py-2 hidden md:table-cell">Contact</th>
+                    <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider px-3 py-2 hidden lg:table-cell">Info</th>
+                    <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider px-3 py-2 hidden lg:table-cell">Assessments</th>
+                    <th className="text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider px-3 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {roleMembers.map(m => (
+                    <tr key={m.userId} className="hover:bg-gray-50/50 transition-colors">
+                      {/* Name cell */}
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shrink-0"
+                            style={{ backgroundColor: roleColor }}
+                          >
+                            {m.userName.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-medium text-gray-900 truncate">{m.userName}</p>
+                              {m.role === 'admin' && institution.adminId === m.userId && (
+                                <Crown className="w-3 h-3 text-[#5B7DB1] shrink-0" />
+                              )}
+                            </div>
+                            {/* Show email on mobile since contact column is hidden */}
+                            <p className="text-xs text-gray-500 truncate md:hidden">{m.userEmail}</p>
+                          </div>
+                        </div>
+                      </td>
+                      {/* Contact cell — hidden on mobile */}
+                      <td className="px-3 py-2.5 hidden md:table-cell">
+                        <p className="text-xs text-gray-600 truncate">{m.userEmail}</p>
+                        {m.userPhone && <p className="text-[10px] text-gray-400">{m.userPhone}</p>}
+                      </td>
+                      {/* Info cell — hidden on mobile */}
+                      <td className="px-3 py-2.5 hidden lg:table-cell">
+                        {(m.role === 'teacher' || m.role === 'admin') && (
+                          <span className="text-xs text-[#6B4C9A]">{getStudentsForTeacherCount(m.userId)} Students</span>
+                        )}
+                        {m.role === 'student' && (
+                          <span className="text-xs text-[#1E8A6E]">
+                            {(() => {
+                              const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
+                              if (studentProfile?.classId) {
+                                const instTeacherIds = new Set(members.filter(mem => mem.role === 'teacher' || mem.role === 'admin').map(mem => mem.userId));
+                                const classes = getAllClasses().filter(c => !c.classTeacherId || instTeacherIds.has(c.classTeacherId));
+                                const studentClass = classes.find(c => c.id === studentProfile.classId);
+                                return studentClass ? studentClass.name : 'Unknown';
+                              }
+                              return 'Unassigned';
+                            })()}
+                          </span>
+                        )}
+                        <p className="text-[10px] text-gray-400">
+                          Joined {new Date(m.joinedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </td>
+                      {/* Assessments cell — hidden on mobile */}
+                      <td className="px-3 py-2.5 hidden lg:table-cell">
+                        {(() => {
+                          const userAssessments = assessments.length > 0 ? assessments.filter(a => a.userId === m.userId) : getAssessmentsByUserId(m.userId);
+                          const completed = userAssessments.filter((a: any) => a.completedAt);
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant="secondary" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">
+                                {completed.length} Done
+                              </Badge>
+                              {completed.slice(0, 2).map((a: any, i: number) => (
+                                <Badge key={i} variant="outline" className="text-[10px] text-[#6B4C9A] border-[#6B4C9A]/20">
+                                  {formatAssessmentType(a.type)}
+                                </Badge>
+                              ))}
+                              {completed.length > 2 && (
+                                <span className="text-[10px] text-gray-400">+{completed.length - 2}</span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      {/* Actions cell */}
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {/* Export Report button */}
+                          {(() => {
+                            const completedAssessments = getAssessmentsByUserId(m.userId).filter((a: any) => a.completedAt);
+                            if (completedAssessments.length === 0) return null;
+                            return (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-[#6B4C9A] hover:bg-[#6B4C9A]/10 h-7 w-7 p-0"
+                                title="Export Report"
+                                onClick={async () => {
+                                  const latestAssessment = completedAssessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())[0];
+                                  toast.loading('Generating report...', { id: `pdf-${m.userId}` });
+                                  try {
+                                    let assignedTeacherName = null;
+                                    const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
+                                    if (studentProfile?.teacherId) {
+                                      const teacher = allPlatformUsers.find(u => u.id === studentProfile.teacherId);
+                                      if (teacher) assignedTeacherName = teacher.name;
+                                    } else if (studentProfile?.classId) {
+                                      const classes = getAllClasses();
+                                      const studentClass = classes.find(c => c.id === studentProfile.classId);
+                                      if (studentClass?.classTeacherId) {
+                                        const teacher = allPlatformUsers.find(u => u.id === studentClass.classTeacherId);
+                                        if (teacher) assignedTeacherName = teacher.name;
+                                      }
+                                    }
+                                    await generatePDF(latestAssessment, m.userName, assignedTeacherName, m.role === 'teacher');
+                                    toast.success('Report downloaded', { id: `pdf-${m.userId}` });
+                                  } catch (error) {
+                                    console.error('PDF generation error:', error);
+                                    toast.error('Failed to generate report', { id: `pdf-${m.userId}` });
+                                  }
+                                }}
+                                disabled={processingMemberId === m.userId}
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </Button>
+                            );
+                          })()}
+  
+                          {/* Role-specific actions */}
+                          {isPrimaryAdmin && m.role === 'teacher' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-[#5B7DB1] hover:bg-[#5B7DB1]/10 h-7 px-2 text-xs"
+                              onClick={() => handlePromote(m.userId)}
+                              disabled={processingMemberId === m.userId}
+                              title="Promote to Admin"
+                            >
+                              <Crown className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          {isPrimaryAdmin && m.role === 'admin' && institution.adminId !== m.userId && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-orange-500 hover:bg-orange-50 h-7 px-2 text-xs"
+                              onClick={() => handleDemote(m.userId)}
+                              disabled={processingMemberId === m.userId}
+                              title="Demote to Teacher"
+                            >
+                              <ShieldMinus className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          {(m.role === 'teacher' || m.role === 'admin') && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-[#5B7DB1] hover:bg-[#5B7DB1]/10 h-7 px-2 text-xs"
+                              onClick={() => onOpenTeacherManagement(m.userId)}
+                              disabled={processingMemberId === m.userId}
+                              title="Manage"
+                            >
+                              <Users className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          {m.role !== 'admin' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveMember(m.userId)}
+                              className="text-red-400 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0"
+                              disabled={processingMemberId === m.userId}
+                              title="Remove Member"
+                            >
+                              {processingMemberId === m.userId ? (
+                                <Loader className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    )
+  );
 
   return (
     <div className="space-y-5">
@@ -402,16 +639,16 @@ export function InstitutionMembers({
       <div className="mt-4">
         <Button variant="outline" size="sm" onClick={() => setShowInvitations(!showInvitations)} className="gap-2">
           <Mail className="w-4 h-4" />
-          {showInvitations ? 'Hide' : 'Show'} Pending Invitations ({institutionInvitations.length})
+          {showInvitations ? 'Hide' : 'Show'} Pending Invitations ({visibleInvitations.length})
         </Button>
         {showInvitations && (
           <Card className="mt-3 border-blue-100">
             <CardContent className="pt-4">
-              {institutionInvitations.length === 0 ? (
+              {visibleInvitations.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-4">No pending invitations.</p>
               ) : (
                 <div className="space-y-2">
-                  {institutionInvitations.map(inv => (
+                  {visibleInvitations.map(inv => (
                     <div key={inv.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -449,6 +686,7 @@ export function InstitutionMembers({
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={async () => {
                             if (window.confirm(`Are you sure you want to cancel the invitation for ${inv.email}?`)) {
+                              setCancelledInvitationIds(prev => new Set([...prev, inv.id]));
                               await deleteInstitutionInvitation(inv.id, inv.email);
                               toast.success(`Invitation for ${inv.email} cancelled.`);
                               if (onRefresh) onRefresh();
@@ -468,254 +706,19 @@ export function InstitutionMembers({
       </div>
 
       {approvedMembers.length > 0 && (
-        <div className="mt-6 mb-4">
-          <h3 className="text-md font-semibold text-gray-800 mb-3">Approved Members ({approvedMembers.length})</h3>
-          <div className="space-y-3">
-            {paginatedMembers.map(m => (
-              <Card key={m.userId}>
-                <CardContent className="pt-4">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm shrink-0"
-                        style={{ backgroundColor: ROLE_COLORS[m.role] }}
-                      >
-                        {m.userName.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-gray-900">{m.userName}</p>
-                          {m.role === 'admin' ? (
-                            institution.adminId === m.userId ? (
-                              <Badge
-                                style={{ backgroundColor: ROLE_COLORS['admin'] + '20', color: ROLE_COLORS['admin'] }}
-                                className="text-[10px] capitalize flex items-center gap-1"
-                              >
-                                <Crown className="w-3 h-3" /> Head Admin
-                              </Badge>
-                            ) : (
-                              <Badge
-                                style={{ backgroundColor: ROLE_COLORS['admin'] + '20', color: ROLE_COLORS['admin'] }}
-                                className="text-[10px] capitalize flex items-center gap-1"
-                              >
-                                <ShieldMinus className="w-3 h-3" /> Admin
-                              </Badge>
-                            )
-                          ) : (
-                            <Badge
-                              style={{ backgroundColor: ROLE_COLORS[m.role] + '20', color: ROLE_COLORS[m.role] }}
-                              className="text-[10px] capitalize"
-                            >
-                              {m.role}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500">{m.userEmail}</p>
-                        {m.userPhone && <p className="text-xs text-gray-400">{m.userPhone}</p>}
-                        {(m.role === 'teacher' || m.role === 'admin') && (
-                          <p className="text-xs text-[#6B4C9A] mt-0.5 font-medium">
-                            {getStudentsForTeacherCount(m.userId)} Assigned Students
-                          </p>
-                        )}
-                        {m.role === 'student' && (
-                          <p className="text-xs text-[#1E8A6E] mt-0.5 font-medium">
-                            {(() => {
-                              const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
-                              if (studentProfile?.classId) {
-                                const instTeacherIds = new Set(members.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
-                                const classes = getAllClasses().filter(c => !c.classTeacherId || instTeacherIds.has(c.classTeacherId));
-                                const studentClass = classes.find(c => c.id === studentProfile.classId);
-                                return studentClass ? `Class: ${studentClass.name}` : 'Class: Unknown';
-                              }
-                              return 'Class: Unassigned';
-                            })()}
-                          </p>
-                        )}
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          Joined{' '}
-                          {new Date(m.joinedAt).toLocaleDateString('en-GB', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}{' '}
-                          · via {m.joinedViaCode}
-                        </p>
-                      </div>
-                    </div>
+        <div className="mt-6 mb-4 space-y-3">
+          <h3 className="text-md font-semibold text-gray-800">Members ({approvedMembers.length})</h3>
+          
+          {/* Admin group */}
+          {adminMembers.length > 0 && renderRoleGroup(adminMembers, 'Admin', 'admin', ROLE_COLORS.admin)}
+          
+          {/* Teacher group */}
+          {teacherMembers.length > 0 && renderRoleGroup(teacherMembers, 'Teachers', 'teacher', ROLE_COLORS.teacher)}
+          
+          {/* Student group */}
+          {studentMembers.length > 0 && renderRoleGroup(paginatedStudentMembers, 'Students', 'student', ROLE_COLORS.student)}
 
-                    {(m.role === 'student' || m.role === 'teacher' || m.role === 'admin') && (
-                      <div className="flex flex-col items-center justify-center bg-indigo-50/50 rounded-lg px-5 py-2 border border-indigo-100/50 mt-2 md:mt-0">
-                          <span className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider mb-1">Assessments</span>
-                          <div className="flex gap-2">
-                            <Badge variant="secondary" className="bg-white text-indigo-700 border-indigo-200 font-bold shadow-sm">
-                                {(assessments.length > 0 ? assessments.filter(a => a.userId === m.userId) : getAssessmentsByUserId(m.userId)).filter((a: any) => a.completedAt).length} Completed
-                            </Badge>
-                            <Badge variant="outline" className="bg-white text-slate-600 border-slate-200 shadow-sm" title="Assessment Frequency">
-                                {(() => {
-                                  const userAssessments = assessments.length > 0 ? assessments.filter(a => a.userId === m.userId) : getAssessmentsByUserId(m.userId);
-                                  const completedAssessments = userAssessments.filter((a: any) => a.completedAt);
-                                  if (completedAssessments.length === 0) return 'No Tests';
-                                  
-                                  completedAssessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
-                                  const lastTest = new Date(completedAssessments[0].completedAt);
-                                  const daysSince = Math.floor((Date.now() - lastTest.getTime()) / (1000 * 3600 * 24));
-                                  
-                                  if (assessments.length >= 2) {
-                                    const firstTest = new Date(assessments[assessments.length - 1].completedAt);
-                                    const totalDays = Math.max(1, Math.floor((lastTest.getTime() - firstTest.getTime()) / (1000 * 3600 * 24)));
-                                    const avgDays = totalDays / (assessments.length - 1);
-                                    
-                                    if (daysSince > 60) return 'Inactive';
-                                    if (avgDays <= 10) return 'Weekly';
-                                    if (avgDays <= 20) return 'Bi-weekly';
-                                    if (avgDays <= 45) return 'Monthly';
-                                    return 'Sporadic';
-                                  }
-                                  
-                                    if (daysSince <= 7) return 'Active (New)';
-                                    if (daysSince > 30) return 'Inactive';
-                                    return `${daysSince}d ago`;
-                                  })()}
-                              </Badge>
-                              {(() => {
-                                const userAssessments = assessments.length > 0 ? assessments.filter(a => a.userId === m.userId) : getAssessmentsByUserId(m.userId);
-                                const completedAssessments = userAssessments.filter((a: any) => a.completedAt);
-                                return completedAssessments.map((a: any, i: number) => (
-                                  <Badge key={`badge-${m.userId}-${i}`} variant="outline" className="bg-white text-[#6B4C9A] border-[#6B4C9A]/30 text-[10px]">
-                                    {formatAssessmentType(a.type)}
-                                  </Badge>
-                                ));
-                              })()}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Export Report button for members with completed assessments */}
-                    {(m.role === 'student' || m.role === 'teacher') && (() => {
-                      const completedAssessments = getAssessmentsByUserId(m.userId).filter((a: any) => a.completedAt);
-                      if (completedAssessments.length === 0) return null;
-                      return (
-                        <div className="hidden md:flex items-center">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-[#6B4C9A] border-[#6B4C9A]/30 hover:bg-[#6B4C9A]/10 h-7 text-xs"
-                            onClick={async () => {
-                              const latestAssessment = completedAssessments.sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())[0];
-                              toast.loading('Generating report...', { id: `pdf-${m.userId}` });
-                              try {
-                                let assignedTeacherName = null;
-                                const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
-                                if (studentProfile?.teacherId) {
-                                  const teacher = allPlatformUsers.find(u => u.id === studentProfile.teacherId);
-                                  if (teacher) assignedTeacherName = teacher.name;
-                                } else if (studentProfile?.classId) {
-                                  const classes = getAllClasses();
-                                  const studentClass = classes.find(c => c.id === studentProfile.classId);
-                                  if (studentClass?.classTeacherId) {
-                                    const teacher = allPlatformUsers.find(u => u.id === studentClass.classTeacherId);
-                                    if (teacher) assignedTeacherName = teacher.name;
-                                  }
-                                }
-                                
-                                await generatePDF(latestAssessment, m.userName, assignedTeacherName, m.role === 'teacher');
-                                toast.success('Report downloaded', { id: `pdf-${m.userId}` });
-                              } catch (error) {
-                                console.error('PDF generation error:', error);
-                                toast.error('Failed to generate report', { id: `pdf-${m.userId}` });
-                              }
-                            }}
-                            disabled={processingMemberId === m.userId}
-                          >
-                            <Download className="w-3 h-3 mr-1" /> Export Report
-                          </Button>
-                        </div>
-                      );
-                    })()}
-                    
-                    <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                      {isPrimaryAdmin && m.role === 'teacher' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-[#5B7DB1] border-[#5B7DB1] hover:bg-[#5B7DB1]/10"
-                          onClick={() => handlePromote(m.userId)}
-                          disabled={processingMemberId === m.userId}
-                        >
-                          <Crown className="w-3.5 h-3.5 mr-1.5" /> Make Admin
-                        </Button>
-                      )}
-                      
-                      {isPrimaryAdmin && m.role === 'admin' && institution.adminId !== m.userId && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
-                          onClick={() => handleDemote(m.userId)}
-                          disabled={processingMemberId === m.userId}
-                        >
-                          <ShieldMinus className="w-3.5 h-3.5 mr-1.5" /> Demote to Teacher
-                        </Button>
-                      )}
-
-                      {(m.role === 'teacher' || m.role === 'admin') && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-[#5B7DB1]"
-                          onClick={() => onOpenTeacherManagement(m.userId)}
-                          disabled={processingMemberId === m.userId}
-                        >
-                          <Users className="w-3.5 h-3.5 mr-1.5" /> Manage
-                        </Button>
-                      )}
-
-                      {m.role !== 'admin' && (
-                        <>
-                          {m.role === 'teacher' && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => onOpenTransferModal(m.userId, 'teacher', m.userName)}
-                              className="text-gray-500 hover:text-gray-700"
-                              disabled={processingMemberId === m.userId}
-                            >
-                              Transfer
-                            </Button>
-                          )}
-                          {m.role === 'student' && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => onOpenTransferModal(m.userId, 'student', m.userName)}
-                              className="text-gray-500 hover:text-gray-700"
-                              disabled={processingMemberId === m.userId}
-                            >
-                              Change Class
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleRemoveMember(m.userId)}
-                            className="text-red-400 hover:text-red-600"
-                            disabled={processingMemberId === m.userId}
-                          >
-                            {processingMemberId === m.userId ? (
-                              <Loader className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3.5 h-3.5" />
-                            )}
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          {/* Pagination controls */}
+          {/* Pagination controls for students */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-4 mt-4">
               <Button

@@ -6,7 +6,7 @@ import { User, Assessment } from '../types';
 import { getUserAssessments } from '../utils/storage';
 import { getAllAssessmentResults, getUserAssessmentResults } from '../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { Building2, FileText, TrendingUp, LogOut, Eye, GraduationCap, Lightbulb, Brain, BarChart3, MessageSquare, Sparkles, RefreshCw, Clock } from 'lucide-react';
+import { Building2, FileText, TrendingUp, LogOut, Eye, GraduationCap, Lightbulb, Brain, BarChart3, MessageSquare, Sparkles, RefreshCw, Clock, HelpCircle } from 'lucide-react';
 import { AssessmentTaking } from './AssessmentTaking';
 import { AssessmentReport } from './AssessmentReport';
 import { toast } from 'sonner';
@@ -193,55 +193,55 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
     return [
       {
         dimension: 'Concrete Experience',
-        score: kolbAssessment.score.kolb?.scores.CE || 0,
+        score: kolbAssessment?.score?.kolb?.scores?.CE || 0,
         category: 'Learning',
         maxScore: 48,
       },
       {
         dimension: 'Reflective Observation',
-        score: kolbAssessment.score.kolb?.scores.RO || 0,
+        score: kolbAssessment?.score?.kolb?.scores?.RO || 0,
         category: 'Learning',
         maxScore: 48,
       },
       {
         dimension: 'Abstract Conceptualization',
-        score: kolbAssessment.score.kolb?.scores.AC || 0,
+        score: kolbAssessment?.score?.kolb?.scores?.AC || 0,
         category: 'Learning',
         maxScore: 48,
       },
       {
         dimension: 'Active Experimentation',
-        score: kolbAssessment.score.kolb?.scores.AE || 0,
+        score: kolbAssessment?.score?.kolb?.scores?.AE || 0,
         category: 'Learning',
         maxScore: 48,
       },
       {
         dimension: 'Analytical Thinking',
-        score: sternbergAssessment.score.sternberg?.scores.analytical || 0,
+        score: sternbergAssessment?.score?.sternberg?.scores?.analytical || 0,
         category: 'Thinking',
         maxScore: 48,
       },
       {
         dimension: 'Creative Thinking',
-        score: sternbergAssessment.score.sternberg?.scores.creative || 0,
+        score: sternbergAssessment?.score?.sternberg?.scores?.creative || 0,
         category: 'Thinking',
         maxScore: 48,
       },
       {
         dimension: 'Practical Thinking',
-        score: sternbergAssessment.score.sternberg?.scores.practical || 0,
+        score: sternbergAssessment?.score?.sternberg?.scores?.practical || 0,
         category: 'Thinking',
         maxScore: 48,
       },
       {
         dimension: 'Intuitive Decision',
-        score: dualProcessAssessment.score.dualProcess?.scores.system1 || 0,
+        score: dualProcessAssessment?.score?.dualProcess?.scores?.system1 || 0,
         category: 'Decision',
         maxScore: 48,
       },
       {
         dimension: 'Analytical Decision',
-        score: dualProcessAssessment.score.dualProcess?.scores.system2 || 0,
+        score: dualProcessAssessment?.score?.dualProcess?.scores?.system2 || 0,
         category: 'Decision',
         maxScore: 48,
       },
@@ -260,21 +260,21 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
     return [
       {
         framework: 'Learning Agility',
-        CE: kolbAssessment.score.kolb?.scores.CE || 0,
-        RO: kolbAssessment.score.kolb?.scores.RO || 0,
-        AC: kolbAssessment.score.kolb?.scores.AC || 0,
-        AE: kolbAssessment.score.kolb?.scores.AE || 0,
+        CE: kolbAssessment?.score?.kolb?.scores?.CE || 0,
+        RO: kolbAssessment?.score?.kolb?.scores?.RO || 0,
+        AC: kolbAssessment?.score?.kolb?.scores?.AC || 0,
+        AE: kolbAssessment?.score?.kolb?.scores?.AE || 0,
       },
       {
         framework: 'Thinking Diversity',
-        Analytical: sternbergAssessment.score.sternberg?.scores.analytical || 0,
-        Creative: sternbergAssessment.score.sternberg?.scores.creative || 0,
-        Practical: sternbergAssessment.score.sternberg?.scores.practical || 0,
+        Analytical: sternbergAssessment?.score?.sternberg?.scores?.analytical || 0,
+        Creative: sternbergAssessment?.score?.sternberg?.scores?.creative || 0,
+        Practical: sternbergAssessment?.score?.sternberg?.scores?.practical || 0,
       },
       {
         framework: 'Decision Intelligence',
-        Intuitive: dualProcessAssessment.score.dualProcess?.scores.system1 || 0,
-        Analytical: dualProcessAssessment.score.dualProcess?.scores.system2 || 0,
+        Intuitive: dualProcessAssessment?.score?.dualProcess?.scores?.system1 || 0,
+        Analytical: dualProcessAssessment?.score?.dualProcess?.scores?.system2 || 0,
       },
     ];
   };
@@ -340,9 +340,9 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
       type: 'kolb', // Keep type for compatibility
       completedAt: new Date().toISOString(),
       score: {
-        kolb: kolbAssessment.score.kolb,
-        sternberg: sternbergAssessment.score.sternberg,
-        dualProcess: dualProcessAssessment.score.dualProcess
+        kolb: kolbAssessment?.score?.kolb,
+        sternberg: sternbergAssessment?.score?.sternberg,
+        dualProcess: dualProcessAssessment?.score?.dualProcess
       },
       responses: []
     };
@@ -580,13 +580,13 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                           const sternberg = getLatestAssessment('sternberg');
                           const dualProcess = getLatestAssessment('dual-process');
                           
-                          const learningTotal = Object.values(kolb?.score.kolb?.scores || {}).reduce((a: number, b: any) => a + b, 0);
+                          const learningTotal = Object.values(kolb?.score?.kolb?.scores || {}).reduce((a: number, b: any) => a + b, 0);
                           const learningPercent = Math.round((learningTotal / 192) * 100);
                           
-                          const thinkingTotal = Object.values(sternberg?.score.sternberg?.scores || {}).reduce((a: number, b: any) => a + b, 0);
+                          const thinkingTotal = Object.values(sternberg?.score?.sternberg?.scores || {}).reduce((a: number, b: any) => a + b, 0);
                           const thinkingPercent = Math.round((thinkingTotal / 144) * 100);
                           
-                          const decisionTotal = Object.values(dualProcess?.score.dualProcess?.scores || {}).reduce((a: number, b: any) => a + b, 0);
+                          const decisionTotal = Object.values(dualProcess?.score?.dualProcess?.scores || {}).reduce((a: number, b: any) => a + b, 0);
                           const decisionPercent = Math.round((decisionTotal / 96) * 100);
 
                           return (
@@ -925,7 +925,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                   <CardContent>
                     <div className="space-y-2">
                       <Badge variant="outline" className="text-lg">
-                        {getLatestAssessment('kolb')?.score.kolb?.style}
+                        {getLatestAssessment('kolb')?.score?.kolb?.style || 'Pending'}
                       </Badge>
                       <p className="text-sm text-muted-foreground mt-2">
                         Learning Agility Assessment
@@ -944,7 +944,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                   <CardContent>
                     <div className="space-y-2">
                       <Badge variant="outline" className="text-lg">
-                        {getLatestAssessment('sternberg')?.score.sternberg?.style}
+                        {getLatestAssessment('sternberg')?.score?.sternberg?.style || 'Pending'}
                       </Badge>
                       <p className="text-sm text-muted-foreground mt-2">
                         Thinking Diversity Assessment
@@ -963,7 +963,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                   <CardContent>
                     <div className="space-y-2">
                       <Badge variant="outline" className="text-lg">
-                        {getLatestAssessment('dual-process')?.score.dualProcess?.style}
+                        {getLatestAssessment('dual-process')?.score?.dualProcess?.style || 'Pending'}
                       </Badge>
                       <p className="text-sm text-muted-foreground mt-2">
                         Decision Intelligence Assessment
@@ -1001,7 +1001,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                   {hasCompletedAssessment('kolb') ? (
                     <>
                       <div className="p-4 bg-muted rounded-lg">
-                        <p className="text-sm">Your Learning Style: <strong>{getLatestAssessment('kolb')?.score.kolb?.style}</strong></p>
+                        <p className="text-sm">Your Learning Style: <strong>{getLatestAssessment('kolb')?.score?.kolb?.style || 'N/A'}</strong></p>
                         <p className="text-xs text-muted-foreground mt-1">
                           Last assessed: {formatDate(getLatestAssessment('kolb')?.completedAt || '')}
                         </p>
@@ -1046,7 +1046,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                   {hasCompletedAssessment('sternberg') ? (
                     <>
                       <div className="p-4 bg-muted rounded-lg">
-                        <p className="text-sm">Your Thinking Style: <strong>{getLatestAssessment('sternberg')?.score.sternberg?.style}</strong></p>
+                        <p className="text-sm">Your Thinking Style: <strong>{getLatestAssessment('sternberg')?.score?.sternberg?.style || 'N/A'}</strong></p>
                         <p className="text-xs text-muted-foreground mt-1">
                           Last assessed: {formatDate(getLatestAssessment('sternberg')?.completedAt || '')}
                         </p>
@@ -1091,7 +1091,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                   {hasCompletedAssessment('dual-process') ? (
                     <>
                       <div className="p-4 bg-muted rounded-lg">
-                        <p className="text-sm">Your Decision Style: <strong>{getLatestAssessment('dual-process')?.score.dualProcess?.style}</strong></p>
+                        <p className="text-sm">Your Decision Style: <strong>{getLatestAssessment('dual-process')?.score?.dualProcess?.style || 'N/A'}</strong></p>
                         <p className="text-xs text-muted-foreground mt-1">
                           Last assessed: {formatDate(getLatestAssessment('dual-process')?.completedAt || '')}
                         </p>

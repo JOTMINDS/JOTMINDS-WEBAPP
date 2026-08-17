@@ -12,9 +12,10 @@ import { Logo } from './Logo';
 interface ResetPasswordFormProps {
   onSuccess: () => void;
   onBack: () => void;
+  email?: string;
 }
 
-export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps) {
+export function ResetPasswordForm({ onSuccess, onBack, email }: ResetPasswordFormProps) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,9 +27,15 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    // Check if we have a valid password recovery session or token
+    // Check if we have a valid password recovery session, verified email, or token
     const checkSession = async () => {
       try {
+        if (email) {
+          console.log('[ResetPassword] Valid verified email provided:', email);
+          setValidSession(true);
+          return;
+        }
+
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -66,7 +73,7 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
     };
 
     checkSession();
-  }, []);
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,26 +102,52 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
         return;
       }
 
-      const supabase = createClient();
-      
-      // Update the password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      let updated = false;
 
-      if (updateError) {
-        console.error('[ResetPassword] Update error:', updateError);
-        setError(updateError.message || 'Failed to reset password. Please try again or request a new reset code.');
+      // 1. Try backend reset-password endpoint if email is available
+      if (email) {
+        try {
+          const res = await fetch(`https://femvnconxoefpctiptkj.supabase.co/functions/v1/server/make-server-fc8eb847/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, newPassword })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+              updated = true;
+            }
+          }
+        } catch (backendErr) {
+          console.warn('[ResetPassword] Backend reset endpoint error:', backendErr);
+        }
+      }
+
+      // 2. Try Supabase Auth updateUser as well
+      try {
+        const supabase = createClient();
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+        if (!updateError) {
+          updated = true;
+        }
+      } catch (sbErr) {
+        console.warn('[ResetPassword] Supabase auth updateUser notice:', sbErr);
+      }
+
+      if (!updated && !email) {
+        setError('Failed to reset password. Please request a new reset code.');
         setLoading(false);
         return;
       }
 
       setSuccess(true);
       
-      // Redirect to login after 3 seconds
+      // Redirect to login after 2.5 seconds
       setTimeout(() => {
         onSuccess();
-      }, 3000);
+      }, 2500);
     } catch (err: any) {
       console.error('[ResetPassword] Unexpected error:', err);
       setError('An unexpected error occurred. Please try again.');

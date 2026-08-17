@@ -246,7 +246,7 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
       {kolbAssessments.length > 0 && (
         <Card>
           <CardContent className="p-4">
-            {renderAssessmentList(kolbAssessments, 'Learning Style History (Theory-Driven)', 'kolb')}
+            {renderAssessmentList(kolbAssessments, 'Learning Style History', 'kolb')}
           </CardContent>
         </Card>
       )}
@@ -254,7 +254,7 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
       {sternbergAssessments.length > 0 && (
         <Card>
           <CardContent className="p-4">
-            {renderAssessmentList(sternbergAssessments, 'Thinking Style History (Theory-Driven)', 'sternberg')}
+            {renderAssessmentList(sternbergAssessments, 'Thinking Style History', 'sternberg')}
           </CardContent>
         </Card>
       )}
@@ -262,7 +262,7 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
       {dualProcessAssessments.length > 0 && (
         <Card>
           <CardContent className="p-4">
-            {renderAssessmentList(dualProcessAssessments, 'Decision Style History (Theory-Driven)', 'dual-process')}
+            {renderAssessmentList(dualProcessAssessments, 'Decision Style History', 'dual-process')}
           </CardContent>
         </Card>
       )}

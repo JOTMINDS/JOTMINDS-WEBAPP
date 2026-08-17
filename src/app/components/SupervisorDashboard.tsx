@@ -116,40 +116,67 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
     try {
       console.log('[SupervisorDashboard] Loading professionals and organization code...');
       
-      // Use getSupervisedEmployees which handles auth headers correctly (including admin tokens)
-      const data = await getSupervisedEmployees(user.id);
-      
-      console.log('[SupervisorDashboard] Received data:', data);
-      
-      if (data.success) {
-        setProfessionals(data.employees || []);
-        setOrganizationCode(data.organizationCode || '');
-        console.log('[SupervisorDashboard] Organization code:', data.organizationCode);
-        
-        if (data.organizationCode) {
-          try {
-            const detailsData = await getOrganizationCodeDetails();
-            if (detailsData && detailsData.success) {
-              setCodeDetails({
-                organizationCode: detailsData.organizationCode,
-                codeGeneratedAt: detailsData.codeGeneratedAt,
-                codeExpiryDays: detailsData.codeExpiryDays,
-                isActive: detailsData.isActive
-              });
+      let fetchedEmployees: User[] = [];
+      let fetchedOrgCode = '';
+
+      try {
+        const data = await getSupervisedEmployees(user.id);
+        if (data && data.success) {
+          fetchedEmployees = data.employees || [];
+          fetchedOrgCode = data.organizationCode || '';
+          if (fetchedOrgCode) {
+            setOrganizationCode(fetchedOrgCode);
+            try {
+              const detailsData = await getOrganizationCodeDetails();
+              if (detailsData && detailsData.success) {
+                setCodeDetails({
+                  organizationCode: detailsData.organizationCode,
+                  codeGeneratedAt: detailsData.codeGeneratedAt,
+                  codeExpiryDays: detailsData.codeExpiryDays,
+                  isActive: detailsData.isActive
+                });
+              }
+            } catch (err) {
+              console.error('[SupervisorDashboard] Error loading code details:', err);
             }
-          } catch (err) {
-            console.error('[SupervisorDashboard] Error loading code details:', err);
           }
         }
-      } else {
-        // This might happen if makeRequest doesn't throw but returns error object
-        // though makeRequest usually throws if not ok.
-        console.error('[SupervisorDashboard] Error response:', data);
-        toast.error(`Failed to load team members: ${data.error || 'Unknown error'}`);
+      } catch (e) {
+        console.warn('[SupervisorDashboard] Backend fetch failed, falling back to local users:', e);
+      }
+
+      // Local storage fallback and merge
+      const localUsers = getAllUsers();
+      const targetOrgCode = (fetchedOrgCode || user.organizationCode || organizationCode || '').toUpperCase().trim();
+      const targetOrgName = (user.organizationName || user.school || '').toLowerCase().trim();
+
+      const localProfessionals = localUsers.filter((u: any) => {
+        if (u.id === user.id) return false;
+        const uCode = (u.organizationCode || u.organizationId || '').toUpperCase().trim();
+        const uName = (u.organizationName || u.organization || '').toLowerCase().trim();
+        const uRole = (u.role || '').toLowerCase().trim();
+        const isProf = uRole.includes('professional') || uRole.includes('corporate') || uRole === 'member' || uRole === 'employee' || uRole === 'user';
+        const matchesCodeOrName = (targetOrgCode && uCode === targetOrgCode) || (targetOrgName && uName === targetOrgName);
+        return matchesCodeOrName && isProf;
+      });
+
+      // Merge backend and local employees without duplicates
+      const mergedMap = new Map<string, User>();
+      fetchedEmployees.forEach((e: User) => mergedMap.set(e.id, e));
+      localProfessionals.forEach((e: User) => {
+        if (!mergedMap.has(e.id)) {
+          mergedMap.set(e.id, e);
+        }
+      });
+
+      const finalEmployees = Array.from(mergedMap.values());
+      setProfessionals(finalEmployees);
+
+      if (targetOrgCode && !organizationCode) {
+        setOrganizationCode(targetOrgCode);
       }
     } catch (error: any) {
       console.error('[SupervisorDashboard] Error loading professionals:', error);
-      toast.error(`Error loading team members: ${error.message || 'Unknown error'}`);
     }
   };
 

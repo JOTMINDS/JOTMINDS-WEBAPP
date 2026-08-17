@@ -3,7 +3,7 @@ import { projectId, publicAnonKey } from './supabase/info';
 
 const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
 
-export type InstitutionType = 'Primary' | 'JHS' | 'SHS' | 'Tertiary' | 'Vocational' | 'Other';
+export type InstitutionType = 'Primary' | 'JHS' | 'SHS' | 'Primary-JHS' | 'Primary-SHS' | 'Tertiary' | 'Vocational' | 'Other';
 
 export interface Institution {
   id: string;
@@ -646,7 +646,7 @@ export function getMemberCountsByStatus(members: InstitutionMember[]): { total: 
 
 // ─── OTP (Backend OTP Verification Integrations) ──────────────────────────────
 
-export async function generateOTP(contact: string): Promise<string> {
+export async function generateOTP(contact: string, type: string = 'login'): Promise<string> {
   const cleanContact = contact.trim().toLowerCase();
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   
@@ -659,22 +659,25 @@ export async function generateOTP(contact: string): Promise<string> {
 
   const isEmail = contact.includes('@');
 
-  // Dispatch real email via /api/send-otp (Resend integration)
+  // Dispatch real email via backend /send-otp route (Resend + Supabase Auth Admin integration)
   if (isEmail) {
     try {
-      const response = await fetch('/api/send-otp', {
+      const response = await fetch(`${BASE_URL}/send-otp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: contact, otp })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`
+        },
+        body: JSON.stringify({ email: cleanContact, otp, type })
       });
 
       if (!response.ok) {
-        console.warn('[OTP] /api/send-otp returned non-200 status, using local fallback OTP');
+        console.warn('[OTP] Backend /send-otp returned status:', response.status);
       } else {
-        console.log('[OTP] Verification code sent successfully via Resend to:', contact);
+        console.log('[OTP] Verification code sent successfully to:', cleanContact);
       }
     } catch (error: any) {
-      console.warn('[OTP] /api/send-otp error, using local fallback OTP:', error?.message);
+      console.warn('[OTP] Backend /send-otp error:', error?.message);
     }
   }
 

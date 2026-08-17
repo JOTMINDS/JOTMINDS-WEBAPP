@@ -102,6 +102,7 @@ function AppContent() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState<string>('');
 
   // Set document title + run one-time account migrations + sync users
   useEffect(() => {
@@ -501,7 +502,7 @@ function AppContent() {
 
   // Handle password reset independently of user state so it displays correctly
   if (currentView === 'reset-password') {
-    return <ResetPasswordForm onSuccess={() => setCurrentView('auth')} onBack={() => setCurrentView('auth')} />;
+    return <ResetPasswordForm onSuccess={() => setCurrentView('auth')} onBack={() => setCurrentView('auth')} email={resetEmail} />;
   }
 
   if (!user) {
@@ -543,7 +544,15 @@ function AppContent() {
     }
     
     if (currentView === 'forgot-password') {
-      return <ForgotPasswordForm onBack={() => setCurrentView('auth')} onVerified={() => setCurrentView('reset-password')} />;
+      return (
+        <ForgotPasswordForm
+          onBack={() => setCurrentView('auth')}
+          onVerified={(verifiedEmail) => {
+            setResetEmail(verifiedEmail);
+            setCurrentView('reset-password');
+          }}
+        />
+      );
     }
 
     if (currentView === 'oauth-consent' && consentData?.state) {

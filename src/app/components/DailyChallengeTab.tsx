@@ -113,33 +113,47 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
   };
 
   const getAgeGroup = (age: number): 'youth' | 'teen' | 'adult' => {
-    if (age >= AGE_GROUPS.YOUTH.min && age <= AGE_GROUPS.YOUTH.max) return 'youth';
-    if (age >= AGE_GROUPS.TEEN.min && age <= AGE_GROUPS.TEEN.max) return 'teen';
-    return 'adult';
+    const validAge = age || 16;
+    if (validAge >= 6 && validAge <= 14) return 'youth';
+    if (validAge >= 15 && validAge <= 18) return 'teen';
+    return 'teen';
   };
 
   const generateQuestionsChallenge = (ageGroup: string, age: number): DailyChallenge => {
     const questionSets = {
       youth: [
         {
-          question: "When working on a group project, what do you enjoy most?",
+          domainLabel: "Learning Style (Kolb)",
+          question: "When learning something new in class, how do you like to learn best?",
           options: [
-            "Coming up with creative new ideas",
-            "Organizing and planning the steps",
-            "Making sure everyone works together well",
-            "Thinking deeply about what we're learning"
+            "Watching video demonstrations and diagrams (Visual / Abstract)",
+            "Doing hands-on experiments and building things (Concrete / Active)",
+            "Listening quietly and reflecting on examples (Reflective Observation)",
+            "Reading step-by-step summary guides (Assimilating)"
           ],
-          dimension: ['creative', 'analytical', 'practical', 'reflective']
+          dimension: ['visual', 'kinesthetic', 'reflective', 'analytical']
         },
         {
-          question: "How do you prefer to solve a tricky math problem?",
+          domainLabel: "Thinking Style (Sternberg)",
+          question: "When solving a fun class puzzle or assignment, what is your primary strategy?",
           options: [
-            "Try different fun approaches until one works",
-            "Break it down step-by-step carefully",
-            "Use methods I already know work",
-            "Think about why the problem matters"
+            "Logical step-by-step reasoning and checking details (Analytical)",
+            "Thinking of creative, non-traditional ideas (Creative)",
+            "Using real-life examples and practical tools (Practical)",
+            "Reflecting deeply about why the puzzle matters (Reflective)"
           ],
-          dimension: ['creative', 'analytical', 'practical', 'reflective']
+          dimension: ['analytical', 'creative', 'practical', 'reflective']
+        },
+        {
+          domainLabel: "Decision Style (Dual-Process)",
+          question: "When making a quick choice during a quiz or game, how do you decide?",
+          options: [
+            "Go with my rapid first gut feeling (Intuitive - System 1)",
+            "Stop to check the facts carefully first (Deliberate - System 2)",
+            "Ask my team members what they think (Collaborative)",
+            "Combine a quick initial guess with a logic check (Balanced)"
+          ],
+          dimension: ['intuitive', 'deliberate', 'collaborative', 'balanced']
         }
       ],
       teen: [
@@ -179,24 +193,37 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
       ],
       adult: [
         {
-          question: "When approaching a professional challenge, you naturally:",
+          domainLabel: "Learning Style (Kolb)",
+          question: "When learning new methods or concepts, how do you process information best?",
           options: [
-            "Develop innovative strategies and creative solutions",
-            "Conduct systematic analysis and data-driven evaluation",
-            "Implement proven frameworks and actionable steps",
-            "Consider long-term implications and ethical dimensions"
+            "Visual maps and structured conceptual diagrams (Visual / Abstract)",
+            "Direct application and hands-on practice (Concrete / Active)",
+            "Observing expert demos and reflective analysis (Reflective Observation)",
+            "Synthesizing theoretical frameworks and literature (Assimilating)"
           ],
-          dimension: ['creative', 'analytical', 'practical', 'reflective']
+          dimension: ['visual', 'kinesthetic', 'reflective', 'analytical']
         },
         {
-          question: "In team meetings, you add the most value by:",
+          domainLabel: "Thinking Style (Sternberg)",
+          question: "When approaching a professional challenge, what is your default thinking strategy?",
           options: [
-            "Generating fresh ideas and novel approaches",
-            "Identifying logical flaws and strengthening arguments",
-            "Proposing concrete action plans and implementation strategies",
-            "Facilitating deeper understanding and perspective-taking"
+            "Conduct systematic analysis and data-driven evaluation (Analytical)",
+            "Develop innovative strategies and non-linear solutions (Creative)",
+            "Implement proven frameworks and actionable steps (Practical)",
+            "Consider long-term systemic implications and ethics (Reflective)"
           ],
-          dimension: ['creative', 'analytical', 'practical', 'reflective']
+          dimension: ['analytical', 'creative', 'practical', 'reflective']
+        },
+        {
+          domainLabel: "Decision Style (Dual-Process)",
+          question: "In key decision-making scenarios, how do you make high-stakes choices?",
+          options: [
+            "Leverage rapid pattern recognition and intuition (Intuitive - System 1)",
+            "Conduct structured risk analysis and evidence checks (Deliberate - System 2)",
+            "Seek consensus and collaborative feedback (Collaborative)",
+            "Integrate rapid intuition with deliberate verification (Balanced)"
+          ],
+          dimension: ['intuitive', 'deliberate', 'collaborative', 'balanced']
         }
       ]
     };
@@ -727,8 +754,13 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
         return (
           <div className="space-y-6">
             {todayChallenge.content.questions.map((q: any, qIndex: number) => (
-              <div key={qIndex} className="p-4 bg-white rounded-lg border-2 border-indigo-200">
-                <p className="font-semibold mb-4 text-gray-900">
+              <div key={qIndex} className="p-4 bg-white dark:bg-gray-900 rounded-xl border-2 border-indigo-200 dark:border-indigo-900 shadow-xs">
+                {q.domainLabel && (
+                  <Badge variant="outline" className="mb-2 text-[#6B4C9A] bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800 font-bold text-[11px]">
+                    {q.domainLabel}
+                  </Badge>
+                )}
+                <p className="font-semibold mb-4 text-gray-900 dark:text-white text-sm">
                   {qIndex + 1}. {q.question}
                 </p>
                 <RadioGroup

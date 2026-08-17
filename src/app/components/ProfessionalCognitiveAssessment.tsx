@@ -108,10 +108,12 @@ export function ProfessionalCognitiveAssessment({ onComplete, onBack }: Professi
     const currentResponses = [...(responses[sectionKey] || [])];
     currentResponses[currentQuestion] = value;
     
-    setResponses({
+    const updatedResponses = {
       ...responses,
       [sectionKey]: currentResponses
-    });
+    };
+
+    setResponses(updatedResponses);
 
     // Auto-advance to next question
     setTimeout(() => {
@@ -122,7 +124,7 @@ export function ProfessionalCognitiveAssessment({ onComplete, onBack }: Professi
         setCurrentQuestion(0);
       } else {
         // Assessment complete
-        onComplete(responses);
+        onComplete(updatedResponses);
       }
     }, 300);
   };

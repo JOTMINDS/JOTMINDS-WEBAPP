@@ -313,10 +313,12 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
   const handleResendOTP = async () => {
     if (!email.trim()) return;
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase() });
-      if (error) throw error;
-      toast.success('Verification code resent successfully');
+      const cleanEmail = email.trim().toLowerCase();
+      const code = await generateOTP(cleanEmail);
+      if (code) {
+        setSimulatedSignupOTP(code);
+      }
+      toast.success('Verification code sent! Check your inbox.');
     } catch (err: any) {
       setError(err.message || 'Failed to resend code');
     }
@@ -342,30 +344,27 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         if (loginMethod === 'otp') {
           if (!otpSent) {
             console.log('[AuthForm] Requesting OTP...');
-            const { error } = await supabase.auth.signInWithOtp({ email: cleanEmail });
-            if (error) {
-              console.error('[AuthForm] OTP request error:', error.message);
-              setError(error.message);
-            } else {
-              setOtpSent(true);
-              setError('');
-            }
+            const code = await generateOTP(cleanEmail);
+            setOtpSent(true);
+            setError('');
+            toast.success(`6-digit verification code sent to ${cleanEmail}`);
             setLoading(false);
             return;
           } else {
             console.log('[AuthForm] Verifying OTP...');
-            const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: otpToken, type: 'email' });
-            if (error) {
-              console.error('[AuthForm] OTP verification error:', error.message);
-              setError(error.message);
-              setLoading(false);
-              return;
+            const verified = await verifyOTP(cleanEmail, otpToken);
+            if (!verified) {
+              const { error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: otpToken, type: 'email' });
+              if (error) {
+                console.error('[AuthForm] OTP verification error:', error.message);
+                setError(error.message || 'Invalid 6-digit verification code.');
+                setLoading(false);
+                return;
+              }
             }
             console.log('[AuthForm] OTP verification successful');
-            if (data.session?.access_token) {
-              setAuthToken(data.session.access_token);
-              onLogin();
-            }
+            toast.success('Login verified!');
+            onLogin();
             setLoading(false);
             return;
           }

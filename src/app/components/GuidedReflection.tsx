@@ -221,7 +221,7 @@ export function GuidedReflection({ cognitiveStyle, assessmentType, onSaveReflect
   const [loadingAi, setLoadingAi] = useState<Record<number, boolean>>({});
 
   const handleGetAIFeedback = async (index: number) => {
-    const text = responses[index] || '';
+    const text = reflections[index] || '';
     if (!text.trim() || text.trim().length < 10) {
       toast.error('Please write at least a sentence before requesting coaching feedback.');
       return;

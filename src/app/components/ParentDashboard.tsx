@@ -1308,7 +1308,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                             <div>
                               <Badge className="bg-purple-600 text-white text-xs mb-1">Adult Cognitive Profile</Badge>
                               <h4 className="text-xl font-black text-slate-900 capitalize">
-                                Primary Style: {score?.dominantStyle || score?.primaryStyle || 'Completed'}
+                                Primary Style: {score?.dominantStyle || (score as any)?.primaryStyle || 'Completed'}
                               </h4>
                               <p className="text-xs text-slate-500">
                                 Completed on {new Date(ast.completedAt).toLocaleDateString()}
