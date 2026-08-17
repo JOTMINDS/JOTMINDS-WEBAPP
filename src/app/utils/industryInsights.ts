@@ -234,7 +234,9 @@ export function getPersonalizedIndustryInsights(
   }
 
   // Add general industry insights
-  insights.push(`In ${sector}, professionals typically need: ${industryProfile.keySkills.slice(0, 3).join(', ')}.`);
+  if (industryProfile?.keySkills && Array.isArray(industryProfile.keySkills)) {
+    insights.push(`In ${sector}, professionals typically need: ${industryProfile.keySkills.slice(0, 3).join(', ')}.`);
+  }
 
   return insights.length > 0 ? insights : [`Your cognitive profile can be valuable in various ${sector} roles.`];
 }
@@ -247,8 +249,12 @@ export function getIndustryCareerGrowth(
   const recommendations: string[] = [];
   const industryProfile = industryProfiles[sector];
 
-  recommendations.push(`Explore these ${sector} roles: ${industryProfile.relevantRoles.slice(0, 3).join(', ')}`);
-  recommendations.push(...industryProfile.developmentTips.slice(0, 2));
+  if (industryProfile?.relevantRoles && Array.isArray(industryProfile.relevantRoles)) {
+    recommendations.push(`Explore these ${sector} roles: ${industryProfile.relevantRoles.slice(0, 3).join(', ')}`);
+  }
+  if (industryProfile?.developmentTips && Array.isArray(industryProfile.developmentTips)) {
+    recommendations.push(...industryProfile.developmentTips.slice(0, 2));
+  }
 
-  return recommendations;
+  return recommendations.length > 0 ? recommendations : ['Continue seeking cross-functional professional development opportunities.'];
 }

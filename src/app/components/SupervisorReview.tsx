@@ -101,8 +101,8 @@ export function SupervisorReview({
   const getSuggestedRoles = () => {
     const roles: string[] = [];
     
-    if (latestLearning) {
-      const style = latestLearning.score.kolb?.style;
+    if (latestLearning?.score?.kolb?.style) {
+      const style = latestLearning.score.kolb.style;
       switch (style) {
         case 'Diverging':
           roles.push('Team Facilitator', 'Creative Director', 'Human Resources', 'Counselor');
@@ -119,8 +119,8 @@ export function SupervisorReview({
       }
     }
 
-    if (latestThinking) {
-      const style = latestThinking.score.sternberg?.style;
+    if (latestThinking?.score?.sternberg?.style) {
+      const style = latestThinking.score.sternberg.style;
       if (style === 'Analytical') roles.push('Quality Assurance', 'Auditor');
       if (style === 'Creative') roles.push('Innovation Lead', 'Product Designer');
       if (style === 'Practical') roles.push('Customer Success', 'Operations Lead');

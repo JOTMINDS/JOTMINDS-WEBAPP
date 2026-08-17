@@ -69,14 +69,14 @@ export function ProfessionalAssessmentReport({
   };
 
   const getRadarData = () => {
-    if (!assessment.score.kolb) return [];
+    if (!assessment?.score?.kolb?.scores) return [];
     
     const scores = assessment.score.kolb.scores;
     return [
-      { name: 'Concrete\nExperience', value: (scores as any).CE, fullMark: 40 },
-      { name: 'Reflective\nObservation', value: (scores as any).RO, fullMark: 40 },
-      { name: 'Abstract\nConceptualization', value: (scores as any).AC, fullMark: 40 },
-      { name: 'Active\nExperimentation', value: (scores as any).AE, fullMark: 40 },
+      { name: 'Concrete\nExperience', value: (scores as any)?.CE || 0, fullMark: 40 },
+      { name: 'Reflective\nObservation', value: (scores as any)?.RO || 0, fullMark: 40 },
+      { name: 'Abstract\nConceptualization', value: (scores as any)?.AC || 0, fullMark: 40 },
+      { name: 'Active\nExperimentation', value: (scores as any)?.AE || 0, fullMark: 40 },
     ];
   };
 
@@ -84,8 +84,8 @@ export function ProfessionalAssessmentReport({
     const competencies: CompetencyFit[] = [];
 
     // Map based on Kolb learning style
-    if (assessment.score.kolb) {
-      const { AC, AE, CE, RO } = assessment.score.kolb.scores;
+    if (assessment?.score?.kolb?.scores) {
+      const { AC = 0, AE = 0, CE = 0, RO = 0 } = assessment.score.kolb.scores;
       
       if (AC > 25) {
         competencies.push({
@@ -105,8 +105,8 @@ export function ProfessionalAssessmentReport({
     }
 
     // Map based on Sternberg thinking style
-    if (assessment.score.sternberg) {
-      const { creative, analytical, practical } = assessment.score.sternberg.scores;
+    if (assessment?.score?.sternberg?.scores) {
+      const { creative = 0, analytical = 0, practical = 0 } = assessment.score.sternberg.scores;
       
       if (creative > 25) {
         competencies.push({
@@ -134,8 +134,8 @@ export function ProfessionalAssessmentReport({
     }
 
     // Map based on decision-making style
-    if (assessment.score.dualProcess) {
-      const { system1, system2 } = assessment.score.dualProcess.scores;
+    if (assessment?.score?.dualProcess?.scores) {
+      const { system1 = 0, system2 = 0 } = assessment.score.dualProcess.scores;
       const isBalanced = Math.abs(system1 - system2) < 10;
       
       competencies.push({
@@ -149,9 +149,9 @@ export function ProfessionalAssessmentReport({
   };
 
   const getLearningStyleDetail = (): string => {
-    if (!assessment.score.kolb) return 'Not assessed';
+    if (!assessment?.score?.kolb?.scores) return 'Not assessed';
     
-    const { AC, AE, CE, RO } = (assessment.score.kolb as any).scores;
+    const { AC = 0, AE = 0, CE = 0, RO = 0 } = (assessment.score.kolb as any).scores || {};
     const dominantDimensions: string[] = [];
     const avg = (AC + AE + CE + RO) / 4;
     
@@ -160,13 +160,13 @@ export function ProfessionalAssessmentReport({
     if (CE > avg) dominantDimensions.push('Concrete Experience');
     if (RO > avg) dominantDimensions.push('Reflective Observation');
     
-    return dominantDimensions.join(' + ');
+    return (dominantDimensions || []).join(' + ') || 'Balanced';
   };
 
   const getThinkingStyleDetail = (): string => {
-    if (!assessment.score.sternberg) return 'Not assessed';
+    if (!assessment?.score?.sternberg?.scores) return 'Not assessed';
     
-    const { creative, analytical, practical } = assessment.score.sternberg.scores;
+    const { creative = 0, analytical = 0, practical = 0 } = assessment.score.sternberg.scores || {};
     const styles: string[] = [];
     const avg = (creative + analytical + practical) / 3;
     
@@ -174,15 +174,15 @@ export function ProfessionalAssessmentReport({
     if (analytical > avg) styles.push('Analytical');
     if (practical > avg) styles.push('Practical');
     
-    return styles.join(' + ') || assessment.score.sternberg.style;
+    return (styles || []).join(' + ') || assessment?.score?.sternberg?.style || 'Balanced';
   };
 
   const getKeyInsights = () => {
     const insights: string[] = [];
     
     // Learning insights
-    if (assessment.score.kolb) {
-      const { AC, AE, CE, RO } = assessment.score.kolb.scores;
+    if (assessment?.score?.kolb?.scores) {
+      const { AC = 0, AE = 0, CE = 0, RO = 0 } = assessment.score.kolb.scores;
       if (AC > 30 && AE > 30) {
         insights.push('Strategic conceptualization with strong execution — ideal for leadership roles');
       }
@@ -192,16 +192,16 @@ export function ProfessionalAssessmentReport({
     }
     
     // Thinking insights
-    if (assessment.score.sternberg) {
-      const { creative, analytical } = assessment.score.sternberg.scores;
+    if (assessment?.score?.sternberg?.scores) {
+      const { creative = 0, analytical = 0 } = assessment.score.sternberg.scores;
       if (creative > 30 && analytical > 30) {
         insights.push('Rare balance of creativity with analytical rigor — data-driven innovation');
       }
     }
     
     // Decision-making insights
-    if (assessment.score.dualProcess) {
-      const { system1, system2 } = assessment.score.dualProcess.scores;
+    if (assessment?.score?.dualProcess?.scores) {
+      const { system1 = 0, system2 = 0 } = assessment.score.dualProcess.scores;
       if (Math.abs(system1 - system2) < 10) {
         insights.push('Adaptable decision-making — uses both intuition and analysis contextually');
       }
@@ -213,8 +213,8 @@ export function ProfessionalAssessmentReport({
   const getDevelopmentNeeds = () => {
     const needs: string[] = [];
     
-    if (assessment.score.kolb) {
-      const { AC, AE, CE, RO } = assessment.score.kolb.scores;
+    if (assessment?.score?.kolb?.scores) {
+      const { AC = 0, AE = 0, CE = 0, RO = 0 } = assessment.score.kolb.scores;
       const min = Math.min(AC, AE, CE, RO);
       
       if (CE === min && CE < 20) {
@@ -231,8 +231,8 @@ export function ProfessionalAssessmentReport({
       }
     }
     
-    if (assessment.score.sternberg) {
-      const { creative, analytical, practical } = assessment.score.sternberg.scores;
+    if (assessment?.score?.sternberg?.scores) {
+      const { creative = 0, analytical = 0, practical = 0 } = assessment.score.sternberg.scores;
       const min = Math.min(creative, analytical, practical);
       
       if (creative === min && creative < 25) {
@@ -253,17 +253,17 @@ export function ProfessionalAssessmentReport({
     const recommendations: string[] = [];
     
     // Personalized recommendations based on cognitive profile
-    if (assessment.score.sternberg?.style === 'Creative' && assessment.score.kolb?.style === 'Accommodating') {
+    if (assessment?.score?.sternberg?.style === 'Creative' && assessment?.score?.kolb?.style === 'Accommodating') {
       recommendations.push('Pair with an analytical team member for campaign performance tracking and optimization');
       recommendations.push('Encourage experimentation with new channels — learns fastest through testing and iteration');
-    } else if (assessment.score.sternberg?.style === 'Analytical') {
+    } else if (assessment?.score?.sternberg?.style === 'Analytical') {
       recommendations.push('Balance analytical depth with creative brainstorming sessions');
       recommendations.push('Practice rapid prototyping to complement thorough analysis');
     }
     
     // Learning style recommendations
-    if (assessment.score.kolb) {
-      const { AC, AE } = assessment.score.kolb.scores;
+    if (assessment?.score?.kolb?.scores) {
+      const { AC = 0, AE = 0 } = assessment.score.kolb.scores;
       if (AC > 30 && AE > 30) {
         recommendations.push('Leverage strategic planning abilities before diving into execution');
       }

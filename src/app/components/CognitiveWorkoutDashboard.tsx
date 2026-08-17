@@ -312,7 +312,7 @@ export function CognitiveWorkoutDashboard({ userId, onBack, onStartLesson, onSta
                     <div key={idx} className="p-4 bg-white rounded-lg border-2 border-yellow-200">
                       <div className="flex items-center justify-between mb-2">
                         <div className="font-semibold text-yellow-900">
-                          {synergy.combination.join(' + ')}
+                          {((synergy as any)?.combination || []).join(' + ')}
                         </div>
                         <Badge className="bg-yellow-600 text-white">
                           +{synergy.bonus}% Bonus
