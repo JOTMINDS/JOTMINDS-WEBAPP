@@ -723,12 +723,7 @@ export async function verifyOTP(contact: string, entered: string): Promise<boole
     console.warn('[OTP] Storage scan warning:', e);
   }
 
-  // 3. Allow dev / master fallback code
-  if (cleanEntered === '123456' || cleanEntered === '000000') {
-    return true;
-  }
-
-  // 4. Attempt server verification as secondary check
+  // 3. Attempt server verification as secondary check
   try {
     const token = await getAuthToken();
     const res = await fetch(`${BASE_URL}/verify-otp`, {
@@ -746,12 +741,6 @@ export async function verifyOTP(contact: string, entered: string): Promise<boole
     }
   } catch {
     // Ignore server error and fallback
-  }
-
-  // 5. Fallback for valid 6-digit numeric OTPs in demo/simulated mode
-  if (/^\d{6}$/.test(cleanEntered)) {
-    console.log('[OTP] Accepted 6-digit OTP in simulated mode:', cleanEntered);
-    return true;
   }
 
   return false;

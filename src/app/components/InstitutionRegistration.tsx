@@ -502,10 +502,7 @@ export function InstitutionRegistration({ user, onComplete, onBack }: Institutio
                     <Button size="sm" variant="outline" onClick={sendPhoneOTP} className="w-full">Send SMS Code</Button>
                   ) : (
                     <div className="space-y-3">
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                        <p className="font-semibold mb-1">📱 Demo Mode — SMS Code</p>
-                        <p>In production this would be sent via SMS. Your code is: <strong className="font-mono text-lg">{simulatedPhoneOTP}</strong></p>
-                      </div>
+                      <p className="text-xs text-slate-600 mb-2">Verification code sent to {phone}.</p>
                       <div className="flex gap-2">
                         <Input placeholder="Enter 6-digit code" value={phoneOTP} onChange={e => setPhoneOTP(e.target.value)} maxLength={6} className="font-mono" />
                         <Button size="sm" onClick={verifyPhoneOTP} style={{ backgroundColor: '#5B7DB1' }}>Verify</Button>

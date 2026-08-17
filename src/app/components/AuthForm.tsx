@@ -1222,11 +1222,6 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                         required
                       />
                     </div>
-                    {simulatedSignupOTP && (
-                      <p className="text-xs text-orange-500 mt-1">
-                        Dev Mode Simulated OTP: {simulatedSignupOTP}
-                      </p>
-                    )}
                   </div>
                 </div>
               )}
