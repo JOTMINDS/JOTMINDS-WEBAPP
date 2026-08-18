@@ -56,7 +56,7 @@ interface InstitutionDashboardProps {
   onProfileUpdate?: () => void;
 }
 
-type Tab = 'overview' | 'members' | 'manage_students' | 'classes' | 'analytics' | 'reports' | 'settings' | 'profile' | 'teacher_styles' | 'training' | 'teacher_workspace';
+type Tab = 'overview' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile';
 
 export function InstitutionDashboard({
   user,
@@ -341,28 +341,26 @@ export function InstitutionDashboard({
   
   const institutionNavGroups: NavGroup[] = [
     {
-      groupLabel: 'School Administration',
+      groupLabel: 'A. SCHOOL ADMINISTRATION',
       items: [
-        { id: 'overview', label: 'School Overview', icon: Building2 },
-        { id: 'members', label: 'Members & Roster', icon: Users },
-        ...(isPrimaryAdmin || isCoAdmin ? [{ id: 'classes', label: 'Classes & Groups', icon: Building2 }] : []),
+        { id: 'overview', label: '1. Overview', icon: Building2 },
+        { id: 'manage_students', label: '2. Student Management', icon: Users },
+        { id: 'student_insights', label: '3. Student Insights', icon: BarChart3 },
       ]
     },
     {
-      groupLabel: 'Analytics & Insights',
+      groupLabel: 'B. TEACHING & ANALYTICS',
       items: [
-        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-        { id: 'reports', label: 'Reports & Export', icon: Download },
-        { id: 'teacher_styles', label: 'Insights Portal', icon: Brain, badge: 'Insights', badgeVariant: 'default' },
+        { id: 'teacher_management', label: '1. Teacher Management', icon: Users },
+        { id: 'teaching_analytics', label: '2. Analytics', icon: Brain },
+        { id: 'reports', label: '3. Reports', icon: Download },
       ]
     },
     {
-      groupLabel: 'Account & Settings',
+      groupLabel: 'C. ACCOUNT & SETTINGS',
       items: [
-        ...(isPrimaryAdmin ? [{ id: 'settings', label: 'School Settings', icon: Settings }] : []),
-        { id: 'training', label: 'Training & Resources', icon: BookOpen },
-        { id: 'teacher_workspace', label: 'My Teacher Workspace', icon: GraduationCap, badge: 'Teacher Mode', badgeVariant: 'default' },
-        { id: 'profile', label: 'My Personal Portal', icon: Shield, badge: 'Personal', badgeVariant: 'secondary' },
+        ...(isPrimaryAdmin ? [{ id: 'settings', label: '1. School Settings', icon: Settings }] : []),
+        { id: 'profile', label: '2. Administrator', icon: Shield },
       ]
     }
   ];
@@ -441,7 +439,7 @@ export function InstitutionDashboard({
           />
         )}
 
-        {tab === 'members' && (
+        {tab === 'teacher_management' && (
           <InstitutionMembers
             institution={institution}
             members={members}
@@ -452,7 +450,7 @@ export function InstitutionDashboard({
             onRefresh={loadData}
             onPromoteMember={handlePromoteMember}
             onDemoteMember={handleDemoteMember}
-            onViewTeacherStyles={() => setTab('teacher_styles')}
+            onViewTeacherStyles={() => setTab('teaching_analytics')}
             onOpenInviteModal={(email, role) => {
               setInviteModalEmail(email || '');
               setInviteModalRole(role || 'teacher');
@@ -483,15 +481,9 @@ export function InstitutionDashboard({
           />
         )}
 
-        {tab === 'classes' && (
-          <ClassManagement 
-            institutionMembers={members} 
-            allPlatformUsers={allPlatformUsers} 
-            institutionId={institution?.id} 
-          />
-        )}
 
-        {tab === 'analytics' && (
+
+        {tab === 'student_insights' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <SchoolAnalyticsDashboard user={user} onBack={() => setTab('overview')} embedded={true} institutionMembers={members} />
           </div>
@@ -511,36 +503,12 @@ export function InstitutionDashboard({
           <InstitutionSettings institution={institution} onInstitutionUpdate={setInstitution} />
         )}
 
-        {tab === 'training' && (
-          <TrainingPage />
-        )}
-
-        {tab === 'teacher_styles' && (
+        {tab === 'teaching_analytics' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px] relative">
             <SchoolTeacherStylesView 
               admin={user} 
               teachers={members.filter(m => m.status === 'approved' && m.role === 'teacher').map(m => allPlatformUsers.find(u => u.id === m.userId)).filter(Boolean) as User[]}
-              onBack={() => setTab('members')} 
-            />
-          </div>
-        )}
-
-        {tab === 'teacher_workspace' && (
-          <div className="space-y-4">
-            <div className="bg-[#5B7DB1]/10 border border-[#5B7DB1]/30 rounded-xl p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-semibold text-[#5B7DB1]">
-                <Badge className="bg-[#5B7DB1] text-white">Teacher Mode</Badge>
-                <span>Managing your personal classes & students for {user.name}</span>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => setTab('overview')} className="text-xs text-[#5B7DB1] border-[#5B7DB1]">
-                ← Back to School Admin
-              </Button>
-            </div>
-            <TeacherDashboardNew
-              user={user}
-              onLogout={onLogout}
-              onViewSettings={() => setTab('profile')}
-              onViewInstitutionDashboard={() => setTab('overview')}
+              onBack={() => setTab('teacher_management')} 
             />
           </div>
         )}

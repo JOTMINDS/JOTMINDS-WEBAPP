@@ -60,7 +60,7 @@ export function InstitutionMembers({
 }: InstitutionMembersProps) {
   // Member search
   const [memberSearch, setMemberSearch] = useState('');
-  const [memberRoleFilter, setMemberRoleFilter] = useState<'all' | 'admin' | 'teacher' | 'student'>('all');
+  const [memberRoleFilter, setMemberRoleFilter] = useState<'all' | 'admin' | 'teacher'>('all');
 
   // Batch approve/reject state
   const [selectedPending, setSelectedPending] = useState<Set<string>>(new Set());
@@ -76,7 +76,7 @@ export function InstitutionMembers({
   const [processingMemberId, setProcessingMemberId] = useState<string | null>(null);
 
   // Collapsible groups state
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['admin', 'teacher', 'student']));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['admin', 'teacher']));
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => {
       const next = new Set(prev);
@@ -122,14 +122,6 @@ export function InstitutionMembers({
 
   const adminMembers = useMemo(() => approvedMembers.filter(m => m.role === 'admin'), [approvedMembers]);
   const teacherMembers = useMemo(() => approvedMembers.filter(m => m.role === 'teacher'), [approvedMembers]);
-  const studentMembers = useMemo(() => approvedMembers.filter(m => m.role === 'student'), [approvedMembers]);
-
-  // Pagination for student members only
-  const paginatedStudentMembers = useMemo(
-    () => studentMembers.slice((membersPage - 1) * MEMBERS_PER_PAGE, membersPage * MEMBERS_PER_PAGE),
-    [studentMembers, membersPage]
-  );
-  const totalPages = Math.ceil(studentMembers.length / MEMBERS_PER_PAGE);
 
   const counts = getMemberCounts(members);
 
@@ -476,7 +468,7 @@ export function InstitutionMembers({
             />
           </div>
           <div className="flex gap-1">
-            {(['all', 'admin', 'teacher', 'student'] as const).map(r => (
+            {(['all', 'admin', 'teacher'] as const).map(r => (
               <button
                 key={r}
                 onClick={() => setMemberRoleFilter(r)}
@@ -496,20 +488,16 @@ export function InstitutionMembers({
               <Brain className="w-4 h-4 mr-2" /> Teacher Analytics
             </Button>
           )}
-          <Button variant="outline" onClick={onOpenBulkUploadModal}>
-            <Upload className="w-4 h-4 mr-2" /> Bulk Upload Students
-          </Button>
           <Button style={{ backgroundColor: '#6B4C9A' }} onClick={() => onOpenInviteModal()}>
             <UserPlus className="w-4 h-4 mr-2" /> Invite Member
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[
-          { label: 'Total', value: counts.total, color: '#5B7DB1' },
+          { label: 'Total', value: counts.total - counts.students, color: '#5B7DB1' },
           { label: 'Teachers', value: counts.teachers, color: '#6B4C9A' },
-          { label: 'Students', value: counts.students, color: '#1E8A6E' },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="pt-3 pb-3 text-center">
@@ -714,34 +702,6 @@ export function InstitutionMembers({
           
           {/* Teacher group */}
           {teacherMembers.length > 0 && renderRoleGroup(teacherMembers, 'Teachers', 'teacher', ROLE_COLORS.teacher)}
-          
-          {/* Student group */}
-          {studentMembers.length > 0 && renderRoleGroup(paginatedStudentMembers, 'Students', 'student', ROLE_COLORS.student)}
-
-          {/* Pagination controls for students */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setMembersPage(p => Math.max(1, p - 1))}
-                disabled={membersPage === 1}
-              >
-                ← Previous
-              </Button>
-              <span className="text-sm text-gray-600">
-                Page {membersPage} of {totalPages}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setMembersPage(p => Math.min(totalPages, p + 1))}
-                disabled={membersPage === totalPages}
-              >
-                Next →
-              </Button>
-            </div>
-          )}
         </div>
       )}
     </div>

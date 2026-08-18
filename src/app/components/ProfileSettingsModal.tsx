@@ -45,7 +45,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  const isOrg = user?.role === 'organization' || user?.role === 'supervisor' || user?.role === 'Supervisor';
+  const isOrg = user?.role === 'organization' || user?.role === 'supervisor' || user?.role === 'Supervisor' || user?.role === 'admin';
 
   const fetchInstitutionProfile = async () => {
     if (!isOrg || !user.organizationCode) return;
@@ -367,9 +367,33 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                       {isAssigning ? <Loader className="h-4 w-4 animate-spin" /> : 'Assign Role'}
                     </Button>
                   </form>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {roleDescriptionText}
-                  </p>
+                  <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800/50 gap-4">
+                      <div>
+                        <h4 className="font-medium text-purple-900 dark:text-purple-100 flex items-center gap-2">
+                          <Power className="h-4 w-4" /> Professional Account
+                        </h4>
+                        <p className="text-sm text-purple-700/80 dark:text-purple-300/80 mt-1">
+                          Access your personal professional dashboard, cognitive profile, and career insights.
+                        </p>
+                      </div>
+                      <Button 
+                        variant="default"
+                        className="bg-purple-600 hover:bg-purple-700 text-white shrink-0"
+                        onClick={() => {
+                          if (window.confirm("Switch to your Professional account view?")) {
+                            import('../utils/storage').then(({ saveUser }) => {
+                              const updatedUser = { ...user, role: 'professional', previousRole: user.role };
+                              saveUser(updatedUser);
+                              window.location.reload();
+                            });
+                          }
+                        }}
+                      >
+                        Go to Professional Portal
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
@@ -429,7 +453,33 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                 </div>
               </form>
               
-
+              {/* If they are in professional view and have a previous role, let them go back */}
+              {(user?.role === 'professional' && user?.previousRole === 'admin') && (
+                <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4" /> Administrator Account
+                    </h4>
+                    <p className="text-sm text-blue-700/80 dark:text-blue-300/80 mt-1">
+                      Return to your school administration dashboard.
+                    </p>
+                  </div>
+                  <Button 
+                    variant="default"
+                    className="bg-blue-600 hover:bg-blue-700 text-white shrink-0"
+                    onClick={() => {
+                      import('../utils/storage').then(({ saveUser }) => {
+                        const updatedUser = { ...user, role: user.previousRole };
+                        delete updatedUser.previousRole;
+                        saveUser(updatedUser);
+                        window.location.reload();
+                      });
+                    }}
+                  >
+                    Return to Admin Portal
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
