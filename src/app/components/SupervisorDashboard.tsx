@@ -72,6 +72,10 @@ export function mapAssessmentsToResponses(assessments: any[]) {
   const sternberg = assessments.find(a => a.type === 'sternberg');
   const dual = assessments.find(a => a.type === 'dual-process');
   
+  if (!profCognitive && !kolb && !sternberg && !dual) {
+    return null;
+  }
+  
   let learningScore = 15;
   if (kolb && kolb.scores) {
      learningScore = Math.min(30, Math.round(((kolb.scores.ae || 0) + (kolb.scores.ce || 0)) * 1.5));
@@ -233,7 +237,8 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
     const rows = professionals.map(prof => {
       const assessments = prof.assessments || getAssessmentsByUserId(prof.id);
       const completedAssessments = assessments.filter((a: any) => a.completedAt);
-      const profile = calculateProfessionalCognitiveProfile(mapAssessmentsToResponses(completedAssessments));
+      const responses = mapAssessmentsToResponses(completedAssessments);
+      const profile = responses ? calculateProfessionalCognitiveProfile(responses) : null;
       const reviews = prof.reviews || getReviewsByProfessional(prof.id);
       const lastReview = reviews.length > 0 ? formatDate(reviews[0].createdAt) : 'Never';
       
@@ -242,7 +247,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
         `"${prof.email}"`,
         `"${prof.position || prof.role || 'Member'}"`,
         completedAssessments.length,
-        `"${profile.thinking.style}"`,
+        `"${profile ? profile.thinking.style : 'Pending'}"`,
         `"${lastReview}"`
       ].join(',');
     });
@@ -991,7 +996,28 @@ function ProfessionalReviewSection({
   }
 
   if (isViewingProfile) {
-    const profile = calculateProfessionalCognitiveProfile(mapAssessmentsToResponses(completedAssessments));
+    const responses = mapAssessmentsToResponses(completedAssessments);
+    if (!responses) {
+      return (
+        <Card className="h-full">
+          <CardContent className="flex flex-col items-center justify-center h-full p-12 text-center space-y-4">
+            <Clock className="h-12 w-12 text-muted-foreground opacity-50" />
+            <div>
+              <h3 className="font-semibold text-lg">{professional.name} hasn't completed any assessments</h3>
+              <p className="text-muted-foreground mt-1">
+                Reviews can be added once they complete at least one cognitive assessment.
+              </p>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" onClick={() => setIsViewingProfile(false)}>
+                Back to Details
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    const profile = calculateProfessionalCognitiveProfile(responses);
     return (
       <ProfessionalCognitiveResults 
         profile={profile}
