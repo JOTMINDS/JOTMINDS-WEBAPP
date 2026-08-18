@@ -467,12 +467,12 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       <div className="flex items-center gap-2">
         <Button 
           variant="default" 
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium shadow-sm flex items-center gap-1.5" 
+          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium shadow-sm flex items-center gap-1.5" 
           size="sm" 
-          onClick={onViewTeacherIntelligence}
+          onClick={() => setActiveTab('analytics')}
         >
-          <Sparkles className="w-4 h-4" />
-          Ask Jotti
+          <Brain className="w-4 h-4" />
+          Central Analytics Hub
         </Button>
         {onViewInstitutionDashboard && (
           <Button variant="outline" size="sm" onClick={onViewInstitutionDashboard}>
@@ -667,6 +667,22 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
 
       </div>
+
+      {/* Floating Ask Jotti Button */}
+      {onViewTeacherIntelligence && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+            <button
+              onClick={onViewTeacherIntelligence}
+              className="relative flex items-center justify-center gap-2 h-14 px-6 rounded-full shadow-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-transform hover:scale-105 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            >
+              <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Ask Jotti</span>
+            </button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
