@@ -62,6 +62,12 @@ export function NudgesPanel({ userId, onNavigate, isNavbarMode = false }: Props)
     loadNudges();
   };
 
+  const handleToggleReminders = () => {
+    const newEnabled = !remindersEnabled;
+    updateReminderSchedule(userId, { enabled: newEnabled });
+    setRemindersEnabled(newEnabled);
+  };
+
   const buttonClass = isNavbarMode
     ? "relative h-10 w-10 rounded-full bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800"
     : "relative h-14 w-14 rounded-full shadow-xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 transition-transform hover:scale-105 hover:bg-zinc-50 dark:hover:bg-zinc-800";
