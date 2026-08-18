@@ -818,6 +818,14 @@ function AppContent() {
         />
       ) : null;
 
+    case 'teacher-intelligence':
+      return user ? (
+        <AILearningCoach
+          user={impersonatedUser || user}
+          onBack={handleBackToDashboard}
+        />
+      ) : null;
+
     case 'dashboard':
     default:
       // Route to role-specific dashboards

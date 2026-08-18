@@ -117,7 +117,7 @@ export function InstitutionOverview({
 
       {/* Quick Tools */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setTab('members')}>
+        <Card className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setTab('teacher_management')}>
           <CardContent className="pt-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
               <Users className="w-5 h-5" />
@@ -129,7 +129,7 @@ export function InstitutionOverview({
           </CardContent>
         </Card>
         
-        <Card className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setTab('analytics')}>
+        <Card className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setTab('student_insights')}>
           <CardContent className="pt-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
               <BarChart3 className="w-5 h-5" />
