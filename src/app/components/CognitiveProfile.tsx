@@ -685,7 +685,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
         <h3>Your Cognitive Strengths</h3>
         <ul>
           ${(insights?.strengths || []).length > 0 ? 
-            (insights.strengths || []).map(strength => `<li>${strength}</li>`).join('') :
+            (Array.isArray(insights?.strengths) ? insights.strengths : typeof insights?.strengths === 'string' ? [insights.strengths] : []).map((strength: string) => `<li>${strength}</li>`).join('') :
             '<li style="list-style: none; padding-left: 0;"><em>Complete more assessments to reveal your cognitive strengths</em></li>'
           }
         </ul>
@@ -693,7 +693,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
       <div class="insight-card recommendations">
         <h3>Personalized Recommendations</h3>
         <ul>
-          ${(insights?.recommendations || []).map(rec => `<li>${rec}</li>`).join('')}
+          ${(Array.isArray(insights?.recommendations) ? insights.recommendations : typeof insights?.recommendations === 'string' ? [insights.recommendations] : []).map((rec: string) => `<li>${rec}</li>`).join('')}
         </ul>
       </div>
     </div>

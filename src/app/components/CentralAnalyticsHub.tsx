@@ -399,7 +399,7 @@ function generateInterventionLocal(riskLevel: string, strengths: string[], gaps:
   if (riskLevel === 'high') {
     return {
       priority: 'urgent',
-      focus: gaps.length > 0 ? `Low scores in: ${gaps.slice(0, 2).join(', ')}` : 'Low overall performance',
+      focus: Array.isArray(gaps) && gaps.length > 0 ? `Low scores in: ${gaps.slice(0, 2).join(', ')}` : 'Low overall performance',
       suggestions: [
         `Provide one-on-one support focusing on ${gaps[0] ?? 'foundational skills'}`,
         'Use concrete, hands-on activities to build engagement',

@@ -544,7 +544,7 @@ export function ProfessionalAssessmentReport({
                       <li className="flex items-start gap-2">
                         <span className="text-orange-600 mt-1">•</span>
                         <span className="text-gray-700">
-                          Development areas: {developmentNeeds.join('; ').toLowerCase()}
+                          Development areas: {Array.isArray(developmentNeeds) ? developmentNeeds.join('; ').toLowerCase() : typeof developmentNeeds === 'string' ? developmentNeeds.toLowerCase() : ''}
                         </span>
                       </li>
                     )}

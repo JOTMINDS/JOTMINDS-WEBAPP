@@ -809,7 +809,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     <Users className="h-4 w-4" />
                     Organizational Fit Assessment
                   </h4>
-                  <div className="text-indigo-900 font-medium">{((insights as any)?.organizationalFit?.recommendedRoles || []).join(', ')}</div>
+                  <div className="text-indigo-900 font-medium">{Array.isArray((insights as any)?.organizationalFit?.recommendedRoles) ? (insights as any).organizationalFit.recommendedRoles.join(', ') : typeof (insights as any)?.organizationalFit?.recommendedRoles === 'string' ? (insights as any).organizationalFit.recommendedRoles : ''}</div>
                   <div className="space-y-2">
                     {(((insights as any)?.organizationalFit?.details || (Array.isArray((insights as any)?.organizationalFit) ? (insights as any)?.organizationalFit : []))).map((fit: string, index: number) => (
                       <div key={index} className="flex items-start gap-2">

@@ -266,7 +266,8 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
     }
     
     if (lowerMsg.includes('archetype') || lowerMsg.includes('profile')) {
-      return `You are a ${archetypeData.name}. ${archetypeData.tagline || ''} This means your natural strengths include ${(archetypeData?.strengths || ['learning']).slice(0,2).join(' and ')}. Focus on learning environments that support this!`;
+      const strengthsArray = Array.isArray(archetypeData?.strengths) ? archetypeData.strengths : typeof archetypeData?.strengths === 'string' ? [archetypeData.strengths] : ['learning'];
+      return `You are a ${archetypeData.name}. ${archetypeData.tagline || ''} This means your natural strengths include ${strengthsArray.slice(0,2).join(' and ')}. Focus on learning environments that support this!`;
     }
 
     if (lowerMsg.includes('strength')) {
