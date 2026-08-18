@@ -467,12 +467,12 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       <div className="flex items-center gap-2">
         <Button 
           variant="default" 
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium shadow-sm flex items-center gap-1.5" 
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium shadow-sm flex items-center gap-1.5" 
           size="sm" 
-          onClick={() => setActiveTab('analytics')}
+          onClick={onViewTeacherIntelligence}
         >
-          <Brain className="w-4 h-4" />
-          Central Analytics Hub
+          <Sparkles className="w-4 h-4" />
+          Ask Jotti
         </Button>
         {onViewInstitutionDashboard && (
           <Button variant="outline" size="sm" onClick={onViewInstitutionDashboard}>

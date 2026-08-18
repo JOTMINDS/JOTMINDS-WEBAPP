@@ -1,6 +1,7 @@
 import React from 'react';
 import { CollapsibleSidebar, NavGroup } from './collapsible-sidebar';
 import { User } from '../../types';
+import { NudgesPanel } from '../NudgesPanel';
 
 export interface DashboardLayoutProps {
   navGroups: NavGroup[];
@@ -41,9 +42,16 @@ export function DashboardLayout({
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        {headerContent && (
+        {(headerContent || user) && (
           <header className="sticky top-0 z-20 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between shadow-sm">
-            {headerContent}
+            <div className="flex-1 flex items-center">
+              {headerContent}
+            </div>
+            {user && (
+              <div className="flex items-center ml-4">
+                <NudgesPanel userId={user.id} isNavbarMode={true} />
+              </div>
+            )}
           </header>
         )}
         <main className="flex-1 p-4 md:p-8">

@@ -458,6 +458,15 @@ function AppContent() {
     }
   };
 
+  useEffect(() => {
+    const handleNudgeEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      handleNudgeNavigate(customEvent.detail);
+    };
+    window.addEventListener('nudge-navigate', handleNudgeEvent);
+    return () => window.removeEventListener('nudge-navigate', handleNudgeEvent);
+  }, []);
+
   const handleViewAdmin = () => {
     console.log('[App] handleViewAdmin called');
     
@@ -950,9 +959,6 @@ function AppContent() {
   return (
     <>
       {mainContent}
-      {shouldShowNudges && user && (
-        <NudgesPanel userId={user.id} onNavigate={handleNudgeNavigate} />
-      )}
       <ProfileSettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

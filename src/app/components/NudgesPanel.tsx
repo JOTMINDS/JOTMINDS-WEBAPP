@@ -15,10 +15,11 @@ import {
 
 interface Props {
   userId: string;
-  onNavigate: (route: string) => void;
+  onNavigate?: (route: string) => void;
+  isNavbarMode?: boolean;
 }
 
-export function NudgesPanel({ userId, onNavigate }: Props) {
+export function NudgesPanel({ userId, onNavigate, isNavbarMode = false }: Props) {
   const [nudges, setNudges] = useState<Nudge[]>([]);
   const [remindersEnabled, setRemindersEnabled] = useState(true);
   const [showNudges, setShowNudges] = useState(false);
@@ -47,29 +48,44 @@ export function NudgesPanel({ userId, onNavigate }: Props) {
   const handleAction = (nudge: Nudge) => {
     interactWithNudge(nudge.id);
     if (nudge.action) {
-      onNavigate(nudge.action.route);
+      if (onNavigate) {
+        onNavigate(nudge.action.route);
+      } else {
+        window.dispatchEvent(new CustomEvent('nudge-navigate', { detail: nudge.action.route }));
+      }
     }
     loadNudges();
   };
 
-  const handleToggleReminders = () => {
-    const newEnabled = !remindersEnabled;
-    updateReminderSchedule(userId, { enabled: newEnabled });
-    setRemindersEnabled(newEnabled);
+  const handleClearAll = () => {
+    nudges.forEach(n => dismissNudge(n.id));
+    loadNudges();
   };
 
-  if (!showNudges || nudges.length === 0) {
+  const buttonClass = isNavbarMode
+    ? "relative h-10 w-10 rounded-full bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+    : "relative h-14 w-14 rounded-full shadow-xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 transition-transform hover:scale-105 hover:bg-zinc-50 dark:hover:bg-zinc-800";
+
+  const containerClass = isNavbarMode
+    ? "relative"
+    : "fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500";
+
+  const panelClass = isNavbarMode
+    ? "absolute top-12 right-0 z-50 w-[380px] max-h-[700px] overflow-y-auto space-y-4 p-1 animate-in fade-in slide-in-from-top-4 duration-300"
+    : "fixed bottom-6 right-6 z-50 w-[380px] max-h-[700px] overflow-y-auto space-y-4 p-1 animate-in fade-in slide-in-from-bottom-8 duration-300";
+
+  if (!showNudges) {
     return (
-      <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className={containerClass}>
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+          {!isNavbarMode && <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-500"></div>}
           <Button
             variant="outline"
             size="icon"
-            className="relative h-14 w-14 rounded-full shadow-xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 transition-transform hover:scale-105 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            className={buttonClass}
             onClick={() => setShowNudges(true)}
           >
-            <Bell className="h-6 w-6 text-zinc-700 dark:text-zinc-300" />
+            <Bell className={isNavbarMode ? "h-5 w-5 text-zinc-700 dark:text-zinc-300" : "h-6 w-6 text-zinc-700 dark:text-zinc-300"} />
             {nudges.length > 0 && (
               <span className="absolute top-0 right-0 flex h-4 w-4">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -85,47 +101,56 @@ export function NudgesPanel({ userId, onNavigate }: Props) {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[380px] max-h-[700px] overflow-y-auto space-y-4 p-1 animate-in fade-in slide-in-from-bottom-8 duration-300">
-      {/* Header */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-2xl p-4 sticky top-0 z-10 flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-xl text-blue-600 dark:text-blue-400">
-              <Bell className="h-5 w-5" />
+    <div className={isNavbarMode ? "relative" : ""}>
+      <div className={panelClass}>
+        {/* Header */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-2xl p-4 sticky top-0 z-10 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-xl text-blue-600 dark:text-blue-400">
+                <Bell className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">Notifications</h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{nudges.length} new updates</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">Notifications</h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{nudges.length} new updates</p>
+            <div className="flex items-center gap-1 bg-zinc-50 dark:bg-zinc-800/50 rounded-full p-1 border border-zinc-100 dark:border-zinc-800">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs px-2 h-8 hover:bg-white dark:hover:bg-zinc-700 transition-colors"
+                onClick={handleClearAll}
+              >
+                Clear All
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full hover:bg-white dark:hover:bg-zinc-700 transition-colors"
+                onClick={handleToggleReminders}
+                title={remindersEnabled ? 'Disable reminders' : 'Enable reminders'}
+              >
+                {remindersEnabled ? (
+                  <Bell className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                ) : (
+                  <BellOff className="h-4 w-4 text-zinc-400" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full hover:bg-white dark:hover:bg-zinc-700 hover:text-red-500 transition-colors"
+                onClick={() => setShowNudges(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          </div>
-          <div className="flex items-center gap-1 bg-zinc-50 dark:bg-zinc-800/50 rounded-full p-1 border border-zinc-100 dark:border-zinc-800">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full hover:bg-white dark:hover:bg-zinc-700 transition-colors"
-              onClick={handleToggleReminders}
-              title={remindersEnabled ? 'Disable reminders' : 'Enable reminders'}
-            >
-              {remindersEnabled ? (
-                <Bell className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-              ) : (
-                <BellOff className="h-4 w-4 text-zinc-400" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full hover:bg-white dark:hover:bg-zinc-700 hover:text-red-500 transition-colors"
-              onClick={() => setShowNudges(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         </div>
-      </div>
 
-      {/* Nudges List */}
-      <div className="space-y-3 pb-2">
+        {/* Nudges List */}
+        <div className="space-y-3 pb-2 mt-2">
         {nudges.map((nudge, index) => (
           <div
             key={nudge.id}
@@ -189,6 +214,7 @@ export function NudgesPanel({ userId, onNavigate }: Props) {
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 }
