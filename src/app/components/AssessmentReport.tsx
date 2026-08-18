@@ -1071,8 +1071,11 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                           </p>
                         ))}
                         <p className="text-xs mt-3" style={{ color: colors.neutral.gray500 }}>
-                          Use this information to match candidates with appropriate roles or to optimize team composition 
-                          based on cognitive diversity.
+                          {userRole === 'professional' ? (
+                            "Use this insight to understand your natural workplace strengths, optimize your role alignment, and collaborate effectively within diverse teams."
+                          ) : (
+                            "Use this information to match candidates with appropriate roles or to optimize team composition based on cognitive diversity."
+                          )}
                         </p>
                       </div>
                     )}
