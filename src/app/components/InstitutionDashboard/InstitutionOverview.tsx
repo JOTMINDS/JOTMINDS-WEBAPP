@@ -38,20 +38,18 @@ export function InstitutionOverview({
 
   return (
     <div className="space-y-5">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">Overview</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Welcome to your Institution Portal. This dashboard provides a central overview of your school's performance, member management, and cognitive insights. Use the sidebar to navigate between student and teacher analytics, review performance reports, or adjust your settings.
+        </p>
+      </div>
+
       {!institution.isActive && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             This institution account is <strong>deactivated</strong>. Teachers and students cannot join using the institution code. Reactivate in Settings.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {expired && institution.isActive && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            The institution code has <strong>expired</strong>. Click 'Manage Codes' on the code card below.
           </AlertDescription>
         </Alert>
       )}
@@ -117,78 +115,44 @@ export function InstitutionOverview({
         ))}
       </div>
 
-      {/* Quick Facts */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-slate-50 border-slate-100">
-          <CardContent className="pt-4 text-center">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">School Type</p>
-            <p className="text-sm font-semibold text-gray-800">{institution.type}</p>
+      {/* Quick Tools */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setTab('members')}>
+          <CardContent className="pt-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Manage Teachers</p>
+              <p className="text-xs text-gray-500">View and invite educators</p>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-50 border-slate-100">
-          <CardContent className="pt-4 text-center">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Region</p>
-            <p className="text-sm font-semibold text-gray-800">{institution.region}</p>
+        
+        <Card className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setTab('analytics')}>
+          <CardContent className="pt-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Analytics Dashboard</p>
+              <p className="text-xs text-gray-500">Track student progress</p>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-50 border-slate-100">
-          <CardContent className="pt-4 text-center">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">District</p>
-            <p className="text-sm font-semibold text-gray-800">{institution.district}</p>
-          </CardContent>
-        </Card>
-        {statusCounts.pending > 0 && (
-          <Card className="bg-amber-50 border-amber-100">
-            <CardContent className="pt-4 text-center">
-              <p className="text-[10px] text-amber-600 uppercase tracking-wider mb-1">Pending Requests</p>
-              <p className="text-sm font-semibold text-amber-700">{statusCounts.pending}</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
 
-      {/* Top School Code Quick Card */}
-      <Card className="border-2 border-indigo-200 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-sm">
-                <QrCode className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">Official School Jots Code</span>
-                <span className="text-2xl font-mono font-black text-indigo-950 tracking-wider">{institution.code}</span>
-              </div>
+        <Card className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setTab('settings')}>
+          <CardContent className="pt-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
+              <Settings className="w-5 h-5" />
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button 
-                onClick={handleCopyCode}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex-1 sm:flex-initial"
-              >
-                {copied ? <CheckCircle2 className="w-4 h-4 mr-1 text-emerald-300" /> : <Copy className="w-4 h-4 mr-1" />}
-                {copied ? 'Code Copied!' : 'Copy Code'}
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={handleShare}
-                className="border-indigo-200 text-indigo-900 bg-white hover:bg-indigo-50 rounded-xl text-xs"
-              >
-                <Share2 className="w-4 h-4 mr-1" />
-                Share Code
-              </Button>
-              {onManageCodes && (
-                <Button 
-                  variant="outline"
-                  onClick={onManageCodes}
-                  className="border-indigo-200 text-indigo-900 bg-white hover:bg-indigo-50 rounded-xl text-xs"
-                >
-                  <Settings className="w-4 h-4 mr-1" /> Manage Codes
-                </Button>
-              )}
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Institution Settings</p>
+              <p className="text-xs text-gray-500">Configure your school details</p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Admin Team */}
       <Card>

@@ -56,7 +56,7 @@ interface InstitutionDashboardProps {
   onProfileUpdate?: () => void;
 }
 
-type Tab = 'overview' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile';
+type Tab = 'overview' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile';
 
 export function InstitutionDashboard({
   user,
@@ -343,24 +343,24 @@ export function InstitutionDashboard({
     {
       groupLabel: 'A. SCHOOL ADMINISTRATION',
       items: [
-        { id: 'overview', label: '1. Overview', icon: Building2 },
-        { id: 'manage_students', label: '2. Student Management', icon: Users },
-        { id: 'student_insights', label: '3. Student Insights', icon: BarChart3 },
+        { id: 'overview', label: 'Overview', icon: Building2 },
+        { id: 'manage_students', label: 'Student Management', icon: Users },
+        { id: 'student_insights', label: 'Student Insights', icon: BarChart3 },
       ]
     },
     {
       groupLabel: 'B. TEACHING & ANALYTICS',
       items: [
-        { id: 'teacher_management', label: '1. Teacher Management', icon: Users },
-        { id: 'teaching_analytics', label: '2. Analytics', icon: Brain },
-        { id: 'reports', label: '3. Reports', icon: Download },
+        { id: 'teacher_management', label: 'Teacher Roster', icon: Users },
+        { id: 'reports', label: 'Reports', icon: Download },
+        { id: 'training', label: 'Training', icon: BookOpen },
       ]
     },
     {
       groupLabel: 'C. ACCOUNT & SETTINGS',
       items: [
-        ...(isPrimaryAdmin ? [{ id: 'settings', label: '1. School Settings', icon: Settings }] : []),
-        { id: 'profile', label: '2. Administrator', icon: Shield },
+        ...(isPrimaryAdmin ? [{ id: 'settings', label: 'School Settings', icon: Settings }] : []),
+        { id: 'profile', label: 'Administrator', icon: Shield },
       ]
     }
   ];
@@ -487,6 +487,10 @@ export function InstitutionDashboard({
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <SchoolAnalyticsDashboard user={user} onBack={() => setTab('overview')} embedded={true} institutionMembers={members} />
           </div>
+        )}
+        
+        {tab === 'training' && (
+          <TrainingPage />
         )}
 
         {tab === 'reports' && (

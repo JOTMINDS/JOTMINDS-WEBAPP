@@ -92,7 +92,9 @@ export function InstitutionMembers({
   }, [memberSearch, memberRoleFilter]);
 
   const filteredMembers = useMemo(() => {
-    let list = members;
+    // Force only admins and teachers to appear in the Teacher Roster
+    let list = members.filter(m => m.role === 'admin' || m.role === 'teacher');
+    
     if (memberRoleFilter !== 'all') list = list.filter(m => m.role === memberRoleFilter);
     if (memberSearch) {
       const q = memberSearch.toLowerCase();
@@ -496,7 +498,7 @@ export function InstitutionMembers({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[
-          { label: 'Total', value: counts.total - counts.students, color: '#5B7DB1' },
+          { label: 'Administrators', value: counts.admins, color: '#5B7DB1' },
           { label: 'Teachers', value: counts.teachers, color: '#6B4C9A' },
         ].map(s => (
           <Card key={s.label}>
