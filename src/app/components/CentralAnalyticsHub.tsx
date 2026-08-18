@@ -21,7 +21,7 @@ interface CentralAnalyticsHubProps {
   user: any;
 }
 
-type SubTab = 'overview' | 'alignment' | 'heatmap' | 'interventions';
+type SubTab = 'overview' | 'alignment' | 'class_insights';
 type ViewMode = 'cards' | 'charts' | 'table';
 
 const RISK_COLORS = { high: '#DC2626', medium: '#E0A020', low: '#1E8A6E', none: '#9ca3af' };
@@ -72,13 +72,20 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
     const decisionCounts: Record<string, number> = { Intuitive: 0, Deliberate: 0, Balanced: 0 };
 
     students.forEach(s => {
-      const kStyle = s.learningStyle || 'Assimilating';
-      const tStyle = s.thinkingStyle || 'Analytical';
-      const dStyle = s.decisionStyle || 'Balanced';
+      const studentAssessments = assessments.filter(a => a.userId === s.id && a.score);
+      let kStyle = 'Assimilating';
+      let tStyle = 'Analytical';
+      let dStyle = 'Balanced';
+      
+      studentAssessments.forEach(a => {
+        if (a.type === 'kolb' || a.type === 'learning') kStyle = a.score?.kolb?.style || a.score?.learning?.style || kStyle;
+        if (['sternberg', 'adult-thinking', 'thinking'].includes(a.type)) tStyle = a.score?.sternberg?.style || a.score?.thinking?.style || tStyle;
+        if (a.type === 'dual-process' || a.type === 'decision') dStyle = a.score?.dualProcess?.style || a.score?.decision?.style || dStyle;
+      });
 
       learningCounts[kStyle] = (learningCounts[kStyle] || 0) + 1;
       thinkingCounts[tStyle] = (thinkingCounts[tStyle] || 0) + 1;
-      decisionCounts[tStyle] = (decisionCounts[tStyle] || 0) + 1; // Fallback, not totally accurate but fine for demo
+      decisionCounts[tStyle] = (decisionCounts[tStyle] || 0) + 1;
     });
 
     return { learningCounts, thinkingCounts, decisionCounts };
@@ -86,7 +93,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
 
   const { learningCounts, thinkingCounts, decisionCounts } = computeDistributions();
   const chartColors = ['#5B7DB1', '#6B4C9A', '#1E8A6E', '#E0A020', '#EC4899'];
-  const assessedCount = students.filter(s => s.hasCompletedAssessment).length;
+  const assessedCount = students.filter(s => assessments.some(a => a.userId === s.id && a.score)).length;
 
   const activeChartData = 
     selectedStyleDimension === 'learning' ? Object.entries(learningCounts).map(([name, count]) => ({ name, count })) :
@@ -110,14 +117,20 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
       const strengths = Object.entries(dimensionScores).filter(([dim, sc]) => (sc / getMaxForDim(dim)) >= 0.65).map(([dim]) => dim);
       const gaps = Object.entries(dimensionScores).filter(([dim, sc]) => (sc / getMaxForDim(dim)) < 0.4).map(([dim]) => dim);
 
+      const hasCompletedAssessment = studentAssessments.length > 0;
       let riskLevel: 'high' | 'medium' | 'low' | 'none' = 'none';
-      if (student.hasCompletedAssessment) {
+      if (hasCompletedAssessment) {
         if (gaps.length >= 3) riskLevel = 'high';
         else if (gaps.length > 0) riskLevel = 'medium';
         else riskLevel = 'low';
       }
 
-      const intervention = generateInterventionLocal(riskLevel, strengths, gaps, student.learningStyle || 'Unknown');
+      let learningStyle = 'Unknown';
+      studentAssessments.forEach(a => {
+        if (a.type === 'kolb' || a.type === 'learning') learningStyle = a.score?.kolb?.style || a.score?.learning?.style || learningStyle;
+      });
+
+      const intervention = generateInterventionLocal(riskLevel, strengths, gaps, learningStyle);
 
       return {
         user: student as any as User,
@@ -153,9 +166,8 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
       <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-gray-950 p-2 rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xs">
         {[
           { id: 'overview', icon: BarChart3, label: 'Class Overview' },
-          { id: 'alignment', icon: Target, label: 'Alignment & Match' },
-          { id: 'heatmap', icon: Activity, label: 'Score Heatmap' },
-          { id: 'interventions', icon: Lightbulb, label: 'Interventions' },
+          { id: 'alignment', icon: Target, label: 'Alignment Analysis' },
+          { id: 'class_insights', icon: Activity, label: 'Class Insights' }
         ].map(t => (
           <button
             key={t.id}
@@ -282,93 +294,97 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
         </div>
       )}
 
-      {/* ─── HEATMAP ─── */}
-      {activeTab === 'heatmap' && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm text-gray-600">Dimension Group:</p>
-            {Object.keys(DIMENSION_GROUPS).map(g => (
-              <button key={g} onClick={() => setHeatmapGroup(g)} className={`px-3 py-1.5 rounded-full text-xs transition-all ${heatmapGroup === g ? 'bg-[#5B7DB1] text-white' : 'bg-white text-gray-600 border'}`}>
-                {g}
-              </button>
-            ))}
-          </div>
-          <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="text-left px-4 py-2.5 text-xs text-gray-500 min-w-[140px]">Student</th>
-                    {heatmapDimensions.map(dim => <th key={dim} className="text-center px-3 py-2.5 text-xs text-gray-500">{DIMENSION_LABELS[dim] ?? dim}</th>)}
-                    <th className="text-center px-3 py-2.5 text-xs text-gray-500">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {profiles.map(p => (
-                    <tr key={p.user.id} className="border-b last:border-0">
-                      <td className="px-4 py-3 font-medium text-xs">{p.user.name}</td>
-                      {heatmapDimensions.map(dim => {
-                        const score = p.dimensionScores[dim];
-                        const max = getMaxForDim(dim);
-                        return (
-                          <td key={dim} className="px-2 py-2 text-center">
-                            {score != null ? (
-                              <div className="px-2 py-1 rounded font-mono text-[10px]" style={{ backgroundColor: scoreColor(score, max), color: scoreTextColor(score, max) }}>{score}</div>
-                            ) : <div className="px-2 py-1 rounded text-[10px] bg-gray-50 text-gray-300">—</div>}
-                          </td>
-                        );
-                      })}
-                      <td className="px-3 py-2 text-center">
-                        <Badge style={{ backgroundColor: RISK_COLORS[p.riskLevel] + '20', color: RISK_COLORS[p.riskLevel] }} className="text-[10px]">{RISK_LABELS[p.riskLevel]}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* ─── INTERVENTIONS ─── */}
-      {activeTab === 'interventions' && (
-        <div className="space-y-4">
-          <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="pt-4 flex gap-3">
-              <Lightbulb className="w-5 h-5 text-amber-600 shrink-0" />
-              <div>
-                <p className="text-sm font-bold text-amber-900">Pedagogical Interventions</p>
-                <p className="text-xs text-amber-700 mt-1">Targeted instructional strategies generated dynamically from students' cognitive gaps and strengths.</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {profiles.map(({ user: pUser, intervention: inv, riskLevel, strengths, gaps }) => (
-            <Card key={pUser.id} className={`border-l-4 ${inv.priority === 'urgent' ? 'border-l-red-500' : inv.priority === 'normal' ? 'border-l-amber-400' : 'border-l-green-400'}`}>
-              <CardContent className="pt-4">
-                <button className="w-full flex justify-between items-start text-left" onClick={() => setExpandedStudent(expandedStudent === pUser.id ? null : pUser.id)}>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{pUser.name}</p>
-                    <p className="text-xs text-gray-600 mt-0.5">{inv.focus}</p>
-                    <div className="flex gap-2 mt-2">
-                      <Badge style={{ backgroundColor: RISK_COLORS[riskLevel] + '20', color: RISK_COLORS[riskLevel] }} className="text-[10px]">{RISK_LABELS[riskLevel]}</Badge>
-                      {strengths.slice(0, 1).map(s => <Badge key={s} className="bg-green-50 text-green-700 text-[10px]">💪 {s}</Badge>)}
-                      {gaps.slice(0, 1).map(g => <Badge key={g} className="bg-red-50 text-red-700 text-[10px]">⚠️ {g}</Badge>)}
-                    </div>
-                  </div>
-                  {expandedStudent === pUser.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+      {/* ─── CLASS INSIGHTS ─── */}
+      {activeTab === 'class_insights' && (
+        <div className="space-y-8">
+          {/* Heatmap Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700">Cognitive Score Heatmap</h3>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm text-gray-600">Dimension Group:</p>
+              {Object.keys(DIMENSION_GROUPS).map(g => (
+                <button key={g} onClick={() => setHeatmapGroup(g)} className={`px-3 py-1.5 rounded-full text-xs transition-all ${heatmapGroup === g ? 'bg-[#5B7DB1] text-white' : 'bg-white text-gray-600 border'}`}>
+                  {g}
                 </button>
-                {expandedStudent === pUser.id && (
-                  <div className="mt-4 pt-4 border-t space-y-2">
-                    <p className="text-xs font-semibold text-gray-600">Recommended Actions:</p>
-                    {inv.suggestions.map((s, i) => (
-                      <div key={i} className="flex gap-2"><span className="text-xs text-gray-400">{i + 1}.</span><p className="text-xs text-gray-700">{s}</p></div>
+              ))}
+            </div>
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="text-left px-4 py-2.5 text-xs text-gray-500 min-w-[140px]">Student</th>
+                      {heatmapDimensions.map(dim => <th key={dim} className="text-center px-3 py-2.5 text-xs text-gray-500">{DIMENSION_LABELS[dim] ?? dim}</th>)}
+                      <th className="text-center px-3 py-2.5 text-xs text-gray-500">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {profiles.map(p => (
+                      <tr key={p.user.id} className="border-b last:border-0">
+                        <td className="px-4 py-3 font-medium text-xs">{p.user.name}</td>
+                        {heatmapDimensions.map(dim => {
+                          const score = p.dimensionScores[dim];
+                          const max = getMaxForDim(dim);
+                          return (
+                            <td key={dim} className="px-2 py-2 text-center">
+                              {score != null ? (
+                                <div className="px-2 py-1 rounded font-mono text-[10px]" style={{ backgroundColor: scoreColor(score, max), color: scoreTextColor(score, max) }}>{score}</div>
+                              ) : <div className="px-2 py-1 rounded text-[10px] bg-gray-50 text-gray-300">—</div>}
+                            </td>
+                          );
+                        })}
+                        <td className="px-3 py-2 text-center">
+                          <Badge style={{ backgroundColor: RISK_COLORS[p.riskLevel] + '20', color: RISK_COLORS[p.riskLevel] }} className="text-[10px]">{RISK_LABELS[p.riskLevel]}</Badge>
+                        </td>
+                      </tr>
                     ))}
-                  </div>
-                )}
+                  </tbody>
+                </table>
               </CardContent>
             </Card>
-          ))}
+          </div>
+
+          {/* Interventions Section */}
+          <div className="space-y-4">
+            <Card className="border-amber-200 bg-amber-50">
+              <CardContent className="pt-4 flex gap-3">
+                <Lightbulb className="w-5 h-5 text-amber-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-amber-900">Pedagogical Interventions</p>
+                  <p className="text-xs text-amber-700 mt-1">Targeted instructional strategies generated dynamically from students' cognitive gaps and strengths.</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {profiles.map(({ user: pUser, intervention: inv, riskLevel, strengths, gaps }) => (
+              <Card key={pUser.id} className={`border-l-4 ${inv.priority === 'urgent' ? 'border-l-red-500' : inv.priority === 'normal' ? 'border-l-amber-400' : 'border-l-green-400'}`}>
+                <CardContent className="pt-4">
+                  <button className="w-full flex justify-between items-start text-left" onClick={() => setExpandedStudent(expandedStudent === pUser.id ? null : pUser.id)}>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{pUser.name}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{inv.focus}</p>
+                      <div className="flex gap-2 mt-2">
+                        <Badge style={{ backgroundColor: RISK_COLORS[riskLevel] + '20', color: RISK_COLORS[riskLevel] }} className="text-[10px]">{RISK_LABELS[riskLevel]}</Badge>
+                        {strengths.slice(0, 1).map(s => <Badge key={s} className="bg-green-50 text-green-700 text-[10px]">💪 {s}</Badge>)}
+                        {gaps.slice(0, 1).map(g => <Badge key={g} className="bg-red-50 text-red-700 text-[10px]">⚠️ {g}</Badge>)}
+                      </div>
+                    </div>
+                    {expandedStudent === pUser.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  </button>
+                  {expandedStudent === pUser.id && (
+                    <div className="mt-4 pt-4 border-t space-y-2">
+                      <p className="text-xs font-semibold text-gray-600">Recommended Actions:</p>
+                      {inv.suggestions.map((s, i) => (
+                        <div key={i} className="flex gap-2"><span className="text-xs text-gray-400">{i + 1}.</span><p className="text-xs text-gray-700">{s}</p></div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 

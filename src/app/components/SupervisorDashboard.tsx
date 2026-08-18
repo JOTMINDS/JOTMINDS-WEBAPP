@@ -50,7 +50,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { formatDate } from '../utils/dateFormat';
 import { toast } from 'sonner';
 import { MobileHeaderMenu } from './MobileHeaderMenu';
-import { TeacherStudentManagement } from './TeacherStudentManagement';
+import { CentralStudentManagement } from './CentralStudentManagement';
 import { SupervisorReview } from './SupervisorReview';
 import { ProfessionalCognitiveResults } from './ProfessionalCognitiveResults';
 import { calculateProfessionalCognitiveProfile, getProfessionalInsights } from '../utils/professionalCognitiveScoring';

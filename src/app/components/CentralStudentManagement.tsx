@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { StudentDetailView } from './StudentDetailView';
+import { GenerateStudentCodesModal } from './InstitutionDashboard/GenerateStudentCodesModal';
 
 interface CentralStudentManagementProps {
   students: any[];
@@ -22,6 +23,7 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
   const [classFilter, setClassFilter] = useState<string>('all');
   const [assessmentFilter, setAssessmentFilter] = useState<'all' | 'complete' | 'incomplete'>('all');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
 
   // Extract unique classes
   const uniqueClasses = Array.from(new Set(students.map(s => s.className).filter(Boolean)));
@@ -65,17 +67,34 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-center border border-white/20">
-            <div className="text-xl font-bold">{students.length}</div>
-            <div className="text-[10px] uppercase text-white/80">Total Students</div>
+        <div className="flex flex-col md:flex-row items-end md:items-center gap-4 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-center border border-white/20">
+              <div className="text-xl font-bold">{students.length}</div>
+              <div className="text-[10px] uppercase text-white/80">Total Students</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-center border border-white/20">
+              <div className="text-xl font-bold text-emerald-300">{completionRate}%</div>
+              <div className="text-[10px] uppercase text-white/80">Assessed</div>
+            </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-center border border-white/20">
-            <div className="text-xl font-bold text-emerald-300">{completionRate}%</div>
-            <div className="text-[10px] uppercase text-white/80">Assessed</div>
-          </div>
+          <Button
+            onClick={() => setIsGenerateModalOpen(true)}
+            className="bg-white text-[#6B4C9A] hover:bg-white/90 font-bold shadow-sm"
+            size="sm"
+          >
+            <UserIcon className="w-4 h-4 mr-2" />
+            Generate Student Codes
+          </Button>
         </div>
       </div>
+
+      <GenerateStudentCodesModal
+        isOpen={isGenerateModalOpen}
+        onClose={() => setIsGenerateModalOpen(false)}
+        teacherId={teacher?.id}
+        institutionId={teacher?.institutionId}
+      />
 
       {/* Filter and Search Bar */}
       <Card className="border-gray-200 dark:border-gray-800">

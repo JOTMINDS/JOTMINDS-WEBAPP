@@ -40,6 +40,18 @@ export interface Class {
   createdAt: string;
 }
 
+export interface StudentCode {
+  id: string;
+  code: string;
+  studentName: string;
+  studentEmail?: string;
+  teacherId: string;
+  institutionId?: string;
+  isUsed: boolean;
+  createdAt: string;
+  usedAt?: string;
+}
+
 export interface TeacherClassAssignment {
   id: string;
   teacherId: string;
