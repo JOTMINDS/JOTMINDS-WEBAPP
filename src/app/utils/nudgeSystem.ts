@@ -408,7 +408,7 @@ export function updateReminderSchedule(userId: string, updates: Partial<Reminder
 
 // Nudge Management
 export function saveNudges(nudges: Nudge[]): void {
-  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []);
+  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []).filter(Boolean);
 
   nudges.forEach(nudge => {
     const existingIndex = allNudges.findIndex(n => n.id === nudge.id);
@@ -423,7 +423,7 @@ export function saveNudges(nudges: Nudge[]): void {
 }
 
 export function getUserNudges(userId: string, includeExpired: boolean = false): Nudge[] {
-  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []);
+  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []).filter(Boolean);
   const now = new Date();
 
   return allNudges
@@ -443,7 +443,7 @@ export function getUserNudges(userId: string, includeExpired: boolean = false): 
 }
 
 export function dismissNudge(nudgeId: string): void {
-  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []);
+  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []).filter(Boolean);
   const nudge = allNudges.find(n => n.id === nudgeId);
 
   if (nudge) {
@@ -454,7 +454,7 @@ export function dismissNudge(nudgeId: string): void {
 }
 
 export function interactWithNudge(nudgeId: string): void {
-  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []);
+  const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []).filter(Boolean);
   const nudge = allNudges.find(n => n.id === nudgeId);
 
   if (nudge) {

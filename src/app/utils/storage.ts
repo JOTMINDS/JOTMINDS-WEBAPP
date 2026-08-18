@@ -66,14 +66,14 @@ export function getCurrentUser(): User | null {
 }
 
 export function getAllUsers(): User[] {
-  return safeParse<User[]>(STORAGE_KEYS.USERS, []);
+  return safeParse<User[]>(STORAGE_KEYS.USERS, []).filter(Boolean);
 }
 
 // Class management
 import { syncClassToSupabase, deleteClassFromSupabase, syncTeacherAssignmentToSupabase, deleteTeacherAssignmentFromSupabase } from './supabaseSync';
 
 export function getAllClasses(): Class[] {
-  return safeParse<Class[]>(STORAGE_KEYS.CLASSES, []);
+  return safeParse<Class[]>(STORAGE_KEYS.CLASSES, []).filter(Boolean);
 }
 
 export function saveClass(cls: Class) {
@@ -347,7 +347,7 @@ export function getLinkedChildren(parentId: string): User[] {
 
 // Assessment management
 export function getAllAssessments(): Assessment[] {
-  return safeParse<Assessment[]>(STORAGE_KEYS.ASSESSMENTS, []);
+  return safeParse<Assessment[]>(STORAGE_KEYS.ASSESSMENTS, []).filter(Boolean);
 }
 
 import { syncAssessmentToSupabase } from './supabaseSync';
