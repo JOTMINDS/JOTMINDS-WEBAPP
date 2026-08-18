@@ -458,13 +458,13 @@ export function JHSThinkingResults({
                         <>
                           You're a <strong>{results.personalityType}</strong> — your mix of {primaryStyle.name.toLowerCase()} 
                           and {secondaryStyle.name.toLowerCase()} thinking makes you perfect for programs like {
-                            recommendations.map(r => r.name).slice(0, 2).join(', ')
+                            (recommendations || []).map(r => r.name).slice(0, 2).join(', ')
                           }, or {recommendations[2]?.name}!
                         </>
                       ) : (
                         <>
                           Your <strong>{primaryStyle.name}</strong> thinking style makes you naturally talented for programs 
-                          like {recommendations.map(r => r.name).slice(0, 2).join(' and ')}!
+                          like {(recommendations || []).map(r => r.name).slice(0, 2).join(' and ')}!
                         </>
                       )}
                     </p>

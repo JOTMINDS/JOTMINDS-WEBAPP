@@ -82,7 +82,7 @@ export function CognitiveFingerprint({ profile }: Props) {
               <p className="text-sm text-amber-800 dark:text-amber-200">
                 💡 Complete all three assessments for a more accurate cognitive profile.
                 Missing: {['Kolb', 'Sternberg', 'Dual-Process'].filter(a =>
-                  !profile.completedAssessments.includes(a.toLowerCase().replace('-', ''))
+                  !(profile.completedAssessments || []).includes(a.toLowerCase().replace('-', ''))
                 ).join(', ')}
               </p>
             </div>

@@ -207,12 +207,12 @@ export function SupervisorReview({
       </Card>
 
       {/* Suggested Roles */}
-      {suggestedRoles.length > 0 && (
+      {suggestedRoles && suggestedRoles.length > 0 && (
         <Alert>
           <Star className="h-4 w-4" />
           <AlertDescription>
             <strong>Suggested Roles Based on Cognitive Profile:</strong>{' '}
-            {suggestedRoles.join(', ')}
+            {(suggestedRoles || []).join(', ')}
           </AlertDescription>
         </Alert>
       )}

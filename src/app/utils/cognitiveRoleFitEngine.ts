@@ -174,8 +174,8 @@ export function generatePersonalizedReport(fitScore: CognitiveRoleFitScore, role
   if (isCandidateView) {
     return {
       alignment: `${getTone()} a ${fitScore.fitScore}% match with the ${roleTitle} role. You are classified as a ${fitScore.fitCategory}.`,
-      struggles: fitScore.riskFlags.length > 0 
-        ? `You may encounter friction in areas such as: ${fitScore.riskFlags.map(f => f.replace('⚠ ', '')).join(', ')}.`
+      struggles: (fitScore?.riskFlags || []).length > 0 
+        ? `You may encounter friction in areas such as: ${(fitScore?.riskFlags || []).map(f => f.replace('⚠ ', '')).join(', ')}.`
         : 'There are no major cognitive misalignments detected.',
       adaptationPlan: fitScore.fitScore >= 70 
         ? 'Lean into your natural strengths. You will likely accelerate quickly in this role.' 
@@ -185,7 +185,7 @@ export function generatePersonalizedReport(fitScore: CognitiveRoleFitScore, role
   } else {
     return {
       summary: `Candidate Fit: ${fitScore.fitScore}% (${fitScore.fitCategory})`,
-      riskAnalysis: `Burnout Risk is ${fitScore.performancePrediction.burnoutRisk}. Identified flags: ${fitScore.riskFlags.join(' | ')}`,
+      riskAnalysis: `Burnout Risk is ${fitScore?.performancePrediction?.burnoutRisk}. Identified flags: ${(fitScore?.riskFlags || []).join(' | ')}`,
       recommendation: fitScore.fitScore >= 70 ? 'Hire' : fitScore.fitScore >= 55 ? 'Hire with coaching plan' : 'Not recommended',
       replacementRiskIndex: fitScore.performancePrediction.burnoutRisk === 'Severe' ? 'High (6-month flight risk)' : 'Low (Stable)'
     };
