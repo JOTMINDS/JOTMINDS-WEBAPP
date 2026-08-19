@@ -267,10 +267,10 @@ function calculateMatchScore(learningScore: number, thinkingScore: number, decis
   const avg = (learningScore + thinkingScore + decisionScore) / 3;
   const variance = [learningScore, thinkingScore, decisionScore]
     .reduce((sum, score) => sum + Math.pow(score - avg, 2), 0) / 3;
-  const balanceBonus = Math.max(0, 10 - (variance / 2));
+  const balanceBonus = Math.max(0, 6 - (variance / 4));
   
-  // Final score (capped at 99 for professional humility)
-  return Math.min(99, Math.round(baseScore + balanceBonus));
+  // Final score (capped at 98 for professional realism)
+  return Math.max(50, Math.min(98, Math.round(baseScore + balanceBonus)));
 }
 
 export function getProfessionalInsights(profile: ProfessionalCognitiveProfile): {
