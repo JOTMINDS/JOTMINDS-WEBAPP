@@ -44,20 +44,20 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
       .filter(prof => selectedDepartment === 'all' || prof.department === selectedDepartment)
       .map(prof => {
         const assessments = prof.assessments || getAssessmentsByUserId(prof.id);
-        const sternbergAssessment = assessments.find(a => a.type === 'sternberg' && a.completedAt);
-        const kolbAssessment = assessments.find(a => a.type === 'kolb' && a.completedAt);
-        const dualProcessAssessment = assessments.find(a => a.type === 'dual-process' && a.completedAt);
+        const sternbergAssessment = assessments.find(a => (a.type === 'sternberg' || (a as any).type === 'thinking' || (a as any).assessmentType === 'sternberg' || (a as any).assessmentType === 'thinking' || String(a.type).includes('thinking') || a.score?.sternberg) && a.completedAt);
+        const kolbAssessment = assessments.find(a => (a.type === 'kolb' || (a as any).type === 'learning' || (a as any).assessmentType === 'kolb' || (a as any).assessmentType === 'learning' || a.score?.kolb) && a.completedAt);
+        const dualProcessAssessment = assessments.find(a => (a.type === 'dual-process' || (a as any).type === 'decision' || (a as any).assessmentType === 'dual-process' || (a as any).assessmentType === 'decision' || a.score?.dualProcess) && a.completedAt);
         
         let sternbergData = null;
-        if (sternbergAssessment?.score?.sternberg) {
-            sternbergData = sternbergAssessment.score.sternberg;
+        if (sternbergAssessment?.score?.sternberg || (sternbergAssessment?.score as any)?.thinking) {
+            sternbergData = sternbergAssessment?.score?.sternberg || (sternbergAssessment?.score as any)?.thinking;
         }
 
         return {
             ...prof,
             sternbergData,
-            kolbData: kolbAssessment?.score?.kolb || null,
-            dualProcessData: dualProcessAssessment?.score?.dualProcess || null,
+            kolbData: kolbAssessment?.score?.kolb || (kolbAssessment?.score as any)?.learning || null,
+            dualProcessData: dualProcessAssessment?.score?.dualProcess || (dualProcessAssessment?.score as any)?.decision || null,
             assessments
         };
     });
@@ -66,17 +66,18 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
       prof.assessments.forEach(assessment => {
         if (!assessment.completedAt || !assessment.score) return;
 
-        if (assessment.type === 'kolb' && assessment.score.kolb) {
-          const style = assessment.score.kolb.style;
-          kolbDistribution[style] = (kolbDistribution[style] || 0) + 1;
+        const kolbStyle = assessment.score?.kolb?.style || (assessment.score as any)?.learning?.style;
+        const sternbergStyle = assessment.score?.sternberg?.style || (assessment.score as any)?.thinking?.style;
+        const dualStyle = assessment.score?.dualProcess?.style || (assessment.score as any)?.decision?.style;
+
+        if (kolbStyle) {
+          kolbDistribution[kolbStyle] = (kolbDistribution[kolbStyle] || 0) + 1;
           totalKolb++;
-        } else if (assessment.type === 'sternberg' && assessment.score.sternberg) {
-          const style = assessment.score.sternberg.style;
-          sternbergDistribution[style] = (sternbergDistribution[style] || 0) + 1;
+        } else if (sternbergStyle) {
+          sternbergDistribution[sternbergStyle] = (sternbergDistribution[sternbergStyle] || 0) + 1;
           totalSternberg++;
-        } else if (assessment.type === 'dual-process' && assessment.score.dualProcess) {
-          const style = assessment.score.dualProcess.style;
-          dualProcessDistribution[style] = (dualProcessDistribution[style] || 0) + 1;
+        } else if (dualStyle) {
+          dualProcessDistribution[dualStyle] = (dualProcessDistribution[dualStyle] || 0) + 1;
           totalDual++;
         }
       });

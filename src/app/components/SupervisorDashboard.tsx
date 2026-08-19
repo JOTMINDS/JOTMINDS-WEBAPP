@@ -63,35 +63,94 @@ interface SupervisorDashboardProps {
 
 // Helper to map generic assessments to the format expected by calculateProfessionalCognitiveProfile
 export function mapAssessmentsToResponses(assessments: any[]) {
-  const profCognitive = assessments.find(a => a.type === 'professional-cognitive');
+  if (!Array.isArray(assessments) || assessments.length === 0) {
+    return null;
+  }
+
+  const profCognitive = assessments.find(a => a.type === 'professional-cognitive' || a.assessmentType === 'professional-cognitive');
   if (profCognitive && profCognitive.responses && Array.isArray(profCognitive.responses.learning)) {
     return profCognitive.responses;
   }
   
-  const kolb = assessments.find(a => a.type === 'kolb');
-  const sternberg = assessments.find(a => a.type === 'sternberg');
-  const dual = assessments.find(a => a.type === 'dual-process');
+  const kolb = assessments.find(a => 
+    a.type === 'kolb' || a.type === 'learning' || 
+    a.assessmentType === 'kolb' || a.assessmentType === 'learning' ||
+    Boolean(a.score?.kolb || a.score?.learning)
+  );
+
+  const sternberg = assessments.find(a => 
+    a.type === 'sternberg' || a.type === 'thinking' || 
+    a.assessmentType === 'sternberg' || a.assessmentType === 'thinking' ||
+    (typeof a.type === 'string' && a.type.includes('thinking')) ||
+    Boolean(a.score?.sternberg || a.score?.thinking)
+  );
+
+  const dual = assessments.find(a => 
+    a.type === 'dual-process' || a.type === 'decision' || 
+    a.assessmentType === 'dual-process' || a.assessmentType === 'decision' ||
+    Boolean(a.score?.dualProcess || a.score?.decision)
+  );
   
   if (!profCognitive && !kolb && !sternberg && !dual) {
     return null;
   }
   
+  // 1. Calculate Learning Score (0-30 scale)
   let learningScore = 15;
-  const kolbScores = kolb?.score?.kolb?.scores;
-  if (kolbScores) {
-     learningScore = Math.min(30, Math.round(((kolbScores.AE || kolbScores.ae || 0) + (kolbScores.CE || kolbScores.ce || 0)) * 1.5));
+  const kolbScores = kolb?.score?.kolb?.scores || kolb?.score?.kolb || kolb?.score?.scores || kolb?.results?.scores || kolb?.results || kolb?.score;
+  if (kolbScores && typeof kolbScores === 'object') {
+    const ae = Number(kolbScores.AE ?? kolbScores.ae ?? kolbScores.active ?? 0);
+    const ce = Number(kolbScores.CE ?? kolbScores.ce ?? kolbScores.concrete ?? 0);
+    const ro = Number(kolbScores.RO ?? kolbScores.ro ?? kolbScores.reflective ?? 0);
+    const ac = Number(kolbScores.AC ?? kolbScores.ac ?? kolbScores.abstract ?? 0);
+    const total = ae + ce + ro + ac;
+    if (total > 0) {
+      // Proportional conversion to 0-30 scale based on action vs reflection orientation
+      const actionOriented = (ae * 1.2 + ce * 0.8) / Math.max(1, total);
+      learningScore = Math.max(6, Math.min(30, Math.round(actionOriented * 30)));
+    }
+  } else if (kolb?.score?.kolb?.style || kolb?.results?.style) {
+    const style = kolb?.score?.kolb?.style || kolb?.results?.style;
+    if (style === 'Accommodating') learningScore = 26;
+    else if (style === 'Diverging') learningScore = 22;
+    else if (style === 'Converging') learningScore = 16;
+    else if (style === 'Assimilating') learningScore = 10;
   }
   
+  // 2. Calculate Thinking Score (0-30 scale)
   let thinkingScore = 15;
-  const sternbergScores = sternberg?.score?.sternberg?.scores;
-  if (sternbergScores) {
-     thinkingScore = Math.min(30, Math.round(((sternbergScores.creative || 0) + (sternbergScores.analytical || 0)) * 1.5));
+  const sternbergScores = sternberg?.score?.sternberg?.scores || sternberg?.score?.sternberg || sternberg?.score?.scores || sternberg?.results?.scores || sternberg?.results || sternberg?.score;
+  if (sternbergScores && typeof sternbergScores === 'object') {
+    const creative = Number(sternbergScores.creative ?? 0);
+    const analytical = Number(sternbergScores.analytical ?? 0);
+    const practical = Number(sternbergScores.practical ?? 0);
+    const total = creative + analytical + practical;
+    if (total > 0) {
+      const creativeRatio = (creative * 1.3 + practical * 0.7) / Math.max(1, total);
+      thinkingScore = Math.max(6, Math.min(30, Math.round(creativeRatio * 30)));
+    }
+  } else if (sternberg?.score?.sternberg?.style || sternberg?.results?.style) {
+    const style = sternberg?.score?.sternberg?.style || sternberg?.results?.style;
+    if (style === 'Creative') thinkingScore = 26;
+    else if (style === 'Analytical') thinkingScore = 18;
+    else if (style === 'Practical') thinkingScore = 12;
   }
   
+  // 3. Calculate Decision Making Score (0-30 scale)
   let decisionScore = 15;
-  const dualScores = dual?.score?.dualProcess?.scores;
-  if (dualScores) {
-     decisionScore = Math.min(30, Math.round((dualScores.system2 || 0) * 1.5));
+  const dualScores = dual?.score?.dualProcess?.scores || dual?.score?.dualProcess || dual?.score?.scores || dual?.results?.scores || dual?.results || dual?.score;
+  if (dualScores && typeof dualScores === 'object') {
+    const system1 = Number(dualScores.system1 ?? dualScores.intuitive ?? 0);
+    const system2 = Number(dualScores.system2 ?? dualScores.reflective ?? 0);
+    const total = system1 + system2;
+    if (total > 0) {
+      decisionScore = Math.max(6, Math.min(30, Math.round((system2 / total) * 30)));
+    }
+  } else if (dual?.score?.dualProcess?.style || dual?.results?.style) {
+    const style = dual?.score?.dualProcess?.style || dual?.results?.style;
+    if (style === 'Reflective') decisionScore = 24;
+    else if (style === 'Balanced') decisionScore = 18;
+    else if (style === 'Intuitive') decisionScore = 10;
   }
   
   return {

@@ -3838,9 +3838,14 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
     console.log('[supervisor/employees] ✓ Found', employees.length, 'employees for org code:', orgCode);
     
     // Helper function to determine primary style from scores
-    const determinePrimaryStyle = (scores: any, type: string) => {
-      if (type === 'kolb') {
-        const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores;
+    const determinePrimaryStyle = (input: any, type: string) => {
+      if (typeof input === 'object' && input !== null && input.style) return input.style;
+      const scores = (input && input.scores) ? input.scores : (input || {});
+      if (type === 'kolb' || type === 'learning') {
+        const CE = scores.CE || scores.ce || 0;
+        const RO = scores.RO || scores.ro || 0;
+        const AC = scores.AC || scores.ac || 0;
+        const AE = scores.AE || scores.ae || 0;
         const acCE = AC - CE;
         const aeRO = AE - RO;
         
@@ -3848,13 +3853,16 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
         if (acCE > 0 && aeRO < 0) return 'Assimilating';
         if (acCE < 0 && aeRO < 0) return 'Diverging';
         return 'Accommodating';
-      } else if (type === 'sternberg') {
-        const { analytical = 0, creative = 0, practical = 0 } = scores;
+      } else if (type === 'sternberg' || type === 'thinking' || type?.includes('thinking')) {
+        const analytical = scores.analytical || 0;
+        const creative = scores.creative || 0;
+        const practical = scores.practical || 0;
         if (analytical >= creative && analytical >= practical) return 'Analytical';
         if (creative >= analytical && creative >= practical) return 'Creative';
         return 'Practical';
-      } else if (type === 'dual-process') {
-        const { system1 = 0, system2 = 0 } = scores;
+      } else if (type === 'dual-process' || type === 'decision') {
+        const system1 = scores.system1 || scores.intuitive || 0;
+        const system2 = scores.system2 || scores.reflective || 0;
         const diff = Math.abs(system1 - system2);
         if (diff < 5) return 'Balanced';
         return system1 > system2 ? 'Intuitive' : 'Reflective';
@@ -3874,30 +3882,31 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
         ...emp,
         reviews: reviews || [],
         assessments: completedAssessments.map((a: any) => {
-          const assessmentType = a.assessmentType;
-          const results = a.results || {};
+          const assessmentType = a.assessmentType || a.type;
+          const rawResults = a.results || a.score || {};
+          const innerScores = rawResults.scores || rawResults;
           
           // Build the score object with proper structure
           let score: any = {};
           
-          if (assessmentType === 'kolb') {
-            const style = determinePrimaryStyle(results, 'kolb');
-            score.kolb = { style, scores: results };
-          } else if (assessmentType === 'sternberg') {
-            const style = determinePrimaryStyle(results, 'sternberg');
-            score.sternberg = { style, scores: results };
-          } else if (assessmentType === 'dual-process') {
-            const style = determinePrimaryStyle(results, 'dual-process');
-            score.dualProcess = { style, scores: results };
+          if (assessmentType === 'kolb' || assessmentType === 'learning') {
+            const style = rawResults.style || determinePrimaryStyle(innerScores, 'kolb');
+            score.kolb = { style, scores: innerScores };
+          } else if (assessmentType === 'sternberg' || assessmentType === 'thinking' || assessmentType?.includes('thinking')) {
+            const style = rawResults.style || determinePrimaryStyle(innerScores, 'sternberg');
+            score.sternberg = { style, scores: innerScores };
+          } else if (assessmentType === 'dual-process' || assessmentType === 'decision') {
+            const style = rawResults.style || determinePrimaryStyle(innerScores, 'dual-process');
+            score.dualProcess = { style, scores: innerScores };
           } else {
             // For other assessment types, pass results directly
-            score[assessmentType] = results;
+            score[assessmentType] = rawResults;
           }
           
           return {
             id: a.id || `result:${emp.id}:${assessmentType}`,
             userId: emp.id,
-            type: assessmentType,
+            type: assessmentType === 'learning' ? 'kolb' : assessmentType === 'thinking' ? 'sternberg' : assessmentType === 'decision' ? 'dual-process' : assessmentType,
             responses: a.answers || a.responses || [],
             score: score,
             completedAt: a.completedAt
