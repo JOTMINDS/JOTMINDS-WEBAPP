@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -6,8 +6,9 @@ import { Badge } from './ui/badge';
 import { Assessment } from '../types';
 import { getStyleDescription } from '../utils/scoring';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
-import { Download, ArrowLeft, CheckCircle2, AlertCircle, Settings, MessageSquare, ExternalLink } from 'lucide-react';
+import { Download, ArrowLeft, CheckCircle2, AlertCircle, Settings, MessageSquare, ExternalLink, Brain } from 'lucide-react';
 import { generatePDF } from '../utils/pdfGenerator';
+import { generateAICognitiveExecutiveSummary } from '../utils/aiService';
 import { getAssessmentInsights } from '../utils/insights';
 import { formatDate } from '../utils/dateFormat';
 
@@ -32,6 +33,26 @@ export function ProfessionalAssessmentReport({
   userOrganization = 'Organization',
   onBack 
 }: ProfessionalAssessmentReportProps) {
+  const [aiSummary, setAiSummary] = useState<any>(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(true);
+
+  useEffect(() => {
+    async function fetchAI() {
+      setIsGeneratingAI(true);
+      const summary = await generateAICognitiveExecutiveSummary({
+        name: userName,
+        position: userPosition,
+        organization: userOrganization,
+        learning: assessment?.score?.kolb?.style,
+        thinking: assessment?.score?.sternberg?.style,
+        decision: assessment?.score?.dualProcess?.style
+      });
+      if (summary) setAiSummary(summary);
+      setIsGeneratingAI(false);
+    }
+    fetchAI();
+  }, [assessment?.score, userName, userPosition, userOrganization]);
+
   
   const handleDownloadPDF = async () => {
     await generatePDF(assessment, userName, null, true);
@@ -360,6 +381,35 @@ export function ProfessionalAssessmentReport({
                 <strong className="text-[#5B7DB1]">{getOverallCognitiveProfile()}</strong> — {getDetailedProfileDescription()}. 
                 Ideal for {userPosition.toLowerCase().includes('marketing') ? 'marketing strategy and leadership roles' : 'strategic leadership positions'}.
               </p>
+            </div>
+            
+            {/* AI Executive Summary */}
+            <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Brain className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-semibold text-indigo-900">JotMinds AI Analysis</h3>
+              </div>
+              {isGeneratingAI ? (
+                <div className="flex flex-col items-center justify-center py-4 space-y-3 animate-pulse">
+                  <p className="text-sm text-indigo-600/70 font-medium">Synthesizing profile data...</p>
+                  <div className="w-full max-w-sm bg-indigo-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-indigo-400 h-full rounded-full w-2/3"></div>
+                  </div>
+                </div>
+              ) : aiSummary ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-700 leading-relaxed">{aiSummary.narrativeSummary}</p>
+                  <div className="bg-white rounded p-3 border border-indigo-50">
+                    <p className="text-xs font-semibold text-indigo-800 uppercase tracking-wider mb-1">Key Takeaway</p>
+                    <p className="text-sm text-gray-800">{aiSummary.keyTakeaway}</p>
+                  </div>
+                  <div className="text-center mt-2">
+                    <p className="text-sm italic text-indigo-600 font-medium">"{aiSummary.personalizedMantra}"</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic">AI analysis unavailable.</p>
+              )}
             </div>
           </CardHeader>
 

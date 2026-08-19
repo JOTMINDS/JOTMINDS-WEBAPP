@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { Download, ArrowLeft, CheckCircle2, Target, TrendingUp, Briefcase, MessageSquare, ExternalLink, Brain, Lightbulb, Scale, Users, ArrowUp, ArrowDown } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
+import { generateAICognitiveExecutiveSummary } from '../utils/aiService';
 import { getRoleProfiles } from '../utils/api';
 
 interface ProfessionalCognitiveResultsProps {
@@ -30,6 +31,26 @@ export function ProfessionalCognitiveResults({
 }: ProfessionalCognitiveResultsProps) {
   
   const insights = getProfessionalInsights(profile);
+  const [aiSummary, setAiSummary] = React.useState<any>(null);
+  const [isGeneratingAI, setIsGeneratingAI] = React.useState(true);
+
+  React.useEffect(() => {
+    async function fetchAI() {
+      setIsGeneratingAI(true);
+      const summary = await generateAICognitiveExecutiveSummary({
+        name: userName,
+        position: userPosition,
+        learning: profile.learning.style,
+        thinking: profile.thinking.style,
+        decision: profile.decisionMaking.style,
+        motivation: profile.motivation.style
+      });
+      if (summary) setAiSummary(summary);
+      setIsGeneratingAI(false);
+    }
+    fetchAI();
+  }, [profile, userName, userPosition]);
+
   const [roleProfiles, setRoleProfiles] = React.useState<any[]>([]);
   const [selectedRoleId, setSelectedRoleId] = React.useState<string>('none');
 
@@ -176,6 +197,35 @@ export function ProfessionalCognitiveResults({
               <p className="text-base text-gray-700 dark:text-gray-200 leading-relaxed">
                 <strong className="text-[#5B7DB1] dark:text-[#7B61FF]">{profile.overallProfile}</strong> — {profile.summary}
               </p>
+            </div>
+            
+            {/* AI Executive Summary */}
+            <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-5 border border-blue-100 dark:border-blue-800">
+              <div className="flex items-center gap-2 mb-3">
+                <Brain className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="font-semibold text-indigo-900 dark:text-indigo-300">JotMinds AI Analysis</h3>
+              </div>
+              {isGeneratingAI ? (
+                <div className="flex flex-col items-center justify-center py-4 space-y-3 animate-pulse">
+                  <p className="text-sm text-indigo-600/70 dark:text-indigo-400/70 font-medium">Synthesizing profile data...</p>
+                  <div className="w-full max-w-sm bg-indigo-100 dark:bg-indigo-900/50 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-indigo-400 h-full rounded-full w-2/3"></div>
+                  </div>
+                </div>
+              ) : aiSummary ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{aiSummary.narrativeSummary}</p>
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-indigo-50 dark:border-indigo-900/30">
+                    <p className="text-xs font-semibold text-indigo-800 dark:text-indigo-400 uppercase tracking-wider mb-1">Key Takeaway</p>
+                    <p className="text-sm text-gray-800 dark:text-gray-200">{aiSummary.keyTakeaway}</p>
+                  </div>
+                  <div className="text-center mt-2">
+                    <p className="text-sm italic text-indigo-600 dark:text-indigo-400 font-medium">"{aiSummary.personalizedMantra}"</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic">AI analysis unavailable.</p>
+              )}
             </div>
           </CardHeader>
 
