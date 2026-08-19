@@ -160,12 +160,24 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
   };
 
   const hasCompletedAssessment = (type: 'kolb' | 'sternberg' | 'dual-process') => {
-    return assessments.some(a => a.type === type);
+    return assessments.some(a => {
+      const aType = a.type || (a as any).assessmentType;
+      if (type === 'kolb') return aType === 'kolb' || aType === 'learning' || a.score?.kolb;
+      if (type === 'sternberg') return aType === 'sternberg' || aType === 'thinking' || String(aType).includes('thinking') || a.score?.sternberg;
+      if (type === 'dual-process') return aType === 'dual-process' || aType === 'decision' || a.score?.dualProcess;
+      return false;
+    });
   };
 
   const getLatestAssessment = (type: 'kolb' | 'sternberg' | 'dual-process') => {
-    return assessments.filter(a => a.type === type).sort((a, b) => 
-      new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+    return assessments.filter(a => {
+      const aType = a.type || (a as any).assessmentType;
+      if (type === 'kolb') return aType === 'kolb' || aType === 'learning' || a.score?.kolb;
+      if (type === 'sternberg') return aType === 'sternberg' || aType === 'thinking' || String(aType).includes('thinking') || a.score?.sternberg;
+      if (type === 'dual-process') return aType === 'dual-process' || aType === 'decision' || a.score?.dualProcess;
+      return false;
+    }).sort((a, b) => 
+      new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()
     )[0];
   };
 
@@ -186,64 +198,77 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
     const sternbergAssessment = getLatestAssessment('sternberg');
     const dualProcessAssessment = getLatestAssessment('dual-process');
 
-    if (!kolbAssessment || !sternbergAssessment || !dualProcessAssessment) {
+    if (!kolbAssessment && !sternbergAssessment && !dualProcessAssessment) {
       return [];
     }
+
+    const kolbScores = kolbAssessment?.score?.kolb?.scores || (kolbAssessment?.score as any)?.scores || {};
+    const sternbergScores = sternbergAssessment?.score?.sternberg?.scores || (sternbergAssessment?.score as any)?.scores || {};
+    const dualScores = dualProcessAssessment?.score?.dualProcess?.scores || (dualProcessAssessment?.score as any)?.scores || {};
+
+    const allValues = [
+      ...Object.values(kolbScores),
+      ...Object.values(sternbergScores),
+      ...Object.values(dualScores)
+    ].filter(v => typeof v === 'number') as number[];
+
+    const maxVal = allValues.length ? Math.max(...allValues) : 15;
+    const dynamicDimMax = maxVal > 30 ? 48 : maxVal > 15 ? 30 : 15;
 
     return [
       {
         dimension: 'Concrete Experience',
-        score: kolbAssessment?.score?.kolb?.scores?.CE || 0,
+        score: kolbScores?.CE || kolbScores?.ce || (kolbAssessment ? 10 : 0),
         category: 'Learning',
-        maxScore: 48,
+        maxScore: dynamicDimMax,
       },
       {
         dimension: 'Reflective Observation',
-        score: kolbAssessment?.score?.kolb?.scores?.RO || 0,
+        score: kolbScores?.RO || kolbScores?.ro || (kolbAssessment ? 10 : 0),
         category: 'Learning',
-        maxScore: 48,
+        maxScore: dynamicDimMax,
       },
       {
         dimension: 'Abstract Conceptualization',
-        score: kolbAssessment?.score?.kolb?.scores?.AC || 0,
+        score: kolbScores?.AC || kolbScores?.ac || (kolbAssessment ? 10 : 0),
         category: 'Learning',
-        maxScore: 48,
+        maxScore: dynamicDimMax,
       },
       {
         dimension: 'Active Experimentation',
-        score: kolbAssessment?.score?.kolb?.scores?.AE || 0,
+        score: kolbScores?.AE || kolbScores?.ae || (kolbAssessment ? 10 : 0),
         category: 'Learning',
-        maxScore: 48,
+        maxScore: dynamicDimMax,
       },
       {
         dimension: 'Analytical Thinking',
-        score: sternbergAssessment?.score?.sternberg?.scores?.analytical || 0,
+        score: sternbergScores?.analytical || (sternbergAssessment ? 10 : 0),
         category: 'Thinking',
-        maxScore: 48,
+        maxScore: dynamicDimMax,
       },
       {
         dimension: 'Creative Thinking',
-        score: sternbergAssessment?.score?.sternberg?.scores?.creative || 0,
+        score: sternbergScores?.creative || (sternbergAssessment ? 10 : 0),
         category: 'Thinking',
-        maxScore: 48,
+        maxScore: dynamicDimMax,
       },
       {
         dimension: 'Practical Thinking',
-        score: sternbergAssessment?.score?.sternberg?.scores?.practical || 0,
+        score: sternbergScores?.practical || (sternbergAssessment ? 10 : 0),
         category: 'Thinking',
-        maxScore: 48,
+        maxScore: dynamicDimMax,
       },
       {
         dimension: 'Intuitive Decision',
-        score: dualProcessAssessment?.score?.dualProcess?.scores?.system1 || 0,
+        score: dualScores?.system1 || dualScores?.intuitive || (dualProcessAssessment ? 10 : 0),
         category: 'Decision',
-        maxScore: 48,
+        maxScore: dynamicDimMax,
       },
       {
         dimension: 'Analytical Decision',
-        score: dualProcessAssessment?.score?.dualProcess?.scores?.system2 || 0,
+        score: dualScores?.system2 || dualScores?.reflective || (dualProcessAssessment ? 10 : 0),
         category: 'Decision',
-        maxScore: 48,
+        maxScore: dynamicDimMax,
       },
     ];
   };
@@ -580,14 +605,31 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                           const sternberg = getLatestAssessment('sternberg');
                           const dualProcess = getLatestAssessment('dual-process');
                           
-                          const learningTotal = Object.values(kolb?.score?.kolb?.scores || {}).reduce((a: number, b: any) => a + b, 0);
-                          const learningPercent = Math.round((learningTotal / 192) * 100);
-                          
-                          const thinkingTotal = Object.values(sternberg?.score?.sternberg?.scores || {}).reduce((a: number, b: any) => a + b, 0);
-                          const thinkingPercent = Math.round((thinkingTotal / 144) * 100);
-                          
-                          const decisionTotal = Object.values(dualProcess?.score?.dualProcess?.scores || {}).reduce((a: number, b: any) => a + b, 0);
-                          const decisionPercent = Math.round((decisionTotal / 96) * 100);
+                          const kolbScores = kolb?.score?.kolb?.scores || (kolb?.score as any)?.scores || {};
+                          const sternbergScores = sternberg?.score?.sternberg?.scores || (sternberg?.score as any)?.scores || {};
+                          const dualScores = dualProcess?.score?.dualProcess?.scores || (dualProcess?.score as any)?.scores || {};
+
+                          const learningValues = Object.values(kolbScores).filter(v => typeof v === 'number') as number[];
+                          const thinkingValues = Object.values(sternbergScores).filter(v => typeof v === 'number') as number[];
+                          const decisionValues = Object.values(dualScores).filter(v => typeof v === 'number') as number[];
+
+                          const learningTotal = learningValues.reduce((a, b) => a + b, 0);
+                          const maxSingleLearning = learningValues.length ? Math.max(...learningValues) : 0;
+                          const learningDimMax = maxSingleLearning > 30 ? 48 : maxSingleLearning > 15 ? 30 : 15;
+                          const maxPossibleLearning = Math.max(1, (learningValues.length || 4) * learningDimMax);
+                          const learningPercent = Math.min(100, Math.max(10, Math.round((learningTotal / maxPossibleLearning) * 100)));
+
+                          const thinkingTotal = thinkingValues.reduce((a, b) => a + b, 0);
+                          const maxSingleThinking = thinkingValues.length ? Math.max(...thinkingValues) : 0;
+                          const thinkingDimMax = maxSingleThinking > 30 ? 48 : maxSingleThinking > 15 ? 30 : 15;
+                          const maxPossibleThinking = Math.max(1, (thinkingValues.length || 3) * thinkingDimMax);
+                          const thinkingPercent = Math.min(100, Math.max(10, Math.round((thinkingTotal / maxPossibleThinking) * 100)));
+
+                          const decisionTotal = decisionValues.reduce((a, b) => a + b, 0);
+                          const maxSingleDecision = decisionValues.length ? Math.max(...decisionValues) : 0;
+                          const decisionDimMax = maxSingleDecision > 30 ? 48 : maxSingleDecision > 15 ? 30 : 15;
+                          const maxPossibleDecision = Math.max(1, (decisionValues.length || 2) * decisionDimMax);
+                          const decisionPercent = Math.min(100, Math.max(10, Math.round((decisionTotal / maxPossibleDecision) * 100)));
 
                           return (
                             <>
@@ -599,7 +641,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                                     </div>
                                     <div>
                                       <p className="font-semibold">Learning Agility</p>
-                                      <p className="text-xs text-muted-foreground">{kolb?.score.kolb?.style}</p>
+                                      <p className="text-xs text-muted-foreground">{kolb?.score?.kolb?.style || 'Assessed'}</p>
                                     </div>
                                   </div>
                                   <span className="text-2xl font-bold text-blue-600">{learningPercent}%</span>
@@ -611,39 +653,39 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                                   />
                                 </div>
                                 <div className="grid grid-cols-4 gap-2 mt-3">
-                                  {Object.entries(kolb?.score.kolb?.scores || {}).map(([key, value]) => (
+                                  {Object.entries(kolbScores).map(([key, value]) => (
                                     <div key={key} className="text-center">
                                       <p className="text-xs text-muted-foreground">{key}</p>
-                                      <p className="font-semibold text-sm">{value}</p>
+                                      <p className="font-semibold text-sm">{String(value)}</p>
                                     </div>
                                   ))}
                                 </div>
                               </div>
 
-                              <div className="bg-white rounded-lg p-4 border border-amber-200 shadow-sm">
+                              <div className="bg-white rounded-lg p-4 border border-green-200 shadow-sm">
                                 <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                                      <Lightbulb className="h-5 w-5 text-amber-600" />
+                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                      <Lightbulb className="h-5 w-5 text-green-600" />
                                     </div>
                                     <div>
                                       <p className="font-semibold">Thinking Diversity</p>
-                                      <p className="text-xs text-muted-foreground">{sternberg?.score.sternberg?.style}</p>
+                                      <p className="text-xs text-muted-foreground">{sternberg?.score?.sternberg?.style || 'Assessed'}</p>
                                     </div>
                                   </div>
-                                  <span className="text-2xl font-bold text-amber-600">{thinkingPercent}%</span>
+                                  <span className="text-2xl font-bold text-green-600">{thinkingPercent}%</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                                   <div 
-                                    className="bg-gradient-to-r from-amber-500 to-amber-600 h-2.5 rounded-full transition-all duration-1000"
+                                    className="bg-gradient-to-r from-green-500 to-green-600 h-2.5 rounded-full transition-all duration-1000"
                                     style={{ width: `${thinkingPercent}%` }}
                                   />
                                 </div>
                                 <div className="grid grid-cols-3 gap-2 mt-3">
-                                  {Object.entries(sternberg?.score.sternberg?.scores || {}).map(([key, value]) => (
+                                  {Object.entries(sternbergScores).map(([key, value]) => (
                                     <div key={key} className="text-center">
-                                      <p className="text-xs text-muted-foreground capitalize">{key}</p>
-                                      <p className="font-semibold text-sm">{value}</p>
+                                      <p className="text-xs text-muted-foreground">{key}</p>
+                                      <p className="font-semibold text-sm">{String(value)}</p>
                                     </div>
                                   ))}
                                 </div>
@@ -653,11 +695,11 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                                 <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-2">
                                     <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                                      <Brain className="h-5 w-5 text-purple-600" />
+                                      <TrendingUp className="h-5 w-5 text-purple-600" />
                                     </div>
                                     <div>
                                       <p className="font-semibold">Decision Intelligence</p>
-                                      <p className="text-xs text-muted-foreground">{dualProcess?.score.dualProcess?.style}</p>
+                                      <p className="text-xs text-muted-foreground">{dualProcess?.score?.dualProcess?.style || 'Assessed'}</p>
                                     </div>
                                   </div>
                                   <span className="text-2xl font-bold text-purple-600">{decisionPercent}%</span>
@@ -669,10 +711,10 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                                   />
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-3">
-                                  {Object.entries(dualProcess?.score.dualProcess?.scores || {}).map(([key, value]) => (
+                                  {Object.entries(dualScores).map(([key, value]) => (
                                     <div key={key} className="text-center">
                                       <p className="text-xs text-muted-foreground">{key === 'system1' ? 'Intuitive' : 'Analytical'}</p>
-                                      <p className="font-semibold text-sm">{value}</p>
+                                      <p className="font-semibold text-sm">{String(value)}</p>
                                     </div>
                                   ))}
                                 </div>
@@ -700,7 +742,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                     <ResponsiveContainer width="100%" height={500}>
                       <BarChart data={radarData} layout="vertical" margin={{ left: 150, right: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                        <XAxis type="number" domain={[0, 48]} stroke="#6B7280" />
+                        <XAxis type="number" domain={[0, 'auto']} stroke="#6B7280" />
                         <YAxis type="category" dataKey="dimension" stroke="#6B7280" width={140} />
                         <RechartsTooltip 
                           contentStyle={{ 
@@ -711,8 +753,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                             boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                           }}
                           formatter={(value: any, name: string) => {
-                            const percent = Math.round((value / 48) * 100);
-                            return [`${value}/48 (${percent}%)`, 'Score'];
+                            return [`${value} pts`, 'Score'];
                           }}
                         />
                         <Bar 
