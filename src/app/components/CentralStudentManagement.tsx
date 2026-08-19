@@ -36,7 +36,7 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
 
     const matchesClass = classFilter === 'all' || student.className === classFilter;
 
-    const isComplete = student.hasCompletedAssessment;
+    const isComplete = assessments.some(a => a.userId === student.id && (a.completed || a.completedAt));
     const matchesAssessment = 
       assessmentFilter === 'all' ||
       (assessmentFilter === 'complete' && isComplete) ||
@@ -45,7 +45,7 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
     return matchesSearch && matchesClass && matchesAssessment;
   });
 
-  const completedCount = students.filter(s => s.hasCompletedAssessment).length;
+  const completedCount = students.filter(s => assessments.some(a => a.userId === s.id && (a.completed || a.completedAt))).length;
   const completionRate = students.length > 0 ? Math.round((completedCount / students.length) * 100) : 0;
 
   // Selected student for detail view
@@ -209,7 +209,7 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          {student.hasCompletedAssessment ? (
+                          {assessments.some(a => a.userId === student.id && (a.completed || a.completedAt)) ? (
                             <>
                               <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] hidden sm:flex">
                                 <CheckCircle2 className="w-3 h-3 mr-1" /> Assessed
