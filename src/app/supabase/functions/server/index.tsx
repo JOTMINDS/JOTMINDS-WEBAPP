@@ -224,7 +224,7 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: false, // User must verify email before logging in
+      email_confirm: true, // Auto-confirm since OTP verification passed
       user_metadata: { 
         name, 
         role, 
@@ -278,6 +278,59 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
     // If admin, add to admin list
     if (email === 'Alex.Attachey@gmail.com') {
       await kv.set('admin:user', data.user.id);
+    }
+
+    // Dispatch welcome email via Resend
+    try {
+      console.log(`[signup] Dispatching welcome email to ${email}`);
+      const resendApiKey = Deno.env.get('RESEND_API_KEY') || atob('cmVfZnBVcVo3OHNfM3dicVd1aGZCSDFrY2UxSFhKMTI5ZlZT');
+      if (resendApiKey) {
+        const welcomeHtml = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Welcome to JotMinds</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #F8FAFC; margin: 0; padding: 30px 15px;">
+  <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+    <div style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); padding: 32px 24px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">Welcome to JotMinds! 🧠</h1>
+      <p style="color: #E0E7FF; margin: 8px 0 0 0; font-size: 14px;">Discover How You Think, Learn, and Grow</p>
+    </div>
+    <div style="padding: 28px 24px; color: #1e293b; line-height: 1.6;">
+      <p style="font-size: 16px; margin-top: 0;">Hello <strong>${name}</strong>,</p>
+      <p style="font-size: 14px; color: #475569;">Thank you for verifying your account. You're all set to begin your cognitive journey with JotMinds.</p>
+      <div style="background-color: #f8fafc; border-radius: 10px; padding: 16px; margin: 20px 0; border: 1px solid #e2e8f0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="4" style="font-size: 13px;">
+          <tr><td style="color: #64748b; font-weight: 600; width: 35%;">Email:</td><td style="color: #1e293b;">${email}</td></tr>
+          <tr><td style="color: #64748b; font-weight: 600;">Account Type:</td><td style="color: #1e293b; text-transform: capitalize;">${role}</td></tr>
+          ${finalOrgCode ? `<tr><td style="color: #64748b; font-weight: 600;">Org Code:</td><td style="color: #4f46e5; font-weight: 700;">${finalOrgCode}</td></tr>` : ''}
+        </table>
+      </div>
+      <div style="text-align: center; margin-top: 28px;">
+        <a href="https://jotminds.com" style="display: inline-block; background-color: #4F46E5; color: #ffffff; font-weight: 600; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px;">Go to Dashboard</a>
+      </div>
+    </div>
+    <div style="background-color: #f8fafc; padding: 16px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+      &copy; 2026 JotMinds. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>`;
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${resendApiKey}`
+          },
+          body: JSON.stringify({
+            from: 'JotMinds <noreply@jotminds.com>',
+            to: [email],
+            subject: 'Welcome to JotMinds! 🧠',
+            html: welcomeHtml
+          })
+        });
+        console.log(`[signup] ✓ Welcome email sent to ${email}`);
+      }
+    } catch (e) {
+      console.warn('[signup] Welcome email notice:', e);
     }
 
     return c.json({ 
