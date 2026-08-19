@@ -72,85 +72,123 @@ export function mapAssessmentsToResponses(assessments: any[]) {
     return profCognitive.responses;
   }
   
-  const kolb = assessments.find(a => 
+  const kolbAssessment = assessments.find(a => 
     a.type === 'kolb' || a.type === 'learning' || 
     a.assessmentType === 'kolb' || a.assessmentType === 'learning' ||
     Boolean(a.score?.kolb || a.score?.learning)
   );
 
-  const sternberg = assessments.find(a => 
+  const sternbergAssessment = assessments.find(a => 
     a.type === 'sternberg' || a.type === 'thinking' || 
     a.assessmentType === 'sternberg' || a.assessmentType === 'thinking' ||
     (typeof a.type === 'string' && a.type.includes('thinking')) ||
     Boolean(a.score?.sternberg || a.score?.thinking)
   );
 
-  const dual = assessments.find(a => 
+  const dualAssessment = assessments.find(a => 
     a.type === 'dual-process' || a.type === 'decision' || 
     a.assessmentType === 'dual-process' || a.assessmentType === 'decision' ||
     Boolean(a.score?.dualProcess || a.score?.decision)
   );
   
-  if (!profCognitive && !kolb && !sternberg && !dual) {
+  if (!profCognitive && !kolbAssessment && !sternbergAssessment && !dualAssessment) {
     return null;
   }
+
+  function extractData(assessment: any, framework: string) {
+    if (!assessment) return { style: '', scores: {} as any };
+    const raw = assessment.results || assessment.score || {};
+    let target = raw;
+    if (target[framework]) target = target[framework];
+    else if (framework === 'kolb' && target.learning) target = target.learning;
+    else if (framework === 'sternberg' && target.thinking) target = target.thinking;
+    else if (framework === 'dualProcess' && (target['dual-process'] || target.decision)) target = target['dual-process'] || target.decision;
+    
+    const style = (target && typeof target === 'object' && target.style) || raw.style || assessment.style || '';
+    const scores = (target && typeof target === 'object' && target.scores) ? target.scores : (target !== raw ? target : (raw.scores || raw));
+    return { style, scores: scores || {} };
+  }
+
+  const kolbData = extractData(kolbAssessment, 'kolb');
+  const sternbergData = extractData(sternbergAssessment, 'sternberg');
+  const dualData = extractData(dualAssessment, 'dualProcess');
   
   // 1. Calculate Learning Score (0-30 scale)
   let learningScore = 15;
-  const kolbScores = kolb?.score?.kolb?.scores || kolb?.score?.kolb || kolb?.score?.scores || kolb?.results?.scores || kolb?.results || kolb?.score;
-  if (kolbScores && typeof kolbScores === 'object') {
-    const ae = Number(kolbScores.AE ?? kolbScores.ae ?? kolbScores.active ?? 0);
-    const ce = Number(kolbScores.CE ?? kolbScores.ce ?? kolbScores.concrete ?? 0);
-    const ro = Number(kolbScores.RO ?? kolbScores.ro ?? kolbScores.reflective ?? 0);
-    const ac = Number(kolbScores.AC ?? kolbScores.ac ?? kolbScores.abstract ?? 0);
+  const kScores = kolbData.scores;
+  const kStyle = kolbData.style;
+  if (kScores && typeof kScores === 'object' && Object.keys(kScores).length > 0) {
+    const ae = Number(kScores.AE ?? kScores.ae ?? kScores.active ?? kScores.Kinesthetic ?? 0);
+    const ce = Number(kScores.CE ?? kScores.ce ?? kScores.concrete ?? kScores.Visual ?? 0);
+    const ro = Number(kScores.RO ?? kScores.ro ?? kScores.reflective ?? kScores.Auditory ?? 0);
+    const ac = Number(kScores.AC ?? kScores.ac ?? kScores.abstract ?? kScores['Reading/Writing'] ?? 0);
     const total = ae + ce + ro + ac;
     if (total > 0) {
-      // Proportional conversion to 0-30 scale based on action vs reflection orientation
-      const actionOriented = (ae * 1.2 + ce * 0.8) / Math.max(1, total);
-      learningScore = Math.max(6, Math.min(30, Math.round(actionOriented * 30)));
+      if (kStyle === 'Accommodating' || ae > ro) learningScore = 26; // Hands-On Learner
+      else if (kStyle === 'Assimilating' || (ac > ce && ro > ae)) learningScore = 20; // Analytical Learner
+      else if (kStyle === 'Converging' || (ac > ce && ae > ro)) learningScore = 14; // Conceptual Planner
+      else if (kStyle === 'Diverging' || (ce > ac && ro > ae)) learningScore = 20; // Analytical Learner
+      else {
+        const actionRatio = (ae * 1.2 + ce * 0.8) / total;
+        learningScore = Math.max(8, Math.min(28, Math.round(actionRatio * 30)));
+      }
     }
-  } else if (kolb?.score?.kolb?.style || kolb?.results?.style) {
-    const style = kolb?.score?.kolb?.style || kolb?.results?.style;
-    if (style === 'Accommodating') learningScore = 26;
-    else if (style === 'Diverging') learningScore = 22;
-    else if (style === 'Converging') learningScore = 16;
-    else if (style === 'Assimilating') learningScore = 10;
+  }
+  if (learningScore === 15 && kStyle) {
+    if (kStyle === 'Accommodating') learningScore = 26;
+    else if (kStyle === 'Diverging') learningScore = 20;
+    else if (kStyle === 'Converging') learningScore = 14;
+    else if (kStyle === 'Assimilating') learningScore = 10;
   }
   
   // 2. Calculate Thinking Score (0-30 scale)
   let thinkingScore = 15;
-  const sternbergScores = sternberg?.score?.sternberg?.scores || sternberg?.score?.sternberg || sternberg?.score?.scores || sternberg?.results?.scores || sternberg?.results || sternberg?.score;
-  if (sternbergScores && typeof sternbergScores === 'object') {
-    const creative = Number(sternbergScores.creative ?? 0);
-    const analytical = Number(sternbergScores.analytical ?? 0);
-    const practical = Number(sternbergScores.practical ?? 0);
-    const total = creative + analytical + practical;
+  const sScores = sternbergData.scores;
+  const sStyle = sternbergData.style;
+  if (sScores && typeof sScores === 'object' && Object.keys(sScores).length > 0) {
+    const creative = Number(sScores.creative ?? sScores.Creative ?? 0);
+    const analytical = Number(sScores.analytical ?? sScores.Analytical ?? 0);
+    const practical = Number(sScores.practical ?? sScores.Practical ?? 0);
+    const holistic = Number(sScores.holistic ?? sScores.Holistic ?? 0);
+    const total = creative + analytical + practical + holistic;
     if (total > 0) {
-      const creativeRatio = (creative * 1.3 + practical * 0.7) / Math.max(1, total);
-      thinkingScore = Math.max(6, Math.min(30, Math.round(creativeRatio * 30)));
+      if (sStyle === 'Creative' || (creative > analytical && creative > practical)) thinkingScore = 24; // Creative Thinker
+      else if (sStyle === 'Analytical' || (analytical >= creative && analytical >= practical)) thinkingScore = 18; // Analytical Thinker
+      else if (sStyle === 'Practical' || practical > analytical) thinkingScore = 14; // Practical/Creative
+      else {
+        const cRatio = (creative * 1.3 + holistic * 0.9) / total;
+        thinkingScore = Math.max(8, Math.min(28, Math.round(cRatio * 30)));
+      }
     }
-  } else if (sternberg?.score?.sternberg?.style || sternberg?.results?.style) {
-    const style = sternberg?.score?.sternberg?.style || sternberg?.results?.style;
-    if (style === 'Creative') thinkingScore = 26;
-    else if (style === 'Analytical') thinkingScore = 18;
-    else if (style === 'Practical') thinkingScore = 12;
+  }
+  if (thinkingScore === 15 && sStyle) {
+    if (sStyle === 'Creative') thinkingScore = 24;
+    else if (sStyle === 'Analytical') thinkingScore = 18;
+    else if (sStyle === 'Practical') thinkingScore = 14;
   }
   
   // 3. Calculate Decision Making Score (0-30 scale)
   let decisionScore = 15;
-  const dualScores = dual?.score?.dualProcess?.scores || dual?.score?.dualProcess || dual?.score?.scores || dual?.results?.scores || dual?.results || dual?.score;
-  if (dualScores && typeof dualScores === 'object') {
-    const system1 = Number(dualScores.system1 ?? dualScores.intuitive ?? 0);
-    const system2 = Number(dualScores.system2 ?? dualScores.reflective ?? 0);
-    const total = system1 + system2;
+  const dScores = dualData.scores;
+  const dStyle = dualData.style;
+  if (dScores && typeof dScores === 'object' && Object.keys(dScores).length > 0) {
+    const system1 = Number(dScores.system1 ?? dScores.intuitive ?? dScores.Intuitive ?? dScores.Spontaneous ?? 0);
+    const system2 = Number(dScores.system2 ?? dScores.reflective ?? dScores['Data-Driven'] ?? dScores.Analytical ?? 0);
+    const collab = Number(dScores.collaborative ?? dScores.Collaborative ?? 0);
+    const total = system1 + system2 + collab;
     if (total > 0) {
-      decisionScore = Math.max(6, Math.min(30, Math.round((system2 / total) * 30)));
+      if (dStyle === 'Balanced' || Math.abs(system1 - system2) <= 4) decisionScore = 24; // Balanced Decision Maker
+      else if (dStyle === 'Reflective' || system2 > system1) decisionScore = 18; // Reflective Decision Maker
+      else if (dStyle === 'Intuitive' || system1 > system2) decisionScore = 14; // Intuitive Decision Maker
+      else {
+        decisionScore = Math.max(8, Math.min(28, Math.round((system2 / total) * 30)));
+      }
     }
-  } else if (dual?.score?.dualProcess?.style || dual?.results?.style) {
-    const style = dual?.score?.dualProcess?.style || dual?.results?.style;
-    if (style === 'Reflective') decisionScore = 24;
-    else if (style === 'Balanced') decisionScore = 18;
-    else if (style === 'Intuitive') decisionScore = 10;
+  }
+  if (decisionScore === 15 && dStyle) {
+    if (dStyle === 'Balanced') decisionScore = 24;
+    else if (dStyle === 'Reflective') decisionScore = 18;
+    else if (dStyle === 'Intuitive') decisionScore = 14;
   }
   
   return {

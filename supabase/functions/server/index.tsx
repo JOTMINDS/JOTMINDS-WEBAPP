@@ -3870,6 +3870,22 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
       return 'Unknown';
     };
     
+    // Unpack nested assessment result structures
+    const unpackAssessmentData = (results: any, framework: string) => {
+      if (!results || typeof results !== 'object') return { style: 'Balanced', scores: {} };
+      let target = results;
+      if (target.kolb) target = target.kolb;
+      else if (target.sternberg) target = target.sternberg;
+      else if (target.dualProcess) target = target.dualProcess;
+      else if (target.decision) target = target.decision;
+      else if (target.learning) target = target.learning;
+      else if (target.thinking) target = target.thinking;
+      
+      const innerScores = (target && typeof target === 'object' && target.scores) ? target.scores : (target !== results ? target : (results.scores || results));
+      const style = (target && typeof target === 'object' && target.style) || results.style || determinePrimaryStyle(innerScores, framework);
+      return { style, scores: innerScores };
+    };
+
     // Fetch assessments AND reviews for each employee
     const employeesWithAssessments = await Promise.all(employees.map(async (emp: any) => {
       const assessments = await kv.getByPrefix(`result:${emp.id}:`);
@@ -3884,20 +3900,19 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
         assessments: completedAssessments.map((a: any) => {
           const assessmentType = a.assessmentType || a.type;
           const rawResults = a.results || a.score || {};
-          const innerScores = rawResults.scores || rawResults;
           
           // Build the score object with proper structure
           let score: any = {};
           
           if (assessmentType === 'kolb' || assessmentType === 'learning') {
-            const style = rawResults.style || determinePrimaryStyle(innerScores, 'kolb');
-            score.kolb = { style, scores: innerScores };
+            const { style, scores } = unpackAssessmentData(rawResults, 'kolb');
+            score.kolb = { style, scores };
           } else if (assessmentType === 'sternberg' || assessmentType === 'thinking' || assessmentType?.includes('thinking')) {
-            const style = rawResults.style || determinePrimaryStyle(innerScores, 'sternberg');
-            score.sternberg = { style, scores: innerScores };
+            const { style, scores } = unpackAssessmentData(rawResults, 'sternberg');
+            score.sternberg = { style, scores };
           } else if (assessmentType === 'dual-process' || assessmentType === 'decision') {
-            const style = rawResults.style || determinePrimaryStyle(innerScores, 'dual-process');
-            score.dualProcess = { style, scores: innerScores };
+            const { style, scores } = unpackAssessmentData(rawResults, 'dual-process');
+            score.dualProcess = { style, scores };
           } else {
             // For other assessment types, pass results directly
             score[assessmentType] = rawResults;
