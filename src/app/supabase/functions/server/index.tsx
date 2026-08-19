@@ -82,6 +82,55 @@ const verifyAuth = async (request: Request) => {
   return user;
 };
 
+// Universal helper to determine primary style from scores
+export const determinePrimaryStyle = (input: any, type: string) => {
+  if (typeof input === 'object' && input !== null && input.style) return input.style;
+  const scores = (input && input.scores) ? input.scores : (input || {});
+  if (type === 'kolb' || type === 'learning') {
+    const CE = Number(scores.CE ?? scores.ce ?? scores.concrete ?? scores.Visual ?? 0);
+    const RO = Number(scores.RO ?? scores.ro ?? scores.reflective ?? scores.Auditory ?? 0);
+    const AC = Number(scores.AC ?? scores.ac ?? scores.abstract ?? scores['Reading/Writing'] ?? 0);
+    const AE = Number(scores.AE ?? scores.ae ?? scores.active ?? scores.Kinesthetic ?? 0);
+    const acCE = AC - CE;
+    const aeRO = AE - RO;
+    
+    if (acCE > 0 && aeRO > 0) return 'Converging';
+    if (acCE > 0 && aeRO < 0) return 'Assimilating';
+    if (acCE < 0 && aeRO < 0) return 'Diverging';
+    return 'Accommodating';
+  } else if (type === 'sternberg' || type === 'thinking' || type?.includes('thinking')) {
+    const analytical = Number(scores.analytical ?? scores.Analytical ?? 0);
+    const creative = Number(scores.creative ?? scores.Creative ?? 0);
+    const practical = Number(scores.practical ?? scores.Practical ?? 0);
+    if (analytical >= creative && analytical >= practical) return 'Analytical';
+    if (creative >= analytical && creative >= practical) return 'Creative';
+    return 'Practical';
+  } else if (type === 'dual-process' || type === 'decision') {
+    const system1 = Number(scores.system1 ?? scores.intuitive ?? scores.Intuitive ?? 0);
+    const system2 = Number(scores.system2 ?? scores.reflective ?? scores['Data-Driven'] ?? 0);
+    const diff = Math.abs(system1 - system2);
+    if (diff < 5) return 'Balanced';
+    return system1 > system2 ? 'Intuitive' : 'Reflective';
+  }
+  return 'Unknown';
+};
+
+// Universal assessment result unwrapper
+export const unpackAssessmentData = (results: any, framework: string) => {
+  if (!results || typeof results !== 'object') return { style: 'Balanced', scores: {} };
+  let target = results;
+  if (target.kolb) target = target.kolb;
+  else if (target.sternberg) target = target.sternberg;
+  else if (target.dualProcess) target = target.dualProcess;
+  else if (target.decision) target = target.decision;
+  else if (target.learning) target = target.learning;
+  else if (target.thinking) target = target.thinking;
+  
+  const innerScores = (target && typeof target === 'object' && target.scores) ? target.scores : (target !== results ? target : (results.scores || results));
+  const style = (target && typeof target === 'object' && target.style) || results.style || determinePrimaryStyle(innerScores, framework);
+  return { style, scores: innerScores };
+};
+
 // ============= AUTHENTICATION ROUTES =============
 
 // Generate unique organization code
@@ -1206,54 +1255,33 @@ app.get('/make-server-fc8eb847/parent/linked-children', async (c) => {
         
         // Transform assessments to match frontend format
         const transformedAssessments = completedAssessments.map((assessment: any) => {
-          const assessmentType = assessment.assessmentType;
-          const results = assessment.results || {};
-          
-          console.log('[Backend] Transforming assessment:', {
-            type: assessmentType,
-            results,
-            hasResults: Object.keys(results).length > 0
-          });
+          const assessmentType = assessment.assessmentType || assessment.type;
+          const rawResults = assessment.results || assessment.score || {};
           
           // Build the score object with proper structure
           let score: any = {};
           
-          if (assessmentType === 'kolb') {
-            const style = determinePrimaryStyle(results, 'kolb');
-            score.kolb = {
-              style,
-              scores: results
-            };
-          } else if (assessmentType === 'sternberg') {
-            const style = determinePrimaryStyle(results, 'sternberg');
-            score.sternberg = {
-              style,
-              scores: results
-            };
-          } else if (assessmentType === 'dual-process') {
-            const style = determinePrimaryStyle(results, 'dual-process');
-            score.dualProcess = {
-              style,
-              scores: results
-            };
+          if (assessmentType === 'kolb' || assessmentType === 'learning') {
+            const { style, scores } = unpackAssessmentData(rawResults, 'kolb');
+            score.kolb = { style, scores };
+          } else if (assessmentType === 'sternberg' || assessmentType === 'thinking' || assessmentType?.includes('thinking')) {
+            const { style, scores } = unpackAssessmentData(rawResults, 'sternberg');
+            score.sternberg = { style, scores };
+          } else if (assessmentType === 'dual-process' || assessmentType === 'decision') {
+            const { style, scores } = unpackAssessmentData(rawResults, 'dual-process');
+            score.dualProcess = { style, scores };
           } else {
-            // For other assessment types (jhs-thinking, shs-thinking, adult-thinking, etc.)
-            // Pass the results directly under the assessment type key
-            score[assessmentType] = results;
-            // Also try to determine a primary style if possible/applicable, or just pass the raw results
-            // This ensures the frontend receives the data for these new assessment types
+            score[assessmentType] = rawResults;
           }
-          
-          console.log('[Backend] Built score object:', score);
           
           return {
             id: assessment.id || `result:${childId}:${assessmentType}`,
             userId: childId,
-            type: assessmentType,
+            type: assessmentType === 'learning' ? 'kolb' : assessmentType === 'thinking' ? 'sternberg' : assessmentType === 'decision' ? 'dual-process' : assessmentType,
             completed: true,
             completedAt: assessment.completedAt,
-            responses: assessment.answers || [],
-            score: score  // Now includes both style and scores
+            responses: assessment.answers || assessment.responses || [],
+            score: score
           };
         });
         
@@ -1344,32 +1372,30 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
         
         // Transform assessments to match frontend format
         const transformedAssessments = completedAssessments.map((assessment: any) => {
-          const assessmentType = assessment.assessmentType;
-          const results = assessment.results || {};
+          const assessmentType = assessment.assessmentType || assessment.type;
+          const rawResults = assessment.results || assessment.score || {};
           
-          // Build the score object with proper structure
           let score: any = {};
-          
-          if (assessmentType === 'kolb') {
-            const style = determinePrimaryStyle(results, 'kolb');
-            score.kolb = { style, scores: results };
-          } else if (assessmentType === 'sternberg') {
-            const style = determinePrimaryStyle(results, 'sternberg');
-            score.sternberg = { style, scores: results };
-          } else if (assessmentType === 'dual-process') {
-            const style = determinePrimaryStyle(results, 'dual-process');
-            score.dualProcess = { style, scores: results };
+          if (assessmentType === 'kolb' || assessmentType === 'learning') {
+            const { style, scores } = unpackAssessmentData(rawResults, 'kolb');
+            score.kolb = { style, scores };
+          } else if (assessmentType === 'sternberg' || assessmentType === 'thinking' || assessmentType?.includes('thinking')) {
+            const { style, scores } = unpackAssessmentData(rawResults, 'sternberg');
+            score.sternberg = { style, scores };
+          } else if (assessmentType === 'dual-process' || assessmentType === 'decision') {
+            const { style, scores } = unpackAssessmentData(rawResults, 'dual-process');
+            score.dualProcess = { style, scores };
           } else {
-            score[assessmentType] = results;
+            score[assessmentType] = rawResults;
           }
           
           return {
             id: assessment.id || `result:${student.id}:${assessmentType}`,
             userId: student.id,
-            type: assessmentType,
+            type: assessmentType === 'learning' ? 'kolb' : assessmentType === 'thinking' ? 'sternberg' : assessmentType === 'decision' ? 'dual-process' : assessmentType,
             completed: true,
             completedAt: assessment.completedAt,
-            responses: assessment.answers || [],
+            responses: assessment.answers || assessment.responses || [],
             score: score
           };
         });
@@ -1975,48 +2001,26 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
         reviews: reviews || [],
         assessments: completedAssessments.map((a: any) => {
           const type = a.assessmentType || a.type || 'kolb';
-          const results = a.results || a.score || {};
+          const rawResults = a.results || a.score || {};
 
-          // Standardize scores for Kolb, Sternberg, Dual-Process, Adult Thinking, Professional Cognitive
-          let scoreObj: any = { ...(a.score || {}) };
-          
-          let kolbStyle = results.kolb?.style || results.style || determinePrimaryStyle(results.kolb?.scores || results.scores || results, 'kolb');
-          let kolbScores = results.kolb?.scores || results.scores || results;
-          if (type === 'kolb' || type === 'learning' || results.CE !== undefined || results.kolb) {
-            scoreObj.kolb = {
-              style: kolbStyle || 'Assimilating',
-              scores: kolbScores
-            };
-          }
-
-          let sternbergStyle = results.sternberg?.style || results.style || determinePrimaryStyle(results.sternberg?.scores || results.scores || results, 'sternberg');
-          let sternbergScores = results.sternberg?.scores || results.scores || results;
-          if (type === 'sternberg' || type === 'thinking' || results.analytical !== undefined || results.sternberg) {
-            scoreObj.sternberg = {
-              style: sternbergStyle || 'Analytical',
-              scores: sternbergScores
-            };
-          }
-
-          let dualStyle = results.dualProcess?.style || results.style || determinePrimaryStyle(results.dualProcess?.scores || results.scores || results, 'dual-process');
-          let dualScores = results.dualProcess?.scores || results.scores || results;
-          if (type === 'dual-process' || type === 'decision' || results.system1 !== undefined || results.dualProcess) {
-            scoreObj.dualProcess = {
-              style: dualStyle || 'Balanced',
-              scores: dualScores
-            };
-          }
-
-          if (type === 'adult-thinking' || type === 'professional-cognitive') {
-            if (!scoreObj.kolb) scoreObj.kolb = { style: results.kolbStyle || 'Assimilating', scores: results };
-            if (!scoreObj.sternberg) scoreObj.sternberg = { style: results.sternbergStyle || 'Analytical', scores: results };
-            if (!scoreObj.dualProcess) scoreObj.dualProcess = { style: results.dualStyle || 'Balanced', scores: results };
+          let scoreObj: any = {};
+          if (type === 'kolb' || type === 'learning') {
+            const { style, scores } = unpackAssessmentData(rawResults, 'kolb');
+            scoreObj.kolb = { style, scores };
+          } else if (type === 'sternberg' || type === 'thinking' || type?.includes('thinking')) {
+            const { style, scores } = unpackAssessmentData(rawResults, 'sternberg');
+            scoreObj.sternberg = { style, scores };
+          } else if (type === 'dual-process' || type === 'decision') {
+            const { style, scores } = unpackAssessmentData(rawResults, 'dual-process');
+            scoreObj.dualProcess = { style, scores };
+          } else {
+            scoreObj[type] = rawResults;
           }
 
           return {
             id: a.id || `result:${emp.id}:${type}`,
             userId: emp.id,
-            type: type,
+            type: type === 'learning' ? 'kolb' : type === 'thinking' ? 'sternberg' : type === 'decision' ? 'dual-process' : type,
             responses: a.answers || a.responses || [],
             score: scoreObj,
             completedAt: a.completedAt || a.completed_at || new Date().toISOString()

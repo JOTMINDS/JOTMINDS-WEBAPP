@@ -22,16 +22,25 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
   });
 
   // Get latest assessment of each type
-  const latestKolb = assessments.filter(a => a.type === 'kolb').sort((a, b) => 
-    new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+  const latestKolb = assessments.filter(a => {
+    const t = (a.type as any) || (a as any).assessmentType;
+    return t === 'kolb' || t === 'learning' || Boolean(a.score?.kolb);
+  }).sort((a, b) => 
+    new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()
   )[0];
   
-  const latestSternberg = assessments.filter(a => a.type === 'sternberg').sort((a, b) => 
-    new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+  const latestSternberg = assessments.filter(a => {
+    const t = (a.type as any) || (a as any).assessmentType;
+    return t === 'sternberg' || t === 'thinking' || (typeof t === 'string' && t.includes('thinking')) || Boolean(a.score?.sternberg);
+  }).sort((a, b) => 
+    new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()
   )[0];
   
-  const latestDualProcess = assessments.filter(a => a.type === 'dual-process').sort((a, b) => 
-    new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+  const latestDualProcess = assessments.filter(a => {
+    const t = (a.type as any) || (a as any).assessmentType;
+    return t === 'dual-process' || t === 'decision' || Boolean(a.score?.dualProcess);
+  }).sort((a, b) => 
+    new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()
   )[0];
 
   console.log('📊 Assessment availability:', {
