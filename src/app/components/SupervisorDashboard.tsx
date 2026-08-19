@@ -77,18 +77,21 @@ export function mapAssessmentsToResponses(assessments: any[]) {
   }
   
   let learningScore = 15;
-  if (kolb && kolb.scores) {
-     learningScore = Math.min(30, Math.round(((kolb.scores.ae || 0) + (kolb.scores.ce || 0)) * 1.5));
+  const kolbScores = kolb?.score?.kolb?.scores;
+  if (kolbScores) {
+     learningScore = Math.min(30, Math.round(((kolbScores.AE || kolbScores.ae || 0) + (kolbScores.CE || kolbScores.ce || 0)) * 1.5));
   }
   
   let thinkingScore = 15;
-  if (sternberg && sternberg.scores) {
-     thinkingScore = Math.min(30, Math.round(((sternberg.scores.creative || 0) + (sternberg.scores.analytical || 0)) * 1.5));
+  const sternbergScores = sternberg?.score?.sternberg?.scores;
+  if (sternbergScores) {
+     thinkingScore = Math.min(30, Math.round(((sternbergScores.creative || 0) + (sternbergScores.analytical || 0)) * 1.5));
   }
   
   let decisionScore = 15;
-  if (dual && dual.scores) {
-     decisionScore = Math.min(30, Math.round((dual.scores.system2 || 0) * 1.5));
+  const dualScores = dual?.score?.dualProcess?.scores;
+  if (dualScores) {
+     decisionScore = Math.min(30, Math.round((dualScores.system2 || 0) * 1.5));
   }
   
   return {
