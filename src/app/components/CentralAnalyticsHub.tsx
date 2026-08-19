@@ -28,13 +28,13 @@ const RISK_COLORS = { high: '#DC2626', medium: '#E0A020', low: '#1E8A6E', none: 
 const RISK_LABELS = { high: 'At Risk', medium: 'Needs Support', low: 'On Track', none: 'Not Assessed' };
 
 const DIMENSION_LABELS: Record<string, string> = {
-  CE: 'Concrete Exp.', RO: 'Reflective Obs.', AC: 'Abstract Conc.', AE: 'Active Exp.',
+  'Concrete Experience': 'Concrete Exp.', 'Reflective Observation': 'Reflective Obs.', 'Abstract Conceptualization': 'Abstract Conc.', 'Active Experimentation': 'Active Exp.',
   Analytical: 'Analytical', Creative: 'Creative', Practical: 'Practical',
   Intuitive: 'Intuitive', Reflective: 'Reflective',
 };
 
 const DIMENSION_GROUPS: Record<string, string[]> = {
-  'Learning (Kolb)': ['CE', 'RO', 'AC', 'AE'],
+  'Learning (Kolb)': ['Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'],
   'Thinking (Sternberg)': ['Analytical', 'Creative', 'Practical'],
   'Decision': ['Intuitive', 'Reflective'],
 };
@@ -54,7 +54,7 @@ function scoreTextColor(score: number, max: number): string {
 }
 
 function getMaxForDim(dim: string): number {
-  return ['CE', 'RO', 'AC', 'AE'].includes(dim) ? 48 : 100;
+  return ['Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(dim) ? 48 : 100;
 }
 
 export function CentralAnalyticsHub({ students, assessments, user }: CentralAnalyticsHubProps) {
