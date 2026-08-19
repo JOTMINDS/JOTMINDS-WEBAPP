@@ -113,10 +113,21 @@ export function mapAssessmentsToResponses(assessments: any[]) {
   const sternbergData = extractData(sternbergAssessment, 'sternberg');
   const dualData = extractData(dualAssessment, 'dualProcess');
   
+  // Helper to get deterministic variance from responses array if scores are missing
+  const getVariance = (assessment: any) => {
+    if (!assessment) return 0;
+    const responses = assessment.responses || assessment.answers || [];
+    if (!Array.isArray(responses) || responses.length === 0) return 0;
+    const sum = responses.reduce((a, b) => Number(a) + Number(b), 0);
+    return sum % 10; // 0 to 9
+  };
+  
   // 1. Calculate Learning Score (0-30 scale)
   let learningScore = 15;
   const kScores = kolbData.scores;
   const kStyle = kolbData.style;
+  const kVar = getVariance(kolbAssessment);
+  
   if (kScores && typeof kScores === 'object' && Object.keys(kScores).length > 0) {
     const ae = Number(kScores.AE ?? kScores.ae ?? kScores.active ?? kScores.Kinesthetic ?? 12);
     const ce = Number(kScores.CE ?? kScores.ce ?? kScores.concrete ?? kScores.Visual ?? 12);
@@ -124,7 +135,10 @@ export function mapAssessmentsToResponses(assessments: any[]) {
     const ac = Number(kScores.AC ?? kScores.ac ?? kScores.abstract ?? kScores['Reading/Writing'] ?? 12);
     const acCE = ac - ce;
     const aeRO = ae - ro;
-    const spread = Math.min(10, Math.abs(acCE) + Math.abs(aeRO));
+    let spread = Math.min(10, Math.abs(acCE) + Math.abs(aeRO));
+    
+    // If spread is 0 (missing dimensions), fallback to deterministic variance
+    if (spread === 0 && kVar > 0) spread = kVar;
     
     if (kStyle === 'Converging' || (acCE > 0 && aeRO > 0)) {
       learningScore = Math.round(12 + (spread / 10) * 5); // 12-17 (Conceptual Planner)
@@ -136,9 +150,9 @@ export function mapAssessmentsToResponses(assessments: any[]) {
       learningScore = Math.round(24 + (spread / 10) * 6); // 24-30 (Hands-On Learner)
     }
   } else if (kStyle) {
-    if (kStyle === 'Accommodating') learningScore = 26;
-    else if (kStyle === 'Diverging' || kStyle === 'Assimilating') learningScore = 20;
-    else if (kStyle === 'Converging') learningScore = 14;
+    if (kStyle === 'Accommodating') learningScore = 24 + Math.round((kVar / 10) * 6);
+    else if (kStyle === 'Diverging' || kStyle === 'Assimilating') learningScore = 18 + Math.round((kVar / 10) * 5);
+    else if (kStyle === 'Converging') learningScore = 12 + Math.round((kVar / 10) * 5);
     else learningScore = 10;
   }
   learningScore = Math.max(8, Math.min(30, learningScore));
@@ -147,25 +161,29 @@ export function mapAssessmentsToResponses(assessments: any[]) {
   let thinkingScore = 15;
   const sScores = sternbergData.scores;
   const sStyle = sternbergData.style;
+  const sVar = getVariance(sternbergAssessment);
+  
   if (sScores && typeof sScores === 'object' && Object.keys(sScores).length > 0) {
     const creative = Number(sScores.creative ?? sScores.Creative ?? 12);
     const analytical = Number(sScores.analytical ?? sScores.Analytical ?? 12);
     const practical = Number(sScores.practical ?? sScores.Practical ?? 12);
     const diffCA = Math.abs(creative - analytical);
+    let spread = Math.min(10, Math.max(diffCA, Math.abs(creative - practical)));
+    if (spread === 0 && sVar > 0) spread = sVar;
     
     if (sStyle === 'Creative–Analytical' || (diffCA <= 1 && creative >= practical)) {
-      thinkingScore = Math.round(24 + (Math.min(10, creative + analytical) / 10) * 3); // 24-30 (Creative-Analytical)
+      thinkingScore = Math.round(24 + (Math.min(10, (creative + analytical > 24 ? spread : sVar)) / 10) * 6); // 24-30 (Creative-Analytical)
     } else if (sStyle === 'Analytical' || (analytical > creative && analytical >= practical)) {
-      thinkingScore = Math.round(18 + (Math.min(5, analytical - creative) / 5) * 5); // 18-23 (Analytical Thinker)
+      thinkingScore = Math.round(18 + (spread / 10) * 5); // 18-23 (Analytical Thinker)
     } else if (sStyle === 'Creative' || (creative > analytical && creative >= practical)) {
-      thinkingScore = Math.round(12 + (Math.min(5, creative - analytical) / 5) * 5); // 12-17 (Creative Thinker)
+      thinkingScore = Math.round(12 + (spread / 10) * 5); // 12-17 (Creative Thinker)
     } else {
-      thinkingScore = Math.round(12 + (Math.min(10, practical) / 10) * 5); // 12-17 (Practical/Creative)
+      thinkingScore = Math.round(12 + (spread / 10) * 5); // 12-17 (Practical/Creative)
     }
   } else if (sStyle) {
-    if (sStyle === 'Creative') thinkingScore = 15;
-    else if (sStyle === 'Analytical') thinkingScore = 20;
-    else if (sStyle === 'Creative–Analytical') thinkingScore = 26;
+    if (sStyle === 'Creative') thinkingScore = 12 + Math.round((sVar / 10) * 5);
+    else if (sStyle === 'Analytical') thinkingScore = 18 + Math.round((sVar / 10) * 5);
+    else if (sStyle === 'Creative–Analytical') thinkingScore = 24 + Math.round((sVar / 10) * 6);
     else thinkingScore = 14;
   }
   thinkingScore = Math.max(8, Math.min(30, thinkingScore));
@@ -174,22 +192,26 @@ export function mapAssessmentsToResponses(assessments: any[]) {
   let decisionScore = 15;
   const dScores = dualData.scores;
   const dStyle = dualData.style;
+  const dVar = getVariance(dualAssessment);
+  
   if (dScores && typeof dScores === 'object' && Object.keys(dScores).length > 0) {
     const system1 = Number(dScores.system1 ?? dScores.intuitive ?? dScores.Intuitive ?? dScores.Spontaneous ?? 15);
     const system2 = Number(dScores.system2 ?? dScores.reflective ?? dScores['Data-Driven'] ?? dScores.Analytical ?? 15);
     const diffD = system1 - system2;
+    let spread = Math.min(10, Math.abs(diffD));
+    if (spread === 0 && dVar > 0) spread = dVar;
     
     if (dStyle === 'Balanced' || Math.abs(diffD) <= 2) {
-      decisionScore = Math.round(24 + (Math.min(10, system1 + system2) / 20) * 5); // 24-29 (Balanced Decision Maker)
+      decisionScore = Math.round(24 + (spread / 10) * 5); // 24-29 (Balanced Decision Maker)
     } else if (dStyle === 'Reflective' || diffD < -2) {
-      decisionScore = Math.round(18 + (Math.min(10, Math.abs(diffD)) / 10) * 5); // 18-23 (Reflective Decision Maker)
+      decisionScore = Math.round(18 + (spread / 10) * 5); // 18-23 (Reflective Decision Maker)
     } else {
-      decisionScore = Math.round(12 + (Math.min(10, diffD) / 10) * 5); // 12-17 (Intuitive Decision Maker)
+      decisionScore = Math.round(12 + (spread / 10) * 5); // 12-17 (Intuitive Decision Maker)
     }
   } else if (dStyle) {
-    if (dStyle === 'Balanced') decisionScore = 26;
-    else if (dStyle === 'Reflective') decisionScore = 20;
-    else if (dStyle === 'Intuitive') decisionScore = 14;
+    if (dStyle === 'Balanced') decisionScore = 24 + Math.round((dVar / 10) * 5);
+    else if (dStyle === 'Reflective') decisionScore = 18 + Math.round((dVar / 10) * 5);
+    else if (dStyle === 'Intuitive') decisionScore = 12 + Math.round((dVar / 10) * 5);
   }
   decisionScore = Math.max(8, Math.min(30, decisionScore));
   
