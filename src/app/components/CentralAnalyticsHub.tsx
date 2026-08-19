@@ -10,7 +10,7 @@ import {
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { 
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, 
-  CartesianGrid, Tooltip, ResponsiveContainer 
+  CartesianGrid, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { User } from '../types';
@@ -209,7 +209,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card><CardHeader><CardTitle className="text-sm">Frequency Breakdown</CardTitle></CardHeader><CardContent className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={activeChartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="count" fill="#6B4C9A" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card>
-                <Card><CardHeader><CardTitle className="text-sm">Percentage Share</CardTitle></CardHeader><CardContent className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={activeChartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>{activeChartData.map((_, i) => <Cell key={`cell-${i}`} fill={chartColors[i % chartColors.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-sm">Percentage Share</CardTitle></CardHeader><CardContent className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={activeChartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} >{activeChartData.map((_, i) => <Cell key={`cell-${i}`} fill={chartColors[i % chartColors.length]} />)}</Pie><Tooltip /><Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: "12px" }} /></PieChart></ResponsiveContainer></CardContent></Card>
               </div>
             </div>
           )}
