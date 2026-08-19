@@ -623,16 +623,16 @@ export async function deleteInstitutionInvitation(invitationId: string, email: s
   }
 }
 
-export function getMemberCounts(members: InstitutionMember[]): { total: number; teachers: number; students: number } {
+export function getMemberCounts(members: InstitutionMember[]): { total: number; teachers: number; students: number; admins: number } {
   const approved = members.filter(m => m.status === 'approved');
   return {
     total: approved.length,
     teachers: approved.filter(m => m.role === 'teacher').length,
-    students: approved.filter(m => m.role === 'student').length,
+    students: approved.filter(m => m.role === 'student').length, admins: approved.filter(m => (m.role as any) === 'admin' || (m.role as any) === 'school_admin' || (m.role as any) === 'head_teacher').length,
   };
 }
 
-export function getMemberCountsByStatus(members: InstitutionMember[]): { total: number; approved: number; pending: number; rejected: number; teachers: number; students: number } {
+export function getMemberCountsByStatus(members: InstitutionMember[]): { total: number; approved: number; pending: number; rejected: number; teachers: number; students: number; admins: number } {
   const approved = members.filter(m => m.status === 'approved');
   return {
     total: members.length,
@@ -640,7 +640,7 @@ export function getMemberCountsByStatus(members: InstitutionMember[]): { total: 
     pending: members.filter(m => m.status === 'pending' || !m.status).length,
     rejected: members.filter(m => m.status === 'rejected').length,
     teachers: approved.filter(m => m.role === 'teacher').length,
-    students: approved.filter(m => m.role === 'student').length,
+    students: approved.filter(m => m.role === 'student').length, admins: approved.filter(m => (m.role as any) === 'admin' || (m.role as any) === 'school_admin' || (m.role as any) === 'head_teacher').length,
   };
 }
 

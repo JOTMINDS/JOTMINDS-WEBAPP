@@ -266,11 +266,11 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
             </div>
 
             <StudentDetailView
-              students={students}
+              student={selectedStudent}
               assessments={assessments}
-              initialStudentId={selectedStudent.id}
-              teacher={teacher}
+              onBack={() => setSelectedStudentId(null)}
             />
+
           </div>
         )}
       </div>

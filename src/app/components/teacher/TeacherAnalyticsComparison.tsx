@@ -49,7 +49,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
   const tDual = getLatestAssessment(['dual-process', 'decision'], teacherAssessments);
   const tJtia = getLatestAssessment(['jtia'], teacherAssessments);
 
-  const tJtiaReport = tJtia ? (tJtia.report || tJtia.results || tJtia.score?.jtia) : null;
+  const tJtiaReport = tJtia ? (tJtia.score as any || tJtia.score as any || (tJtia.score as any)?.jtia) : null;
 
   // Aggregate student data
   const studentData = useMemo(() => {
@@ -62,7 +62,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
     students.forEach(student => {
       const sKolb = getLatestForUser(['kolb', 'learning'], student.id, studentAssessments);
       if (sKolb?.score) {
-        const styleRaw = sKolb.score.kolb?.style || sKolb.score.learning?.style;
+        const styleRaw = sKolb.score.kolb?.style || (sKolb.score as any).learning?.style;
         if (styleRaw) {
           const style = styleRaw.charAt(0).toUpperCase() + styleRaw.slice(1);
           counts.kolb[style] = (counts.kolb[style] || 0) + 1;
@@ -72,7 +72,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
 
       const sThink = getLatestForUser(['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'], student.id, studentAssessments);
       if (sThink?.score) {
-        const scoreRaw = sThink.score.sternberg || sThink.score['jhs-thinking'] || sThink.score['shs-thinking'] || sThink.score['adult-thinking'] || sThink.score['child-thinking'] || sThink.score.thinking;
+        const scoreRaw = sThink.score.sternberg || sThink.score['jhs-thinking'] || sThink.score['shs-thinking'] || sThink.score['adult-thinking'] || sThink.score['child-thinking'] || (sThink.score as any).thinking;
         let styleStr = scoreRaw?.style || scoreRaw?.primaryStyle || scoreRaw?.dominantStyle;
         if (styleStr) {
           styleStr = styleStr.charAt(0).toUpperCase() + styleStr.slice(1);
@@ -83,7 +83,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
 
       const sDual = getLatestForUser(['dual-process', 'decision'], student.id, studentAssessments);
       if (sDual?.score) {
-        const styleRaw = sDual.score.dualProcess?.style || sDual.score.decision?.style || sDual.score['dual-process']?.style;
+        const styleRaw = sDual.score.dualProcess?.style || (sDual.score as any).decision?.style || sDual.score['dual-process']?.style;
         if (styleRaw) {
           let styleStr = styleRaw.charAt(0).toUpperCase() + styleRaw.slice(1);
           counts.dual[styleStr] = (counts.dual[styleStr] || 0) + 1;
@@ -96,7 +96,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
   }, [students, studentAssessments]);
   let tKolbStyle = '';
   if (tKolb?.score) {
-    const rawStyle = tKolb.score.kolb?.style || tKolb.score.learning?.style || '';
+    const rawStyle = tKolb.score.kolb?.style || (tKolb.score as any).learning?.style || '';
     if (rawStyle) {
       tKolbStyle = rawStyle.charAt(0).toUpperCase() + rawStyle.slice(1);
     }
@@ -104,7 +104,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
 
   let tThinkStyle = '';
   if (tThink?.score) {
-    const scoreRaw = tThink.score.sternberg || tThink.score['jhs-thinking'] || tThink.score['shs-thinking'] || tThink.score['adult-thinking'] || tThink.score['child-thinking'] || tThink.score.thinking;
+    const scoreRaw = tThink.score.sternberg || tThink.score['jhs-thinking'] || tThink.score['shs-thinking'] || tThink.score['adult-thinking'] || tThink.score['child-thinking'] || (tThink.score as any).thinking;
     let styleStr = scoreRaw?.style || scoreRaw?.primaryStyle || scoreRaw?.dominantStyle || '';
     if (styleStr) {
       tThinkStyle = styleStr.charAt(0).toUpperCase() + styleStr.slice(1);
@@ -113,7 +113,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
 
   let tDualStyle = '';
   if (tDual?.score) {
-    const styleRaw = tDual.score.dualProcess?.style || tDual.score.decision?.style || tDual.score['dual-process']?.style || '';
+    const styleRaw = tDual.score.dualProcess?.style || (tDual.score as any).decision?.style || tDual.score['dual-process']?.style || '';
     if (styleRaw) {
       tDualStyle = styleRaw.charAt(0).toUpperCase() + styleRaw.slice(1);
     }

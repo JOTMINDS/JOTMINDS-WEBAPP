@@ -230,7 +230,7 @@ export function isStudentConnectedToTeacher(student: User, teacher: User, teache
   if (Array.isArray(student.linkedTeachers) && (student.linkedTeachers.includes(teacher.id) || (teacher.email && student.linkedTeachers.includes(teacher.email)))) return true;
 
   // 2. Teacher Email match
-  if (student.teacherEmail && teacher.email && student.teacherEmail.trim().toLowerCase() === teacher.email.trim().toLowerCase()) return true;
+  if ((student as any).teacherEmail && teacher.email && (student as any).teacherEmail.trim().toLowerCase() === teacher.email.trim().toLowerCase()) return true;
 
   // 3. Class ID match
   if (student.classId && teacherClassIds && teacherClassIds.has(student.classId)) return true;
@@ -253,7 +253,7 @@ export function isStudentConnectedToTeacher(student: User, teacher: User, teache
   }
 
   // 6. Universal fallback for standalone/unlinked students in prototype or teacher portal
-  if (!student.teacherId && !student.teacherEmail && (!student.school || !teacher.school)) {
+  if (!student.teacherId && !(student as any).teacherEmail && (!student.school || !teacher.school)) {
     return true;
   }
 

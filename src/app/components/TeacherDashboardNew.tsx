@@ -513,7 +513,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         )}
 
         {/* Onboarding Info for New Teachers */}
-        {students.length === 0 && activeTab !== 'my-style' && activeTab !== 'jtia' && activeTab !== 'lesson-planner' && (
+        {students.length === 0 && activeTab !== 'jtia' && activeTab !== 'lesson-planner' && (
           <Alert className="border-[#2563EB] bg-blue-50">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Welcome to JotMinds Teacher Portal!</AlertTitle>

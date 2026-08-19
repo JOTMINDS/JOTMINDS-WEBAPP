@@ -4,7 +4,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import {
-  AlertTriangle, AlertCircle, Building2, MapPin, Mail, Phone, Globe, Shield, QrCode, CheckCircle2, Copy, Share2, Crown, ShieldMinus, BarChart3, Settings
+  Users, AlertTriangle, AlertCircle, Building2, MapPin, Mail, Phone, Globe, Shield, QrCode, CheckCircle2, Copy, Share2, Crown, ShieldMinus, BarChart3, Settings
 } from 'lucide-react';
 import { Institution, InstitutionMember, getMemberCountsByStatus } from '../../utils/institution';
 
@@ -16,7 +16,7 @@ interface InstitutionOverviewProps {
   copied: boolean;
   handleCopyCode: () => void;
   handleShare: () => void;
-  setTab: (tab: 'overview' | 'members' | 'analytics' | 'reports' | 'settings' | 'profile' | 'training') => void;
+  setTab: (tab: 'overview' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile') => void;
   onManageCodes?: () => void;
 }
 

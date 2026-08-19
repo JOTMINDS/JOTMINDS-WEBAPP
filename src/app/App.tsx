@@ -821,7 +821,7 @@ function AppContent() {
     case 'teacher-intelligence':
       return user ? (
         <AILearningCoach
-          user={impersonatedUser || user}
+          userId={(impersonatedUser || user).id}
           onBack={handleBackToDashboard}
         />
       ) : null;

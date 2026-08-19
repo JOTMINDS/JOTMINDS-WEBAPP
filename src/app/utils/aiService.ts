@@ -134,7 +134,7 @@ Scores and Profile: ${JSON.stringify({
     scores: payload.scores || (payload as any).scoresOrRequest,
     type: payload.type,
     role: payload.role,
-    age: payload.age
+    age: (payload as any).age
   })}
 
 Return strictly valid JSON matching this schema:

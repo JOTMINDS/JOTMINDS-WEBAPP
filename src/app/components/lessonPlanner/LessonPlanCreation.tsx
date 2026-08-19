@@ -23,7 +23,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
   const [subject, setSubject] = useState('Mathematics');
   const [gradeClass, setGradeClass] = useState('JHS 2');
-  const [curriculumFramework, setCurriculumFramework] = useState('National');
+  const [curriculumFramework, setCurriculumFramework] = useState<any>('National');
   const [topic, setTopic] = useState('Linear Equations in One Variable');
   const [subtopic, setSubtopic] = useState('Solving Algebraic Equations & Word Problems');
   const [durationMinutes, setDurationMinutes] = useState(40);
@@ -64,7 +64,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       subtopic,
       durationMinutes,
       date,
-      curriculumFramework,
+      curriculumFramework: curriculumFramework as any,
       objectives: aiResult?.objectives || {
         knowledge: [
           `Define key concepts of ${topic} in ${subject}.`,
@@ -159,7 +159,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       subtopic,
       durationMinutes,
       date,
-      curriculumFramework,
+      curriculumFramework: curriculumFramework as any,
       objectives: {
         knowledge: knowledgeObj.split('\n').filter(Boolean),
         skills: skillsObj.split('\n').filter(Boolean),

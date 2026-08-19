@@ -38,23 +38,23 @@ export const ReflectionHistoryView: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-6">
         {reflections.map((ref) => (
-          <Card key={ref.id} className="shadow-sm border-slate-200 dark:border-slate-800">
+          <Card key={ref.reflectionId} className="shadow-sm border-slate-200 dark:border-slate-800">
             <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b pb-4">
               <div className="flex justify-between items-start flex-wrap gap-4">
                 <div>
                   <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">
-                    {ref.lessonTopic}
+                    {ref.lessonId}
                   </CardTitle>
                   <CardDescription className="flex items-center gap-2 mt-1">
-                    <Clock className="w-3.5 h-3.5" /> {formatDateTime(ref.createdAt)}
+                    <Clock className="w-3.5 h-3.5" /> {formatDateTime(ref.reflectedAt)}
                   </CardDescription>
                 </div>
                 <Badge className={
-                  ref.understandingLevel === 'Excellent' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                  ref.understandingLevel === 'Good' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                  ref.studentUnderstandingLevel === 'Excellent' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                  ref.studentUnderstandingLevel === 'Good' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400' :
                   'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
                 }>
-                  Understanding: {ref.understandingLevel}
+                  Understanding: {ref.studentUnderstandingLevel}
                 </Badge>
               </div>
             </CardHeader>
@@ -80,12 +80,12 @@ export const ReflectionHistoryView: React.FC = () => {
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{ref.followUpActions}</p>
               </div>
               
-              {ref.aiFeedback && (
+              {(ref as any).aiFeedback && (
                 <div className="mt-4 pt-4 border-t border-dashed border-slate-200 dark:border-slate-700">
                   <h4 className="font-semibold text-purple-700 dark:text-purple-400 flex items-center gap-2 mb-2">
                     <MessageSquare className="w-4 h-4" /> Metacognitive Feedback
                   </h4>
-                  <p className="text-slate-700 dark:text-slate-300 italic">{ref.aiFeedback}</p>
+                  <p className="text-slate-700 dark:text-slate-300 italic">{(ref as any).aiFeedback}</p>
                 </div>
               )}
             </CardContent>
