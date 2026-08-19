@@ -101,25 +101,32 @@ export function mapAssessmentsToResponses(assessments: any[]) {
     if (typeof raw === 'string') {
       try { raw = JSON.parse(raw); } catch (e) { raw = {}; }
     }
-    let target = raw;
-    if (target[framework]) target = target[framework];
-    else if (framework === 'kolb' && target.learning) target = target.learning;
-    else if (framework === 'sternberg' && target.thinking) target = target.thinking;
-    else if (framework === 'dualProcess' && (target['dual-process'] || target.decision)) target = target['dual-process'] || target.decision;
     
-    let style = (target && typeof target === 'object' && target.style) || raw.style || assessment.style || '';
-    let scores = (target && typeof target === 'object' && target.scores) ? target.scores : (target !== raw ? target : (raw.scores || raw));
-    
-    // Parse stringified JSON scores (prevents the 12/12/12 default collapse)
-    if (typeof scores === 'string') {
-      try {
-        scores = JSON.parse(scores);
-      } catch (e) {
-        scores = {};
+    // Flatten everything into a single level to destroy any weird nesting/casing bugs
+    const flatScores: any = {};
+    const extractDeep = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return;
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === 'number' || (typeof v === 'string' && !isNaN(Number(v)))) {
+          flatScores[k.toLowerCase()] = Number(v);
+        } else if (typeof v === 'object') {
+          extractDeep(v);
+        }
       }
-    }
+    };
     
-    return { style, scores: scores || {} };
+    let style = assessment.style || raw.style || '';
+    const findStyle = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return;
+      if (obj.style && typeof obj.style === 'string') style = obj.style;
+      for (const v of Object.values(obj)) {
+        if (typeof v === 'object') findStyle(v);
+      }
+    };
+    findStyle(raw);
+    extractDeep(raw);
+    
+    return { style, scores: flatScores };
   }
 
   const kolbData = extractData(kolbAssessment, 'kolb');
