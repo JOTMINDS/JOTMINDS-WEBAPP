@@ -97,15 +97,28 @@ export function mapAssessmentsToResponses(assessments: any[]) {
 
   function extractData(assessment: any, framework: string) {
     if (!assessment) return { style: '', scores: {} as any };
-    const raw = assessment.results || assessment.score || {};
+    let raw = assessment.results || assessment.score || {};
+    if (typeof raw === 'string') {
+      try { raw = JSON.parse(raw); } catch (e) { raw = {}; }
+    }
     let target = raw;
     if (target[framework]) target = target[framework];
     else if (framework === 'kolb' && target.learning) target = target.learning;
     else if (framework === 'sternberg' && target.thinking) target = target.thinking;
     else if (framework === 'dualProcess' && (target['dual-process'] || target.decision)) target = target['dual-process'] || target.decision;
     
-    const style = (target && typeof target === 'object' && target.style) || raw.style || assessment.style || '';
-    const scores = (target && typeof target === 'object' && target.scores) ? target.scores : (target !== raw ? target : (raw.scores || raw));
+    let style = (target && typeof target === 'object' && target.style) || raw.style || assessment.style || '';
+    let scores = (target && typeof target === 'object' && target.scores) ? target.scores : (target !== raw ? target : (raw.scores || raw));
+    
+    // Parse stringified JSON scores (prevents the 12/12/12 default collapse)
+    if (typeof scores === 'string') {
+      try {
+        scores = JSON.parse(scores);
+      } catch (e) {
+        scores = {};
+      }
+    }
+    
     return { style, scores: scores || {} };
   }
 
