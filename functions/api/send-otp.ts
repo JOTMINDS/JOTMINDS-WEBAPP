@@ -11,7 +11,13 @@ export async function onRequestPost(context) {
       });
     }
 
-    const resendApiKey = env.RESEND_API_KEY || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+    const resendApiKey = env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      return new Response(JSON.stringify({ error: "RESEND_API_KEY environment variable is missing" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -20,7 +26,7 @@ export async function onRequestPost(context) {
         "Authorization": `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        from: "JotMinds <onboarding@resend.dev>",
+        from: "JotMinds <noreply@jotminds.com>",
         to: [email],
         subject: "Your JotMinds Verification Code",
         html: `

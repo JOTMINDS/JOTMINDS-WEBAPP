@@ -540,7 +540,7 @@ app.post('/assessment/submit', async (c) => {
       try {
         const teacherProfile = await kv.get(`user:${userProfile.teacherId}`);
         if (teacherProfile && teacherProfile.email) {
-          const resendApiKey = Deno.env.get('RESEND_API_KEY') || 're_eFr3vz6q_G7KDp6TjnDLVUX2JyouKEbfG';
+          const resendApiKey = Deno.env.get('RESEND_API_KEY');
           
           const assessmentNames: Record<string, string> = {
             learning: 'Learning Style Assessment',

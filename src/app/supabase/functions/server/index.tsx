@@ -3000,7 +3000,7 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
     }
 
     // Try sending email via Resend API
-    const resendKey = Deno.env.get('RESEND_API_KEY') || '';
+    const resendKey = Deno.env.get('RESEND_API_KEY');
     let emailSent = false;
 
     if (resendKey) {
@@ -3105,7 +3105,7 @@ app.post('/make-server-fc8eb847/request-password-reset', async (c) => {
     console.log(`[request-password-reset] Reset code stored for ${cleanEmail}`);
 
     // Try sending email via Resend
-    const resendKey = Deno.env.get('RESEND_API_KEY') || '';
+    const resendKey = Deno.env.get('RESEND_API_KEY');
     let emailSent = false;
 
     if (resendKey) {
