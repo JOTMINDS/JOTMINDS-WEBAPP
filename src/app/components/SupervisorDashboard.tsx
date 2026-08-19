@@ -119,7 +119,8 @@ export function mapAssessmentsToResponses(assessments: any[]) {
     const responses = assessment.responses || assessment.answers || [];
     if (!Array.isArray(responses) || responses.length === 0) return 0;
     const sum = responses.reduce((a, b) => {
-      const val = Number(b);
+      const rawVal = typeof b === 'object' && b !== null && 'value' in b ? b.value : b;
+      const val = Number(rawVal);
       return Number(a) + (isNaN(val) ? 0 : val);
     }, 0);
     return isNaN(sum) ? 0 : (sum % 10); // 0 to 9
