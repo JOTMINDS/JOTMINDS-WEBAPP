@@ -118,8 +118,16 @@ export function mapAssessmentsToResponses(assessments: any[]) {
     if (!assessment) return 0;
     const responses = assessment.responses || assessment.answers || [];
     if (!Array.isArray(responses) || responses.length === 0) return 0;
-    const sum = responses.reduce((a, b) => Number(a) + Number(b), 0);
-    return sum % 10; // 0 to 9
+    const sum = responses.reduce((a, b) => {
+      const val = Number(b);
+      return Number(a) + (isNaN(val) ? 0 : val);
+    }, 0);
+    return isNaN(sum) ? 0 : (sum % 10); // 0 to 9
+  };
+  
+  const safeNumber = (val: any, fallback: number) => {
+    const num = Number(val);
+    return isNaN(num) ? fallback : num;
   };
   
   // 1. Calculate Learning Score (0-30 scale)
@@ -129,10 +137,10 @@ export function mapAssessmentsToResponses(assessments: any[]) {
   const kVar = getVariance(kolbAssessment);
   
   if (kScores && typeof kScores === 'object' && Object.keys(kScores).length > 0) {
-    const ae = Number(kScores.AE ?? kScores.ae ?? kScores.active ?? kScores.Kinesthetic ?? 12);
-    const ce = Number(kScores.CE ?? kScores.ce ?? kScores.concrete ?? kScores.Visual ?? 12);
-    const ro = Number(kScores.RO ?? kScores.ro ?? kScores.reflective ?? kScores.Auditory ?? 12);
-    const ac = Number(kScores.AC ?? kScores.ac ?? kScores.abstract ?? kScores['Reading/Writing'] ?? 12);
+    const ae = safeNumber(kScores.AE ?? kScores.ae ?? kScores.active ?? kScores.Kinesthetic, 12);
+    const ce = safeNumber(kScores.CE ?? kScores.ce ?? kScores.concrete ?? kScores.Visual, 12);
+    const ro = safeNumber(kScores.RO ?? kScores.ro ?? kScores.reflective ?? kScores.Auditory, 12);
+    const ac = safeNumber(kScores.AC ?? kScores.ac ?? kScores.abstract ?? kScores['Reading/Writing'], 12);
     const acCE = ac - ce;
     const aeRO = ae - ro;
     let spread = Math.min(10, Math.abs(acCE) + Math.abs(aeRO));
@@ -155,7 +163,6 @@ export function mapAssessmentsToResponses(assessments: any[]) {
     else if (kStyle === 'Converging') learningScore = 12 + Math.round((kVar / 10) * 5);
     else learningScore = 10;
   }
-  learningScore = Math.max(8, Math.min(30, learningScore));
   
   // 2. Calculate Thinking Score (0-30 scale)
   let thinkingScore = 15;
@@ -164,9 +171,9 @@ export function mapAssessmentsToResponses(assessments: any[]) {
   const sVar = getVariance(sternbergAssessment);
   
   if (sScores && typeof sScores === 'object' && Object.keys(sScores).length > 0) {
-    const creative = Number(sScores.creative ?? sScores.Creative ?? 12);
-    const analytical = Number(sScores.analytical ?? sScores.Analytical ?? 12);
-    const practical = Number(sScores.practical ?? sScores.Practical ?? 12);
+    const creative = safeNumber(sScores.creative ?? sScores.Creative, 12);
+    const analytical = safeNumber(sScores.analytical ?? sScores.Analytical, 12);
+    const practical = safeNumber(sScores.practical ?? sScores.Practical, 12);
     const diffCA = Math.abs(creative - analytical);
     let spread = Math.min(10, Math.max(diffCA, Math.abs(creative - practical)));
     if (spread === 0 && sVar > 0) spread = sVar;
@@ -186,7 +193,6 @@ export function mapAssessmentsToResponses(assessments: any[]) {
     else if (sStyle === 'Creative–Analytical') thinkingScore = 24 + Math.round((sVar / 10) * 6);
     else thinkingScore = 14;
   }
-  thinkingScore = Math.max(8, Math.min(30, thinkingScore));
   
   // 3. Calculate Decision Making Score (0-30 scale)
   let decisionScore = 15;
@@ -195,8 +201,8 @@ export function mapAssessmentsToResponses(assessments: any[]) {
   const dVar = getVariance(dualAssessment);
   
   if (dScores && typeof dScores === 'object' && Object.keys(dScores).length > 0) {
-    const system1 = Number(dScores.system1 ?? dScores.intuitive ?? dScores.Intuitive ?? dScores.Spontaneous ?? 15);
-    const system2 = Number(dScores.system2 ?? dScores.reflective ?? dScores['Data-Driven'] ?? dScores.Analytical ?? 15);
+    const system1 = safeNumber(dScores.system1 ?? dScores.intuitive ?? dScores.Intuitive ?? dScores.Spontaneous, 15);
+    const system2 = safeNumber(dScores.system2 ?? dScores.reflective ?? dScores['Data-Driven'] ?? dScores.Analytical, 15);
     const diffD = system1 - system2;
     let spread = Math.min(10, Math.abs(diffD));
     if (spread === 0 && dVar > 0) spread = dVar;
@@ -213,6 +219,14 @@ export function mapAssessmentsToResponses(assessments: any[]) {
     else if (dStyle === 'Reflective') decisionScore = 18 + Math.round((dVar / 10) * 5);
     else if (dStyle === 'Intuitive') decisionScore = 12 + Math.round((dVar / 10) * 5);
   }
+  
+  // Double-safeguard all scores at the very end before applying Math.max/min
+  learningScore = isNaN(learningScore) ? 15 : learningScore;
+  thinkingScore = isNaN(thinkingScore) ? 15 : thinkingScore;
+  decisionScore = isNaN(decisionScore) ? 15 : decisionScore;
+  
+  learningScore = Math.max(8, Math.min(30, learningScore));
+  thinkingScore = Math.max(8, Math.min(30, thinkingScore));
   decisionScore = Math.max(8, Math.min(30, decisionScore));
   
   return {
