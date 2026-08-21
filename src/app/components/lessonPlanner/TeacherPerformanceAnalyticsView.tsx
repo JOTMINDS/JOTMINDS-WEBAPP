@@ -11,23 +11,23 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
   const metrics: TeacherPerformanceMetric = getTeacherPerformanceMetrics();
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
-              Module 8 • Teacher Performance Analytics
+              Lesson Planner Analytics
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
-              {metrics.annual.teachingEffectivenessScore} / 100 Effectiveness Score
+              {metrics.annual.teachingEffectivenessScore} / 100 AI Integration Score
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-indigo-400" /> Teaching Delivery & Effectiveness Metrics
+            <TrendingUp className="w-5 h-5 text-indigo-400" /> AI Lesson Planner Usage Insights
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Monthly and annual tracking of lessons planned vs. delivered, engagement scores, and curriculum coverage.
+            Review how often you generate lessons, use differentiated instruction, and log post-lesson reflections.
           </p>
         </div>
       </div>
@@ -41,10 +41,10 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
                 <Info className="w-4 h-4" />
               </PopoverTrigger>
               <PopoverContent className="w-64 text-xs">
-                The total number of lesson plans you have created and finalized this month using the Lesson Planner.
+                The total number of AI-generated lesson plans you have created and saved this month.
               </PopoverContent>
             </Popover>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Lessons Planned</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">AI Lessons Generated</span>
             <span className="text-2xl font-black text-slate-900 dark:text-white">{metrics.monthly.lessonsPlanned}</span>
             <p className="text-[10px] text-slate-500">{metrics.monthly.monthName}</p>
           </CardContent>
@@ -57,7 +57,7 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
                 <Info className="w-4 h-4" />
               </PopoverTrigger>
               <PopoverContent className="w-64 text-xs">
-                Lessons successfully presented in class and logged in the system. Delivery rate compares this to planned lessons.
+                Lessons successfully presented using the Lesson Prep delivery mode. Delivery rate compares this to generated AI lessons.
               </PopoverContent>
             </Popover>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Lessons Delivered</span>
@@ -76,7 +76,7 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
                 Assessments generated using AI across all your active lesson plans. Includes MCQs and discussions.
               </PopoverContent>
             </Popover>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Assessments Created</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">AI Assessments</span>
             <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{metrics.monthly.assessmentsCreated}</span>
             <p className="text-[10px] text-slate-500">Auto-generated & Quizzes</p>
           </CardContent>
@@ -104,7 +104,7 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Target className="w-4 h-4 text-indigo-500" /> Annual Curriculum Coverage
+              <Target className="w-4 h-4 text-indigo-500" /> Curriculum Coverage
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">

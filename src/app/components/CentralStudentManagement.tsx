@@ -165,7 +165,8 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
       {/* Main Content Layout: Roster Table vs Detail Drawer */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Student Roster Table */}
-        <div className={selectedStudent ? 'lg:col-span-1' : 'lg:col-span-3'}>
+        {!selectedStudent && (
+          <div className="lg:col-span-3">
           <Card className="border-gray-200 dark:border-gray-800">
             <CardHeader className="py-3 px-4 border-b">
               <div className="flex items-center justify-between">
@@ -242,11 +243,12 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
               )}
             </CardContent>
           </Card>
-        </div>
+          </div>
+        )}
 
         {/* Selected Student Detail View */}
         {selectedStudent && (
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-3 space-y-4">
             <div className="flex items-center justify-between bg-white dark:bg-gray-950 p-3 rounded-xl border border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="border-[#6B4C9A] text-[#6B4C9A]">

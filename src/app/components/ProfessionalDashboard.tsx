@@ -1286,14 +1286,14 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
 
             <div className="space-y-4 text-xs">
               <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 space-y-1">
-                <span className="font-bold text-sm text-purple-900 block">1. Kolb's Learning Style Inventory (KLSI 4.0)</span>
+                <span className="font-bold text-sm text-purple-900 block">1. Learning Style Assessment</span>
                 <p className="text-purple-950 leading-relaxed">
                   Evaluates how you process experience across two dual axes: <strong>Concrete Experience (CE) vs. Abstract Conceptualization (AC)</strong> and <strong>Reflective Observation (RO) vs. Active Experimentation (AE)</strong>. Scores range 0–100% per axis, determining dominant style (Diverging, Assimilating, Converging, Accommodating).
                 </p>
               </div>
 
               <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 space-y-1">
-                <span className="font-bold text-sm text-blue-900 block">2. Sternberg's Triarchic Theory of Intelligence (STAT)</span>
+                <span className="font-bold text-sm text-blue-900 block">2. Triarchic Theory of Intelligence</span>
                 <p className="text-blue-950 leading-relaxed">
                   Measures three distinct cognitive dimensions: <strong>Analytical</strong> (problem breakdown & logical critique), <strong>Creative</strong> (novel problem solving & synthesis), and <strong>Practical</strong> (contextual execution & real-world implementation).
                 </p>

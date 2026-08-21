@@ -23,6 +23,7 @@ import { calculateJTIAScore, JTIAReportData } from '../utils/jtiaScoring';
 import { generateDeepDiveQuestions } from '../utils/teachingStyleData';
 import { AdultThinkingContainer } from './AdultThinkingContainer';
 import { AILessonPlannerContainer } from './lessonPlanner/AILessonPlannerContainer';
+import { LessonCopilotDrawer } from './lessonPlanner/LessonCopilotDrawer';
 import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
 import { CentralStudentManagement } from './CentralStudentManagement';
@@ -58,6 +59,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const [targetStudentId, setTargetStudentId] = useState<string | null>(null);
   const [showingThinkingAssessment, setShowingThinkingAssessment] = useState(false);
   const [serverAssessments, setServerAssessments] = useState<any[]>([]);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   useEffect(() => {
     const initClasses = async () => {
@@ -570,12 +572,19 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               const completed = allMyAssessments.filter(a => a.completedAt && a.score);
               const kolbA = completed.filter(a => a.type === 'kolb' || a.type === 'learning').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
               const kolb = kolbA?.score?.kolb || kolbA?.score?.learning;
+              
               const thinkA = completed.filter(a => ['sternberg','adult-thinking','shs-thinking','jhs-thinking','thinking'].includes(a.type)).sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
               const thinkRaw = thinkA?.score?.sternberg || thinkA?.score?.['adult-thinking'] || thinkA?.score?.['shs-thinking'] || thinkA?.score?.['jhs-thinking'] || thinkA?.score?.thinking;
               const thinkStyle = thinkRaw?.style || thinkRaw?.primaryStyle || thinkRaw?.dominantStyle || null;
+              
               const dualA = completed.filter(a => a.type === 'dual-process' || a.type === 'decision').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
               const dual = dualA?.score?.dualProcess || dualA?.score?.decision || dualA?.score?.['dual-process'];
-              const doneCount = [!!kolb, !!thinkStyle, !!dual].filter(Boolean).length;
+
+              const jtiaA = completed.filter(a => a.type === 'teaching-style' || a.type === 'jtia').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+              const jtia = jtiaA?.score?.['teaching-style'] || jtiaA?.score?.jtia;
+              const jtiaStyle = jtia?.primaryStyle || null;
+
+              const doneCount = [!!kolb, !!thinkStyle, !!dual, !!jtiaStyle].filter(Boolean).length;
 
               return (
                 <Card className="border-2 border-[#6B4C9A]/20">
@@ -584,27 +593,31 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                       <div className="flex items-center gap-2 text-base">
                         <span>🧬</span> Educator Cognitive Profile Summary
                       </div>
-                      <Badge style={{ backgroundColor: doneCount === 3 ? '#1E8A6E20' : '#E0A02020', color: doneCount === 3 ? '#1E8A6E' : '#E0A020' }}>
-                        {doneCount}/3 Core Assessments Complete
+                      <Badge style={{ backgroundColor: doneCount >= 3 ? '#1E8A6E20' : '#E0A02020', color: doneCount >= 3 ? '#1E8A6E' : '#E0A020' }}>
+                        {doneCount}/4 Core Assessments Complete
                       </Badge>
                     </CardTitle>
                     <CardDescription>
-                      Overview of your baseline learning, thinking, and decision-making styles.
+                      Overview of your baseline learning, thinking, decision-making, and teaching styles.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-800/40">
-                        <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-1">Learning Style (Kolb)</p>
+                        <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-1">Learning Style</p>
                         <p className="text-lg font-bold text-purple-950 dark:text-purple-100">{kolb?.style || 'Not Assessed Yet'}</p>
                       </div>
                       <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-800/40">
-                        <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider mb-1">Thinking Style (Sternberg)</p>
+                        <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider mb-1">Thinking Style</p>
                         <p className="text-lg font-bold text-blue-950 dark:text-blue-100">{thinkStyle || 'Not Assessed Yet'}</p>
                       </div>
                       <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40">
-                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider mb-1">Decision Style (Dual-Process)</p>
+                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider mb-1">Decision Style</p>
                         <p className="text-lg font-bold text-emerald-950 dark:text-emerald-100">{dual?.dominantStyle || 'Not Assessed Yet'}</p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/40">
+                        <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider mb-1">Teaching Insights</p>
+                        <p className="text-lg font-bold text-indigo-950 dark:text-indigo-100">{jtiaStyle || 'Not Assessed Yet'}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -641,7 +654,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 <span className="text-3xl">🧠</span>
               </div>
               <Badge className="bg-indigo-100 text-indigo-800 mb-3">JTIA • Scenario & Preference Items</Badge>
-              <h2 className="text-2xl font-bold mb-2">JotMinds Teaching Insights Assessment (JTIA)</h2>
+              <h2 className="text-2xl font-bold mb-2">Teaching Insights Assessment (JTIA)</h2>
               <p className="text-muted-foreground max-w-lg mx-auto mb-6">
                 Unlike traditional assessments that focus on qualifications or compliance, JTIA evaluates the deeper cognitive and professional capabilities that drive effective teaching across 5 Core Domains: Cognitive Intelligence, Instructional Intelligence, Classroom Leadership, Relationship Intelligence, and Professional Intelligence.
               </p>
@@ -669,20 +682,23 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       </div>
 
       {/* Floating Ask Jotti Button */}
-      {onViewTeacherIntelligence && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
-            <button
-              onClick={onViewTeacherIntelligence}
-              className="relative flex items-center justify-center gap-2 h-14 px-6 rounded-full shadow-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-transform hover:scale-105 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-            >
-              <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Ask Jotti</span>
-            </button>
-          </div>
+      <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+          <button
+            onClick={() => setIsCopilotOpen(true)}
+            className="relative flex items-center justify-center gap-2 h-14 px-6 rounded-full shadow-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-transform hover:scale-105 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+          >
+            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Ask Jotti</span>
+          </button>
         </div>
-      )}
+      </div>
+
+      <LessonCopilotDrawer
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+      />
     </DashboardLayout>
   );
 }

@@ -123,7 +123,7 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
     const questionSets = {
       youth: [
         {
-          domainLabel: "Learning Style (Kolb)",
+          domainLabel: "Learning Style",
           question: "When learning something new in class, how do you like to learn best?",
           options: [
             "Watching video demonstrations and diagrams (Visual / Abstract)",
@@ -134,7 +134,7 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
           dimension: ['visual', 'kinesthetic', 'reflective', 'analytical']
         },
         {
-          domainLabel: "Thinking Style (Sternberg)",
+          domainLabel: "Thinking Style",
           question: "When solving a fun class puzzle or assignment, what is your primary strategy?",
           options: [
             "Logical step-by-step reasoning and checking details (Analytical)",
@@ -158,7 +158,7 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
       ],
       teen: [
         {
-          domainLabel: "Learning Style (Kolb)",
+          domainLabel: "Learning Style",
           question: "When reviewing complex study material for an exam, how do you learn best?",
           options: [
             "Visual diagrams, flowcharts, and mind maps (Visual / Abstract)",
@@ -169,7 +169,7 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
           dimension: ['visual', 'kinesthetic', 'reflective', 'analytical']
         },
         {
-          domainLabel: "Thinking Style (Sternberg)",
+          domainLabel: "Thinking Style",
           question: "When tasked with analyzing a multi-step project, what is your primary approach?",
           options: [
             "Break down data logically and evaluate evidence (Analytical)",
@@ -193,7 +193,7 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
       ],
       adult: [
         {
-          domainLabel: "Learning Style (Kolb)",
+          domainLabel: "Learning Style",
           question: "When learning new methods or concepts, how do you process information best?",
           options: [
             "Visual maps and structured conceptual diagrams (Visual / Abstract)",
@@ -204,7 +204,7 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
           dimension: ['visual', 'kinesthetic', 'reflective', 'analytical']
         },
         {
-          domainLabel: "Thinking Style (Sternberg)",
+          domainLabel: "Thinking Style",
           question: "When approaching a professional challenge, what is your default thinking strategy?",
           options: [
             "Conduct systematic analysis and data-driven evaluation (Analytical)",

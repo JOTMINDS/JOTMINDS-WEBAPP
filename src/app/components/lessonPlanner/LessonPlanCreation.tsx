@@ -5,6 +5,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Sparkles, BookOpen, Clock, Calendar, CheckCircle2, FileText, Loader, ArrowRight, Search } from 'lucide-react';
 import { LessonPlan, ClassCognitiveSummary } from '../../types/lessonPlannerTypes';
 import { generateAILessonPlan } from '../../utils/aiService';
@@ -255,14 +256,19 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             </div>
             <div>
               <Label className="text-xs font-semibold">Curriculum Type</Label>
-              <div className="relative mt-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                <Input
-                  value={curriculumFramework}
-                  onChange={(e) => setCurriculumFramework(e.target.value)}
-                  placeholder="Search curriculum... (e.g. National, Cambridge)"
-                  className="pl-9"
-                />
+              <div className="mt-1">
+                <Select value={curriculumFramework} onValueChange={(val) => setCurriculumFramework(val)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select curriculum..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="National">National Curriculum</SelectItem>
+                    <SelectItem value="Cambridge">Cambridge</SelectItem>
+                    <SelectItem value="IB">International Baccalaureate (IB)</SelectItem>
+                    <SelectItem value="Montessori">Montessori</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div>
@@ -332,7 +338,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generate AI Lesson Plan
+                    Generate Lesson Plan
                   </>
                 )}
               </Button>

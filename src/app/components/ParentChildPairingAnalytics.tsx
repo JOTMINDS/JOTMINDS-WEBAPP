@@ -235,7 +235,7 @@ export function ParentChildPairingAnalytics({
             <Brain className="w-6 h-6 text-purple-500" />,
             sternberg?.score?.sternberg?.style ? getSternbergPairing(parentStyle, sternberg.score.sternberg.style) : null,
             sternberg?.score?.sternberg?.style,
-            "Thinking (Sternberg)"
+            "Thinking"
           )}
 
           {renderPairingSection(
@@ -243,7 +243,7 @@ export function ParentChildPairingAnalytics({
             <Target className="w-6 h-6 text-blue-500" />,
             kolb?.score?.kolb?.style ? getKolbPairing(parentStyle, kolb.score.kolb.style) : null,
             kolb?.score?.kolb?.style,
-            "Learning (Kolb)"
+            "Learning"
           )}
 
           {renderPairingSection(

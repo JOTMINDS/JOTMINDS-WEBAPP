@@ -34,8 +34,8 @@ const DIMENSION_LABELS: Record<string, string> = {
 };
 
 const DIMENSION_GROUPS: Record<string, string[]> = {
-  'Learning (Kolb)': ['Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'],
-  'Thinking (Sternberg)': ['Analytical', 'Creative', 'Practical'],
+  'Learning': ['Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'],
+  'Thinking': ['Analytical', 'Creative', 'Practical'],
   'Decision': ['Intuitive', 'Reflective'],
 };
 
@@ -62,7 +62,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
   const [overviewViewMode, setOverviewViewMode] = useState<ViewMode>('charts');
   const [alignmentViewMode, setAlignmentViewMode] = useState<ViewMode>('cards');
   const [selectedStyleDimension, setSelectedStyleDimension] = useState<'learning' | 'thinking' | 'decision'>('learning');
-  const [heatmapGroup, setHeatmapGroup] = useState<string>('Learning (Kolb)');
+  const [heatmapGroup, setHeatmapGroup] = useState<string>('Learning');
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
 
   // Compute Distributions for Overview
@@ -216,8 +216,8 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
 
           {overviewViewMode === 'cards' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="border-t-4 border-t-purple-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">📚 Learning (Kolb)</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(learningCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-purple-100 text-purple-700 border-none">{count}</Badge></div>))}</CardContent></Card>
-              <Card className="border-t-4 border-t-indigo-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">🧠 Thinking (Sternberg)</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(thinkingCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-indigo-100 text-indigo-700 border-none">{count}</Badge></div>))}</CardContent></Card>
+              <Card className="border-t-4 border-t-purple-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">📚 Learning</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(learningCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-purple-100 text-purple-700 border-none">{count}</Badge></div>))}</CardContent></Card>
+              <Card className="border-t-4 border-t-indigo-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">🧠 Thinking</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(thinkingCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-indigo-100 text-indigo-700 border-none">{count}</Badge></div>))}</CardContent></Card>
               <Card className="border-t-4 border-t-emerald-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">⚡ Decision (Dual)</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(decisionCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-emerald-100 text-emerald-700 border-none">{count}</Badge></div>))}</CardContent></Card>
             </div>
           )}
@@ -230,67 +230,13 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
 
       {/* ─── ALIGNMENT & MATCH ─── */}
       {activeTab === 'alignment' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700">Teacher vs. Classroom Alignment</h3>
-              <p className="text-xs text-gray-500 mt-1">See how your personal cognitive style matches with your students' preferences.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setAlignmentViewMode('cards')} className={`p-1.5 rounded ${alignmentViewMode === 'cards' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}><LayoutGrid className="w-4 h-4" /></button>
-              <button onClick={() => setAlignmentViewMode('charts')} className={`p-1.5 rounded ${alignmentViewMode === 'charts' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}><BarChart3 className="w-4 h-4" /></button>
-            </div>
-          </div>
-
-          <div className="bg-indigo-50 border border-indigo-200 p-5 rounded-xl">
-            <h4 className="text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4" /> Actionable Strategy</h4>
-            <p className="text-sm text-indigo-800 leading-relaxed">
-              Your primary teaching style is likely influenced by your own cognitive preference. Your class, however, is heavily distributed across <strong>Creative</strong> and <strong>Assimilating</strong> styles. 
-              <br/><br/>
-              <strong>Advice:</strong> Try to incorporate open-ended project work and visual frameworks before diving into strict analytical problem solving. This bridges the cognitive gap and engages the majority of your classroom faster.
-            </p>
-          </div>
-
-          {alignmentViewMode === 'cards' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="border-emerald-200 bg-emerald-50/30">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-emerald-800 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> High Harmony Areas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-700">You and 65% of your class share a strong <strong>Analytical</strong> preference. Structured lectures and logical sequences will resonate extremely well with them.</p>
-                </CardContent>
-              </Card>
-              <Card className="border-amber-200 bg-amber-50/30">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-amber-800 flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Growth Opportunity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-700">30% of your class relies heavily on <strong>Kinesthetic</strong> learning, an area where your teaching style is less pronounced. Add brief, hands-on activities to break up lectures.</p>
-                </CardContent>
-              </Card>
-            </div>
-          ) : (
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Style Match Comparison</CardTitle></CardHeader>
-              <CardContent className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[
-                    { dimension: 'Analytical', Teacher: 85, ClassAvg: 60 },
-                    { dimension: 'Creative', Teacher: 40, ClassAvg: 75 },
-                    { dimension: 'Practical', Teacher: 60, ClassAvg: 65 },
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="dimension" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="Teacher" fill="#1E8A6E" name="Your Style" />
-                    <Bar dataKey="ClassAvg" fill="#6B4C9A" name="Class Average" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
+        <div className="-mx-4 sm:mx-0">
+          <TeacherAnalyticsComparison 
+            teacherAssessments={assessments.filter(a => a.userId === user?.id)}
+            studentAssessments={assessments.filter(a => a.userId !== user?.id)}
+            students={students}
+            teacherProfile={user!}
+          />
         </div>
       )}
 

@@ -24,8 +24,8 @@ const saveStudentCodes = (codes: StudentCode[]) => {
 };
 
 export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institutionId }: GenerateStudentCodesModalProps) {
-  const [students, setStudents] = useState<Array<{ name: string; email: string; id: string }>>([
-    { name: '', email: '', id: generateId() }
+  const [students, setStudents] = useState<Array<{ name: string; dob: string; id: string }>>([
+    { name: '', dob: '', id: generateId() }
   ]);
   const [generatedCodes, setGeneratedCodes] = useState<StudentCode[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -33,13 +33,13 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
 
   useEffect(() => {
     if (isOpen) {
-      setStudents([{ name: '', email: '', id: generateId() }]);
+      setStudents([{ name: '', dob: '', id: generateId() }]);
       setGeneratedCodes([]);
     }
   }, [isOpen]);
 
   const addStudentRow = () => {
-    setStudents([...students, { name: '', email: '', id: generateId() }]);
+    setStudents([...students, { name: '', dob: '', id: generateId() }]);
   };
 
   const removeStudentRow = (id: string) => {
@@ -48,7 +48,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
     }
   };
 
-  const updateStudent = (id: string, field: 'name' | 'email', value: string) => {
+  const updateStudent = (id: string, field: 'name' | 'dob', value: string) => {
     setStudents(students.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
@@ -69,7 +69,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
         id: generateId(),
         code: `JTM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
         studentName: student.name.trim(),
-        studentEmail: student.email.trim() || undefined,
+        studentDOB: student.dob.trim() || undefined,
         teacherId,
         institutionId,
         isUsed: false,
@@ -121,10 +121,10 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                   </div>
                   <div className="flex-1 space-y-2">
                     <Input
-                      placeholder="Email (Optional)"
-                      type="email"
-                      value={student.email}
-                      onChange={(e) => updateStudent(student.id, 'email', e.target.value)}
+                      placeholder="Date of Birth (e.g. YYYY-MM-DD)"
+                      type="text"
+                      value={student.dob}
+                      onChange={(e) => updateStudent(student.id, 'dob', e.target.value)}
                       className="h-9 text-sm"
                     />
                   </div>
@@ -179,7 +179,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                   <CardContent className="p-3 flex items-center justify-between">
                     <div>
                       <p className="font-bold text-sm text-gray-900">{code.studentName}</p>
-                      {code.studentEmail && <p className="text-xs text-gray-500">{code.studentEmail}</p>}
+                      {code.studentDOB && <p className="text-xs text-gray-500">{code.studentDOB}</p>}
                     </div>
                     <div className="flex items-center gap-3">
                       <code className="bg-slate-100 text-slate-800 px-3 py-1.5 rounded-lg text-sm font-bold tracking-widest border border-slate-200">

@@ -531,7 +531,7 @@ export function TeacherDashboard({
                                   </Badge>
                                   <p className="text-xs text-muted-foreground mt-2">
                                     {(() => {
-                                      if (latestThinking.type === 'sternberg') return 'Sternberg Thinking Style';
+                                      if (latestThinking.type === 'sternberg') return 'Thinking Style';
                                       if (latestThinking.type === 'jhs-thinking') return 'JHS Thinking Style';
                                       if (latestThinking.type === 'shs-thinking') return 'SHS Thinking Style';
                                       if (latestThinking.type === 'adult-thinking') return 'Professional Thinking Style';

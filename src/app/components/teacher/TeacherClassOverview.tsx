@@ -304,7 +304,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
                   <CardTitle className="text-[16px]">Learning Style Distribution</CardTitle>
                 </div>
                 <CardDescription className="text-[13px]">
-                  Kolb Learning Styles across your class
+                  Learning Styles across your class
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 pt-2">
@@ -347,7 +347,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
                   <CardTitle className="text-[16px]">Thinking Style Distribution</CardTitle>
                 </div>
                 <CardDescription className="text-[13px]">
-                  Sternberg Thinking Styles across your class
+                  Thinking Styles across your class
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 pt-2">

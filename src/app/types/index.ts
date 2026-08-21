@@ -44,7 +44,7 @@ export interface StudentCode {
   id: string;
   code: string;
   studentName: string;
-  studentEmail?: string;
+  studentDOB?: string;
   teacherId: string;
   institutionId?: string;
   isUsed: boolean;

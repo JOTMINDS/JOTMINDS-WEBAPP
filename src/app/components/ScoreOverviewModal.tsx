@@ -54,7 +54,7 @@ export const ScoreOverviewModal: React.FC<ScoreOverviewModalProps> = ({
           <div className="space-y-3">
             <div className="p-3.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
               <h4 className="font-bold text-xs text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-purple-600" /> 1. Sternberg Triarchic Model (Thinking Styles)
+                <Target className="w-4 h-4 text-purple-600" /> 1. Triarchic Model (Thinking Styles)
               </h4>
               <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                 Evaluates 3 distinct dimensions: <strong>Analytical (Executive)</strong> problem solving, <strong>Creative (Legislative)</strong> idea generation, and <strong>Practical (Judicial)</strong> real-world execution. Scale: 0–100%.
@@ -63,7 +63,7 @@ export const ScoreOverviewModal: React.FC<ScoreOverviewModalProps> = ({
 
             <div className="p-3.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
               <h4 className="font-bold text-xs text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
-                <Award className="w-4 h-4 text-blue-600" /> 2. Kolb Experiential Learning Cycle (Learning Styles)
+                <Award className="w-4 h-4 text-blue-600" /> 2. Experiential Learning Cycle (Learning Styles)
               </h4>
               <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                 Measures 4 processing quadrants: Concrete Experience (CE), Reflective Observation (RO), Abstract Conceptualization (AC), and Active Experimentation (AE).

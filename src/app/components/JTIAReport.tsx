@@ -239,8 +239,25 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
       <style>{`
         /* Global print overrides */
         @media print {
-          @page { margin: 10mm; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white !important; }
+          @page { margin: 15mm; }
+          body { 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact; 
+            background: white !important; 
+            font-size: 11pt;
+          }
+          #temp-print-div {
+            padding: 0 !important;
+            max-width: 100% !important;
+          }
+          .shadow-sm, .shadow-md, .shadow-xl {
+            box-shadow: none !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+          /* Page breaking rules */
+          h2, h3, h4 { page-break-after: avoid; }
+          .break-inside-avoid { page-break-inside: avoid; }
+          .card-print-break { page-break-inside: avoid; margin-bottom: 20px; }
         }
       `}</style>
 
@@ -256,7 +273,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             </Badge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            JotMinds Teaching Insights Assessment
+            Teaching Insights Assessment
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-2xl">
             Understanding the cognitive styles and instructional strengths behind
@@ -327,7 +344,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             Designed for Development, Not Ranking
           </h4>
           <p className="text-xs md:text-sm text-slate-300 mt-1">
-            The JotMinds Teaching Insights Assessment does not rank or compare
+            The Teaching Insights Assessment does not rank or compare
             teachers against one another. Unlike traditional compliance
             evaluations, your JTIA profile is dedicated entirely to personal
             self-awareness, professional growth, and classroom excellence.
@@ -563,7 +580,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                 <>
                   <Card
                     key={item.domain}
-                    className="shadow-sm hover:shadow-md transition-shadow border-slate-200 dark:border-slate-800"
+                    className="shadow-sm hover:shadow-md transition-shadow card-print-break border-slate-200 dark:border-slate-800"
                   >
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between gap-4">
@@ -837,7 +854,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
             (item, i) => (
               <Card
                 key={i}
-                className="shadow-sm hover:shadow-md transition-shadow border-slate-200 dark:border-slate-800"
+                className="shadow-sm hover:shadow-md transition-shadow card-print-break border-slate-200 dark:border-slate-800"
               >
                 <CardContent className="p-5 flex items-start gap-4">
                   <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5">

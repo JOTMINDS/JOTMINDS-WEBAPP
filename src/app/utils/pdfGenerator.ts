@@ -103,26 +103,34 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   
   doc.setTextColor(...BRAND.ink);
 
-  // Main Style
+  // Main Style Section
   const score = assessment.score || {};
   const mainStyle = score.kolb?.style || score.sternberg?.style || score.dualProcess?.style || score['teaching-style']?.primaryStyle || '';
-  doc.setFontSize(16);
-  doc.text(`Your Style: ${mainStyle || 'N/A'}`, 20, yPos);
-  yPos += 10;
-
-  // Description
+  
+  // Style Card
+  doc.setFillColor(248, 250, 252); // slate-50
+  doc.setDrawColor(226, 232, 240); // slate-200
+  doc.roundedRect(margin, yPos, pageWidth - (margin * 2), 24, 3, 3, 'FD');
+  
+  doc.setFont(font, 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...BRAND.indigo);
+  doc.text(`Your Style: ${mainStyle || 'N/A'}`, margin + 6, yPos + 10);
+  
   let description = '';
   try {
     description = mainStyle ? getStyleDescription(assessment.type as any, mainStyle) : 'Assessment completed successfully.';
   } catch {
     description = 'Assessment completed successfully.';
   }
+  doc.setFont(font, 'normal');
   doc.setFontSize(10);
-  const descLines = doc.splitTextToSize(description, pageWidth - 40);
-  doc.text(descLines, 20, yPos);
-  yPos += descLines.length * 5 + 15;
+  doc.setTextColor(...BRAND.ink);
+  const descLines = doc.splitTextToSize(description, pageWidth - (margin * 2) - 12);
+  doc.text(descLines, margin + 6, yPos + 18);
+  yPos += Math.max(30, descLines.length * 5 + 24);
 
-  // Executive Summary
+  // Executive Summary Card
   let insights: any;
   try {
     insights = getAssessmentInsights(assessment);
@@ -130,44 +138,44 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
     insights = { strengths: ['Assessment completed'], weaknesses: ['N/A'], improvements: ['Continue learning'], organizationalFit: [] };
   }
   
-  doc.setFontSize(16);
-  doc.setFont('Poppins', 'bold');
-  doc.text('Executive Summary', 20, yPos);
-  yPos += 10;
-  doc.setFont('Poppins', 'normal');
+  doc.setFontSize(15);
+  doc.setFont(font, 'bold');
+  doc.text('Executive Summary', margin, yPos);
+  yPos += 8;
 
-  // Top Strength
-  doc.setFontSize(12);
-  doc.setFont('Poppins', 'bold');
-  doc.text('Top Strength:', 20, yPos);
-  yPos += 6;
-  doc.setFont('Poppins', 'normal');
-  doc.setFontSize(10);
-  const strengthLines = doc.splitTextToSize(insights.strengths[0] || 'N/A', pageWidth - 40);
-  doc.text(strengthLines, 25, yPos);
-  yPos += strengthLines.length * 5 + 5;
+  const drawInsightBox = (title: string, text: string, color: [number, number, number]) => {
+    if (yPos > 240) {
+      doc.addPage();
+      yPos = 20;
+    }
+    const lines = doc.splitTextToSize(text, pageWidth - (margin * 2) - 12);
+    const boxHeight = lines.length * 5 + 16;
+    
+    // Box background
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.roundedRect(margin, yPos, pageWidth - (margin * 2), boxHeight, 3, 3, 'F');
+    
+    // Title
+    doc.setFontSize(11);
+    doc.setFont(font, 'bold');
+    doc.setTextColor(...BRAND.dark);
+    doc.text(title, margin + 6, yPos + 8);
+    
+    // Text
+    doc.setFont(font, 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...BRAND.ink);
+    doc.text(lines, margin + 6, yPos + 16);
+    
+    yPos += boxHeight + 6;
+  };
 
-  // Priority Development Area
-  doc.setFontSize(12);
-  doc.setFont('Poppins', 'bold');
-  doc.text('Priority Development Area:', 20, yPos);
-  yPos += 6;
-  doc.setFont('Poppins', 'normal');
-  doc.setFontSize(10);
-  const weaknessLines = doc.splitTextToSize(insights.weaknesses[0] || 'N/A', pageWidth - 40);
-  doc.text(weaknessLines, 25, yPos);
-  yPos += weaknessLines.length * 5 + 5;
-
-  // Key Action
-  doc.setFontSize(12);
-  doc.setFont('Poppins', 'bold');
-  doc.text('Key Action for Improvement:', 20, yPos);
-  yPos += 6;
-  doc.setFont('Poppins', 'normal');
-  doc.setFontSize(10);
-  const improvementLines = doc.splitTextToSize(insights.improvements[0] || 'N/A', pageWidth - 40);
-  doc.text(improvementLines, 25, yPos);
-  yPos += improvementLines.length * 5 + 5;
+  // Top Strength (Light Green/Emerald)
+  drawInsightBox('Top Strength:', insights.strengths[0] || 'N/A', [236, 253, 245]);
+  // Priority Development Area (Light Amber)
+  drawInsightBox('Priority Development Area:', insights.weaknesses[0] || 'N/A', [255, 251, 235]);
+  // Key Action (Light Indigo)
+  drawInsightBox('Key Action for Improvement:', insights.improvements[0] || 'N/A', [238, 242, 255]);
 
   // Organizational Fit (if applicable)
   if (isOrganizational && insights.organizationalFit.length > 0) {
@@ -177,19 +185,19 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
     }
     
     doc.setFontSize(12);
-    doc.setFont('Poppins', 'bold');
-    doc.text('Organizational Fit:', 20, yPos);
+    doc.setFont(font, 'bold');
+    doc.text('Organizational Fit:', margin, yPos);
     yPos += 6;
-    doc.setFont('Poppins', 'normal');
+    doc.setFont(font, 'normal');
     doc.setFontSize(10);
     
-    insights.organizationalFit.slice(0, 2).forEach((fit) => {
+    insights.organizationalFit.slice(0, 2).forEach((fit: string) => {
       if (yPos > 270) {
         doc.addPage();
         yPos = 20;
       }
-      const fitLines = doc.splitTextToSize(`• ${fit}`, pageWidth - 40);
-      doc.text(fitLines, 25, yPos);
+      const fitLines = doc.splitTextToSize(`• ${fit}`, pageWidth - (margin * 2));
+      doc.text(fitLines, margin + 2, yPos);
       yPos += fitLines.length * 5;
     });
     yPos += 5;

@@ -47,7 +47,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
   const tKolb = getLatestAssessment(['kolb', 'learning'], teacherAssessments);
   const tThink = getLatestAssessment(['sternberg', 'adult-thinking', 'shs-thinking', 'jhs-thinking', 'child-thinking', 'thinking'], teacherAssessments);
   const tDual = getLatestAssessment(['dual-process', 'decision'], teacherAssessments);
-  const tJtia = getLatestAssessment(['jtia'], teacherAssessments);
+  const tJtia = getLatestAssessment(['teaching-style', 'jtia'], teacherAssessments);
 
   const tJtiaReport = tJtia ? (tJtia.score as any || tJtia.score as any || (tJtia.score as any)?.jtia) : null;
 
@@ -265,7 +265,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
             <Card className="shadow-sm border-slate-200">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Learning Style (Kolb)</span>
+                  <span>Learning Style</span>
                   {tKolbStyle && (
                     <Badge style={{ backgroundColor: KOLB_COLORS[tKolbStyle] + '20', color: KOLB_COLORS[tKolbStyle] }}>
                       You: {tKolbStyle}

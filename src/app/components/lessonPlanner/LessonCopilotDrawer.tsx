@@ -78,7 +78,7 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
           </div>
           <div>
             <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
-              Jottie <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-[10px]">Module 10</Badge>
+              Jotti <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-[10px]">Module 10</Badge>
             </h3>
             <p className="text-[11px] text-slate-300">24/7 Intelligent Teaching Assistant</p>
           </div>
@@ -137,7 +137,7 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
         {isThinking && (
           <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400">
             <Loader className="w-3.5 h-3.5 animate-spin" />
-            <span>Jottie is generating response...</span>
+            <span>Jotti is generating response...</span>
           </div>
         )}
       </div>
@@ -148,7 +148,7 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Jottie for lesson ideas or quizzes..."
+            placeholder="Ask Jotti for lesson ideas or quizzes..."
             className="text-xs"
           />
           <Button type="submit" disabled={!input.trim() || isThinking} className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0">

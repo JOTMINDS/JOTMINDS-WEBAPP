@@ -347,7 +347,7 @@ return (
                           {((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style}
                         </h4>
                         <p className="text-[12px] font-medium text-[#15803D]">
-                          Kolb Learning Style • Assessed {formatDate(latestLearning.completedAt!)}
+                          Learning Style • Assessed {formatDate(latestLearning.completedAt!)}
                         </p>
                       </CardContent>
                     </Card>
@@ -380,7 +380,7 @@ return (
                           })()}
                         </h4>
                         <p className="text-[12px] font-medium text-[#7E22CE]">
-                          Sternberg Thinking Style • Assessed {formatDate(latestThinking.completedAt!)}
+                          Thinking Style • Assessed {formatDate(latestThinking.completedAt!)}
                         </p>
                       </CardContent>
                     </Card>

@@ -96,6 +96,49 @@ export function InstitutionOverview({
         </CardContent>
       </Card>
 
+      {/* Top School Code Quick Card */}
+      <Card className="border-2 border-indigo-200 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-sm">
+                <QrCode className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">Official School Jots Code</span>
+                <span className="text-2xl font-mono font-black text-indigo-950 tracking-wider">{institution.code}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={handleCopyCode}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex-1 sm:flex-initial"
+              >
+                {copied ? <CheckCircle2 className="w-4 h-4 mr-1 text-emerald-300" /> : <Copy className="w-4 h-4 mr-1" />}
+                {copied ? 'Code Copied!' : 'Copy Code'}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleShare}
+                className="border-indigo-200 text-indigo-900 bg-white hover:bg-indigo-50 rounded-xl text-xs"
+              >
+                <Share2 className="w-4 h-4 mr-1" />
+                Share Code
+              </Button>
+              {onManageCodes && (
+                <Button 
+                  variant="outline"
+                  onClick={onManageCodes}
+                  className="border-indigo-200 text-indigo-900 bg-white hover:bg-indigo-50 rounded-xl text-xs"
+                >
+                  <Settings className="w-4 h-4 mr-1" /> Manage Codes
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[

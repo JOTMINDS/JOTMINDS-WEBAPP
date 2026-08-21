@@ -373,7 +373,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
               { key: 'recommendations', label: 'Recommendations', icon: Lightbulb },
               { key: 'weekly-planner', label: 'Weekly Planner', icon: Calendar },
               { key: 'reminders', label: 'Reminders', icon: Bell },
-              { key: 'coach', label: 'Jottie Coach', icon: Brain }
+              { key: 'coach', label: 'Jotti Coach', icon: Brain }
             ] as { key: TabType; label: string; icon: React.ElementType }[]).map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -1269,7 +1269,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
               <CardHeader className="pb-3 border-b">
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="w-5 h-5" style={{ color: '#6B4C9A' }} />
-                  Chat with Jottie
+                  Chat with Jotti
                 </CardTitle>
                 <CardDescription>Ask questions about your profile or get study advice</CardDescription>
               </CardHeader>
@@ -1283,7 +1283,7 @@ export const AILearningCoach: React.FC<AILearningCoachProps> = ({
                     <div className="bg-purple-100 p-4 rounded-full">
                       <Brain className="w-8 h-8 text-purple-600" />
                     </div>
-                    <p>I'm Jottie, your Learning Coach. How can I help you today?</p>
+                    <p>I'm Jotti, your Learning Coach. How can I help you today?</p>
                     
                     <div className="flex flex-wrap justify-center gap-2 mt-4">
                       <Button 

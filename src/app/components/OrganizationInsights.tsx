@@ -374,7 +374,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="h-5 w-5 text-indigo-600" />
-                  Cognitive Style Distribution (Sternberg)
+                  Cognitive Style Distribution
                 </CardTitle>
                 <CardDescription>
                   Breakdown of Analytical, Creative, and Practical thinking styles.
@@ -491,7 +491,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-yellow-600" />
-                Learning Styles (Kolb)
+                Learning Styles
               </CardTitle>
               <CardDescription>
                 How your team members process information and learn new skills.

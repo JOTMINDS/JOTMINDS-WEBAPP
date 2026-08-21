@@ -127,7 +127,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
               Designed for Development, Not Ranking
             </h3>
             <p className="text-xs md:text-sm text-slate-300 mt-1 max-w-3xl">
-              The JotMinds Teaching Insights Assessment does not rank or compare teachers against one another. This dashboard aggregates anonymized institutional patterns exclusively to guide targeted professional development, celebrate school strengths, and elevate learning experiences.
+              The Teaching Insights Assessment does not rank or compare teachers against one another. This dashboard aggregates anonymized institutional patterns exclusively to guide targeted professional development, celebrate school strengths, and elevate learning experiences.
             </p>
           </div>
         </div>

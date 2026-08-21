@@ -77,7 +77,7 @@ function generateNotifs(user: User): Notification[] {
   const notifs: Notification[] = [];
 
   if (assessments.length === 0)
-    notifs.push({ id: 'n_first', type: 'reminder', title: 'Start your first assessment', body: 'Discover your learning style by completing the Kolb Learning Style assessment.', timestamp: new Date().toISOString(), read: false, icon: '🎯' });
+    notifs.push({ id: 'n_first', type: 'reminder', title: 'Start your first assessment', body: 'Discover your learning style by completing the Learning Style assessment.', timestamp: new Date().toISOString(), read: false, icon: '🎯' });
   if (assessments.length > 0 && assessments.length < 3)
     notifs.push({ id: 'n_more', type: 'reminder', title: 'Complete your cognitive profile', body: `You've done ${assessments.length}/3 assessment types. Finish the remaining ones for a full cognitive profile.`, timestamp: new Date().toISOString(), read: false, icon: '🧠' });
   if (gam?.currentStreak && gam.currentStreak >= 3)

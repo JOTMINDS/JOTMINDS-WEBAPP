@@ -73,7 +73,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             <BookOpen className="w-6 h-6 text-indigo-400" /> Lesson Planner & Teaching Insights
           </h1>
           <p className="text-xs text-slate-300 mt-1">
-            Connecting student cognitive profiles $\rightarrow$ lesson planning $\rightarrow$ 3-tier differentiation $\rightarrow$ lesson prep $\rightarrow$ curriculum analytics.
+            Connecting student cognitive profiles → lesson planning → 3-tier differentiation → lesson prep → curriculum analytics.
           </p>
         </div>
 
@@ -82,14 +82,14 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             onClick={() => setIsCopilotOpen(true)}
             className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold shadow-md text-xs"
           >
-            <Sparkles className="w-4 h-4 mr-1.5" /> Jottie Chat
+            <Sparkles className="w-4 h-4 mr-1.5" /> Jotti Chat
           </Button>
           {activePlan && (
             <Button
               onClick={() => setIsDelivering(true)}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md"
             >
-              <Play className="w-4 h-4 mr-1.5" /> Lesson Prep tool
+              <Play className="w-4 h-4 mr-1.5" /> Lesson Prep
             </Button>
           )}
         </div>
@@ -227,7 +227,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
           <Card className="text-center p-8 space-y-4 max-w-xl mx-auto border-indigo-200 dark:border-indigo-900/50">
             <Play className="w-12 h-12 text-indigo-600 mx-auto" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Launch Lesson Prep tool
+              Launch Lesson Prep
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400">
               Open full-screen delivery mode with live activity timer, teaching notes, student attendance, and engagement trackers.
