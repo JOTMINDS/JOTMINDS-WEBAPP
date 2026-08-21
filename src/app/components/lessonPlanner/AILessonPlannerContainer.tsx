@@ -160,7 +160,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
               <BarChart3 className="w-3.5 h-3.5" /> Analytics
             </TabsTrigger>
             <TabsTrigger value="school" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
-              <School className="w-3.5 h-3.5" /> Institutional Cognitive
+              <School className="w-3.5 h-3.5" /> Classroom Intelligence
             </TabsTrigger>
           </TabsList>
         </div>

@@ -32,7 +32,7 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
   const filteredStudents = students.filter(student => {
     const matchesSearch = 
       student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (student.email && student.email.toLowerCase().includes(searchQuery.toLowerCase()));
+      (student.dateOfBirth && student.dateOfBirth.includes(searchQuery.toLowerCase()));
 
     const matchesClass = classFilter === 'all' || student.className === classFilter;
 
@@ -103,7 +103,7 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Search by student name or email..."
+                placeholder="Search by student name or date of birth..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 text-xs"

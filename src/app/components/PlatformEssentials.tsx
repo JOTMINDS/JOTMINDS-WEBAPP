@@ -219,19 +219,13 @@ export function PlatformEssentials({ user, onBack, onNavigate }: PlatformEssenti
 
   const quickActions = [
     { label: 'Take Assessment', icon: '📋', view: 'dashboard' },
-    { label: 'Brain Gym', icon: '🏋️', view: 'skill-builder' },
-    { label: 'Learning Coach', icon: '🧠', view: 'ai-coach' },
-    { label: 'Cognitive Growth', icon: '🧠', view: 'cognitive-growth' },
-    { label: 'Gamification', icon: '🎮', view: 'gamification' },
-    { label: 'Engagement Stats', icon: '📊', view: 'engagement' },
+    { label: 'Dashboard', icon: '🏠', view: 'dashboard' },
+    { label: 'Privacy Dashboard', icon: '🔒', view: 'privacy-dashboard' },
   ];
 
   const featureList = [
     { label: 'Cognitive Assessments', available: true, desc: 'Kolb, Sternberg, Dual-Process' },
-    { label: 'Learning Coach', available: true, desc: 'Personalised study plans' },
-    { label: 'Cognitive Growth Tracker', available: true, desc: 'XP, milestones, progress graphs' },
-    { label: 'Brain Gym', available: true, desc: 'Daily cognitive exercises' },
-    { label: 'Gamification', available: true, desc: 'Badges, streaks, levels' },
+    { label: 'Learning Styles', available: true, desc: 'Discover how you process information' },
     { label: 'Teaching Insights', available: user.role === 'teacher' || user.role === 'school_admin' || user.role === 'admin', desc: 'Class analytics & interventions' },
     { label: 'School Analytics', available: user.role === 'school_admin' || user.role === 'admin', desc: 'School-wide performance data' },
   ];

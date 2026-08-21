@@ -53,6 +53,8 @@ export function NudgesPanel({ userId, onNavigate, isNavbarMode = false }: Props)
       } else {
         window.dispatchEvent(new CustomEvent('nudge-navigate', { detail: nudge.action.route }));
       }
+      // Close the panel after clicking an action so the user actually sees the new view
+      setShowNudges(false);
     }
     loadNudges();
   };

@@ -79,34 +79,10 @@ export function generatePersonalizedNudges(userId: string): Nudge[] {
         message: `You're on fire! Keep your streak alive by completing an activity today.`,
         action: {
           label: 'Continue Learning',
-          route: '/brain-gym',
+          route: '/assessments',
         },
         icon: '🔥',
         color: '#f97316',
-        createdAt: new Date().toISOString(),
-        dismissed: false,
-        interacted: false,
-      });
-    }
-  }
-
-  // Daily challenges reminder
-  if (gamification.dailyChallenges && gamification.dailyChallenges.length > 0) {
-    const incompleteChallenges = gamification.dailyChallenges.filter(c => c.progress < c.target);
-    if (incompleteChallenges.length > 0) {
-      nudges.push({
-        id: `nudge_challenges_${userId}`,
-        userId,
-        type: 'challenge',
-        priority: 'medium',
-        title: 'Daily Challenges Available',
-        message: `You have ${incompleteChallenges.length} challenges waiting. Complete them for bonus XP!`,
-        action: {
-          label: 'View Challenges',
-          route: '/gamification',
-        },
-        icon: '🎯',
-        color: '#5B7DB1',
         createdAt: new Date().toISOString(),
         dismissed: false,
         interacted: false,
@@ -125,10 +101,10 @@ export function generatePersonalizedNudges(userId: string): Nudge[] {
       type: 'encouragement',
       priority: 'medium',
       title: 'Ready to continue?',
-      message: 'Your cognitive growth journey is waiting for you. Dive into a new Brain Gym exercise today.',
+      message: 'Your cognitive growth journey is waiting for you. Dive into your next module.',
       action: {
         label: 'Explore',
-        route: '/brain-gym',
+        route: '/assessments',
       },
       icon: '🧠',
       color: '#6B4C9A',
@@ -136,35 +112,6 @@ export function generatePersonalizedNudges(userId: string): Nudge[] {
       dismissed: false,
       interacted: false,
     });
-  }
-
-  // Achievement celebration
-  if (gamification.badges.length > 0) {
-    const recentBadges = gamification.badges.filter(b => {
-      const earnedDate = new Date((b as any).earnedAt || (b as any).unlockedAt || new Date());
-      const daysSince = Math.floor((new Date().getTime() - earnedDate.getTime()) / (1000 * 60 * 60 * 24));
-      return daysSince === 0;
-    });
-
-    if (recentBadges.length > 0) {
-      nudges.push({
-        id: `nudge_badge_${recentBadges[0].name.replace(/\s+/g, '')}_${userId}`,
-        userId,
-        type: 'achievement',
-        priority: 'high',
-        title: 'New Badge Unlocked! 🏆',
-        message: `Congratulations! You earned the "${recentBadges[0].name}" badge.`,
-        action: {
-          label: 'View Badges',
-          route: '/gamification',
-        },
-        icon: '🏆',
-        color: '#f59e0b',
-        createdAt: new Date().toISOString(),
-        dismissed: false,
-        interacted: false,
-      });
-    }
   }
 
   // Level up celebration
@@ -254,33 +201,6 @@ function getUnusedFeatures(engagement: EngagementMetrics): { name: string; descr
       description: 'Discover your unique cognitive profile through our comprehensive assessments.',
       route: '/assessments',
       icon: '🧪',
-    });
-  }
-
-  if (engagement.featureUsage.brainGym === 0) {
-    features.push({
-      name: 'Brain Gym',
-      description: 'Exercise your mind with engaging cognitive challenges and puzzles.',
-      route: '/brain-gym',
-      icon: '🧠',
-    });
-  }
-
-  if (engagement.featureUsage.careerExploration === 0) {
-    features.push({
-      name: 'Career Exploration',
-      description: 'Explore careers that match your cognitive strengths and interests.',
-      route: '/career-exploration',
-      icon: '🚀',
-    });
-  }
-
-  if (engagement.featureUsage.profileViews === 0) {
-    features.push({
-      name: 'Profile Improvement Tracker',
-      description: 'Track your cognitive growth and skill development over time.',
-      route: '/profile-improvement',
-      icon: '📊',
     });
   }
 

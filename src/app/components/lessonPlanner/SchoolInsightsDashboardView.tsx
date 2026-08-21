@@ -17,14 +17,14 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
-              Institutional Cognitive
+              Classroom Intelligence
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <School className="w-5 h-5 text-indigo-400" /> Institutional Cognitive
+            <School className="w-5 h-5 text-indigo-400" /> Classroom Intelligence
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Aggregated student learning styles, support indicators, curriculum delivery, and teaching effectiveness metrics across your classes.
+            A simplified overview of your students' learning styles, curriculum coverage, and overall classroom performance.
           </p>
         </div>
       </div>
