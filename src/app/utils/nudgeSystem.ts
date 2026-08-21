@@ -4,7 +4,7 @@
  */
 
 import { User, Assessment, Class, TeacherClassAssignment } from '../types';
-import { safeParse } from './storage';
+import { safeParse, getCurrentUser } from './storage';
 import { EngagementMetrics, getEngagementMetrics } from './engagementTracking';
 import { GamificationProfile, getGamificationProfile } from './gamification';
 
@@ -58,6 +58,9 @@ const REMINDER_SCHEDULE_KEY = 'jotminds_reminder_schedule';
 
 // Nudge Generation
 export function generatePersonalizedNudges(userId: string): Nudge[] {
+  const user = getCurrentUser();
+  if (user && user.role !== 'student') return [];
+
   const engagement = getEngagementMetrics(userId);
   const gamification = getGamificationProfile(userId);
   const behaviorPattern = analyzeUserBehavior(userId, engagement);
@@ -333,6 +336,11 @@ export function saveNudges(nudges: Nudge[]): void {
   nudges.forEach(nudge => {
     const existingIndex = allNudges.findIndex(n => n.id === nudge.id);
     if (existingIndex >= 0) {
+      // Preserve user interaction states
+      nudge.dismissed = allNudges[existingIndex].dismissed;
+      nudge.dismissedAt = allNudges[existingIndex].dismissedAt;
+      nudge.interacted = allNudges[existingIndex].interacted;
+      nudge.interactedAt = allNudges[existingIndex].interactedAt;
       allNudges[existingIndex] = nudge;
     } else {
       allNudges.push(nudge);
