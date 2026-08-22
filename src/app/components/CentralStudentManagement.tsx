@@ -200,10 +200,17 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
                             {student.name.charAt(0)}
                           </div>
                           <div className="min-w-0">
-                            <h4 className="font-bold text-xs text-gray-900 dark:text-white truncate">
-                              {student.name}
-                            </h4>
-                            <p className="text-[11px] text-gray-500 truncate">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-xs text-gray-900 dark:text-white truncate">
+                                {student.name}
+                              </h4>
+                              {student.studentCode && (
+                                <code className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-mono font-bold" title="Student Code">
+                                  {student.studentCode}
+                                </code>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-gray-500 truncate mt-0.5">
                               {student.className || 'General'} {student.email ? `• ${student.email}` : ''}
                             </p>
                           </div>

@@ -514,3 +514,55 @@ export const deleteInstitutionClassAPI = async (classId: string) => {
     method: 'DELETE',
   });
 };
+
+// ─── Institutional Student Enrollment ───────────────────────────
+
+export async function enrollStudent(data: {
+  studentName: string;
+  dateOfBirth: string;
+  classId: string;
+  teacherId: string;
+  institutionId?: string;
+}): Promise<{ success: boolean; student: any; code: string; duplicate?: boolean; existingStudent?: any }> {
+  const res = await fetch(`${BASE_URL}/enroll-student`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken || publicAnonKey}` },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function validateStudentCode(code: string): Promise<{ valid: boolean; studentName?: string; schoolName?: string }> {
+  const res = await fetch(`${BASE_URL}/student-code/validate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+  return res.json();
+}
+
+export async function signInWithStudentCode(code: string): Promise<{ session: any; user: any; token?: string }> {
+  const res = await fetch(`${BASE_URL}/student-code/signin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) throw new Error('Invalid student code');
+  return res.json();
+}
+
+export async function revokeStudentCode(codeId: string): Promise<{ success: boolean; newCode: string }> {
+  const res = await fetch(`${BASE_URL}/student-code/revoke`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken || publicAnonKey}` },
+    body: JSON.stringify({ codeId }),
+  });
+  return res.json();
+}
+
+export async function getStudentCodesForTeacher(teacherId: string): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/student-codes?teacherId=${teacherId}`, {
+    headers: { Authorization: `Bearer ${authToken || publicAnonKey}` },
+  });
+  return res.json();
+}

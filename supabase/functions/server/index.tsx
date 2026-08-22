@@ -5451,6 +5451,310 @@ app.post('/make-server-fc8eb847/cron/cleanup-unverified-users', async (c) => {
     return c.json({ error: 'Internal Server Error' }, 500);
   }
 });
+// ==========================================
+// Student Codes & Enrollment Endpoints
+// ==========================================
+
+// 1. Enroll Student
+app.post('/make-server-fc8eb847/enroll-student', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    
+    const { studentName, dateOfBirth, classId, teacherId, institutionId } = await c.req.json();
+    if (!studentName || !dateOfBirth) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+    
+    const supabase = getSupabaseClient(true);
+    
+    // Duplicate check
+    let query = supabase
+      .from('student_codes')
+      .select('*')
+      .ilike('student_name', studentName)
+      .eq('student_dob', dateOfBirth)
+      .eq('is_active', true);
+      
+    if (institutionId) {
+      query = query.eq('institution_id', institutionId);
+    } else {
+      query = query.is('institution_id', null);
+    }
+    
+    const { data: duplicates } = await query;
+    if (duplicates && duplicates.length > 0) {
+      return c.json({ status: 409, duplicate: true, existingStudent: duplicates[0] }, 409);
+    }
+    
+    // Generate code
+    const generateCode = () => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const randomArray = new Uint8Array(8);
+      crypto.getRandomValues(randomArray);
+      let code = 'JM-';
+      for (let i = 0; i < 4; i++) code += chars[randomArray[i] % chars.length];
+      code += '-';
+      for (let i = 4; i < 8; i++) code += chars[randomArray[i] % chars.length];
+      return code;
+    };
+    
+    const code = generateCode();
+    const internalEmail = `${code.toLowerCase().replace(/-/g, '')}@student.jotminds.app`;
+    
+    // Generate random password
+    const passwordChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
+    const passArray = new Uint8Array(32);
+    crypto.getRandomValues(passArray);
+    let randomPassword = '';
+    for (let i = 0; i < 32; i++) randomPassword += passwordChars[passArray[i] % passwordChars.length];
+    
+    // Create Supabase Auth user
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({ 
+      email: internalEmail, 
+      password: randomPassword, 
+      email_confirm: true, 
+      user_metadata: { 
+        role: 'student', 
+        name: studentName, 
+        dateOfBirth, 
+        studentCode: code, 
+        classId, 
+        teacherId, 
+        institutionId 
+      } 
+    });
+    
+    if (authError || !authData.user) {
+      return c.json({ error: authError?.message || 'Failed to create user' }, 500);
+    }
+    
+    const userId = authData.user.id;
+    
+    // Create KV entry
+    await kv.set(`user:${userId}`, {
+      id: userId,
+      email: internalEmail,
+      name: studentName,
+      role: 'student',
+      dateOfBirth,
+      studentCode: code,
+      classId,
+      teacherId,
+      institutionId,
+      _internalAuth: randomPassword,
+      createdAt: new Date().toISOString(),
+      assessmentsCompleted: [],
+      cognitiveProfile: null
+    });
+    
+    // Insert into student_codes
+    const { error: codeError } = await supabase.from('student_codes').insert({
+      user_id: userId,
+      code,
+      student_name: studentName,
+      student_dob: dateOfBirth,
+      institution_id: institutionId,
+      teacher_id: teacherId,
+      is_active: true
+    });
+    
+    if (codeError) {
+      console.error('[enroll-student] Code insert error:', codeError);
+    }
+    
+    // Insert into institution_members
+    if (institutionId) {
+      await supabase.from('institution_members').insert({
+        user_id: userId,
+        user_name: studentName,
+        user_email: internalEmail,
+        role: 'student',
+        institution_id: institutionId,
+        status: 'approved'
+      });
+    }
+    
+    // Update classes student_count
+    if (classId) {
+      const { data: classData } = await supabase.from('classes').select('student_count').eq('id', classId).maybeSingle();
+      if (classData) {
+        await supabase.from('classes').update({ student_count: (classData.student_count || 0) + 1 }).eq('id', classId);
+      }
+    }
+    
+    return c.json({ success: true, student: { id: userId, name: studentName, studentCode: code }, code });
+  } catch (error: any) {
+    console.error('[enroll-student] Server error:', error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
+});
+
+// 2. Validate Student Code
+app.post('/make-server-fc8eb847/student-code/validate', async (c) => {
+  try {
+    const { code } = await c.req.json();
+    if (!code) return c.json({ valid: false });
+    
+    const normalizedCode = code.toUpperCase().trim();
+    const supabase = getSupabaseClient(true);
+    
+    const { data: codeRecord } = await supabase
+      .from('student_codes')
+      .select('*')
+      .eq('code', normalizedCode)
+      .eq('is_active', true)
+      .is('revoked_at', null)
+      .maybeSingle();
+      
+    if (!codeRecord) return c.json({ valid: false });
+    
+    const userProfile = await kv.get(`user:${codeRecord.user_id}`);
+    if (!userProfile) return c.json({ valid: false });
+    
+    let schoolName = null;
+    if (codeRecord.institution_id) {
+       const { data: inst } = await supabase.from('institutions').select('name').eq('id', codeRecord.institution_id).maybeSingle();
+       if (inst) schoolName = inst.name;
+    }
+    
+    const firstName = userProfile.name ? userProfile.name.split(' ')[0] : 'Student';
+    
+    return c.json({ valid: true, studentName: firstName, schoolName });
+  } catch (error) {
+    console.error('[validate] Server error:', error);
+    return c.json({ valid: false });
+  }
+});
+
+// 3. Sign In with Student Code
+app.post('/make-server-fc8eb847/student-code/signin', async (c) => {
+  try {
+    const { code } = await c.req.json();
+    if (!code) return c.json({ error: 'Code required' }, 400);
+    
+    const normalizedCode = code.toUpperCase().trim();
+    const supabase = getSupabaseClient(); // Use regular client for signInWithPassword
+    const supabaseAdmin = getSupabaseClient(true); // Service role client for db queries
+    
+    const { data: codeRecord } = await supabaseAdmin
+      .from('student_codes')
+      .select('*')
+      .eq('code', normalizedCode)
+      .eq('is_active', true)
+      .is('revoked_at', null)
+      .maybeSingle();
+      
+    if (!codeRecord) return c.json({ error: 'Invalid code' }, 401);
+    
+    const userId = codeRecord.user_id;
+    const userProfile = await kv.get(`user:${userId}`);
+    if (!userProfile) return c.json({ error: 'User not found' }, 404);
+    
+    const email = userProfile.email;
+    const password = userProfile._internalAuth;
+    
+    if (!password) {
+       return c.json({ error: 'Auth configuration error' }, 500);
+    }
+    
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+       email,
+       password
+    });
+    
+    if (authError) {
+      console.log(`Error during sign in via code: ${authError.message}`);
+      return c.json({ error: authError.message }, 401);
+    }
+    
+    const userData = {
+      id: authData.user.id,
+      email: authData.user.email,
+      ...authData.user.user_metadata,
+      ...userProfile
+    };
+    
+    return c.json({ 
+      success: true,
+      session: authData.session,
+      user: userData
+    });
+  } catch (error) {
+    console.error('[signin] Server error:', error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
+});
+
+// 4. Revoke Student Code
+app.post('/make-server-fc8eb847/student-code/revoke', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+    
+    const { codeId } = await c.req.json();
+    if (!codeId) return c.json({ error: 'Missing codeId' }, 400);
+    
+    const supabase = getSupabaseClient(true);
+    
+    const { data: oldCode } = await supabase
+      .from('student_codes')
+      .select('*')
+      .eq('id', codeId)
+      .maybeSingle();
+      
+    if (!oldCode) return c.json({ error: 'Code not found' }, 404);
+    
+    if (oldCode.teacher_id !== user.id) {
+       return c.json({ error: 'Unauthorized to revoke this code' }, 403);
+    }
+    
+    await supabase.from('student_codes').update({
+       revoked_at: new Date().toISOString(),
+       is_active: false
+    }).eq('id', codeId);
+    
+    const generateCode = () => {
+       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+       const randomArray = new Uint8Array(8);
+       crypto.getRandomValues(randomArray);
+       let code = 'JM-';
+       for (let i = 0; i < 4; i++) code += chars[randomArray[i] % chars.length];
+       code += '-';
+       for (let i = 4; i < 8; i++) code += chars[randomArray[i] % chars.length];
+       return code;
+    };
+    
+    const newCode = generateCode();
+    
+    await supabase.from('student_codes').insert({
+       user_id: oldCode.user_id,
+       code: newCode,
+       student_name: oldCode.student_name,
+       student_dob: oldCode.student_dob,
+       institution_id: oldCode.institution_id,
+       teacher_id: oldCode.teacher_id,
+       is_active: true
+    });
+    
+    const userProfile = await kv.get(`user:${oldCode.user_id}`);
+    if (userProfile) {
+       userProfile.studentCode = newCode;
+       await kv.set(`user:${oldCode.user_id}`, userProfile);
+    }
+    
+    await supabase.auth.admin.updateUserById(oldCode.user_id, {
+       user_metadata: { studentCode: newCode }
+    });
+    
+    return c.json({ success: true, newCode });
+  } catch (error) {
+    console.error('[revoke] Server error:', error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
+});
 
 Deno.serve((req) => {
   const url = new URL(req.url);

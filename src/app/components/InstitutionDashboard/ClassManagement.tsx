@@ -3,6 +3,7 @@ import { Class, User, TeacherClassAssignment } from '../../types';
 import { InstitutionMember, getInstitutionClasses, createInstitutionClass, deleteInstitutionClass, generateNewClassCode } from '../../utils/institution';
 import { getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment, generateId, saveClass } from '../../utils/storage';
 import { assignMemberToClass, sendClassAssignmentEmail } from '../../utils/api';
+import { EnrollStudentModal } from './EnrollStudentModal';
 
 interface ClassManagementProps {
   institutionMembers?: InstitutionMember[];
@@ -33,6 +34,10 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [activeStudentClassId, setActiveStudentClassId] = useState<string>('');
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+
+  // Enroll Student
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [enrollStudentClassId, setEnrollStudentClassId] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -597,12 +602,20 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
             <div>
               <div className="flex justify-between items-center mb-3 border-b pb-2">
                 <h4 className="text-lg font-bold text-gray-800">Students ({students.filter(s => s.classId === activeClass.id).length})</h4>
-                <button 
-                  onClick={() => { setIsDetailsModalOpen(false); handleManageStudents(activeClass.id); }}
-                  className="text-sm text-[#1E8A6E] hover:underline"
-                >
-                  Manage Students
-                </button>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => { setIsDetailsModalOpen(false); setEnrollStudentClassId(activeClass.id); setIsEnrollModalOpen(true); }}
+                    className="text-sm font-medium text-[#7B61FF] hover:underline flex items-center gap-1"
+                  >
+                    + Enroll Student
+                  </button>
+                  <button 
+                    onClick={() => { setIsDetailsModalOpen(false); handleManageStudents(activeClass.id); }}
+                    className="text-sm text-[#1E8A6E] hover:underline"
+                  >
+                    Manage Existing Students
+                  </button>
+                </div>
               </div>
               <div className="bg-gray-50 rounded border border-gray-200 overflow-hidden">
                 {students.filter(s => s.classId === activeClass.id).length > 0 ? (
@@ -624,6 +637,21 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
 
           </div>
         </div>
+      )}
+      
+      {isEnrollModalOpen && activeClass && (
+        <EnrollStudentModal
+          isOpen={isEnrollModalOpen}
+          onClose={() => setIsEnrollModalOpen(false)}
+          teacherId={activeClass.classTeacherId || ''}
+          institutionId={institutionId}
+          classId={enrollStudentClassId}
+          className={activeClass.name}
+          onStudentEnrolled={(student, code) => {
+            // Optional: refresh student list
+            loadData();
+          }}
+        />
       )}
     </div>
   );

@@ -43,13 +43,16 @@ export interface Class {
 export interface StudentCode {
   id: string;
   code: string;
+  userId: string;
   studentName: string;
   studentDOB?: string;
   teacherId: string;
+  classId?: string;
   institutionId?: string;
-  isUsed: boolean;
+  isActive: boolean;
   createdAt: string;
   usedAt?: string;
+  revokedAt?: string;
 }
 
 export interface TeacherClassAssignment {
@@ -102,6 +105,7 @@ export interface User {
   cognitiveProfile?: any; // The users computed cognitive profile
   reviews?: SupervisorReviewData[];
   avatarUrl?: string; // Profile photo (data URL) — shown to the user and their linked parent
+  studentCode?: string; // Unique code for institutional students (e.g. JM-7K42-XP91)
 }
 
 

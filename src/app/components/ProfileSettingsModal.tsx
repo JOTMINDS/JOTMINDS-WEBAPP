@@ -6,7 +6,8 @@ import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { PhoneInput } from './PhoneInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { updateUserProfile, updateInstitutionProfile, assignInstitutionAdmin, Organization } from '../utils/api';
+import { updateUserProfile, updateInstitutionProfile, assignInstitutionAdmin, Organization, createAccessRequest } from '../utils/api';
+import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getAuthToken } from '../utils/api';
 
@@ -44,6 +45,23 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
   const [isAssigning, setIsAssigning] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  const [parentEmailInput, setParentEmailInput] = useState('');
+  const [isLinkingParent, setIsLinkingParent] = useState(false);
+
+  const handleLinkParent = async () => {
+    if (!parentEmailInput) return;
+    setIsLinkingParent(true);
+    try {
+      await createAccessRequest(parentEmailInput);
+      toast.success('Link request sent to parent');
+      setParentEmailInput('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send link request');
+    } finally {
+      setIsLinkingParent(false);
+    }
+  };
   
   const isOrg = user?.role === 'organization' || user?.role === 'supervisor' || user?.role === 'Supervisor' || user?.role === 'admin';
 
@@ -453,6 +471,35 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                 </div>
               </form>
               
+              {user?.role === 'student' && (
+                <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+                  <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <LinkIcon className="h-4 w-4" /> Link Parent Account
+                  </h3>
+                  <div className="flex flex-col sm:flex-row items-end gap-3">
+                    <div className="flex-1 space-y-2 w-full">
+                      <Label htmlFor="parentEmailInput">Parent's Email Address</Label>
+                      <Input 
+                        id="parentEmailInput" 
+                        type="email" 
+                        value={parentEmailInput} 
+                        onChange={(e) => setParentEmailInput(e.target.value)} 
+                        placeholder="parent@example.com" 
+                      />
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="secondary" 
+                      onClick={handleLinkParent}
+                      disabled={isLinkingParent || !parentEmailInput}
+                    >
+                      {isLinkingParent ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Send Link Request
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* If they are in professional view and have a previous role, let them go back */}
               {(user?.role === 'professional' && user?.previousRole === 'admin') && (
                 <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

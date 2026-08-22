@@ -6,6 +6,8 @@ import { Card, CardContent } from '../ui/card';
 import { Plus, X, Copy, CheckCircle2, UserPlus, RefreshCw } from 'lucide-react';
 import { StudentCode } from '../../types';
 import { generateId } from '../../utils/storage';
+import { enrollStudent } from '../../utils/api';
+import { toast } from 'sonner';
 
 interface GenerateStudentCodesModalProps {
   isOpen: boolean;
@@ -14,20 +16,11 @@ interface GenerateStudentCodesModalProps {
   institutionId?: string;
 }
 
-const getStudentCodes = (): StudentCode[] => {
-  const codes = localStorage.getItem('jtm_student_codes');
-  return codes ? JSON.parse(codes) : [];
-};
-
-const saveStudentCodes = (codes: StudentCode[]) => {
-  localStorage.setItem('jtm_student_codes', JSON.stringify(codes));
-};
-
 export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institutionId }: GenerateStudentCodesModalProps) {
   const [students, setStudents] = useState<Array<{ name: string; dob: string; id: string }>>([
     { name: '', dob: '', id: generateId() }
   ]);
-  const [generatedCodes, setGeneratedCodes] = useState<StudentCode[]>([]);
+  const [generatedCodes, setGeneratedCodes] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -55,31 +48,44 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
   const generateCodes = async () => {
     setIsGenerating(true);
     
-    const validStudents = students.filter(s => s.name.trim().length > 0);
+    const validStudents = students.filter(s => s.name.trim().length > 0 && s.dob.trim().length > 0);
     
     if (validStudents.length === 0) {
+      toast.error('Please provide name and date of birth for all students');
       setIsGenerating(false);
       return;
     }
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const results = [];
+      for (const student of validStudents) {
+        try {
+          const response = await enrollStudent({
+            studentName: student.name.trim(),
+            dateOfBirth: student.dob.trim(),
+            classId: '', // Default or not provided
+            teacherId,
+            institutionId
+          });
+          
+          if (response.success) {
+            results.push({
+              id: generateId(),
+              studentName: student.name.trim(),
+              studentDOB: student.dob.trim(),
+              code: response.code
+            });
+          }
+        } catch (err) {
+          console.error(`Failed to enroll ${student.name}`, err);
+          toast.error(`Failed to enroll ${student.name}`);
+        }
+      }
 
-      const newCodes: StudentCode[] = validStudents.map(student => ({
-        id: generateId(),
-        code: `JTM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-        studentName: student.name.trim(),
-        studentDOB: student.dob.trim() || undefined,
-        teacherId,
-        institutionId,
-        isUsed: false,
-        createdAt: new Date().toISOString()
-      }));
-
-      const existingCodes = getStudentCodes();
-      saveStudentCodes([...existingCodes, ...newCodes]);
-
-      setGeneratedCodes(newCodes);
+      setGeneratedCodes(results);
+      if (results.length > 0) {
+        toast.success(`Successfully enrolled ${results.length} students`);
+      }
     } catch (err) {
       console.error('Failed to generate codes', err);
     } finally {
@@ -102,7 +108,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
             Generate Unique Student Codes
           </DialogTitle>
           <DialogDescription>
-            Enter student names to generate single-use registration codes. Students will use these codes to link directly to your class during signup.
+            Enter student names and birth dates to generate single-use registration codes. Students will use these codes to link directly to your class during signup.
           </DialogDescription>
         </DialogHeader>
 
@@ -121,8 +127,8 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                   </div>
                   <div className="flex-1 space-y-2">
                     <Input
-                      placeholder="Date of Birth (e.g. YYYY-MM-DD)"
-                      type="text"
+                      placeholder="Date of Birth (Required)"
+                      type="date"
                       value={student.dob}
                       onChange={(e) => updateStudent(student.id, 'dob', e.target.value)}
                       className="h-9 text-sm"
@@ -155,7 +161,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
               <Button
                 onClick={generateCodes}
-                disabled={isGenerating || students.every(s => !s.name.trim())}
+                disabled={isGenerating || students.every(s => !s.name.trim() || !s.dob.trim())}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
               >
                 {isGenerating ? (

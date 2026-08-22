@@ -80,6 +80,37 @@ export function SchoolPortalTab({ user, assessments }: SchoolPortalTabProps) {
         </CardContent>
       </Card>
 
+      {/* Student Code Display */}
+      {user.studentCode && (
+        <Card className="border-indigo-200 bg-indigo-50/50 shadow-sm">
+          <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-indigo-900 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+                Your Student Code
+              </h3>
+              <p className="text-xs text-indigo-700/80">Use this code to sign in to JotMinds</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <code className="bg-white px-4 py-2 rounded-lg text-lg font-black text-indigo-700 border border-indigo-200 tracking-widest shadow-sm">
+                {user.studentCode}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white border-indigo-200 hover:bg-indigo-50 text-indigo-600 shrink-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(user.studentCode!);
+                  alert('Copied to clipboard!');
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Class Lessons & Personalized Summaries */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Lesson List */}
