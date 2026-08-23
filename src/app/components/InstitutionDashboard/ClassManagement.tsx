@@ -327,7 +327,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                           onClick={() => {
                             const updated = { ...cls, status: 'approved' as const };
                             saveClass(updated);
-                            loadData();
+                            setClasses(prev => prev.map(c => c.id === cls.id ? updated : c));
                           }}
                           className="text-white bg-emerald-600 hover:bg-emerald-700 text-xs px-3 py-1 rounded shadow-sm font-medium"
                         >
@@ -337,7 +337,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                           onClick={() => {
                             const updated = { ...cls, status: 'rejected' as const };
                             saveClass(updated);
-                            loadData();
+                            setClasses(prev => prev.map(c => c.id === cls.id ? updated : c));
                           }}
                           className="text-white bg-red-500 hover:bg-red-600 text-xs px-3 py-1 rounded shadow-sm font-medium"
                         >
