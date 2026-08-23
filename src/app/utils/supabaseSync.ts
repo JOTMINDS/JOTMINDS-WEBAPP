@@ -192,6 +192,7 @@ export async function syncClassToSupabase(cls: Class) {
         class_teacher_id: cls.classTeacherId || null,
         institution_id: cls.institutionId || null,
         student_count: cls.studentCount || 0,
+        status: cls.status || 'approved', // Ensure status is synced, default to approved if missing
         created_at: cls.createdAt || new Date().toISOString()
       } as any);
       

@@ -277,7 +277,17 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
 
               return (
                 <tr key={cls.id} className="hover:bg-gray-50">
-                  <td className="p-4 font-medium text-gray-800">{cls.name}</td>
+                  <td className="p-4 font-medium text-gray-800">
+                    <div className="flex items-center gap-2">
+                      {cls.name}
+                      {cls.status === 'pending' && (
+                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Pending</span>
+                      )}
+                      {cls.status === 'rejected' && (
+                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-red-100 text-red-800">Rejected</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="p-4 text-gray-600">{cls.academicYear}</td>
                   <td className="p-4">
                     {classTeacher ? (
@@ -304,36 +314,64 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                       <button 
                         onClick={() => { setActiveClassId(cls.id); setIsSubjectModalOpen(true); }}
                         className="text-xs text-[#1E8A6E] hover:underline mt-1 text-left"
+                        disabled={cls.status === 'pending' || cls.status === 'rejected'}
                       >
                         + Add Subject Teacher
                       </button>
                     </div>
                   </td>
-                  <td className="p-4">
-                    <button 
-                      onClick={() => { setActiveClass(cls); setIsDetailsModalOpen(true); }}
-                      className="text-[#1E8A6E] hover:underline mr-3 font-medium bg-green-50 px-3 py-1 rounded"
-                    >
-                      View Details
-                    </button>
-                    <button 
-                      onClick={() => handleManageStudents(cls.id)}
-                      className="text-[#1E8A6E] hover:underline mr-3"
-                    >
-                      Manage Students
-                    </button>
-                    <button 
-                      onClick={() => { setCurrentClass(cls); setIsModalOpen(true); }}
-                      className="text-blue-500 hover:underline mr-3"
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteClass(cls.id)}
-                      className="text-red-500 hover:underline"
-                    >
-                      Delete
-                    </button>
+                  <td className="p-4 flex flex-wrap gap-2 items-center">
+                    {cls.status === 'pending' ? (
+                      <>
+                        <button 
+                          onClick={() => {
+                            const updated = { ...cls, status: 'approved' as const };
+                            saveClass(updated);
+                            loadData();
+                          }}
+                          className="text-white bg-emerald-600 hover:bg-emerald-700 text-xs px-3 py-1 rounded shadow-sm font-medium"
+                        >
+                          Approve
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const updated = { ...cls, status: 'rejected' as const };
+                            saveClass(updated);
+                            loadData();
+                          }}
+                          className="text-white bg-red-500 hover:bg-red-600 text-xs px-3 py-1 rounded shadow-sm font-medium"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={() => { setActiveClass(cls); setIsDetailsModalOpen(true); }}
+                          className="text-[#1E8A6E] hover:underline mr-1 font-medium bg-green-50 px-2 py-1 rounded text-sm"
+                        >
+                          View Details
+                        </button>
+                        <button 
+                          onClick={() => handleManageStudents(cls.id)}
+                          className="text-[#1E8A6E] hover:underline mr-1 text-sm"
+                        >
+                          Manage Students
+                        </button>
+                        <button 
+                          onClick={() => { setCurrentClass(cls); setIsModalOpen(true); }}
+                          className="text-blue-500 hover:underline mr-1 text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteClass(cls.id)}
+                          className="text-red-500 hover:underline text-sm"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               );

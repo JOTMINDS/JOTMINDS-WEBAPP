@@ -6,6 +6,8 @@ import { getStudentsForTeacher, getAllAssessmentResults } from '../utils/api';
 import { fetchMyAssessmentResults, submitTeachingStyleAssessment, normalizeServerResults } from '../utils/assessmentApi';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, getAssessmentsByUserId, saveAssessment, generateId, saveAssessmentProgress, getAssessmentProgress, clearAssessmentProgress, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher, getRelatedTeacherAccounts } from '../utils/storage';
 import { getInstitutionClasses, getInstitutionForMember } from '../utils/institution';
+import { InstitutionMembers } from './InstitutionDashboard/InstitutionMembers';
+import { TeacherClassManagement } from './TeacherClassManagement';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap, Brain, Sparkles } from 'lucide-react';
@@ -446,6 +448,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       groupLabel: 'Educator Portal',
       items: [
         { id: 'overview', label: 'Overview', icon: Users },
+        { id: 'manage-classes', label: 'Manage Classes', icon: School },
         { id: 'students', label: 'Students', icon: Eye, badge: students.length },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
@@ -535,6 +538,12 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         {(activeTab as string) === 'students' && (
           <div className="space-y-8">
             <CentralStudentManagement students={students as any} assessments={allAssessments} teacher={user} />
+          </div>
+        )}
+
+        {(activeTab as string) === 'manage-classes' && (
+          <div className="space-y-8">
+            <TeacherClassManagement teacher={user} />
           </div>
         )}
 
