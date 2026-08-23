@@ -2934,12 +2934,40 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
     let institutionStudents: any[] = [];
     if (teacherMemberRows && teacherMemberRows.length > 0) {
       const institutionId = teacherMemberRows[0].institution_id;
+
+      // Get class IDs this teacher is assigned to (as class teacher or subject teacher)
+      const { data: ownClasses } = await supabaseAdmin
+        .from('classes')
+        .select('id')
+        .eq('class_teacher_id', user.id)
+        .eq('institution_id', institutionId);
+
+      const { data: assignedClasses } = await supabaseAdmin
+        .from('teacher_class_assignments')
+        .select('class_id')
+        .eq('teacher_id', user.id);
+
+      const teacherClassIds = new Set<string>([
+        ...(ownClasses || []).map((c: any) => c.id),
+        ...(assignedClasses || []).map((a: any) => a.class_id),
+      ]);
+
+      // Get student user_ids that this teacher enrolled via student_codes
+      const { data: teacherStudentCodes } = await supabaseAdmin
+        .from('student_codes')
+        .select('user_id')
+        .eq('teacher_id', user.id)
+        .eq('is_active', true);
+
+      const teacherCreatedStudentIds = new Set<string>(
+        (teacherStudentCodes || []).map((sc: any) => String(sc.user_id))
+      );
+
       const { data: studentRows } = await supabaseAdmin
         .from('institution_members')
         .select('user_id, user_name, user_email, user_phone, status')
         .eq('institution_id', institutionId)
         .eq('role', 'student');
-        // Note: show all statuses (pending + approved) so teacher sees all invited students
 
       if (studentRows && studentRows.length > 0) {
         institutionStudents = await Promise.all(
@@ -2947,14 +2975,16 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
             const studentId = m.user_id;
             const studentProfile = await kv.get(`user:${studentId}`);
 
-            // Include students assigned to THIS teacher OR in the same school/classCode
-            const classCode = teacherProfile?.classCode || teacherProfile?.organizationCode;
+            // STRICT: Only show students the teacher created OR students assigned to their classes
             const isAssignedToTeacher =
+              // 1. Teacher explicitly set as this student's teacher
               studentProfile?.teacherId === user.id ||
-              (studentProfile?.linkedTeachers || []).includes(user.id) ||
-              (classCode && (studentProfile?.organizationCode === classCode || studentProfile?.classCode === classCode)) ||
-              (schoolName && (studentProfile?.school?.trim().toLowerCase() === schoolName.trim().toLowerCase() || studentProfile?.organizationName?.trim().toLowerCase() === schoolName.trim().toLowerCase())) ||
-              (!studentProfile?.teacherId && (!studentProfile?.linkedTeachers || studentProfile.linkedTeachers.length === 0));
+              // 2. Teacher is in the student's linkedTeachers array
+              (Array.isArray(studentProfile?.linkedTeachers) && studentProfile.linkedTeachers.includes(user.id)) ||
+              // 3. Student is in a class this teacher is assigned to
+              (studentProfile?.classId && teacherClassIds.has(studentProfile.classId)) ||
+              // 4. Teacher created this student via the enrollment system
+              teacherCreatedStudentIds.has(studentId);
 
             if (!isAssignedToTeacher) {
               return null;
@@ -3012,25 +3042,12 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
     // ── Strategy 2: KV-based lookup (legacy / non-institution teachers) ──
     console.log(`[Backend] Fetching students for teacher ${user.id} at school: ${schoolName}`);
 
-    // Get all students assigned to this teacher using targeted queries
+    // Get only students explicitly assigned to this teacher
     const supabase = getSupabaseClient(true);
     const queries: Promise<any>[] = [
       supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').eq('value->>teacherId', user.id),
       supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').contains('value', { linkedTeachers: [user.id] })
     ];
-    if (schoolName) {
-      queries.push(
-        supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').ilike('value->>school', schoolName),
-        supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').ilike('value->>organizationName', schoolName)
-      );
-    }
-    const classCode = teacherProfile?.classCode || teacherProfile?.organizationCode;
-    if (classCode) {
-      queries.push(
-        supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').eq('value->>organizationCode', classCode),
-        supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').eq('value->>classCode', classCode)
-      );
-    }
     const results = await Promise.all(queries);
     const rawStudents = results.flatMap(r => r.data || []);
     

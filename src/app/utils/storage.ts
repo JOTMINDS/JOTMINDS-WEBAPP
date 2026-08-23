@@ -225,37 +225,16 @@ export function isStudentConnectedToTeacher(student: User, teacher: User, teache
     return false;
   }
 
-  // 1. Explicit Teacher ID match
+  // 1. Explicit Teacher ID match (teacher created this student)
   if (student.teacherId === teacher.id || (teacher.email && student.teacherId === teacher.email)) return true;
   if (Array.isArray(student.linkedTeachers) && (student.linkedTeachers.includes(teacher.id) || (teacher.email && student.linkedTeachers.includes(teacher.email)))) return true;
 
-  // 2. Teacher Email match
+  // 2. Teacher Email match (school assigned this student to teacher)
   if ((student as any).teacherEmail && teacher.email && (student as any).teacherEmail.trim().toLowerCase() === teacher.email.trim().toLowerCase()) return true;
 
-  // 3. Class ID match
+  // 3. Class ID match (student is in a class this teacher is assigned to)
   if (student.classId && teacherClassIds && teacherClassIds.has(student.classId)) return true;
   if (student.className && teacherClassIds && teacherClassIds.has(student.className)) return true;
-
-  // 4. Class Code / Organization Code match
-  const teacherCodes = [teacher.classCode, teacher.organizationCode, teacher.jotsCode].filter(Boolean).map(c => c?.trim().toUpperCase());
-  const studentCodes = [student.classCode, student.organizationCode, student.jotsCode].filter(Boolean).map(c => c?.trim().toUpperCase());
-  for (const tc of teacherCodes) {
-    if (tc && studentCodes.includes(tc)) return true;
-  }
-
-  // 5. School / Institution match
-  const teacherSchools = [teacher.school, teacher.organizationName].filter(Boolean).map(s => s?.trim().toLowerCase());
-  const studentSchools = [student.school, student.organizationName].filter(Boolean).map(s => s?.trim().toLowerCase());
-  if (teacherSchools.length > 0 && studentSchools.length > 0) {
-    for (const ts of teacherSchools) {
-      if (ts && studentSchools.includes(ts)) return true;
-    }
-  }
-
-  // 6. Universal fallback for standalone/unlinked students in prototype or teacher portal
-  if (!student.teacherId && !(student as any).teacherEmail && (!student.school || !teacher.school)) {
-    return true;
-  }
 
   return false;
 }
