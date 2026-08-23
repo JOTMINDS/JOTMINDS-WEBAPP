@@ -6,14 +6,18 @@ import { Clock, BookOpen, Star, CheckCircle2, MessageSquare, AlertCircle, FileTe
 import { PostLessonReflection, LessonPlan } from '../../types/lessonPlannerTypes';
 import { getPostLessonReflections, getSavedLessonPlans } from '../../utils/lessonPlannerStorage';
 
-export const ReflectionHistoryView: React.FC = () => {
+interface ReflectionHistoryViewProps {
+  user?: any;
+}
+
+export const ReflectionHistoryView: React.FC<ReflectionHistoryViewProps> = ({ user }) => {
   const [reflections, setReflections] = useState<PostLessonReflection[]>([]);
   const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
 
   useEffect(() => {
-    setReflections(getPostLessonReflections());
-    setLessonPlans(getSavedLessonPlans());
-  }, []);
+    setReflections(getPostLessonReflections(user?.id));
+    setLessonPlans(getSavedLessonPlans(user?.id));
+  }, [user]);
 
   if (lessonPlans.length === 0 && reflections.length === 0) {
     return (

@@ -15,11 +15,13 @@ import { toast } from 'sonner';
 interface LessonPlanCreationProps {
   classSummary?: ClassCognitiveSummary;
   onPlanCreated: (plan: LessonPlan) => void;
+  user: any;
 }
 
 export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   classSummary,
-  onPlanCreated
+  onPlanCreated,
+  user
 }) => {
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
   const [subject, setSubject] = useState('Mathematics');
@@ -58,7 +60,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
 
     const newPlan: LessonPlan = {
       id: `lp-${Date.now()}`,
-      teacherId: 'teacher-1',
+      teacherId: user?.id || 'unknown',
       subject,
       gradeClass,
       topic,
@@ -153,7 +155,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
 
     const newPlan: LessonPlan = {
       id: `lp-m-${Date.now()}`,
-      teacherId: 'teacher-1',
+      teacherId: user?.id || 'unknown',
       subject,
       gradeClass,
       topic,

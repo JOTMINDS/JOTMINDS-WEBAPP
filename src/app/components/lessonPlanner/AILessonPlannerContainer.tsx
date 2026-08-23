@@ -23,11 +23,12 @@ import { LessonCopilotDrawer } from './LessonCopilotDrawer';
 
 interface AILessonPlannerContainerProps {
   onBack?: () => void;
+  user: any;
 }
 
-export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> = ({ onBack }) => {
-  const [plans, setPlans] = useState<LessonPlan[]>(getSavedLessonPlans());
-  const [activePlan, setActivePlan] = useState<LessonPlan>(plans[0] || getSavedLessonPlans()[0]);
+export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> = ({ onBack, user }) => {
+  const [plans, setPlans] = useState<LessonPlan[]>(getSavedLessonPlans(user?.id));
+  const [activePlan, setActivePlan] = useState<LessonPlan | undefined>(plans[0] || getSavedLessonPlans(user?.id)[0]);
   const [classSummary, setClassSummary] = useState<ClassCognitiveSummary>(getClassCognitiveSummary());
   const [activeTab, setActiveTab] = useState<string>('create');
   
@@ -37,7 +38,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   const handlePlanCreated = (newPlan: LessonPlan) => {
-    setPlans(getSavedLessonPlans());
+    setPlans(getSavedLessonPlans(user?.id));
     setActivePlan(newPlan);
     setActiveTab('insights');
   };
@@ -169,7 +170,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
 
         {/* Module 1 */}
         <TabsContent value="create">
-          <LessonPlanCreation
+          <LessonPlanCreation user={user}
             classSummary={classSummary}
             onPlanCreated={handlePlanCreated}
           />
@@ -211,7 +212,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
 
         {/* Module 8 */}
         <TabsContent value="analytics">
-          <TeacherPerformanceAnalyticsView />
+          <TeacherPerformanceAnalyticsView user={user} />
         </TabsContent>
 
         {/* Module 9 */}
@@ -221,7 +222,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
 
         {/* History Tab */}
         <TabsContent value="history">
-          <ReflectionHistoryView />
+          <ReflectionHistoryView user={user} />
         </TabsContent>
 
         {/* Module 5 Launcher */}

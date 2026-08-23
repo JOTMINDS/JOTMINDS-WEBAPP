@@ -685,7 +685,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         )}
 
         {activeTab === 'lesson-planner' && (
-          <AILessonPlannerContainer />
+          <AILessonPlannerContainer user={user} />
         )}
 
 

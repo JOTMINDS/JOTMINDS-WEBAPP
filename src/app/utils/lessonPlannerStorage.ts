@@ -87,14 +87,18 @@ export const initialPerformanceMetric: TeacherPerformanceMetric = {
 
 // ─── STORAGE HELPER FUNCTIONS ──────────────────────────────────────────────────
 
-export function getSavedLessonPlans(): LessonPlan[] {
+export function getSavedLessonPlans(teacherId?: string): LessonPlan[] {
   if (typeof window === 'undefined') return [];
   const saved = localStorage.getItem(STORAGE_KEYS.LESSON_PLANS);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
       // Filter out legacy mock lesson plans if previously cached
-      return Array.isArray(parsed) ? parsed.filter((p: any) => p.id !== 'lp-001' && !p.id?.startsWith('mock-')) : [];
+      const plans = Array.isArray(parsed) ? parsed.filter((p: any) => p.id !== 'lp-001' && !p.id?.startsWith('mock-')) : [];
+      if (teacherId) {
+        return plans.filter((p: LessonPlan) => p.teacherId === teacherId);
+      }
+      return plans;
     } catch (e) {
       console.error('Failed to parse lesson plans from localStorage', e);
     }
@@ -145,12 +149,17 @@ export function savePostLessonReflection(reflection: PostLessonReflection): void
   localStorage.setItem(STORAGE_KEYS.REFLECTIONS, JSON.stringify(arr));
 }
 
-export function getPostLessonReflections(): PostLessonReflection[] {
+export function getPostLessonReflections(teacherId?: string): PostLessonReflection[] {
   if (typeof window === 'undefined') return [];
   const saved = localStorage.getItem(STORAGE_KEYS.REFLECTIONS);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      const reflections = Array.isArray(parsed) ? parsed : [];
+      if (teacherId) {
+        return reflections.filter((r: PostLessonReflection) => r.teacherId === teacherId);
+      }
+      return reflections;
     } catch (e) {}
   }
   return [];

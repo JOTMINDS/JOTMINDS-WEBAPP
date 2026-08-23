@@ -5,10 +5,34 @@ import { Progress } from '../ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { TrendingUp, Award, Calendar, CheckCircle2, FileText, Star, Target, Info } from 'lucide-react';
 import { TeacherPerformanceMetric } from '../../types/lessonPlannerTypes';
-import { getTeacherPerformanceMetrics } from '../../utils/lessonPlannerStorage';
+import { getTeacherPerformanceMetrics, getSavedLessonPlans, initialPerformanceMetric } from '../../utils/lessonPlannerStorage';
 
-export const TeacherPerformanceAnalyticsView: React.FC = () => {
-  const metrics: TeacherPerformanceMetric = getTeacherPerformanceMetrics();
+interface TeacherPerformanceAnalyticsViewProps {
+  user?: any;
+}
+
+export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyticsViewProps> = ({ user }) => {
+  const hasPlans = getSavedLessonPlans(user?.id).length > 0;
+  
+  const metrics: TeacherPerformanceMetric = hasPlans 
+    ? getTeacherPerformanceMetrics()
+    : {
+        ...initialPerformanceMetric,
+        monthly: {
+          lessonsGenerated: 0,
+          differentiatedInstructionUses: 0,
+          assessmentsCreated: 0,
+          reflectionsLogged: 0,
+          averageEngagementScore: 0,
+          averageUnderstandingScore: 0
+        },
+        annual: {
+          teachingEffectivenessScore: 0,
+          totalLessonsDelivered: 0,
+          topStrengths: ['Data gathering...'],
+          areasForGrowth: ['Generate lessons to see insights']
+        }
+      };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">

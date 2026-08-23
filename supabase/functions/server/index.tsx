@@ -3087,6 +3087,10 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
               phone: m.user_phone || '',
               role: 'student',
               school: schoolName || '',
+              studentCode: studentProfile?.studentCode,
+              dateOfBirth: studentProfile?.dateOfBirth,
+              classId: studentProfile?.classId,
+              className: studentProfile?.className,
               assessments: transformedAssessments
             };
           })
