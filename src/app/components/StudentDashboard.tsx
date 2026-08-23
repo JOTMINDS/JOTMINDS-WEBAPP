@@ -292,7 +292,11 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
 
   const hasCompletedAllThree = () => {
     const hasKolb = hasCompletedAssessment('kolb');
-    const hasSternberg = hasCompletedAssessment('sternberg');
+    const hasSternberg = hasCompletedAssessment('sternberg') || 
+                         hasCompletedAssessment('jhs-thinking') || 
+                         hasCompletedAssessment('shs-thinking') || 
+                         hasCompletedAssessment('child-thinking') || 
+                         hasCompletedAssessment('adult-thinking');
     const hasDualProcess = hasCompletedAssessment('dual-process');
     
     console.log('🔍 Complete Cognitive Profile Debug:', {

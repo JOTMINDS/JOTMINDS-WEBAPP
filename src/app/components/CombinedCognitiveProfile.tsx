@@ -89,6 +89,37 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
     normalized: normalizedDualProcessScores
   });
 
+
+  const getThinkingScores = () => {
+    const scoreObj = latestSternberg?.score || {};
+    return scoreObj['adult-thinking']?.scores ||
+           scoreObj['jhs-thinking']?.scores ||
+           scoreObj['shs-thinking']?.scores ||
+           scoreObj['child-thinking']?.scores ||
+           scoreObj.sternberg?.scores ||
+           { analytical: 0, creative: 0, practical: 0 };
+  };
+  const getThinkingStyle = () => {
+    const scoreObj = latestSternberg?.score || {};
+    return scoreObj['adult-thinking']?.dominantStyle ||
+           scoreObj['adult-thinking']?.primaryStyle ||
+           scoreObj['jhs-thinking']?.primaryStyle ||
+           scoreObj['shs-thinking']?.primaryStyle ||
+           scoreObj['child-thinking']?.primaryStyle ||
+           scoreObj.sternberg?.style ||
+           'Unknown';
+  };
+  
+  const thinkingScores = getThinkingScores();
+  const actualSternbergStyle = getThinkingStyle();
+  
+  // Normalize the score keys since some versions use uppercase Analytical vs lowercase analytical
+  const normalizedThinkingScores = {
+    analytical: thinkingScores.analytical || thinkingScores.Analytical || thinkingScores.executive || thinkingScores.Executive || 0,
+    creative: thinkingScores.creative || thinkingScores.Creative || thinkingScores.legislative || thinkingScores.Legislative || 0,
+    practical: thinkingScores.practical || thinkingScores.Practical || thinkingScores.judicial || thinkingScores.Judicial || 0,
+  };
+
   console.log('📈 Detailed Score Breakdown:', {
     kolb: {
       full: latestKolb.score.kolb,
@@ -99,9 +130,9 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
     },
     sternberg: {
       full: latestSternberg.score.sternberg,
-      analytical: latestSternberg.score.sternberg?.scores?.analytical,
-      creative: latestSternberg.score.sternberg?.scores?.creative,
-      practical: latestSternberg.score.sternberg?.scores?.practical,
+      analytical: normalizedThinkingScores.analytical,
+      creative: normalizedThinkingScores.creative,
+      practical: normalizedThinkingScores.practical,
     },
     dualProcess: {
       full: latestDualProcess.score.dualProcess,
@@ -111,7 +142,7 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
   });
 
   const kolbStyle = latestKolb.score.kolb?.style || '';
-  const sternbergStyle = latestSternberg.score.sternberg?.style || '';
+  const sternbergStyle = actualSternbergStyle;
   const dualProcessStyle = latestDualProcess.score.dualProcess?.style || '';
 
   // Get style descriptions
@@ -160,17 +191,17 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
     },
     {
       dimension: 'Analytical Thinking',
-      value: latestSternberg?.score?.sternberg?.scores?.analytical || 0,
+      value: normalizedThinkingScores.analytical || 0,
       fullMark: 35,
     },
     {
       dimension: 'Creative Thinking',
-      value: latestSternberg?.score?.sternberg?.scores?.creative || 0,
+      value: normalizedThinkingScores.creative || 0,
       fullMark: 35,
     },
     {
       dimension: 'Practical Thinking',
-      value: latestSternberg?.score?.sternberg?.scores?.practical || 0,
+      value: normalizedThinkingScores.practical || 0,
       fullMark: 35,
     },
     {
@@ -198,9 +229,9 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
     },
     {
       framework: 'Thinking',
-      Analytical: latestSternberg?.score?.sternberg?.scores?.analytical || 0,
-      Creative: latestSternberg?.score?.sternberg?.scores?.creative || 0,
-      Practical: latestSternberg?.score?.sternberg?.scores?.practical || 0,
+      Analytical: normalizedThinkingScores.analytical || 0,
+      Creative: normalizedThinkingScores.creative || 0,
+      Practical: normalizedThinkingScores.practical || 0,
     },
     {
       framework: 'Decision',
@@ -273,7 +304,7 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
     }
 
     // Analyze Thinking Style
-    const sternbergScores = latestSternberg.score.sternberg?.scores;
+    const sternbergScores = normalizedThinkingScores;
     if (sternbergScores) {
       const maxSternberg = Math.max(sternbergScores.analytical, sternbergScores.creative, sternbergScores.practical);
       if (sternbergScores.analytical === maxSternberg) {
@@ -650,9 +681,9 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
                 <h4 className="font-semibold mb-3 text-purple-900">Thinking Style Dimensions</h4>
                 <div className="space-y-3">
                   {[
-                    { name: 'Analytical Thinking', value: latestSternberg.score.sternberg?.scores.analytical || 0, max: 35, color: '#3b82f6' },
-                    { name: 'Creative Thinking', value: latestSternberg.score.sternberg?.scores.creative || 0, max: 35, color: '#8b5cf6' },
-                    { name: 'Practical Thinking', value: latestSternberg.score.sternberg?.scores.practical || 0, max: 35, color: '#10b981' },
+                    { name: 'Analytical Thinking', value: normalizedThinkingScores.analytical || 0, max: 35, color: '#3b82f6' },
+                    { name: 'Creative Thinking', value: normalizedThinkingScores.creative || 0, max: 35, color: '#8b5cf6' },
+                    { name: 'Practical Thinking', value: normalizedThinkingScores.practical || 0, max: 35, color: '#10b981' },
                   ].map((item) => (
                     <div key={item.name}>
                       <div className="flex justify-between text-sm mb-1">
