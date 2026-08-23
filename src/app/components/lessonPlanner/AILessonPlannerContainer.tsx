@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -102,13 +103,14 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Lesson:</span>
               <select
-                value={activePlan?.id}
+                value={activePlan?.id || ''}
                 onChange={(e) => {
                   const p = plans.find(plan => plan.id === e.target.value);
                   if (p) setActivePlan(p);
                 }}
                 className="text-xs font-semibold p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900"
               >
+                {plans.length === 0 && <option value="" disabled>No lesson plans created</option>}
                 {plans.map(p => (
                   <option key={p.id} value={p.id}>
                     {p.subject}: {p.topic} ({p.gradeClass}) • {p.durationMinutes} min
@@ -232,7 +234,16 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             <p className="text-xs text-slate-600 dark:text-slate-400">
               Open full-screen delivery mode with live activity timer, teaching notes, student attendance, and engagement trackers.
             </p>
-            <Button onClick={() => setIsDelivering(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+            <Button
+              onClick={() => {
+                if (!activePlan) {
+                  toast.error('Please create or select a lesson plan first.');
+                  return;
+                }
+                setIsDelivering(true);
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+            >
               <Play className="w-4 h-4 mr-2" /> Launch Full-Screen Delivery
             </Button>
           </Card>
