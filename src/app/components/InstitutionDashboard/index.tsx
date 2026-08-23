@@ -56,7 +56,7 @@ interface InstitutionDashboardProps {
   onProfileUpdate?: () => void;
 }
 
-type Tab = 'overview' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile';
+type Tab = 'overview' | 'class_management' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile';
 
 export function InstitutionDashboard({
   user,
@@ -352,6 +352,7 @@ export function InstitutionDashboard({
       groupLabel: 'B. TEACHING & ANALYTICS',
       items: [
         { id: 'teacher_management', label: 'Teacher Roster', icon: Users },
+        { id: 'class_management', label: 'Class Approvals', icon: GraduationCap },
         { id: 'reports', label: 'Reports', icon: Download },
         { id: 'training', label: 'Training', icon: BookOpen },
       ]
@@ -437,6 +438,12 @@ export function InstitutionDashboard({
             setTab={setTab}
             onManageCodes={isPrimaryAdmin ? () => setIsCodeManagerOpen(true) : undefined}
           />
+        )}
+
+        {tab === 'class_management' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <ClassManagement institutionId={institution.id} />
+          </div>
         )}
 
         {tab === 'teacher_management' && (
