@@ -10,9 +10,10 @@ import { toast } from 'sonner';
 
 interface TeacherClassManagementProps {
   teacher: User;
+  students?: User[];
 }
 
-export function TeacherClassManagement({ teacher }: TeacherClassManagementProps) {
+export function TeacherClassManagement({ teacher, students: serverStudents = [] }: TeacherClassManagementProps) {
   const [classes, setClasses] = useState<Class[]>([]);
   const [students, setStudents] = useState<User[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -33,12 +34,18 @@ export function TeacherClassManagement({ teacher }: TeacherClassManagementProps)
     const allUsers = getAllUsers();
     const teacherClassIds = new Set(teacherClasses.map(c => c.id));
     const managedStudents = allUsers.filter(u => u.role === 'student' && isStudentConnectedToTeacher(u, teacher, teacherClassIds));
-    setStudents(managedStudents);
+    
+    // Merge server students
+    const mergedStudentsMap = new Map();
+    managedStudents.forEach(stu => mergedStudentsMap.set(stu.id, stu));
+    serverStudents.forEach(stu => mergedStudentsMap.set(stu.id, stu));
+    
+    setStudents(Array.from(mergedStudentsMap.values()));
   };
 
   useEffect(() => {
     loadData();
-  }, [teacher.id]);
+  }, [teacher.id, serverStudents]);
 
   const handleCreateClass = async () => {
     if (!newClassName.trim()) {
@@ -230,8 +237,15 @@ export function TeacherClassManagement({ teacher }: TeacherClassManagementProps)
                         className="rounded border-gray-300 text-[#1E8A6E] focus:ring-[#1E8A6E]"
                       />
                       <div>
-                        <p className="font-medium text-gray-900">{s.name}</p>
-                        <p className="text-sm text-gray-500">{s.email || (s as any).studentCode}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900">{s.name}</p>
+                          {(s as any).studentCode && (
+                            <span className="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded uppercase border border-indigo-200 font-bold">
+                              {(s as any).studentCode}
+                            </span>
+                          )}
+                        </div>
+                        {s.email && <p className="text-sm text-gray-500">{s.email}</p>}
                       </div>
                       {s.classId && s.classId !== activeStudentClassId && (
                         <span className="ml-auto text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">

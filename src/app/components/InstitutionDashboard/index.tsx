@@ -442,7 +442,7 @@ export function InstitutionDashboard({
 
         {tab === 'class_management' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <ClassManagement institutionId={institution.id} />
+            <ClassManagement institutionId={institution.id} institutionMembers={members} allPlatformUsers={allPlatformUsers} />
           </div>
         )}
 

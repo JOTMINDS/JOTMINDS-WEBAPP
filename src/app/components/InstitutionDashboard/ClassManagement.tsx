@@ -520,8 +520,15 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                         className="w-4 h-4 text-[#1E8A6E] rounded focus:ring-[#1E8A6E]"
                       />
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">{s.name}</div>
-                        <div className="text-xs text-gray-500">{s.email}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium text-gray-900">{s.name}</div>
+                          {(s as any).studentCode && (
+                            <span className="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded uppercase border border-indigo-200 font-bold">
+                              {(s as any).studentCode}
+                            </span>
+                          )}
+                        </div>
+                        {s.email && <div className="text-xs text-gray-500 mt-0.5">{s.email}</div>}
                       </div>
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                         s.classId === activeStudentClassId 

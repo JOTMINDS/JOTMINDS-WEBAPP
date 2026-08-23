@@ -543,7 +543,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
         {(activeTab as string) === 'manage-classes' && (
           <div className="space-y-8">
-            <TeacherClassManagement teacher={user} />
+            <TeacherClassManagement teacher={user} students={students as any} />
           </div>
         )}
 
