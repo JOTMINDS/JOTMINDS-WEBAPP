@@ -618,12 +618,15 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
       // Step 2: Sign in with the validated code
       const { session, user, token } = await signInWithStudentCode(code);
       
-      if (session?.access_token && session?.refresh_token) {
+      if (session?.access_token) {
         const supabase = createClient();
-        await supabase.auth.setSession({
+        const setSessionRes = await supabase.auth.setSession({
           access_token: session.access_token,
-          refresh_token: session.refresh_token
+          refresh_token: session.refresh_token || session.access_token
         });
+        if (setSessionRes.error) {
+           console.error("[AuthForm] setSession error:", setSessionRes.error);
+        }
       }
 
       if (token) {

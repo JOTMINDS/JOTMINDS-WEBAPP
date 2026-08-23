@@ -291,7 +291,8 @@ function AppContent() {
       }
     } else {
       // Fallback
-      setCurrentView('dashboard');
+      console.log('[App] Auth failed, staying on landing');
+      setCurrentView('landing');
     }
   };
 
