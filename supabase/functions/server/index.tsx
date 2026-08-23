@@ -2751,6 +2751,7 @@ app.get('/make-server-fc8eb847/institutions/classes', async (c) => {
             classTeacherId: dbClass.class_teacher_id || undefined,
             institutionId: dbClass.institution_id,
             studentCount: dbClass.student_count || 0,
+            status: dbClass.status || 'approved',
             classCode: dbClass.class_code,
             createdAt: dbClass.created_at
           };
@@ -2799,6 +2800,7 @@ app.post('/make-server-fc8eb847/institutions/classes', async (c) => {
         class_teacher_id: toSave.classTeacherId || null,
         institution_id: toSave.institutionId || null,
         student_count: toSave.studentCount || 0,
+        status: toSave.status || 'approved',
         class_code: toSave.classCode || null,
         created_at: toSave.createdAt
       });
