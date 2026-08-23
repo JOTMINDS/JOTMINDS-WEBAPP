@@ -123,8 +123,8 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
                   Fast 3-minute diagnostic overview across key teaching scenarios.
                 </p>
               </div>
-              <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
-                Start Brief Overview (~3 min)
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold h-auto py-2.5 whitespace-normal leading-tight">
+                Start Snapshot (~3 min)
               </Button>
             </div>
 
@@ -140,8 +140,8 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
                   Balanced 12-minute assessment providing deep domain insights.
                 </p>
               </div>
-              <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
-                Start Standard Profile (~12 min)
+              <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold h-auto py-2.5 whitespace-normal leading-tight">
+                Start Standard (~12 min)
               </Button>
             </div>
 
@@ -157,8 +157,8 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
                   Complete 25-minute evaluation covering all sub-competency scenarios.
                 </p>
               </div>
-              <Button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold">
-                Start Comprehensive Profile (~25 min)
+              <Button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold h-auto py-2.5 whitespace-normal leading-tight">
+                Start Full (~25 min)
               </Button>
             </div>
           </CardContent>
