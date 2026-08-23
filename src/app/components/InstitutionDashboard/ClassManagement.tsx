@@ -240,7 +240,19 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
           console.error("Failed to sync student assignment to backend", err);
         }
       } else if (!isSelected && student.classId === activeStudentClassId) {
-        saveUser({ ...student, classId: undefined });
+        saveUser({ ...student, classId: undefined, className: undefined });
+        
+        try {
+          await assignMemberToClass({
+            userId: student.id,
+            classId: '',
+            className: '',
+            role: 'student',
+            institutionId: institutionId
+          });
+        } catch (err) {
+          console.error("Failed to sync student removal to backend", err);
+        }
       }
     }
     setIsStudentModalOpen(false);

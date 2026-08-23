@@ -6,6 +6,7 @@ import { Badge } from './ui/badge';
 import { School, Plus, Loader, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Class, User } from '../types';
 import { getAllClasses, saveClass, deleteClass, getAllUsers, saveUser, isStudentConnectedToTeacher } from '../utils/storage';
+import { assignMemberToClass, fetchInstitutionClassesAPI, saveInstitutionClassAPI } from '../utils/api';
 import { toast } from 'sonner';
 
 interface TeacherClassManagementProps {
@@ -25,8 +26,21 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
   const [activeStudentClassId, setActiveStudentClassId] = useState<string>('');
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
 
-  const loadData = () => {
-    const allClasses = getAllClasses();
+  const loadData = async () => {
+    let allClasses = getAllClasses();
+    try {
+      const response = await fetchInstitutionClassesAPI(teacher.institutionId);
+      if (response && response.success && response.classes) {
+        // Merge local and server classes
+        const mergedClasses = new Map();
+        allClasses.forEach(c => mergedClasses.set(c.id, c));
+        response.classes.forEach((c: any) => mergedClasses.set(c.id, c));
+        allClasses = Array.from(mergedClasses.values());
+      }
+    } catch (err) {
+      console.error("Failed to load classes from server", err);
+    }
+
     const teacherClasses = allClasses.filter(c => c.classTeacherId === teacher.id);
     setClasses(teacherClasses);
     
@@ -54,27 +68,31 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
     }
     
     setIsCreating(true);
+    
+    const newClass: Class = {
+      id: `cls_${Date.now()}`,
+      name: newClassName,
+      academicYear: newAcademicYear,
+      classTeacherId: teacher.id,
+      institutionId: teacher.institutionId,
+      studentCount: 0,
+      createdAt: new Date().toISOString(),
+      status: 'pending' // Classes created by teachers need approval
+    };
+
+    saveClass(newClass);
+    
     try {
-      const newClass: Class = {
-        id: `cls_${Date.now()}`,
-        name: newClassName,
-        academicYear: newAcademicYear,
-        classTeacherId: teacher.id,
-        institutionId: teacher.institutionId || undefined,
-        studentCount: 0,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      };
-      
-      saveClass(newClass);
-      toast.success('Class created and is pending approval from school admin');
-      setNewClassName('');
-      loadData();
-    } catch (error) {
-      toast.error('Failed to create class');
-    } finally {
-      setIsCreating(false);
+      await saveInstitutionClassAPI(newClass);
+      toast.success('Class created successfully! Waiting for admin approval.');
+    } catch (err) {
+      console.error("Failed to sync class to server", err);
+      toast.error('Class saved locally, but failed to sync with server.');
     }
+    
+    setNewClassName('');
+    setIsCreating(false);
+    await loadData();
   };
 
   const handleManageStudents = (classId: string) => {
@@ -84,24 +102,49 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
     setIsStudentModalOpen(true);
   };
 
-  const handleSaveStudents = () => {
+  const handleSaveStudents = async () => {
     if (!activeStudentClassId) return;
 
+    const activeClass = classes.find(c => c.id === activeStudentClassId);
     let studentCount = 0;
+    
     for (const student of students) {
       const isSelected = selectedStudents.has(student.id);
       if (isSelected && student.classId !== activeStudentClassId) {
-        saveUser({ ...student, classId: activeStudentClassId });
+        saveUser({ ...student, classId: activeStudentClassId, className: activeClass?.name });
         studentCount++;
+        
+        try {
+          await assignMemberToClass({
+            userId: student.id,
+            classId: activeStudentClassId,
+            className: activeClass?.name || '',
+            role: 'student',
+            institutionId: teacher.institutionId
+          });
+        } catch (err) {
+          console.error("Failed to assign student to class", err);
+        }
       } else if (!isSelected && student.classId === activeStudentClassId) {
-        saveUser({ ...student, classId: undefined });
+        saveUser({ ...student, classId: undefined, className: undefined });
+        
+        try {
+          await assignMemberToClass({
+            userId: student.id,
+            classId: '',
+            className: '',
+            role: 'student',
+            institutionId: teacher.institutionId
+          });
+        } catch (err) {
+          console.error("Failed to unassign student from class", err);
+        }
       } else if (isSelected && student.classId === activeStudentClassId) {
         studentCount++;
       }
     }
     
     // Update class student count
-    const activeClass = classes.find(c => c.id === activeStudentClassId);
     if (activeClass) {
       saveClass({ ...activeClass, studentCount });
     }

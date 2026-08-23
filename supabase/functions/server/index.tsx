@@ -2850,7 +2850,7 @@ app.post('/make-server-fc8eb847/institutions/members/assign-class', async (c) =>
       return c.json({ error: 'Unauthorized' }, 401);
     }
     const { userId, classId, className, role, institutionId, teacherId } = await c.req.json();
-    if (!userId || !classId) {
+    if (!userId || classId === undefined) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
     
@@ -2866,9 +2866,15 @@ app.post('/make-server-fc8eb847/institutions/members/assign-class', async (c) =>
       return c.json({ error: 'User not found in KV' }, 404);
     }
 
-    // Assign classId
-    targetProfile.classId = classId;
-    targetProfile.className = className;
+    // Assign or remove classId
+    if (classId === null || classId === '') {
+      delete targetProfile.classId;
+      delete targetProfile.className;
+    } else {
+      targetProfile.classId = classId;
+      targetProfile.className = className;
+    }
+    
     if (teacherId && targetProfile.role === 'student') {
       targetProfile.teacherId = teacherId;
     }
