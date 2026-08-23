@@ -10,7 +10,7 @@ import { InstitutionMembers } from './InstitutionDashboard/InstitutionMembers';
 import { TeacherClassManagement } from './TeacherClassManagement';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
-import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap, Brain, Sparkles } from 'lucide-react';
+import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap, Brain, Sparkles, School } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
