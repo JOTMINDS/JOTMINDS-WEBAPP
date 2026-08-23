@@ -591,7 +591,8 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
               const jtiaA = completed.filter(a => a.type === 'teaching-style' || a.type === 'jtia').sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
               const jtia = jtiaA?.score?.['teaching-style'] || jtiaA?.score?.jtia;
-              const jtiaStyle = jtia?.primaryStyle || null;
+              let jtiaStyle = jtia?.primaryStyle || null;
+              if (jtia && !jtiaStyle) jtiaStyle = 'Completed';
 
               const doneCount = [!!kolb, !!thinkStyle, !!dual, !!jtiaStyle].filter(Boolean).length;
 
