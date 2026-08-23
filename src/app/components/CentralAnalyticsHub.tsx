@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { User } from '../types';
+import { TeacherAnalyticsComparison } from './teacher/TeacherAnalyticsComparison';
 
 interface CentralAnalyticsHubProps {
   students: any[];
