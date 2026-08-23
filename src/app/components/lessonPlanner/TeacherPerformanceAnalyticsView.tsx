@@ -19,18 +19,16 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
     : {
         ...initialPerformanceMetric,
         monthly: {
-          lessonsGenerated: 0,
-          differentiatedInstructionUses: 0,
+          monthName: new Date().toLocaleDateString('default', { month: 'long', year: 'numeric' }),
+          lessonsPlanned: 0,
+          lessonsDelivered: 0,
           assessmentsCreated: 0,
-          reflectionsLogged: 0,
-          averageEngagementScore: 0,
-          averageUnderstandingScore: 0
+          averageStudentEngagement: 0
         },
         annual: {
           teachingEffectivenessScore: 0,
-          totalLessonsDelivered: 0,
-          topStrengths: ['Data gathering...'],
-          areasForGrowth: ['Generate lessons to see insights']
+          curriculumCoveragePct: 0,
+          studentOutcomeTrendPct: 0
         }
       };
 

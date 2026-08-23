@@ -23,6 +23,7 @@ import { JTIAReport } from './JTIAReport';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { calculateJTIAScore, JTIAReportData } from '../utils/jtiaScoring';
 import { generateDeepDiveQuestions } from '../utils/teachingStyleData';
+import { AdultThinkingContainer } from './AdultThinkingContainer';
 import { AILessonPlannerContainer } from './lessonPlanner/AILessonPlannerContainer';
 import { LessonCopilotDrawer } from './lessonPlanner/LessonCopilotDrawer';
 import { DashboardLayout } from './ui/dashboard-layout';
@@ -58,6 +59,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [jtiaSubTab, setJtiaSubTab] = useState<'profile' | 'cognitive' | 'school'>('profile');
   const [targetStudentId, setTargetStudentId] = useState<string | null>(null);
+  const [showingThinkingAssessment, setShowingThinkingAssessment] = useState(false);
   const [serverAssessments, setServerAssessments] = useState<any[]>([]);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
@@ -413,7 +415,17 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     );
   }
 
-
+  // Show thinking style (Adult) assessment full screen
+  if (showingThinkingAssessment) {
+    return (
+      <AdultThinkingContainer
+        userId={user.id}
+        userName={user.name}
+        onComplete={() => { setShowingThinkingAssessment(false); loadMyAssessments(); }}
+        onCancel={() => setShowingThinkingAssessment(false)}
+      />
+    );
+  }
 
   // If taking assessment, show it full screen or within layout
   if (activeTab === 'jtia' && isTakingAssessment) {
