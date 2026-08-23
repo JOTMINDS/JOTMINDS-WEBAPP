@@ -83,6 +83,13 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
     return arr;
   });
 
+  // Auto-save progress (must be before early return)
+  useEffect(() => {
+    if (selectedLength && sessionQuestions.length > 0) {
+      localStorage.setItem(`jtia_progress_${userId}`, JSON.stringify(responses));
+    }
+  }, [responses, userId, selectedLength, sessionQuestions.length]);
+
   if (!selectedLength || sessionQuestions.length === 0) {
     return (
       <div className="space-y-8 max-w-3xl mx-auto pb-12">
@@ -164,11 +171,6 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
   const totalQuestions = sessionQuestions.length;
   const answeredCount = responses.filter(r => r > 0).length;
   const progressPct = Math.round((answeredCount / totalQuestions) * 100);
-
-  // Auto-save progress
-  useEffect(() => {
-    localStorage.setItem(`jtia_progress_${userId}`, JSON.stringify(responses));
-  }, [responses, userId]);
 
   const handleSelectOption = (rating: number) => {
     const updated = [...responses];
