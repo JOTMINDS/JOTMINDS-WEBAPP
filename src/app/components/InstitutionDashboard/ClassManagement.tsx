@@ -622,7 +622,14 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                   <ul className="divide-y divide-gray-200">
                     {students.filter(s => s.classId === activeClass.id).map(student => (
                       <li key={student.id} className="p-3 hover:bg-gray-100 flex justify-between items-center">
-                        <span className="font-medium text-gray-700">{student.name}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-700">{student.name}</span>
+                          {student.studentCode && (
+                            <span className="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded uppercase mt-0.5 w-fit border border-indigo-200">
+                              {student.studentCode}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-sm text-gray-500">{student.email}</span>
                       </li>
                     ))}

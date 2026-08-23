@@ -67,6 +67,12 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
   const [studentCodeSchoolName, setStudentCodeSchoolName] = useState('');
   const [studentCodeLoading, setStudentCodeLoading] = useState(false);
 
+  // Student Code Display After Signup
+  const [showStudentCodeModal, setShowStudentCodeModal] = useState(false);
+  const [generatedStudentCode, setGeneratedStudentCode] = useState<string | null>(null);
+  const [pendingAutoLogin, setPendingAutoLogin] = useState<{ email: string; password: string } | null>(null);
+  const [studentCodeCopied, setStudentCodeCopied] = useState(false);
+
   // Parse URL parameters for magic links and invite tokens
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -512,6 +518,18 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
         try {
           const result = await signup(signupData);
           console.log('[AuthForm] Signup successful:', result);
+
+          // If a student code was generated, show it before proceeding
+          if (result.studentCode && role === 'student') {
+            setGeneratedStudentCode(result.studentCode);
+            setShowStudentCodeModal(true);
+            // Don't auto-login yet — wait for user to acknowledge the code
+            setLoading(false);
+            
+            // Store credentials for auto-login after modal is dismissed
+            setPendingAutoLogin({ email: cleanEmail, password });
+            return;
+          }
         } catch (signupError: any) {
           console.error('[AuthForm] Signup error:', signupError);
           
@@ -612,6 +630,34 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
       setStudentCodeValidated(false);
     } finally {
       setStudentCodeLoading(false);
+    }
+  };
+
+  const handleAcknowledgeStudentCode = async () => {
+    setShowStudentCodeModal(false);
+    if (pendingAutoLogin) {
+      setLoading(true);
+      console.log('[AuthForm] Attempting auto-login after code acknowledgment...');
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: pendingAutoLogin.email,
+        password: pendingAutoLogin.password,
+      });
+
+      if (error) {
+        console.error('[AuthForm] Auto-login after signup failed:', error.message);
+        setError('Account created successfully, but auto-login failed. Please login manually.');
+        setLoading(false);
+        setPendingAutoLogin(null);
+        return;
+      }
+
+      if (data.session?.access_token) {
+        console.log('[AuthForm] Auto-login successful');
+        setAuthToken(data.session.access_token);
+        onLogin();
+      }
+      setPendingAutoLogin(null);
     }
   };
 
@@ -1479,6 +1525,53 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           </CardContent>
         </Card>
       </div>
+
+      {showStudentCodeModal && generatedStudentCode && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-indigo-600 p-6 text-center text-white">
+              <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-300" />
+              <h3 className="text-2xl font-bold">Account Created!</h3>
+              <p className="text-indigo-100 mt-1">Here is your unique student code.</p>
+            </div>
+            
+            <div className="p-6">
+              <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 mb-6 text-center">
+                <p className="text-sm text-indigo-800 mb-2 font-medium">Your Student Code</p>
+                <div className="text-3xl font-black text-indigo-700 tracking-widest font-mono select-all">
+                  {generatedStudentCode}
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <Button 
+                  className={`w-full ${studentCodeCopied ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedStudentCode);
+                    setStudentCodeCopied(true);
+                    toast.success('Code copied to clipboard');
+                    setTimeout(() => setStudentCodeCopied(false), 2000);
+                  }}
+                >
+                  {studentCodeCopied ? 'Copied!' : 'Copy to Clipboard'}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full text-gray-600"
+                  onClick={handleAcknowledgeStudentCode}
+                >
+                  Continue to JotMinds
+                </Button>
+              </div>
+              
+              <p className="text-xs text-center text-gray-500 mt-4 px-2">
+                Save this code. You will use it instead of an email to sign in on your school's devices.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1665,11 +1665,67 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       console.error(`[signup] ✗ Error sending welcome email:`, emailErr);
     }
 
+    // ── Generate unique student code for student accounts ──
+    let generatedStudentCode: string | null = null;
+    if (role === 'student') {
+      try {
+        const generateStudentCode = () => {
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          const randomArray = new Uint8Array(8);
+          crypto.getRandomValues(randomArray);
+          let sc = 'JM-';
+          for (let i = 0; i < 4; i++) sc += chars[randomArray[i] % chars.length];
+          sc += '-';
+          for (let i = 4; i < 8; i++) sc += chars[randomArray[i] % chars.length];
+          return sc;
+        };
+
+        generatedStudentCode = generateStudentCode();
+
+        // Resolve institution_id for the student_codes record
+        let studentInstitutionId: string | null = classCodeInstitutionId;
+        if (!studentInstitutionId && inviteRecord) {
+          studentInstitutionId = inviteRecord.institution_id;
+        }
+        if (!studentInstitutionId && finalOrgCode) {
+          const { data: instLookup } = await supabase
+            .from('institutions')
+            .select('id')
+            .eq('code', finalOrgCode)
+            .maybeSingle();
+          if (instLookup) studentInstitutionId = instLookup.id;
+        }
+
+        // Insert into student_codes table
+        await supabase.from('student_codes').insert({
+          user_id: data.user.id,
+          code: generatedStudentCode,
+          student_name: name,
+          student_dob: dateOfBirth || null,
+          institution_id: studentInstitutionId,
+          teacher_id: finalTeacherId || null,
+          is_active: true
+        });
+
+        // Update KV profile with the student code
+        const existingProfile = await kv.get(`user:${data.user.id}`);
+        if (existingProfile) {
+          await kv.set(`user:${data.user.id}`, { ...existingProfile, studentCode: generatedStudentCode });
+        }
+
+        console.log(`[signup] ✓ Generated student code ${generatedStudentCode} for ${email}`);
+      } catch (codeErr) {
+        console.error('[signup] ✗ Failed to generate student code:', codeErr);
+        // Non-fatal: student can still use email/password login
+      }
+    }
+
     return c.json({ 
       success: true, 
       userId: data.user.id,
       user: data.user,
-      organizationCode: finalOrgCode // Return the code for Supervisors to share
+      organizationCode: finalOrgCode, // Return the code for Supervisors to share
+      studentCode: generatedStudentCode // Return student code if generated
     });
   } catch (error) {
     console.log(`Unexpected error during signup: ${error}`);

@@ -307,18 +307,28 @@ export function InstitutionMembers({
                           <span className="text-xs text-[#6B4C9A]">{getStudentsForTeacherCount(m.userId)} Students</span>
                         )}
                         {m.role === 'student' && (
-                          <span className="text-xs text-[#1E8A6E]">
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="text-xs text-[#1E8A6E]">
+                              {(() => {
+                                const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
+                                if (studentProfile?.classId) {
+                                  const instTeacherIds = new Set(members.filter(mem => mem.role === 'teacher' || mem.role === 'admin').map(mem => mem.userId));
+                                  const classes = getAllClasses().filter(c => !c.classTeacherId || instTeacherIds.has(c.classTeacherId));
+                                  const studentClass = classes.find(c => c.id === studentProfile.classId);
+                                  return studentClass ? studentClass.name : 'Unknown';
+                                }
+                                return 'Unassigned';
+                              })()}
+                            </span>
                             {(() => {
-                              const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
-                              if (studentProfile?.classId) {
-                                const instTeacherIds = new Set(members.filter(mem => mem.role === 'teacher' || mem.role === 'admin').map(mem => mem.userId));
-                                const classes = getAllClasses().filter(c => !c.classTeacherId || instTeacherIds.has(c.classTeacherId));
-                                const studentClass = classes.find(c => c.id === studentProfile.classId);
-                                return studentClass ? studentClass.name : 'Unknown';
-                              }
-                              return 'Unassigned';
+                                const studentProfile = allPlatformUsers.find(u => u.id === m.userId);
+                                return studentProfile?.studentCode ? (
+                                  <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200 uppercase">
+                                    {studentProfile.studentCode}
+                                  </Badge>
+                                ) : null;
                             })()}
-                          </span>
+                          </div>
                         )}
                         <p className="text-[10px] text-gray-400">
                           Joined {new Date(m.joinedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
