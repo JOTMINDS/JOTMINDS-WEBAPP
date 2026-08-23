@@ -99,7 +99,7 @@ export const CognitiveInsightEngine: React.FC<CognitiveInsightEngineProps> = ({ 
             </Badge>
           </div>
           <CardDescription className="text-xs text-amber-800 dark:text-amber-400">
-            AI detects specific student learning gaps and tunes the lesson plan so the teacher can provide targeted 1-on-1 and small-group support.
+            The system detects specific student learning gaps and tunes the lesson plan so the teacher can provide targeted 1-on-1 and small-group support.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -109,7 +109,7 @@ export const CognitiveInsightEngine: React.FC<CognitiveInsightEngineProps> = ({ 
               <Brain className="w-4 h-4 text-purple-300" /> Teacher-Mediated Student Tuning Philosophy
             </span>
             <p className="text-xs text-slate-200 leading-relaxed">
-              The AI does not replace the teacher; it equips the teacher with exact student cognitive profiles so they can tune lesson pacing, scaffold abstract concepts, and help kids who need extra support.
+              The system does not replace the teacher; it equips the teacher with exact student cognitive profiles so they can tune lesson pacing, scaffold abstract concepts, and help kids who need extra support.
             </p>
           </div>
 
@@ -143,20 +143,20 @@ export const CognitiveInsightEngine: React.FC<CognitiveInsightEngineProps> = ({ 
         </CardContent>
       </Card>
 
-      {/* Individual Student AI Remediation Roster */}
+      {/* Individual Student Remediation Roster */}
       {summary.flaggedStudents && summary.flaggedStudents.length > 0 && (
         <Card className="border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/20 dark:bg-indigo-950/10 shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> Individual Student AI Remediation Roster
+                <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> Individual Student Remediation Roster
               </CardTitle>
               <Badge className="bg-indigo-600 text-white text-xs">
                 {summary.flaggedStudents.length} Students Requiring Targeted Support
               </Badge>
             </div>
             <CardDescription className="text-xs text-slate-600 dark:text-slate-400">
-              The AI points to specific named students needing help, detailing their cognitive style, specific learning bottleneck, and exact action for the teacher.
+              The system points to specific named students needing help, detailing their cognitive style, specific learning bottleneck, and exact action for the teacher.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">

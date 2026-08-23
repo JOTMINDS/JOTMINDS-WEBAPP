@@ -99,7 +99,7 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
 
   const handleReGenerate = async () => {
     setIsGenerating(true);
-    toast.info('AI is generating fresh 3-tier differentiated learning activities...');
+    toast.info('The system is generating fresh 3-tier differentiated learning activities...');
 
     const res = await generateAIDifferentiatedInstruction({
       subject: plan?.subject || 'Mathematics',

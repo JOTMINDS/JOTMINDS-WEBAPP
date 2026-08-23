@@ -266,7 +266,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
         />
       )}
 
-      {/* Module 10 AI Copilot Drawer */}
+      {/* Module 10 Copilot Drawer */}
       <LessonCopilotDrawer
         isOpen={isCopilotOpen}
         onClose={() => setIsCopilotOpen(false)}

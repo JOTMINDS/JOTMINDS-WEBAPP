@@ -314,15 +314,15 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             />
           </div>
 
-          {/* AI vs Manual specific fields */}
+          {/* Automated vs Manual specific fields */}
           {mode === 'ai' ? (
             <div className="bg-indigo-50/70 dark:bg-indigo-950/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/50 space-y-3">
               <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-300 font-semibold text-xs">
                 <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>AI Cognitive Profile Integration</span>
+                <span>Cognitive Profile Integration</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                The AI will automatically incorporate your class cognitive summary (e.g.{' '}
+                The system will automatically incorporate your class cognitive summary (e.g.{' '}
                 <strong>{classSummary?.className || 'JHS 2A'}</strong>: {classSummary?.learningStylesBreakdown?.visualPct || 45}% Visual, {classSummary?.learningStylesBreakdown?.kinestheticPct || 20}% Kinesthetic, and 5 students flagged for abstract support) to structure your lesson phases and differentiated activities.
               </p>
               <Button

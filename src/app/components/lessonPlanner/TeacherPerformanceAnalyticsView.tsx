@@ -20,11 +20,11 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
               Lesson Planner Analytics
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
-              {metrics.annual.teachingEffectivenessScore} / 100 AI Integration Score
+              {metrics.annual.teachingEffectivenessScore} / 100 Integration Score
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-indigo-400" /> AI Lesson Planner Usage Insights
+            <TrendingUp className="w-5 h-5 text-indigo-400" /> Lesson Planner Usage Insights
           </h2>
           <p className="text-xs text-slate-300 mt-1">
             Review how often you generate lessons, use differentiated instruction, and log post-lesson reflections.
@@ -41,10 +41,10 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
                 <Info className="w-4 h-4" />
               </PopoverTrigger>
               <PopoverContent className="w-64 text-xs">
-                The total number of AI-generated lesson plans you have created and saved this month.
+                The total number of generated lesson plans you have created and saved this month.
               </PopoverContent>
             </Popover>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">AI Lessons Generated</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Lessons Generated</span>
             <span className="text-2xl font-black text-slate-900 dark:text-white">{metrics.monthly.lessonsPlanned}</span>
             <p className="text-[10px] text-slate-500">{metrics.monthly.monthName}</p>
           </CardContent>
@@ -57,7 +57,7 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
                 <Info className="w-4 h-4" />
               </PopoverTrigger>
               <PopoverContent className="w-64 text-xs">
-                Lessons successfully presented using the Lesson Prep delivery mode. Delivery rate compares this to generated AI lessons.
+                Lessons successfully presented using the Lesson Prep delivery mode. Delivery rate compares this to generated lessons.
               </PopoverContent>
             </Popover>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Lessons Delivered</span>
@@ -73,10 +73,10 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
                 <Info className="w-4 h-4" />
               </PopoverTrigger>
               <PopoverContent className="w-64 text-xs">
-                Assessments generated using AI across all your active lesson plans. Includes MCQs and discussions.
+                Assessments generated across all your active lesson plans. Includes MCQs and discussions.
               </PopoverContent>
             </Popover>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">AI Assessments</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Assessments</span>
             <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{metrics.monthly.assessmentsCreated}</span>
             <p className="text-[10px] text-slate-500">Auto-generated & Quizzes</p>
           </CardContent>
@@ -89,7 +89,7 @@ export const TeacherPerformanceAnalyticsView: React.FC = () => {
                 <Info className="w-4 h-4" />
               </PopoverTrigger>
               <PopoverContent className="w-64 text-xs">
-                Average engagement metric based on your post-lesson reflections and AI evaluations of student responsiveness.
+                Average engagement metric based on your post-lesson reflections and evaluations of student responsiveness.
               </PopoverContent>
             </Popover>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Avg Engagement Score</span>
