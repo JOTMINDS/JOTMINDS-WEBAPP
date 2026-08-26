@@ -22,14 +22,61 @@ import { SchoolInsightsDashboardView } from './SchoolInsightsDashboardView';
 import { LessonCopilotDrawer } from './LessonCopilotDrawer';
 
 interface AILessonPlannerContainerProps {
+  students?: any[];
+  assessments?: any[];
   onBack?: () => void;
   user: any;
 }
 
-export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> = ({ onBack, user }) => {
+export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> = ({ onBack, user, students = [], assessments = [] }) => {
   const [plans, setPlans] = useState<LessonPlan[]>(getSavedLessonPlans(user?.id));
   const [activePlan, setActivePlan] = useState<LessonPlan | undefined>(plans[0] || getSavedLessonPlans(user?.id)[0]);
-  const [classSummary, setClassSummary] = useState<ClassCognitiveSummary>(getClassCognitiveSummary());
+  
+  // Dynamically compute class cognitive summary based on students and assessments
+  const computeClassSummary = (): ClassCognitiveSummary => {
+    const totalStudents = students.length;
+    
+    // Compute Kolb Learning Styles
+    let visualCount = 0, auditoryCount = 0, readWriteCount = 0, kinestheticCount = 0;
+    
+    const kolbAssessments = assessments.filter(a => (a.type === 'kolb' || a.type === 'learning') && (a.completed || a.completedAt));
+    kolbAssessments.forEach(a => {
+      const style = (a.score?.kolb?.style || a.score?.learning?.style || '').toLowerCase();
+      if (style.includes('visual') || style.includes('assimilating')) visualCount++;
+      else if (style.includes('auditory') || style.includes('converging')) auditoryCount++;
+      else if (style.includes('read') || style.includes('diverging')) readWriteCount++;
+      else kinestheticCount++;
+    });
+
+    const kolbTotal = visualCount + auditoryCount + readWriteCount + kinestheticCount;
+    
+    // Safe percentage calculator
+    const calcPct = (count: number) => kolbTotal > 0 ? Math.round((count / kolbTotal) * 100) : 0;
+
+    return {
+      classId: 'dynamic-class',
+      className: 'My Connected Students',
+      totalStudents: totalStudents,
+      learningStylesBreakdown: {
+        visualPct: calcPct(visualCount),
+        auditoryPct: calcPct(auditoryCount),
+        readWritePct: calcPct(readWriteCount),
+        kinestheticPct: calcPct(kinestheticCount)
+      },
+      topCognitiveStrengths: kolbTotal > 0 ? ['Adaptive Learning', 'Problem Solving'] : [],
+      riskAlerts: [],
+      flaggedStudents: [],
+      recommendedTeachingStyle: {
+        title: 'Differentiated Guided Practice',
+        strategies: [
+          'Use real student data to tailor recommendations.'
+        ]
+      }
+    };
+  };
+
+  const [classSummary, setClassSummary] = useState<ClassCognitiveSummary>(computeClassSummary());
+
   const [activeTab, setActiveTab] = useState<string>('create');
   
   // Delivery & Reflection State

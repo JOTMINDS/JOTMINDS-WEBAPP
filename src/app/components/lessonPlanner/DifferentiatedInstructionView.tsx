@@ -19,13 +19,13 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
   const [instruction, setInstruction] = useState<DifferentiatedInstruction>(
     plan?.differentiatedInstruction || {
       coreActivity: {
-        title: 'Standard Linear Equation Solving',
-        description: 'Solve 4 standard linear equations (e.g. 2x + 4 = 12, 3y - 5 = 10) independently in exercise books.',
+        title: 'Standard Topic Activity',
+        description: 'Complete standard exercises independently.',
         targetGroup: 'Average Proficiency Learners (60% of class)'
       },
       supportActivity: {
         title: 'Visual Scaffolded Balance Solving',
-        description: 'Solve x + 3 = 8 using visual balance scale templates and color-coded step-by-step guidance.',
+        description: 'Complete scaffolded problems with visual templates and step-by-step guidance.',
         targetGroup: 'Learners needing abstract support (5 students flagged)',
         scaffoldingNotes: [
           'Provide physical/visual balance scale diagram.',
@@ -35,22 +35,22 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
       },
       advancedActivity: {
         title: 'Real-World Word Problem Modeling',
-        description: 'Formulate a linear equation for a real-world taxi fare problem: $5 base fee + $2 per km = $25 total.',
+        description: 'Formulate and solve a real-world problem based on the topic.',
         targetGroup: 'High Achievers & Fast Finishers (6 students)',
         extensionTasks: [
-          'Formulate and solve a custom linear word problem for a peer.',
-          'Graph the taxi fare equation on a coordinate plane.'
+          'Create a custom challenge task for a peer.',
+          'Create a visual representation of the concept.'
         ]
       },
       alternativeActivities: [
         {
-          title: 'Kinesthetic Equation Balance',
+          title: 'Kinesthetic Modeling',
           description: 'Students use physical blocks and a balance scale to physically add/remove blocks, mirroring algebra steps hands-on.',
           targetGroup: 'Kinesthetic / Tactile Learners',
           type: 'Kinesthetic'
         },
         {
-          title: 'Digital Equation Solver Game',
+          title: 'Interactive Digital Task',
           description: 'Use an interactive gamified app where students manipulate digital scales and drag variables to isolate x.',
           targetGroup: 'Tech-Savvy / Gamification Motivated',
           type: 'Digital'
@@ -63,31 +63,31 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
         },
         {
           title: 'Visual Flowchart Concept Mapping',
-          description: 'Students map out the decision tree for solving single-variable vs multi-step equations using color-coded flow diagrams.',
+          description: 'Students map out a decision tree for the core concepts using flow diagrams.',
           targetGroup: 'Visual / Graphic Organizers',
           type: 'Visual'
         },
         {
           title: 'Musical / Rhythmic Memorization',
-          description: 'Create a short rap or mnemonic chant to remember the order of operations when solving equations.',
+          description: 'Create a short mnemonic or chant to remember key rules.',
           targetGroup: 'Musical / Rhythmic Learners',
           type: 'Musical'
         },
         {
           title: 'Independent Research & Real-World Application',
-          description: 'Research how linear equations are used in computer programming or engineering, and present findings in a short report.',
+          description: 'Research how the topic is used in real-world professions and present findings.',
           targetGroup: 'Independent / Self-Directed Learners',
           type: 'Research'
         },
         {
           title: 'Group Debate on Methods',
-          description: 'Form teams to debate the most efficient way to solve a complex multi-step equation, arguing for different initial steps.',
+          description: 'Form teams to debate different problem-solving approaches to a complex scenario.',
           targetGroup: 'Social / Interpersonal Learners',
           type: 'Interpersonal'
         },
         {
           title: 'Nature-Based Data Collection',
-          description: 'Collect environmental data outside (e.g., leaf sizes, temperatures) and form equations based on observed linear patterns.',
+          description: 'Collect environmental data outside and find patterns related to the topic.',
           targetGroup: 'Naturalistic / Outdoors Learners',
           type: 'Naturalistic'
         }
@@ -102,8 +102,8 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
     toast.info('The system is generating fresh 3-tier differentiated learning activities...');
 
     const res = await generateAIDifferentiatedInstruction({
-      subject: plan?.subject || 'Mathematics',
-      topic: plan?.topic || 'Linear Equations',
+      subject: plan?.subject || '',
+      topic: plan?.topic || 'Topic',
       gradeClass: plan?.gradeClass || 'JHS 2'
     });
 

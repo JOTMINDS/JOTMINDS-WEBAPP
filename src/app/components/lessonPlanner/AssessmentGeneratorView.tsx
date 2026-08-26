@@ -20,7 +20,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
   const [assessment, setAssessment] = useState<GeneratedAssessment>(
     plan?.assessment || {
       id: `assmt-${Date.now()}`,
-      title: `${plan?.topic || 'Linear Equations'} Assessment Suite`,
+      title: `${plan?.topic || 'Topic'} Assessment Suite`,
       mcqs: [
         {
           id: 'mcq-1',
@@ -41,7 +41,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
         {
           id: 'mcq-3',
           type: 'mcq',
-          question: 'Which of these is a linear equation in one variable?',
+          question: 'Sample Multiple Choice Question 1',
           options: ['x^2 + 5 = 9', '2x + 3y = 10', '4z - 7 = 13', 'x^3 = 27'],
           correctAnswer: '4z - 7 = 13',
           explanation: 'It has only one variable (z) and its highest power is 1.'
@@ -57,7 +57,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
         {
           id: 'mcq-5',
           type: 'mcq',
-          question: 'Translate to an equation: "Five less than twice a number is fifteen."',
+          question: 'Sample Multiple Choice Question 2',
           options: ['5 - 2x = 15', '2x - 5 = 15', '2(x - 5) = 15', '5x - 2 = 15'],
           correctAnswer: '2x - 5 = 15',
           explanation: '"Twice a number" is 2x, "five less than" means subtract 5.'
@@ -73,7 +73,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
         {
           id: 'mcq-7',
           type: 'mcq',
-          question: 'Which equation represents "a number divided by 3 is equal to 9"?',
+          question: 'Sample Multiple Choice Question 3',
           options: ['3n = 9', 'n/3 = 9', 'n - 3 = 9', 'n + 3 = 9'],
           correctAnswer: 'n/3 = 9',
           explanation: '"A number divided by 3" is written as n/3.'
@@ -91,13 +91,13 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
         {
           id: 'sa-1',
           type: 'short_answer',
-          question: 'Solve for y: 4y - 8 = 16. Show your step-by-step working.',
+          question: 'Sample Short Answer Question 1',
           correctAnswer: 'Step 1: 4y = 24. Step 2: y = 6.'
         },
         {
           id: 'sa-2',
           type: 'short_answer',
-          question: 'Solve for m: 3(m + 2) = 21',
+          question: 'Sample Short Answer Question 2',
           correctAnswer: 'Step 1: m + 2 = 7 (divide by 3). Step 2: m = 5.'
         },
         {
@@ -109,13 +109,13 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
         {
           id: 'sa-4',
           type: 'short_answer',
-          question: 'Write a word problem that can be solved using the equation 2x + 5 = 15.',
+          question: 'Sample Short Answer Question 3',
           correctAnswer: 'Example: I bought 2 pens of the same price and a $5 notebook. My total was $15. How much was each pen?'
         },
         {
           id: 'sa-5',
           type: 'short_answer',
-          question: 'Solve the equation: 5x + 7 = 2x + 16',
+          question: 'Sample Short Answer Question 4',
           correctAnswer: 'Subtract 2x from both sides: 3x + 7 = 16. Subtract 7: 3x = 9. Divide by 3: x = 3.'
         }
       ],
@@ -123,12 +123,12 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
         {
           id: 'disc-1',
           type: 'discussion',
-          question: 'In a real-life taxi fare equation (Fare = $5 + $2/km), explain why the $5 base fee is considered a constant and the distance traveled is a variable.'
+          question: 'Sample Essay Question 1'
         },
         {
           id: 'disc-2',
           type: 'discussion',
-          question: 'Why must we perform the same mathematical operation on BOTH sides of the equals sign when solving an equation?'
+          question: 'Sample Essay Question 2'
         },
         {
           id: 'disc-3',
@@ -138,19 +138,19 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
         {
           id: 'disc-4',
           type: 'discussion',
-          question: 'How do you check your answer after solving an algebraic equation? Why is this step important?'
+          question: 'Sample Essay Question 3'
         },
         {
           id: 'disc-5',
           type: 'discussion',
-          question: 'Can an equation have no solution? Discuss an example of when this might occur.'
+          question: 'Sample Essay Question 4'
         }
       ],
       practicalExercises: [
         {
           id: 'prac-1',
           type: 'practical',
-          question: 'Using physical or drawn balance scales, model the equation x + 5 = 11 and demonstrate how removing 5 from both sides maintains balance.'
+          question: 'Sample Hands-on Activity Question 1'
         },
         {
           id: 'prac-2',
@@ -160,44 +160,44 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
         {
           id: 'prac-3',
           type: 'practical',
-          question: 'Use algebra tiles to construct the equation 3x - 2 = 7, then physically add two positive tiles to both sides.'
+          question: 'Sample Hands-on Activity Question 2'
         },
         {
           id: 'prac-4',
           type: 'practical',
-          question: 'Design a board game where players advance spaces by correctly identifying the next inverse operation needed to solve complex equations.'
+          question: 'Sample Hands-on Activity Question 3'
         },
         {
           id: 'prac-5',
           type: 'practical',
-          question: 'Measure various objects in the classroom and create linear equations representing their combined lengths.'
+          question: 'Sample Hands-on Activity Question 4'
         }
       ],
       homework: [
         {
           id: 'hw-1',
           type: 'homework',
-          question: 'Complete textbook page 45, questions 1 to 5 on linear equation word problems. Write a short real-world scenario representing the equation 3x + 2 = 14.'
+          question: 'Sample Take-home Activity 1'
         },
         {
           id: 'hw-2',
           type: 'homework',
-          question: 'Find one example of a linear relationship in your home (e.g., cell phone bill, streaming subscription) and write an equation for it.'
+          question: 'Sample Take-home Activity 2'
         },
         {
           id: 'hw-3',
           type: 'homework',
-          question: 'Solve the 10 mixed equations on Worksheet A. Highlight any steps where you made a mistake and explain how you fixed it.'
+          question: 'Sample Take-home Activity 3'
         },
         {
           id: 'hw-4',
           type: 'homework',
-          question: 'Interview a parent or guardian about how they use math or budgets in their daily work, and formulate one linear equation from their example.'
+          question: 'Sample Take-home Activity 4'
         },
         {
           id: 'hw-5',
           type: 'homework',
-          question: 'Create a 5-question quiz on solving linear equations for a classmate, including an answer key with full working steps.'
+          question: 'Sample Take-home Activity 5'
         }
       ]
     }
@@ -210,8 +210,8 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
     toast.info('Generating Assessment Questions...');
 
     const res = await generateAILessonAssessment({
-      subject: plan?.subject || 'Mathematics',
-      topic: plan?.topic || 'Linear Equations',
+      subject: plan?.subject || '',
+      topic: plan?.topic || 'Topic',
       gradeClass: plan?.gradeClass || 'JHS 2'
     });
 

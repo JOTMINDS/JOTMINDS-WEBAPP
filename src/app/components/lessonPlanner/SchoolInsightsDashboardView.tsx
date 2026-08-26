@@ -138,7 +138,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
                 Actionable Recommendation:
               </span>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Provide visual algebra manipulative toolkits to your math classes to support the 14 flagged abstract-reasoning students.
+                Provide visual manipulative toolkits to your classes to support the flagged abstract-reasoning students.
               </p>
             </div>
           </CardContent>

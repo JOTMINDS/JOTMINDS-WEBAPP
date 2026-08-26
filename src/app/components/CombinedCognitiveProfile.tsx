@@ -91,7 +91,7 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
 
 
   const getThinkingScores = () => {
-    const scoreObj = latestSternberg?.score || {};
+    const scoreObj = (latestSternberg?.score as any) || {};
     return scoreObj['adult-thinking']?.scores ||
            scoreObj['jhs-thinking']?.scores ||
            scoreObj['shs-thinking']?.scores ||
@@ -100,7 +100,7 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
            { analytical: 0, creative: 0, practical: 0 };
   };
   const getThinkingStyle = () => {
-    const scoreObj = latestSternberg?.score || {};
+    const scoreObj = (latestSternberg?.score as any) || {};
     return scoreObj['adult-thinking']?.dominantStyle ||
            scoreObj['adult-thinking']?.primaryStyle ||
            scoreObj['jhs-thinking']?.primaryStyle ||
@@ -114,10 +114,11 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
   const actualSternbergStyle = getThinkingStyle();
   
   // Normalize the score keys since some versions use uppercase Analytical vs lowercase analytical
+  const rawScores = thinkingScores as Record<string, number>;
   const normalizedThinkingScores = {
-    analytical: thinkingScores.analytical || thinkingScores.Analytical || thinkingScores.executive || thinkingScores.Executive || 0,
-    creative: thinkingScores.creative || thinkingScores.Creative || thinkingScores.legislative || thinkingScores.Legislative || 0,
-    practical: thinkingScores.practical || thinkingScores.Practical || thinkingScores.judicial || thinkingScores.Judicial || 0,
+    analytical: rawScores.analytical || rawScores.Analytical || rawScores.executive || rawScores.Executive || 0,
+    creative: rawScores.creative || rawScores.Creative || rawScores.legislative || rawScores.Legislative || 0,
+    practical: rawScores.practical || rawScores.Practical || rawScores.judicial || rawScores.Judicial || 0,
   };
 
   console.log('📈 Detailed Score Breakdown:', {

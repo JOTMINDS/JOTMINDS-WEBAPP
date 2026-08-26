@@ -22,28 +22,28 @@ export function SchoolPortalTab({ user, assessments }: SchoolPortalTabProps) {
   const classLessons = [
     {
       id: 1,
-      subject: 'Mathematics',
-      title: 'Quadratic Functions & Graphical Analysis',
-      teacher: 'Mr. Mensah',
+      subject: 'Course A',
+      title: 'Module 1: Advanced Concepts',
+      teacher: 'Instructor A',
       date: 'Today, 10:30 AM',
       status: 'Active Assignment',
       summary: `Adapted for your ${learningStyle} Learning Style: Focus on the relationship between coefficient A and the parabola apex. Build a concept map linking vertex form y = a(x-h)² + k to real-world projectile paths.`,
       practiceQuestions: [
-        'Find the vertex and axis of symmetry for y = 2x² - 8x + 6.',
-        'How does changing coefficient A alter the width and direction of the graph?'
+        'Review the core concepts from chapter 1.',
+        'Explain how the primary variable affects the outcome.'
       ]
     },
     {
       id: 2,
-      subject: 'Integrated Science',
-      title: 'Cellular Respiration & ATP Energy Cycle',
-      teacher: 'Mrs. Appiah',
+      subject: 'Course B',
+      title: 'Module 2: Foundational Theory',
+      teacher: 'Instructor B',
       date: 'Yesterday',
       status: 'Completed Lesson',
       summary: `Adapted for your ${learningStyle} Learning Style: Compare Glycolysis, the Krebs Cycle, and Electron Transport via a 3-step structured diagram. Note the exact net ATP yield at each phase.`,
       practiceQuestions: [
-        'Explain why oxygen acts as the final electron acceptor in the electron transport chain.',
-        'Calculate the net yield of ATP produced per glucose molecule under aerobic conditions.'
+        'Analyze the relationship between the key components.',
+        'Calculate the expected outcome given the initial conditions.'
       ]
     }
   ];

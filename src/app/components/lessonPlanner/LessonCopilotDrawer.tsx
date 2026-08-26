@@ -99,7 +99,7 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
             Photosynthesis Lesson
           </button>
           <button
-            onClick={() => setInput('Generate a 3-question quiz on linear equations.')}
+            onClick={() => setInput('Generate a 3-question quiz on the current topic.')}
             className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors"
           >
             Generate Quiz

@@ -24,19 +24,19 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   user
 }) => {
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
-  const [subject, setSubject] = useState('Mathematics');
-  const [gradeClass, setGradeClass] = useState('JHS 2');
+  const [subject, setSubject] = useState('');
+  const [gradeClass, setGradeClass] = useState('');
   const [curriculumFramework, setCurriculumFramework] = useState<any>('National');
-  const [topic, setTopic] = useState('Linear Equations in One Variable');
-  const [subtopic, setSubtopic] = useState('Solving Algebraic Equations & Word Problems');
+  const [topic, setTopic] = useState('');
+  const [subtopic, setSubtopic] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(40);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Manual mode state
-  const [knowledgeObj, setKnowledgeObj] = useState('Define a linear equation in one variable.\nIdentify variables, coefficients, and constants.');
-  const [skillsObj, setSkillsObj] = useState('Solve simple linear equations involving addition and subtraction.');
-  const [appObj, setAppObj] = useState('Apply linear equations to calculate simple real-life budgeting scenarios.');
+  const [knowledgeObj, setKnowledgeObj] = useState('');
+  const [skillsObj, setSkillsObj] = useState('');
+  const [appObj, setAppObj] = useState('');
 
   const handleGenerateAI = async () => {
     if (!subject || !topic || !gradeClass) {
@@ -68,7 +68,11 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       durationMinutes,
       date,
       curriculumFramework: curriculumFramework as any,
-      objectives: aiResult?.objectives || {
+            objectives: (Array.isArray(aiResult?.objectives) ? {
+        knowledge: aiResult.objectives,
+        skills: [],
+        applications: []
+      } : aiResult?.objectives) || {
         knowledge: [
           `Define key concepts of ${topic} in ${subject}.`,
           `Identify core principles and key variables.`
