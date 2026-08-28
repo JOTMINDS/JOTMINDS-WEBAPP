@@ -129,7 +129,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
     reader.onload = (event) => {
       try {
         const csv = event.target?.result as string;
-        const lines = csv.split('\n').filter(line => line.trim().length > 0);
+        const lines = csv.split(/\r\n|\n|\r/).filter(line => line.trim().length > 0);
         
         if (lines.length < 2) {
           toast.error("CSV file seems empty or invalid.");
@@ -139,10 +139,27 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
         const newStudents = [];
         // Skip header
         for (let i = 1; i < lines.length; i++) {
-          const parts = lines[i].split(',');
+          // Simple CSV parser that handles basic quotes
+          const line = lines[i];
+          let parts = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let j = 0; j < line.length; j++) {
+            if (line[j] === '"') {
+              inQuotes = !inQuotes;
+            } else if (line[j] === ',' && !inQuotes) {
+              parts.push(current);
+              current = '';
+            } else {
+              current += line[j];
+            }
+          }
+          parts.push(current);
+
           if (parts.length >= 1) {
-            const name = parts[0].trim();
-            const dob = parts.length > 1 ? parts[1].trim() : '';
+            const name = parts[0].replace(/^"|"$/g, '').trim();
+            const dob = parts.length > 1 ? parts[1].replace(/^"|"$/g, '').trim() : '';
             if (name) {
               newStudents.push({ name, dob, id: generateId() });
             }
