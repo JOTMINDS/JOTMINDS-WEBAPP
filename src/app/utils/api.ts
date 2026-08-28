@@ -521,8 +521,10 @@ export async function enrollStudent(data: {
   studentName: string;
   dateOfBirth: string;
   classId: string;
+  className?: string;
   teacherId: string;
   institutionId?: string;
+  educationLevel?: string;
 }): Promise<{ success: boolean; student: any; code: string; duplicate?: boolean; existingStudent?: any }> {
   const res = await fetch(`${BASE_URL}/enroll-student`, {
     method: 'POST',

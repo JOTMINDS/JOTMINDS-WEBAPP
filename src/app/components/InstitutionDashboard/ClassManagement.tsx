@@ -84,6 +84,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       name: currentClass.name,
       academicYear: currentClass.academicYear,
       classTeacherId: currentClass.classTeacherId,
+      educationLevel: currentClass.educationLevel,
       institutionId: institutionId || '',
       createdAt: currentClass.createdAt || new Date().toISOString(),
     };
@@ -424,6 +425,21 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                   onChange={e => setCurrentClass({...currentClass, academicYear: e.target.value})}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E8A6E]"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Education Level <span className="text-red-500">*</span></label>
+                <select
+                  value={currentClass.educationLevel || ''}
+                  onChange={e => setCurrentClass({...currentClass, educationLevel: e.target.value as any})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E8A6E]"
+                >
+                  <option value="">-- Select Level --</option>
+                  <option value="Elementary">Elementary (Primary)</option>
+                  <option value="JHS">JHS (Junior High)</option>
+                  <option value="SHS">SHS (Senior High)</option>
+                  <option value="Tertiary">Tertiary (University/College)</option>
+                </select>
               </div>
 
               <div>

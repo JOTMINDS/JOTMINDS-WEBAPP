@@ -975,6 +975,7 @@ export async function createInstitutionClass(classData: Class): Promise<Class> {
         institution_id: classToSave.institutionId,
         student_count: classToSave.studentCount || 0,
         class_code: classToSave.classCode,
+        education_level: classToSave.educationLevel || null,
         created_at: classToSave.createdAt
       })
       .select()
@@ -992,6 +993,7 @@ export async function createInstitutionClass(classData: Class): Promise<Class> {
           class_teacher_id: classToSave.classTeacherId || null,
           institution_id: classToSave.institutionId,
           student_count: classToSave.studentCount || 0,
+          education_level: classToSave.educationLevel || null,
           created_at: classToSave.createdAt
         })
         .select()

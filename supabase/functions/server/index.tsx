@@ -5548,7 +5548,7 @@ app.post('/make-server-fc8eb847/enroll-student', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
     
-    const { studentName, dateOfBirth, classId, teacherId, institutionId } = await c.req.json();
+    const { studentName, dateOfBirth, classId, className, teacherId, institutionId, educationLevel } = await c.req.json();
     if (!studentName || !dateOfBirth) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
@@ -5607,8 +5607,10 @@ app.post('/make-server-fc8eb847/enroll-student', async (c) => {
         dateOfBirth, 
         studentCode: code, 
         classId, 
+        className,
         teacherId, 
-        institutionId 
+        institutionId,
+        educationLevel
       } 
     });
     
@@ -5627,8 +5629,10 @@ app.post('/make-server-fc8eb847/enroll-student', async (c) => {
       dateOfBirth,
       studentCode: code,
       classId,
+      className,
       teacherId,
       institutionId,
+      educationLevel,
       _internalAuth: randomPassword,
       createdAt: new Date().toISOString(),
       assessmentsCompleted: [],

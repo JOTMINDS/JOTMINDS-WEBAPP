@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { School, Plus, Loader, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { Class, User } from '../types';
+import { Class, User, EducationLevel } from '../types';
 import { getAllClasses, saveClass, deleteClass, getAllUsers, saveUser, isStudentConnectedToTeacher } from '../utils/storage';
 import { assignMemberToClass, fetchInstitutionClassesAPI, saveInstitutionClassAPI } from '../utils/api';
 import { toast } from 'sonner';
@@ -20,6 +21,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
   const [isCreating, setIsCreating] = useState(false);
   const [newClassName, setNewClassName] = useState('');
   const [newAcademicYear, setNewAcademicYear] = useState(new Date().getFullYear().toString());
+  const [newEducationLevel, setNewEducationLevel] = useState<EducationLevel | ''>('');
 
   // Student Management
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
@@ -66,6 +68,10 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
       toast.error('Class name is required');
       return;
     }
+    if (!newEducationLevel) {
+      toast.error('Please select an education level for this class');
+      return;
+    }
     
     setIsCreating(true);
     
@@ -73,6 +79,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
       id: `cls_${Date.now()}`,
       name: newClassName,
       academicYear: newAcademicYear,
+      educationLevel: newEducationLevel,
       classTeacherId: teacher.id,
       institutionId: teacher.institutionId,
       studentCount: 0,
@@ -91,6 +98,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
     }
     
     setNewClassName('');
+    setNewEducationLevel('');
     setIsCreating(false);
     await loadData();
   };
@@ -189,9 +197,23 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
                   disabled={isCreating}
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Education Level <span className="text-red-500">*</span></label>
+                <Select value={newEducationLevel} onValueChange={(v) => setNewEducationLevel(v as EducationLevel)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select level..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Elementary">Elementary (Primary)</SelectItem>
+                    <SelectItem value="JHS">JHS (Junior High)</SelectItem>
+                    <SelectItem value="SHS">SHS (Senior High)</SelectItem>
+                    <SelectItem value="Tertiary">Tertiary (University/College)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button 
                 onClick={handleCreateClass}
-                disabled={isCreating || !newClassName.trim()}
+                disabled={isCreating || !newClassName.trim() || !newEducationLevel}
                 className="w-full bg-[#1E8A6E] hover:bg-[#156e57]"
               >
                 {isCreating ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
@@ -216,7 +238,18 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
                   <div className="flex items-center justify-between p-4 bg-white">
                     <div>
                       <h4 className="font-bold text-lg">{cls.name}</h4>
-                      <p className="text-sm text-gray-500">Academic Year: {cls.academicYear}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-sm text-gray-500">Academic Year: {cls.academicYear}</p>
+                        {cls.educationLevel ? (
+                          <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                            {cls.educationLevel}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-gray-100 text-gray-500 border-gray-200 text-xs">
+                            No level set
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div>
                       {cls.status === 'pending' && (

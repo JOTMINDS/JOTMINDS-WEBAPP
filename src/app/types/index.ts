@@ -37,6 +37,7 @@ export interface Class {
   studentCount?: number;
   institutionId?: string;
   classCode?: string;
+  educationLevel?: EducationLevel;
   status?: 'pending' | 'approved' | 'rejected';
   createdAt: string;
 }
