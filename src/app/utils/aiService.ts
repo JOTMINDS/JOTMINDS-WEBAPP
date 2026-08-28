@@ -591,7 +591,10 @@ export async function chatWithLessonCopilot(message: string, history: any[], con
   try {
     const systemMsg = {
       role: 'system',
-      content: `You are the Lesson Copilot, an expert instructional design assistant. Use this context if provided: ${JSON.stringify(context)}`
+      content: `You are the Lesson Copilot, an expert instructional design assistant. Use this context if provided: ${JSON.stringify(context)}.
+If the user explicitly asks you to create, generate, or make a lesson plan, you must output a friendly acknowledgement, and at the very end of your message on a new line, include this exact format:
+[ACTION_CREATE_PLAN] Subject | Topic | Grade
+Where Subject, Topic, and Grade are the variables you extract from their request. Default to "General", "General Topic", and "Any Grade" if not provided.`
     };
     const messages = [systemMsg, ...history, { role: 'user', content: message }];
     return await callOpenAI(messages, false, 800);

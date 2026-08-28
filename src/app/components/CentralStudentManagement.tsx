@@ -16,9 +16,10 @@ interface CentralStudentManagementProps {
   students: any[];
   assessments: any[];
   teacher: any;
+  onRefresh?: () => void;
 }
 
-export function CentralStudentManagement({ students, assessments, teacher }: CentralStudentManagementProps) {
+export function CentralStudentManagement({ students, assessments, teacher, onRefresh }: CentralStudentManagementProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [classFilter, setClassFilter] = useState<string>('all');
   const [assessmentFilter, setAssessmentFilter] = useState<'all' | 'complete' | 'incomplete'>('all');
@@ -91,7 +92,10 @@ export function CentralStudentManagement({ students, assessments, teacher }: Cen
 
       <GenerateStudentCodesModal
         isOpen={isGenerateModalOpen}
-        onClose={() => setIsGenerateModalOpen(false)}
+        onClose={() => {
+          setIsGenerateModalOpen(false);
+          if (onRefresh) onRefresh();
+        }}
         teacherId={teacher?.id}
         institutionId={teacher?.institutionId}
       />

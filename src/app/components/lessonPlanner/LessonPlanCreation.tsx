@@ -206,7 +206,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             <BookOpen className="w-5 h-5 text-indigo-400" /> Lesson Plan Generator
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Generate customized lesson plans to support diverse learners.
+            Find official AI-powered Subject Specific Apps and easy access to NaCCA curriculum resources.
           </p>
         </div>
 
@@ -247,7 +247,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               <Input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. Mathematics"
+                placeholder="e.g. English Language"
                 className="mt-1"
               />
             </div>

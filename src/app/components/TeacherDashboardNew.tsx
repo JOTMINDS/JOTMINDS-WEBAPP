@@ -525,7 +525,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
         {(activeTab as string) === 'students' && (
           <div className="space-y-8">
-            <CentralStudentManagement students={students as any} assessments={allAssessments} teacher={user} />
+            <CentralStudentManagement students={students as any} assessments={allAssessments} teacher={user} onRefresh={loadClassData} />
           </div>
         )}
 

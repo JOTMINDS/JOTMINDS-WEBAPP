@@ -26,14 +26,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
   const [engagementScore, setEngagementScore] = useState<number>(4);
   const [teacherNotes, setTeacherNotes] = useState(currentPhase.teachingNotes || '');
 
-  // Attendance state
-  const [attendance, setAttendance] = useState<Array<{ studentId: string; name: string; present: boolean }>>([
-    { studentId: 's1', name: 'Kwame Mensah', present: true },
-    { studentId: 's2', name: 'Ama Osei', present: true },
-    { studentId: 's3', name: 'Kofi Appiah', present: true },
-    { studentId: 's4', name: 'Esi Boateng', present: true },
-    { studentId: 's5', name: 'Yaw Addo', present: false }
-  ]);
+
 
   // Sync phase timer when changing phases
   useEffect(() => {
@@ -82,12 +75,6 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
     }
   };
 
-  const toggleAttendance = (idx: number) => {
-    const updated = [...attendance];
-    updated[idx].present = !updated[idx].present;
-    setAttendance(updated);
-  };
-
   const handleCompleteDelivery = () => {
     const session: LessonDeliverySession = {
       sessionId: `del-${Date.now()}`,
@@ -95,7 +82,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
       currentPhaseIndex,
       phaseTimeRemainingSeconds: timeRemainingSeconds,
       isTimerRunning: false,
-      attendance,
+      attendance: [],
       studentEngagementScore: engagementScore,
       teacherLiveNotes: teacherNotes,
       startedAt: new Date().toISOString()
@@ -244,37 +231,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
             </CardContent>
           </Card>
 
-          {/* Quick Attendance Checklist */}
-          <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-indigo-500" /> Attendance Check
-                </CardTitle>
-                <Badge variant="outline" className="text-[10px]">
-                  {attendance.filter(a => a.present).length} / {attendance.length} Present
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {attendance.map((st, idx) => (
-                <div
-                  key={st.studentId}
-                  onClick={() => toggleAttendance(idx)}
-                  className={`p-2.5 rounded-lg border text-xs flex items-center justify-between cursor-pointer transition-all ${
-                    st.present
-                      ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-200'
-                      : 'bg-rose-50/60 border-rose-200 text-rose-950 dark:bg-rose-950/30 dark:text-rose-200'
-                  }`}
-                >
-                  <span className="font-semibold">{st.name}</span>
-                  <Badge variant="outline" className={st.present ? 'border-emerald-300 text-emerald-700' : 'border-rose-300 text-rose-700'}>
-                    {st.present ? 'Present' : 'Absent'}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+
         </div>
       </div>
     </div>

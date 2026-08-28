@@ -13,12 +13,14 @@ interface LessonCopilotDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   context?: any;
+  onGeneratePlanRequest?: (subject: string, topic: string, gradeClass: string) => void;
 }
 
 export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
   isOpen,
   onClose,
-  context
+  context,
+  onGeneratePlanRequest
 }) => {
   const [messages, setMessages] = useState<CopilotChatMessage[]>(getCopilotChatHistory());
   const [input, setInput] = useState('');
@@ -45,10 +47,23 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
 
     setIsThinking(false);
 
+    let rawReplyText = replyText || generateFallbackCopilotResponse(userMsg.text);
+    
+    // Check for ACTION_CREATE_PLAN
+    const actionMatch = rawReplyText.match(/\[ACTION_CREATE_PLAN\](.*?)(?:\n|$)/i);
+    if (actionMatch && onGeneratePlanRequest) {
+      const parts = actionMatch[1].split('|').map(p => p.trim());
+      const sub = parts[0] || 'General';
+      const top = parts[1] || 'General Topic';
+      const grad = parts[2] || 'Any Grade';
+      onGeneratePlanRequest(sub, top, grad);
+      rawReplyText = rawReplyText.replace(actionMatch[0], '').trim();
+    }
+
     const botMsg: CopilotChatMessage = {
       id: `msg-b-${Date.now()}`,
       sender: 'copilot',
-      text: replyText || generateFallbackCopilotResponse(userMsg.text),
+      text: rawReplyText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -128,7 +143,17 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
                 ? 'bg-indigo-600 text-white rounded-tr-none'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-tl-none border border-slate-200 dark:border-slate-700'
             }`}>
-              <p className="whitespace-pre-line">{m.text}</p>
+              <div 
+                className="whitespace-pre-line format-jotti-md" 
+                dangerouslySetInnerHTML={{ 
+                  __html: m.text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/### (.*?)\n/g, '<strong class="text-sm block mt-2 mb-1">$1</strong>\n')
+                    .replace(/## (.*?)\n/g, '<strong class="text-sm block mt-2 mb-1">$1</strong>\n')
+                    .replace(/# (.*?)\n/g, '<strong class="text-base block mt-2 mb-1">$1</strong>\n')
+                }} 
+              />
               <span className="text-[9px] opacity-60 block mt-1 text-right">{m.timestamp}</span>
             </div>
           </div>

@@ -4,12 +4,20 @@ import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Button } from '../ui/button';
 import { CheckCircle2, Clock, AlertCircle, BookOpen, Layers, CheckSquare } from 'lucide-react';
-import { CurriculumTrack, CurriculumTopic } from '../../types/lessonPlannerTypes';
+import { CurriculumTrack, CurriculumTopic, LessonPlan } from '../../types/lessonPlannerTypes';
 import { getCurriculumTrack, saveCurriculumTrack } from '../../utils/lessonPlannerStorage';
 import { toast } from 'sonner';
 
-export const CurriculumTrackerView: React.FC = () => {
+interface CurriculumTrackerViewProps {
+  plan?: LessonPlan;
+}
+
+export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ plan }) => {
   const [track, setTrack] = useState<CurriculumTrack>(getCurriculumTrack());
+
+  // Use the plan's subject and grade if available, otherwise fallback to the track's data
+  const subject = plan?.subject || track.subject;
+  const grade = plan?.gradeClass || track.grade;
 
   const toggleTopicStatus = (topicId: string) => {
     const updatedTopics = track.topics.map(t => {
@@ -50,7 +58,7 @@ export const CurriculumTrackerView: React.FC = () => {
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-400" /> {track.frameworkName}: {track.subject} ({track.grade})
+            <BookOpen className="w-5 h-5 text-indigo-400" /> {track.frameworkName}: {subject} ({grade})
           </h2>
           <p className="text-xs text-slate-300 mt-1">
             Easily align lesson plans with various educational curricula.
@@ -110,7 +118,9 @@ export const CurriculumTrackerView: React.FC = () => {
                   <AlertCircle className="w-5 h-5 text-slate-400 shrink-0" />
                 )}
                 <div>
-                  <span className="font-mono text-[10px] text-slate-400 uppercase block">{topic.code}</span>
+                  <span className="font-mono text-[10px] text-slate-400 uppercase block">
+                    {topic.code.startsWith('MATH') ? `${subject.substring(0, 4).toUpperCase()}-${grade.replace(/\s+/g, '')}-${topic.id.split('-').pop()}` : topic.code}
+                  </span>
                   <h4 className="font-bold text-sm">{topic.title}</h4>
                 </div>
               </div>

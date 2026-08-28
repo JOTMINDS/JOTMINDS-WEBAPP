@@ -398,6 +398,16 @@ export function KidsCognitiveProfile({ user, onClose, isParentView = false }: Ki
               completed={assessmentStatus.learning}
               result={learningStyle}
               color="#667eea"
+              insight={
+                learningStyle 
+                  ? {
+                      'Diverging': '🎨 Learns best through imagination and group work. Encourage creative projects and collaborative activities.',
+                      'Assimilating': '📚 Prefers logical explanations and organized information. Provide clear structures and reading materials.',
+                      'Converging': '🔧 Excels with practical problem-solving. Use hands-on experiments and real-world applications.',
+                      'Accommodating': '🏃 Learns through hands-on experience. Incorporate movement, experimentation, and active discovery.'
+                    }[learningStyle] || 'Developing learning preferences.'
+                  : null
+              }
             />
             <AssessmentCard
               icon="🧠"
@@ -405,6 +415,15 @@ export function KidsCognitiveProfile({ user, onClose, isParentView = false }: Ki
               completed={assessmentStatus.thinking}
               result={thinkingStyle ? thinkingStyle.charAt(0).toUpperCase() + thinkingStyle.slice(1) : null}
               color="#4ECDC4"
+              insight={
+                thinkingStyle
+                  ? {
+                      'creative': '💡 Thrives with open-ended questions and imaginative tasks. Encourage brainstorming.',
+                      'analytical': '🔍 Excels at breaking down problems step-by-step. Provide puzzles and structured challenges.',
+                      'practical': '⚙️ Learns by doing and applying knowledge. Connect lessons to real-life situations.'
+                    }[thinkingStyle.toLowerCase()] || 'Developing thinking patterns.'
+                  : null
+              }
             />
             <AssessmentCard
               icon="🎯"
@@ -412,6 +431,15 @@ export function KidsCognitiveProfile({ user, onClose, isParentView = false }: Ki
               completed={assessmentStatus.decision}
               result={decisionStyle ? decisionStyle.charAt(0).toUpperCase() + decisionStyle.slice(1) : null}
               color="#FF9800"
+              insight={
+                decisionStyle
+                  ? {
+                      'intuitive': '⚡ Makes quick decisions based on feelings. Help develop reflection skills.',
+                      'analytical': '⚖️ Thinks carefully before deciding. Provide time for consideration.',
+                      'balanced': '⚖️ Uses both gut feelings and careful thinking. Excellent balance!'
+                    }[decisionStyle.toLowerCase()] || 'Developing decision-making skills.'
+                  : null
+              }
             />
           </div>
 
@@ -750,12 +778,13 @@ interface AssessmentCardProps {
   completed: boolean;
   result: string | null;
   color: string;
+  insight?: string | null;
 }
 
-function AssessmentCard({ icon, title, completed, result, color }: AssessmentCardProps) {
+function AssessmentCard({ icon, title, completed, result, color, insight }: AssessmentCardProps) {
   return (
     <div 
-      className="rounded-2xl p-4 border-4 relative overflow-hidden"
+      className="rounded-2xl p-4 border-4 relative overflow-hidden flex flex-col h-full"
       style={{
         background: completed 
           ? `linear-gradient(135deg, ${color}22 0%, ${color}44 100%)`
@@ -769,14 +798,19 @@ function AssessmentCard({ icon, title, completed, result, color }: AssessmentCar
       </div>
       
       {completed ? (
-        <div className="mt-2">
-          <div className="flex items-center gap-2">
+        <div className="mt-2 flex-grow">
+          <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">✅</span>
             <span className="text-lg font-bold text-gray-700">{result || 'Completed'}</span>
           </div>
+          {insight && (
+            <p className="text-xs text-slate-700 leading-relaxed p-2 bg-white/50 rounded-lg border border-white/60">
+              {insight}
+            </p>
+          )}
         </div>
       ) : (
-        <div className="mt-2">
+        <div className="mt-2 flex-grow">
           <div className="flex items-center gap-2">
             <span className="text-2xl">⏳</span>
             <span className="text-lg font-bold text-gray-500">Not started</span>
@@ -786,7 +820,7 @@ function AssessmentCard({ icon, title, completed, result, color }: AssessmentCar
 
       {/* Checkmark overlay for completed */}
       {completed && (
-        <div className="absolute top-2 right-2 text-3xl">
+        <div className="absolute top-2 right-2 text-3xl opacity-50">
           ✅
         </div>
       )}

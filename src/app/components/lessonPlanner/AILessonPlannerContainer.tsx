@@ -95,6 +95,38 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
     setShowReflectionModal(true);
   };
 
+  const handleCopilotGeneratePlan = async (subject: string, topic: string, gradeClass: string) => {
+    toast.info('Copilot is generating your lesson plan...');
+    
+    // Import generateAILessonPlan dynamically or ensure it's imported at the top
+    const { generateAILessonPlan } = await import('../../utils/aiService');
+    
+    const aiResult = await generateAILessonPlan({
+      subject,
+      gradeClass,
+      topic,
+      durationMinutes: 40,
+      classSummary
+    });
+    
+    if (aiResult) {
+      const newPlan: LessonPlan = {
+        ...aiResult,
+        id: `lp-ai-${Date.now()}`,
+        teacherId: user?.id || 'unknown',
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      saveLessonPlan(newPlan);
+      handlePlanCreated(newPlan);
+      toast.success('Copilot generated a new Lesson Plan successfully!');
+    } else {
+      toast.error('Failed to generate plan. Please try again.');
+    }
+  };
+
   if (isDelivering && activePlan) {
     return (
       <LessonDeliveryMode
@@ -122,7 +154,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             <BookOpen className="w-6 h-6 text-indigo-400" /> Lesson Planner & Teaching Insights
           </h1>
           <p className="text-xs text-slate-300 mt-1">
-            Connecting student cognitive profiles → lesson planning → 3-tier differentiation → lesson prep → curriculum analytics.
+            Find all official AI-powered Subject Specific Apps for SHS teachers. Easy access to all NaCCA curriculum resources and PLC tools.
           </p>
         </div>
 
@@ -254,7 +286,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
 
         {/* Module 7 */}
         <TabsContent value="curriculum">
-          <CurriculumTrackerView />
+          <CurriculumTrackerView plan={activePlan} />
         </TabsContent>
 
         {/* Module 8 */}
@@ -330,6 +362,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
         isOpen={isCopilotOpen}
         onClose={() => setIsCopilotOpen(false)}
         context={{ activePlan, classSummary }}
+        onGeneratePlanRequest={handleCopilotGeneratePlan}
       />
     </div>
   );

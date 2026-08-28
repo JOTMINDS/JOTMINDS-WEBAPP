@@ -242,7 +242,19 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
       )}
 
       {/* ─── CLASS INSIGHTS ─── */}
-      {activeTab === 'class_insights' && (
+      {activeTab === 'class_insights' && assessedCount === 0 && (
+        <div className="flex flex-col items-center justify-center p-12 text-center border rounded-2xl bg-white shadow-sm mt-6">
+          <div className="bg-slate-100 p-4 rounded-full mb-4">
+            <TrendingUp className="w-8 h-8 text-slate-400" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-700 mb-2">No Classroom Insights Yet</h3>
+          <p className="text-slate-500 max-w-md">
+            Once your students complete their cognitive assessments, this page will populate with detailed classroom insights and heatmaps.
+          </p>
+        </div>
+      )}
+
+      {activeTab === 'class_insights' && assessedCount > 0 && (
         <div className="space-y-8">
           {/* Heatmap Section */}
           <div className="space-y-4">
