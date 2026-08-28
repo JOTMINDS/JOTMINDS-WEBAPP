@@ -137,7 +137,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         const classes = getAllClasses();
         const assignments = getAssignmentsForTeacher(user.id);
         const teacherClassIds = new Set<string>();
-        classes.filter(c => !c.classTeacherId || c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className).forEach(c => teacherClassIds.add(c.id));
+        classes.filter(c => c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className).forEach(c => teacherClassIds.add(c.id));
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
         studentUsers = allUsers.filter(u => isStudentConnectedToTeacher(u, user, teacherClassIds));
@@ -256,7 +256,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         
         const teacherClassIds = new Set<string>();
         relatedTeachers.forEach(rt => {
-          classes.filter(c => !c.classTeacherId || c.classTeacherId === rt.id || c.classTeacherId === rt.email || c.id === rt.classId || c.name === rt.className).forEach(c => teacherClassIds.add(c.id));
+          classes.filter(c => c.classTeacherId === rt.id || c.classTeacherId === rt.email || c.id === rt.classId || c.name === rt.className).forEach(c => teacherClassIds.add(c.id));
           getAssignmentsForTeacher(rt.id).forEach(a => teacherClassIds.add(a.classId));
         });
         
