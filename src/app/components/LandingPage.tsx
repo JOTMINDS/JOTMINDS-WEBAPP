@@ -83,7 +83,7 @@ export function LandingPage({
           assessments: (assessmentCount && assessmentCount > 0) ? assessmentCount : 14200
         });
       } catch {
-        // Fallback silently
+        // Keep defaults if network fails
       }
     };
     fetchStats();
@@ -109,7 +109,7 @@ export function LandingPage({
       duration: '12 min · Free',
       description: 'Comprehensive 3-in-1 assessment covering your Learning Dimensions, Thinking Modes, and Decision System.',
       tags: ['Diverging & Converging', 'Analytical vs Creative', 'Intuitive Heuristics'],
-      badgeColor: 'bg-blue-600'
+      badgeColor: 'bg-[#2C2E83]'
     },
     {
       category: 'students',
@@ -121,7 +121,7 @@ export function LandingPage({
       duration: '5 min · Free',
       description: 'Discover whether you absorb concepts through hands-on experience, reflective observation, abstract models, or active experimentation.',
       tags: ['Study Habit Optimization', 'Revision Techniques', 'Classroom Scaffolding'],
-      badgeColor: 'bg-indigo-600'
+      badgeColor: 'bg-[#7B61FF]'
     },
     {
       category: 'students',
@@ -133,7 +133,7 @@ export function LandingPage({
       duration: '4 min · Free',
       description: 'Map your primary problem-solving mode across Analytical evaluation, Creative ideation, and Practical execution.',
       tags: ['Problem Solving', 'Subject Selection', 'Academic Strengths'],
-      badgeColor: 'bg-purple-600'
+      badgeColor: 'bg-[#5B7DB1]'
     },
     {
       category: 'teachers',
@@ -145,7 +145,7 @@ export function LandingPage({
       duration: 'Interactive Tool · Free',
       description: 'Generate curriculum-aligned lesson plans tailored to your class cognitive distribution across GES, Cambridge, and IB.',
       tags: ['Strand & Sub-strand', 'Pre-Class Prep Checklist', 'Classroom Intelligence'],
-      badgeColor: 'bg-emerald-600'
+      badgeColor: 'bg-[#1FC8E1]'
     },
     {
       category: 'teachers',
@@ -157,7 +157,7 @@ export function LandingPage({
       duration: 'Real-Time Analytics',
       description: 'Analyze multi-student cognitive distribution to identify friction points and structure group collaboration effectively.',
       tags: ['Visual vs Hands-on', 'Cognitive Bottlenecks', 'Department Reporting'],
-      badgeColor: 'bg-teal-600'
+      badgeColor: 'bg-[#2C2E83]'
     },
     {
       category: 'career',
@@ -169,7 +169,7 @@ export function LandingPage({
       duration: '3 min · Free',
       description: 'Evaluate how you make choices, navigate uncertainty, and balance analytical data against intuitive judgment.',
       tags: ['High-Stakes Decision', 'Team Leadership', 'Risk Synthesis'],
-      badgeColor: 'bg-amber-600'
+      badgeColor: 'bg-[#FF715B]'
     }
   ];
 
@@ -178,25 +178,25 @@ export function LandingPage({
     : catalogItems.filter(item => item.category === activeCatalogTab || item.category === 'popular');
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-[#2C2E83]/10 selection:text-[#2C2E83]">
       
-      {/* ─── 1. TOP UTILITY HEADER (Coursera Institutional Bar) ─── */}
-      <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4 border-b border-slate-800">
+      {/* ─── 1. TOP UTILITY HEADER (JotMinds Indigo Institutional Bar) ─── */}
+      <div className="bg-[#1a1b4d] text-slate-300 text-xs py-2 px-4 border-b border-[#2C2E83]/40">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
             <span className="font-semibold text-white flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-blue-400" /> Grounded in Kolb & Sternberg Cognitive Science
+              <Globe className="w-3.5 h-3.5 text-[#1FC8E1]" /> Grounded in Kolb & Sternberg Cognitive Science
             </span>
-            <span className="hidden md:inline text-slate-600">|</span>
-            <span className="hidden md:inline text-slate-400">Aligned with Ghana (GES), Cambridge & IB Standards</span>
+            <span className="hidden md:inline text-slate-500">|</span>
+            <span className="hidden md:inline text-slate-300">Aligned with Ghana (GES), Cambridge & IB Standards</span>
           </div>
           <div className="flex items-center gap-4">
             {onSupervisorPortal && (
               <button 
                 onClick={onSupervisorPortal} 
-                className="text-slate-300 hover:text-white font-medium transition-colors flex items-center gap-1"
+                className="text-slate-200 hover:text-[#1FC8E1] font-medium transition-colors flex items-center gap-1"
               >
-                <Building2 className="w-3.5 h-3.5 text-blue-400" />
+                <Building2 className="w-3.5 h-3.5 text-[#1FC8E1]" />
                 For Schools & Institutions
               </button>
             )}
@@ -210,7 +210,7 @@ export function LandingPage({
         </div>
       </div>
 
-      {/* ─── 2. COURSERA MAIN NAVIGATION BAR ─── */}
+      {/* ─── 2. MAIN NAVBAR ─── */}
       <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-18 gap-4">
@@ -221,12 +221,12 @@ export function LandingPage({
                 <Logo size="md" />
               </div>
 
-              {/* Coursera-Style Explore Button */}
+              {/* Explore Button with Brand Colors */}
               <div className="relative hidden lg:block">
                 <Button 
                   variant="outline"
                   onClick={() => setExploreDropdownOpen(!exploreDropdownOpen)}
-                  className="border-[#0056D2] text-[#0056D2] hover:bg-blue-50 font-bold text-xs h-10 px-4 flex items-center gap-1.5"
+                  className="border-[#2C2E83] text-[#2C2E83] hover:bg-[#2C2E83]/5 font-bold text-xs h-10 px-4 flex items-center gap-1.5"
                 >
                   Explore <ChevronDown className={`w-4 h-4 transition-transform ${exploreDropdownOpen ? 'rotate-180' : ''}`} />
                 </Button>
@@ -234,21 +234,21 @@ export function LandingPage({
                 {exploreDropdownOpen && (
                   <div className="absolute top-12 left-0 w-72 bg-white border border-slate-200 rounded-lg shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">Assessments</div>
-                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
                       Learning Dimensions (Kolb) <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                     </button>
-                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
                       Thinking Styles (Sternberg) <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                     </button>
-                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
                       Decision-Making Battery <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                     </button>
                     <div className="border-t border-slate-100 my-1"></div>
                     <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">Educator Tools</div>
-                    <button onClick={() => scrollTo('for-schools')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                    <button onClick={() => scrollTo('for-schools')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
                       AI Lesson Planner <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                     </button>
-                    <button onClick={() => scrollTo('for-schools')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                    <button onClick={() => scrollTo('for-schools')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
                       Class Cognitive Heatmaps <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                     </button>
                   </div>
@@ -256,7 +256,7 @@ export function LandingPage({
               </div>
             </div>
 
-            {/* Coursera Search Input */}
+            {/* Search Input with Brand Accent */}
             <div className="hidden md:flex items-center flex-1 max-w-lg relative">
               <input 
                 type="text"
@@ -264,11 +264,11 @@ export function LandingPage({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && scrollTo('catalog')}
                 placeholder="What do you want to discover? (e.g. Learning Style, Lesson Planner)"
-                className="w-full h-11 pl-4 pr-12 text-xs bg-slate-50 border border-slate-300 rounded-full focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all text-slate-800"
+                className="w-full h-11 pl-4 pr-12 text-xs bg-slate-50 border border-slate-300 rounded-full focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2C2E83] focus:border-[#2C2E83] transition-all text-slate-800"
               />
               <button 
                 onClick={() => scrollTo('catalog')}
-                className="absolute right-1.5 w-8 h-8 bg-[#0056D2] hover:bg-[#00419e] text-white rounded-full flex items-center justify-center transition-colors shadow-sm"
+                className="absolute right-1.5 w-8 h-8 bg-[#2C2E83] hover:bg-[#1a1b4d] text-white rounded-full flex items-center justify-center transition-colors shadow-sm"
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -278,26 +278,26 @@ export function LandingPage({
             <div className="flex items-center gap-3 shrink-0">
               <button 
                 onClick={() => scrollTo('for-schools')}
-                className="hidden xl:inline text-xs font-semibold text-slate-700 hover:text-blue-700 py-2"
+                className="hidden xl:inline text-xs font-semibold text-slate-700 hover:text-[#2C2E83] py-2"
               >
                 For Schools
               </button>
               <button 
                 onClick={() => scrollTo('solutions')}
-                className="hidden xl:inline text-xs font-semibold text-slate-700 hover:text-blue-700 py-2"
+                className="hidden xl:inline text-xs font-semibold text-slate-700 hover:text-[#2C2E83] py-2"
               >
                 For Parents
               </button>
               <Button 
                 variant="ghost" 
                 onClick={onGetStarted}
-                className="hidden sm:inline-flex text-xs font-bold text-slate-700 hover:text-blue-700 hover:bg-slate-50 h-10 px-3"
+                className="hidden sm:inline-flex text-xs font-bold text-slate-700 hover:text-[#2C2E83] hover:bg-slate-50 h-10 px-3"
               >
                 Log In
               </Button>
               <Button 
                 onClick={onGetStarted}
-                className="bg-[#0056D2] hover:bg-[#00419e] text-white font-bold text-xs px-5 h-10 rounded shadow-sm transition-all"
+                className="bg-[#2C2E83] hover:bg-[#1a1b4d] text-white font-bold text-xs px-5 h-10 rounded shadow-sm transition-all"
               >
                 Join for Free
               </Button>
@@ -333,7 +333,7 @@ export function LandingPage({
               For Parents & Students
             </button>
             {onSupervisorPortal && (
-              <button onClick={onSupervisorPortal} className="block w-full text-left py-2 text-xs font-bold text-blue-700">
+              <button onClick={onSupervisorPortal} className="block w-full text-left py-2 text-xs font-bold text-[#2C2E83]">
                 Organization Portal →
               </button>
             )}
@@ -341,16 +341,21 @@ export function LandingPage({
         )}
       </header>
 
-      {/* ─── 3. COURSERA SIGNATURE HERO ─── */}
+      {/* ─── 3. HERO SECTION (JotMinds Brand Styling) ─── */}
       <section className="bg-slate-50 border-b border-slate-200 py-12 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-12 gap-12 items-center">
             
             {/* Left: Clean Headline & Call to Action */}
             <div className="lg:col-span-7 space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#2C2E83]/10 border border-[#2C2E83]/20 text-[#2C2E83] text-xs font-semibold rounded-full">
+                <Award className="w-3.5 h-3.5 text-[#2C2E83]" />
+                Validated Educational Assessment Platform
+              </div>
+
               <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold text-slate-900 leading-[1.1] tracking-tight">
                 Learn Without Limits. <br />
-                <span className="text-[#0056D2]">Discover How You Think.</span>
+                <span className="text-[#2C2E83]">Discover How You Think.</span>
               </h1>
 
               <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
@@ -360,7 +365,7 @@ export function LandingPage({
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
                 <Button 
                   onClick={onGetStarted}
-                  className="bg-[#0056D2] hover:bg-[#00419e] text-white font-bold text-sm px-8 h-13 rounded shadow-md hover:shadow-lg transition-all"
+                  className="bg-[#2C2E83] hover:bg-[#1a1b4d] text-white font-bold text-sm px-8 h-13 rounded shadow-md hover:shadow-lg transition-all"
                 >
                   Join for Free
                 </Button>
@@ -389,17 +394,17 @@ export function LandingPage({
               </div>
             </div>
 
-            {/* Right: Featured High-Credibility Course Card (Coursera Featured Specialization Style) */}
+            {/* Right: Featured Specialization Card with Brand Header */}
             <div className="lg:col-span-5">
               <div className="bg-white rounded-lg border border-slate-200 shadow-xl overflow-hidden hover:shadow-2xl transition-shadow">
                 
-                {/* Visual Header */}
-                <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-6 relative">
+                {/* Visual Header with JotMinds Indigo */}
+                <div className="bg-gradient-to-r from-[#2C2E83] to-[#1a1b4d] text-white p-6 relative">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 bg-blue-600 text-white rounded">
+                    <span className="text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 bg-[#1FC8E1] text-[#1a1b4d] rounded">
                       Featured Track
                     </span>
-                    <span className="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                    <span className="text-xs text-slate-200 font-semibold flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" /> 12 mins · Free
                     </span>
                   </div>
@@ -431,15 +436,15 @@ export function LandingPage({
                     </span>
                     <div className="space-y-1.5 text-xs text-slate-700">
                       <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                        <span className="w-2 h-2 rounded-full bg-[#1FC8E1]"></span>
                         <span>Learning Dimensions (Visual, Auditory, Kinesthetic, Read/Write)</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                        <span className="w-2 h-2 rounded-full bg-[#7B61FF]"></span>
                         <span>Thinking Modes (Analytical, Creative, Practical)</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                        <span className="w-2 h-2 rounded-full bg-[#FF715B]"></span>
                         <span>Decision Systems (Heuristic Intuition vs Analytical Logic)</span>
                       </div>
                     </div>
@@ -454,7 +459,7 @@ export function LandingPage({
                   <Button 
                     size="sm"
                     onClick={onGetStarted}
-                    className="bg-[#0056D2] hover:bg-[#00419e] text-white text-xs font-bold px-5"
+                    className="bg-[#2C2E83] hover:bg-[#1a1b4d] text-white text-xs font-bold px-5"
                   >
                     Start Assessment →
                   </Button>
@@ -467,7 +472,7 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* ─── 4. INSTITUTIONAL COLLABORATORS & FRAMEWORKS (Coursera Partner Logos) ─── */}
+      {/* ─── 4. INSTITUTIONAL COLLABORATORS & FRAMEWORKS ─── */}
       <section className="bg-white py-12 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-8">
@@ -476,34 +481,34 @@ export function LandingPage({
           
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 items-center text-slate-600">
             <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
-              <School className="w-4 h-4 text-blue-600" /> GES (Ghana)
+              <School className="w-4 h-4 text-[#2C2E83]" /> GES (Ghana)
             </div>
             <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
-              <Award className="w-4 h-4 text-indigo-600" /> Cambridge Int.
+              <Award className="w-4 h-4 text-[#7B61FF]" /> Cambridge Int.
             </div>
             <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
-              <BookOpen className="w-4 h-4 text-emerald-600" /> Pearson Edexcel
+              <BookOpen className="w-4 h-4 text-[#1FC8E1]" /> Pearson Edexcel
             </div>
             <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
-              <Globe className="w-4 h-4 text-purple-600" /> IB Curriculum
+              <Globe className="w-4 h-4 text-[#2C2E83]" /> IB Curriculum
             </div>
             <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
-              <Brain className="w-4 h-4 text-amber-600" /> Kolb Model
+              <Brain className="w-4 h-4 text-[#FF715B]" /> Kolb Model
             </div>
             <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
-              <Target className="w-4 h-4 text-teal-600" /> Sternberg Theory
+              <Target className="w-4 h-4 text-[#5B7DB1]" /> Sternberg Theory
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── 5. COURSERA COURSE CATALOG GRID (Explore Assessments) ─── */}
+      {/* ─── 5. CATALOG GRID WITH BRAND TAGS ─── */}
       <section id="catalog" className="py-16 bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#0056D2]">Assessment Catalog</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#2C2E83]">Assessment Catalog</span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
                 Explore Assessments & Pedagogical Tools
               </h2>
@@ -512,7 +517,7 @@ export function LandingPage({
               </p>
             </div>
 
-            {/* Coursera-Style Filter Tabs */}
+            {/* Filter Tabs */}
             <div className="flex items-center gap-2 bg-slate-200/80 p-1 rounded-lg self-start md:self-auto overflow-x-auto">
               {[
                 { id: 'popular', label: 'Most Popular' },
@@ -540,7 +545,7 @@ export function LandingPage({
             {filteredCatalog.map((item, idx) => (
               <div 
                 key={idx}
-                className="bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all flex flex-col justify-between overflow-hidden cursor-pointer group"
+                className="bg-white rounded-lg border border-slate-200 hover:border-[#2C2E83]/40 hover:shadow-lg transition-all flex flex-col justify-between overflow-hidden cursor-pointer group"
                 onClick={onGetStarted}
               >
                 <div>
@@ -552,7 +557,7 @@ export function LandingPage({
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900 group-hover:text-[#0056D2] transition-colors leading-snug mb-1">
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-[#2C2E83] transition-colors leading-snug mb-1">
                       {item.title}
                     </h3>
                     <p className="text-xs text-slate-500 font-medium mb-3">{item.provider}</p>
@@ -577,7 +582,7 @@ export function LandingPage({
                     <span className="font-bold text-slate-900">{item.rating}</span>
                     <span className="text-slate-400">({item.reviews})</span>
                   </div>
-                  <span className="text-xs font-bold text-[#0056D2] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  <span className="text-xs font-bold text-[#2C2E83] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                     Start <ArrowRight className="w-3 h-3" />
                   </span>
                 </div>
@@ -588,13 +593,13 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* ─── 6. JOTMINDS FOR SCHOOLS & ENTERPRISE (Coursera for Business Section) ─── */}
-      <section id="for-schools" className="py-16 lg:py-24 bg-slate-900 text-white border-b border-slate-800">
+      {/* ─── 6. JOTMINDS FOR SCHOOLS & ENTERPRISE (Deep Indigo Section) ─── */}
+      <section id="for-schools" className="py-16 lg:py-24 bg-[#1a1b4d] text-white border-b border-[#2C2E83]/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-12 gap-12 items-center">
             
             <div className="lg:col-span-7 space-y-6">
-              <Badge className="bg-blue-600 text-white border-0 text-xs uppercase font-bold tracking-wider px-3 py-1">
+              <Badge className="bg-[#1FC8E1] text-[#1a1b4d] border-0 text-xs uppercase font-bold tracking-wider px-3 py-1">
                 JotMinds for Institutions
               </Badge>
 
@@ -607,21 +612,21 @@ export function LandingPage({
               </p>
 
               <div className="grid sm:grid-cols-2 gap-4 pt-2">
-                <div className="p-4 bg-slate-800/80 rounded border border-slate-700">
-                  <div className="font-bold text-white text-xs mb-1">Differentiated Lesson Prep</div>
-                  <p className="text-xs text-slate-400">AI-generated lesson plans structured around your class's specific visual, auditory, and kinesthetic proportions.</p>
+                <div className="p-4 bg-[#232560] rounded border border-[#2C2E83]">
+                  <div className="font-bold text-[#1FC8E1] text-xs mb-1">Differentiated Lesson Prep</div>
+                  <p className="text-xs text-slate-300">AI-generated lesson plans structured around your class's specific visual, auditory, and kinesthetic proportions.</p>
                 </div>
-                <div className="p-4 bg-slate-800/80 rounded border border-slate-700">
-                  <div className="font-bold text-white text-xs mb-1">Student Risk Heatmaps</div>
-                  <p className="text-xs text-slate-400">Spot cognitive friction points before examinations and deliver proactive scaffolding.</p>
+                <div className="p-4 bg-[#232560] rounded border border-[#2C2E83]">
+                  <div className="font-bold text-[#7B61FF] text-xs mb-1">Student Risk Heatmaps</div>
+                  <p className="text-xs text-slate-300">Spot cognitive friction points before examinations and deliver proactive scaffolding.</p>
                 </div>
-                <div className="p-4 bg-slate-800/80 rounded border border-slate-700">
-                  <div className="font-bold text-white text-xs mb-1">Bulk Access Codes</div>
-                  <p className="text-xs text-slate-400">Generate thousands of secure test codes and track class completion rates without complex onboarding.</p>
+                <div className="p-4 bg-[#232560] rounded border border-[#2C2E83]">
+                  <div className="font-bold text-[#FF715B] text-xs mb-1">Bulk Access Codes</div>
+                  <p className="text-xs text-slate-300">Generate thousands of secure test codes and track class completion rates without complex onboarding.</p>
                 </div>
-                <div className="p-4 bg-slate-800/80 rounded border border-slate-700">
-                  <div className="font-bold text-white text-xs mb-1">Curriculum Alignment</div>
-                  <p className="text-xs text-slate-400">Fully structured with strands, sub-strands, and objectives across national and international syllabi.</p>
+                <div className="p-4 bg-[#232560] rounded border border-[#2C2E83]">
+                  <div className="font-bold text-[#1FC8E1] text-xs mb-1">Curriculum Alignment</div>
+                  <p className="text-xs text-slate-300">Fully structured with strands, sub-strands, and objectives across national and international syllabi.</p>
                 </div>
               </div>
 
@@ -629,7 +634,7 @@ export function LandingPage({
                 {onSupervisorPortal && (
                   <Button 
                     onClick={onSupervisorPortal}
-                    className="bg-[#0056D2] hover:bg-[#00419e] text-white font-bold text-xs px-6 h-11 rounded"
+                    className="bg-[#1FC8E1] hover:bg-[#1bb4ca] text-[#1a1b4d] font-bold text-xs px-6 h-11 rounded"
                   >
                     Open Organization Portal
                   </Button>
@@ -637,17 +642,17 @@ export function LandingPage({
                 <Button 
                   variant="outline"
                   onClick={onGetStarted}
-                  className="border-slate-700 text-slate-200 hover:bg-slate-800 font-bold text-xs px-6 h-11 rounded"
+                  className="border-slate-600 text-slate-200 hover:bg-white/10 font-bold text-xs px-6 h-11 rounded"
                 >
                   Explore Teacher Suite
                 </Button>
               </div>
             </div>
 
-            {/* Right: Clean Metric Summary */}
-            <div className="lg:col-span-5 bg-slate-800 border border-slate-700 rounded-lg p-6 space-y-6">
+            {/* Right: Metrics Card */}
+            <div className="lg:col-span-5 bg-[#232560] border border-[#2C2E83] rounded-lg p-6 space-y-6">
               <div className="border-b border-slate-700 pb-4">
-                <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Institution Impact</span>
+                <span className="text-xs font-bold text-[#1FC8E1] uppercase tracking-wider">Institution Impact</span>
                 <h4 className="text-lg font-bold text-white mt-0.5">Proven Classroom Outcomes</h4>
               </div>
 
@@ -655,35 +660,35 @@ export function LandingPage({
                 <div>
                   <div className="flex justify-between text-xs font-bold text-slate-200 mb-1">
                     <span>Lesson Preparation Time Saved</span>
-                    <span className="text-emerald-400">5.2 hrs / week</span>
+                    <span className="text-[#1FC8E1]">5.2 hrs / week</span>
                   </div>
-                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 w-[78%]" />
+                  <div className="h-2 bg-[#1a1b4d] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#1FC8E1] w-[78%]" />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between text-xs font-bold text-slate-200 mb-1">
                     <span>Student Classroom Engagement</span>
-                    <span className="text-blue-400">+28% Increase</span>
+                    <span className="text-[#7B61FF]">+28% Increase</span>
                   </div>
-                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 w-[84%]" />
+                  <div className="h-2 bg-[#1a1b4d] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#7B61FF] w-[84%]" />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between text-xs font-bold text-slate-200 mb-1">
                     <span>Classroom Cognitive Alignment</span>
-                    <span className="text-indigo-400">92% Harmony</span>
+                    <span className="text-[#FF715B]">92% Harmony</span>
                   </div>
-                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 w-[92%]" />
+                  <div className="h-2 bg-[#1a1b4d] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#FF715B] w-[92%]" />
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-900/60 rounded border border-slate-700/80 text-xs text-slate-300">
+              <div className="p-4 bg-[#1a1b4d]/80 rounded border border-[#2C2E83] text-xs text-slate-300">
                 "JotMinds gives our teachers the ability to differentiate instruction based on concrete data rather than intuition alone."
                 <div className="text-[11px] text-slate-400 font-bold mt-2">— Cape Coast District Academic Directorate</div>
               </div>
@@ -693,12 +698,12 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* ─── 7. ROLE-SPECIFIC VALUE PILLARS (Who Is This For) ─── */}
+      {/* ─── 7. ROLE-SPECIFIC PILLARS ─── */}
       <section id="solutions" className="py-16 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="max-w-3xl mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#0056D2]">Individual & Group Solutions</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#2C2E83]">Individual & Group Solutions</span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
               Designed for Every Step in Education & Career
             </h2>
@@ -708,49 +713,49 @@ export function LandingPage({
             
             {/* Student Pillar */}
             <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
-              <div className="w-10 h-10 rounded bg-blue-100 text-[#0056D2] flex items-center justify-center font-bold mb-4">
+              <div className="w-10 h-10 rounded bg-[#2C2E83]/10 text-[#2C2E83] flex items-center justify-center font-bold mb-4">
                 <GraduationCap className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-2">Students</h3>
               <p className="text-xs text-slate-600 leading-relaxed mb-4">
                 Understand how you retain concepts best. Receive actionable study strategies, exam preparation routines, and academic pathway guidance.
               </p>
-              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-[#0056D2] p-0 h-auto">
+              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-[#2C2E83] p-0 h-auto">
                 Student Assessment →
               </Button>
             </div>
 
             {/* Educator Pillar */}
             <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
-              <div className="w-10 h-10 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold mb-4">
+              <div className="w-10 h-10 rounded bg-[#7B61FF]/10 text-[#7B61FF] flex items-center justify-center font-bold mb-4">
                 <School className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-2">Teachers</h3>
               <p className="text-xs text-slate-600 leading-relaxed mb-4">
                 View your class cognitive distribution. Plan differentiated lessons with AI and review pre-flight preparation checklists.
               </p>
-              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-indigo-700 p-0 h-auto">
+              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-[#7B61FF] p-0 h-auto">
                 Teacher Dashboard →
               </Button>
             </div>
 
             {/* Parent Pillar */}
             <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
-              <div className="w-10 h-10 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold mb-4">
+              <div className="w-10 h-10 rounded bg-[#1FC8E1]/10 text-[#0c707f] flex items-center justify-center font-bold mb-4">
                 <Users className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-2">Parents</h3>
               <p className="text-xs text-slate-600 leading-relaxed mb-4">
                 Complete observation assessments and gain clarity on how your child handles study stress, homework, and problem-solving.
               </p>
-              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-emerald-700 p-0 h-auto">
+              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-[#0c707f] p-0 h-auto">
                 Parent Portal →
               </Button>
             </div>
 
             {/* Organization Pillar */}
             <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
-              <div className="w-10 h-10 rounded bg-amber-100 text-amber-700 flex items-center justify-center font-bold mb-4">
+              <div className="w-10 h-10 rounded bg-[#FF715B]/10 text-[#d44833] flex items-center justify-center font-bold mb-4">
                 <Building2 className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-2">Institutions</h3>
@@ -758,7 +763,7 @@ export function LandingPage({
                 Generate student test codes, track year-group cognitive profiles, and maintain department-level performance metrics.
               </p>
               {onSupervisorPortal && (
-                <Button onClick={onSupervisorPortal} variant="link" className="text-xs font-bold text-amber-700 p-0 h-auto">
+                <Button onClick={onSupervisorPortal} variant="link" className="text-xs font-bold text-[#d44833] p-0 h-auto">
                   Organization Access →
                 </Button>
               )}
@@ -768,11 +773,11 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* ─── 8. COURSERA-STYLE TESTIMONIALS & OUTCOMES ─── */}
+      {/* ─── 8. TESTIMONIALS & OUTCOMES ─── */}
       <section className="py-16 bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#0056D2]">Learner & Educator Outcomes</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#2C2E83]">Learner & Educator Outcomes</span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
               From the Classroom to Graduation
             </h2>
@@ -785,7 +790,7 @@ export function LandingPage({
                 "The cognitive breakdown showed that 60% of my class were active experimenters. Shifting my science lessons from theory lectures to hands-on demonstrations immediately turned around our term scores."
               </p>
               <div className="border-t border-slate-100 pt-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-700 text-white font-bold text-xs flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-[#2C2E83] text-white font-bold text-xs flex items-center justify-center">
                   AM
                 </div>
                 <div>
@@ -800,7 +805,7 @@ export function LandingPage({
                 "As head of school, onboarding JotMinds across all our secondary classes gave us an objective picture of student learning diversity and drastically improved parent-teacher meetings."
               </p>
               <div className="border-t border-slate-100 pt-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-indigo-700 text-white font-bold text-xs flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-[#7B61FF] text-white font-bold text-xs flex items-center justify-center">
                   EO
                 </div>
                 <div>
@@ -815,7 +820,7 @@ export function LandingPage({
                 "I used to get overwhelmed during exams. Learning my decision-making style taught me how to manage test pacing and trust analytical elimination over second-guessing."
               </p>
               <div className="border-t border-slate-100 pt-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-[#1FC8E1] text-[#1a1b4d] font-bold text-xs flex items-center justify-center">
                   KA
                 </div>
                 <div>
@@ -829,11 +834,11 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* ─── 9. FREQUENTLY ASKED QUESTIONS (Coursera Accordion) ─── */}
+      {/* ─── 9. FREQUENTLY ASKED QUESTIONS ─── */}
       <section className="py-16 bg-white border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#0056D2]">Frequently Asked Questions</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#2C2E83]">Frequently Asked Questions</span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
               Frequently Asked Questions
             </h2>
@@ -884,20 +889,20 @@ export function LandingPage({
         <FeedbackPrompt variant="full" />
       </div>
 
-      {/* ─── 11. FINAL CTA BANNER (Coursera Signature Blue Block) ─── */}
-      <section className="bg-[#0056D2] text-white py-16">
+      {/* ─── 11. FINAL CTA BANNER (JotMinds Indigo Block) ─── */}
+      <section className="bg-[#2C2E83] text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
             Take the First Step Toward Cognitive Clarity
           </h2>
-          <p className="text-sm sm:text-base text-blue-100 max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-200 max-w-xl mx-auto leading-relaxed">
             Join thousands of learners, teachers, and school administrators using JotMinds to personalize education across Africa and beyond.
           </p>
           <div className="pt-2 flex flex-col sm:flex-row justify-center gap-4">
             <Button 
               size="lg"
               onClick={onGetStarted}
-              className="bg-white text-[#0056D2] hover:bg-blue-50 font-bold text-sm px-8 h-13 rounded shadow-lg"
+              className="bg-[#1FC8E1] text-[#1a1b4d] hover:bg-[#1bb4ca] font-bold text-sm px-8 h-13 rounded shadow-lg"
             >
               Join for Free
             </Button>
@@ -912,14 +917,14 @@ export function LandingPage({
               </Button>
             )}
           </div>
-          <p className="text-xs text-blue-200 font-medium">
+          <p className="text-xs text-slate-300 font-medium">
             Takes ~5 minutes · No credit card required · Free forever for individual learners
           </p>
         </div>
       </section>
 
-      {/* ─── 12. COURSERA-STYLE GLOBAL FOOTER ─── */}
-      <footer className="bg-slate-900 text-slate-400 text-xs border-t border-slate-800">
+      {/* ─── 12. INSTITUTIONAL FOOTER ─── */}
+      <footer className="bg-[#1a1b4d] text-slate-400 text-xs border-t border-[#2C2E83]/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             
@@ -928,10 +933,10 @@ export function LandingPage({
               <div className="brightness-200">
                 <Logo size="md" />
               </div>
-              <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
+              <p className="text-slate-300 text-xs leading-relaxed max-w-sm">
                 JotMinds is an educational cognitive profiling platform empowering students, educators, and institutions with scientific insights.
               </p>
-              <div className="pt-2 text-[11px] text-slate-500">
+              <div className="pt-2 text-[11px] text-slate-400">
                 Curricula: GES (Ghana) · Cambridge · Pearson Edexcel · Oxford · IB
               </div>
             </div>
@@ -970,15 +975,15 @@ export function LandingPage({
 
           </div>
 
-          <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-slate-500">
+          <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-slate-400">
             <div>
               © {new Date().getFullYear()} JotMinds Platform. All rights reserved.
             </div>
             <div className="flex items-center gap-4">
               <span>Empowering education across Africa and beyond</span>
               <span>·</span>
-              <button onClick={onViewPrivacyPolicy} className="hover:text-slate-300">Privacy</button>
-              <button onClick={onViewTermsOfUse} className="hover:text-slate-300">Terms</button>
+              <button onClick={onViewPrivacyPolicy} className="hover:text-slate-200">Privacy</button>
+              <button onClick={onViewTermsOfUse} className="hover:text-slate-200">Terms</button>
             </div>
           </div>
         </div>
