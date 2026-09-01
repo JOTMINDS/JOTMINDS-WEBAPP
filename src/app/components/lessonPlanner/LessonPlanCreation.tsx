@@ -30,8 +30,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   const [curriculumFramework, setCurriculumFramework] = useState<any>('National Curriculum');
   const [topic, setTopic] = useState('');
   const [subtopic, setSubtopic] = useState('');
-  const [durationMinutes,
-      existingPlanText: mode === "upload" ? existingPlanText : undefined, setDurationMinutes] = useState(40);
+  const [durationMinutes, setDurationMinutes] = useState(40);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isGenerating, setIsGenerating] = useState(false);

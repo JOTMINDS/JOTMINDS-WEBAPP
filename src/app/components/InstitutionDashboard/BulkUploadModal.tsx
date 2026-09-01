@@ -37,10 +37,7 @@ export function BulkUploadModal({
     reader.onload = async (event) => {
       try {
         const csv = event.target?.result as string;
-        const lines = csv.split(/
-|
-|/).filter(line => line.trim().length > 0);
-        let imported = 0;
+        const lines = csv.split(/\r?\n/).filter(line => line.trim().length > 0);
         
         if (lines.length < 2) {
           toast.error("CSV file seems empty or invalid.");
