@@ -15,18 +15,19 @@ import {
   BarChart3, 
   ChevronRight, 
   Check, 
-  HelpCircle,
+  Search,
+  ChevronDown,
   Clock,
   Award,
   Layers,
-  Sparkles,
+  Star,
   Menu,
   X,
-  ExternalLink
+  Sparkles
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FeedbackPrompt } from './FeedbackPrompt';
 import { Logo } from './Logo';
@@ -48,7 +49,9 @@ export function LandingPage({
   onViewContact 
 }: LandingPageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedRoleTab, setSelectedRoleTab] = useState<'students' | 'teachers' | 'parents' | 'organizations'>('students');
+  const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCatalogTab, setActiveCatalogTab] = useState<'popular' | 'students' | 'teachers' | 'career'>('popular');
   const [stats, setStats] = useState({
     students: 5400,
     teachers: 480,
@@ -80,7 +83,7 @@ export function LandingPage({
           assessments: (assessmentCount && assessmentCount > 0) ? assessmentCount : 14200
         });
       } catch {
-        // Keep defaults if network fails
+        // Fallback silently
       }
     };
     fetchStats();
@@ -88,24 +91,104 @@ export function LandingPage({
 
   const scrollTo = (elementId: string) => {
     setMobileMenuOpen(false);
+    setExploreDropdownOpen(false);
     const elem = document.getElementById(elementId);
     if (elem) {
       elem.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
+  const catalogItems = [
+    {
+      category: 'popular',
+      type: 'COGNITIVE BATTERY · FULL SUITE',
+      title: 'Complete Cognitive Profile (Triad Evaluation)',
+      provider: 'JotMinds Assessment Labs',
+      rating: 4.9,
+      reviews: '3.8k',
+      duration: '12 min · Free',
+      description: 'Comprehensive 3-in-1 assessment covering your Learning Dimensions, Thinking Modes, and Decision System.',
+      tags: ['Diverging & Converging', 'Analytical vs Creative', 'Intuitive Heuristics'],
+      badgeColor: 'bg-blue-600'
+    },
+    {
+      category: 'students',
+      type: 'FOUNDATIONAL · 5 MIN',
+      title: 'Learning Dimensions Assessment (Kolb-Based)',
+      provider: 'Experiential Learning Institute',
+      rating: 4.9,
+      reviews: '2.4k',
+      duration: '5 min · Free',
+      description: 'Discover whether you absorb concepts through hands-on experience, reflective observation, abstract models, or active experimentation.',
+      tags: ['Study Habit Optimization', 'Revision Techniques', 'Classroom Scaffolding'],
+      badgeColor: 'bg-indigo-600'
+    },
+    {
+      category: 'students',
+      type: 'COGNITIVE ARCHITECTURE · 4 MIN',
+      title: 'Thinking Styles Assessment (Sternberg Triarchic)',
+      provider: 'Cognitive Science Frameworks',
+      rating: 4.8,
+      reviews: '1.9k',
+      duration: '4 min · Free',
+      description: 'Map your primary problem-solving mode across Analytical evaluation, Creative ideation, and Practical execution.',
+      tags: ['Problem Solving', 'Subject Selection', 'Academic Strengths'],
+      badgeColor: 'bg-purple-600'
+    },
+    {
+      category: 'teachers',
+      type: 'EDUCATOR SUITE · CURRICULUM TOOL',
+      title: 'AI-Assisted Differentiated Lesson Planner',
+      provider: 'JotMinds for Educators',
+      rating: 4.9,
+      reviews: '1.2k',
+      duration: 'Interactive Tool · Free',
+      description: 'Generate curriculum-aligned lesson plans tailored to your class cognitive distribution across GES, Cambridge, and IB.',
+      tags: ['Strand & Sub-strand', 'Pre-Class Prep Checklist', 'Classroom Intelligence'],
+      badgeColor: 'bg-emerald-600'
+    },
+    {
+      category: 'teachers',
+      type: 'INSTITUTIONAL · CLASSROOM INTELLIGENCE',
+      title: 'Class Cognitive Harmony & Heatmap Roster',
+      provider: 'JotMinds for Schools',
+      rating: 4.9,
+      reviews: '850',
+      duration: 'Real-Time Analytics',
+      description: 'Analyze multi-student cognitive distribution to identify friction points and structure group collaboration effectively.',
+      tags: ['Visual vs Hands-on', 'Cognitive Bottlenecks', 'Department Reporting'],
+      badgeColor: 'bg-teal-600'
+    },
+    {
+      category: 'career',
+      type: 'APPLIED BEHAVIORAL · 3 MIN',
+      title: 'Decision-Making Style & Pressure Assessment',
+      provider: 'Applied Psychology Labs',
+      rating: 4.8,
+      reviews: '1.5k',
+      duration: '3 min · Free',
+      description: 'Evaluate how you make choices, navigate uncertainty, and balance analytical data against intuitive judgment.',
+      tags: ['High-Stakes Decision', 'Team Leadership', 'Risk Synthesis'],
+      badgeColor: 'bg-amber-600'
+    }
+  ];
+
+  const filteredCatalog = activeCatalogTab === 'popular' 
+    ? catalogItems 
+    : catalogItems.filter(item => item.category === activeCatalogTab || item.category === 'popular');
+
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
       
-      {/* ─── 1. TOP UTILITY / INSTITUTION BAR ─── */}
+      {/* ─── 1. TOP UTILITY HEADER (Coursera Institutional Bar) ─── */}
       <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4 border-b border-slate-800">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <span className="font-medium text-slate-200 flex items-center gap-1.5">
+            <span className="font-semibold text-white flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-blue-400" /> Grounded in Kolb & Sternberg Cognitive Science
             </span>
-            <span className="hidden md:inline text-slate-500">|</span>
-            <span className="hidden md:inline text-slate-400">Aligned with GES, Cambridge & International Curricula</span>
+            <span className="hidden md:inline text-slate-600">|</span>
+            <span className="hidden md:inline text-slate-400">Aligned with Ghana (GES), Cambridge & IB Standards</span>
           </div>
           <div className="flex items-center gap-4">
             {onSupervisorPortal && (
@@ -114,72 +197,109 @@ export function LandingPage({
                 className="text-slate-300 hover:text-white font-medium transition-colors flex items-center gap-1"
               >
                 <Building2 className="w-3.5 h-3.5 text-blue-400" />
-                For Schools & Organizations
+                For Schools & Institutions
               </button>
             )}
             <button 
               onClick={onViewContact} 
               className="text-slate-400 hover:text-slate-200 transition-colors hidden sm:inline"
             >
-              Contact Support
+              Support
             </button>
           </div>
         </div>
       </div>
 
-      {/* ─── 2. MAIN COURSERA-STYLE NAVBAR ─── */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
+      {/* ─── 2. COURSERA MAIN NAVIGATION BAR ─── */}
+      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo */}
-            <div className="flex items-center gap-8">
+          <div className="flex items-center justify-between h-18 gap-4">
+            
+            {/* Logo & Explore Dropdown */}
+            <div className="flex items-center gap-6 shrink-0">
               <div className="cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                 <Logo size="md" />
               </div>
 
-              {/* Navigation Links */}
-              <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-700">
-                <button 
-                  onClick={() => scrollTo('frameworks')} 
-                  className="hover:text-blue-700 transition-colors py-2"
+              {/* Coursera-Style Explore Button */}
+              <div className="relative hidden lg:block">
+                <Button 
+                  variant="outline"
+                  onClick={() => setExploreDropdownOpen(!exploreDropdownOpen)}
+                  className="border-[#0056D2] text-[#0056D2] hover:bg-blue-50 font-bold text-xs h-10 px-4 flex items-center gap-1.5"
                 >
-                  Assessments
-                </button>
-                <button 
-                  onClick={() => scrollTo('for-educators')} 
-                  className="hover:text-blue-700 transition-colors py-2"
-                >
-                  For Educators
-                </button>
-                <button 
-                  onClick={() => scrollTo('solutions')} 
-                  className="hover:text-blue-700 transition-colors py-2"
-                >
-                  Who It's For
-                </button>
-                <button 
-                  onClick={() => scrollTo('methodology')} 
-                  className="hover:text-blue-700 transition-colors py-2"
-                >
-                  Cognitive Science
-                </button>
-              </nav>
+                  Explore <ChevronDown className={`w-4 h-4 transition-transform ${exploreDropdownOpen ? 'rotate-180' : ''}`} />
+                </Button>
+
+                {exploreDropdownOpen && (
+                  <div className="absolute top-12 left-0 w-72 bg-white border border-slate-200 rounded-lg shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">Assessments</div>
+                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                      Learning Dimensions (Kolb) <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                      Thinking Styles (Sternberg) <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                      Decision-Making Battery <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                    <div className="border-t border-slate-100 my-1"></div>
+                    <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">Educator Tools</div>
+                    <button onClick={() => scrollTo('for-schools')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                      AI Lesson Planner <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                    <button onClick={() => scrollTo('for-schools')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center justify-between">
+                      Class Cognitive Heatmaps <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* CTAs */}
-            <div className="flex items-center gap-3">
+            {/* Coursera Search Input */}
+            <div className="hidden md:flex items-center flex-1 max-w-lg relative">
+              <input 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && scrollTo('catalog')}
+                placeholder="What do you want to discover? (e.g. Learning Style, Lesson Planner)"
+                className="w-full h-11 pl-4 pr-12 text-xs bg-slate-50 border border-slate-300 rounded-full focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all text-slate-800"
+              />
+              <button 
+                onClick={() => scrollTo('catalog')}
+                className="absolute right-1.5 w-8 h-8 bg-[#0056D2] hover:bg-[#00419e] text-white rounded-full flex items-center justify-center transition-colors shadow-sm"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Right Action Links */}
+            <div className="flex items-center gap-3 shrink-0">
+              <button 
+                onClick={() => scrollTo('for-schools')}
+                className="hidden xl:inline text-xs font-semibold text-slate-700 hover:text-blue-700 py-2"
+              >
+                For Schools
+              </button>
+              <button 
+                onClick={() => scrollTo('solutions')}
+                className="hidden xl:inline text-xs font-semibold text-slate-700 hover:text-blue-700 py-2"
+              >
+                For Parents
+              </button>
               <Button 
                 variant="ghost" 
                 onClick={onGetStarted}
-                className="hidden sm:inline-flex text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                className="hidden sm:inline-flex text-xs font-bold text-slate-700 hover:text-blue-700 hover:bg-slate-50 h-10 px-3"
               >
                 Log In
               </Button>
               <Button 
                 onClick={onGetStarted}
-                className="bg-[#0056D2] hover:bg-[#00419e] text-white font-semibold text-sm px-6 h-11 rounded-md shadow-sm transition-all"
+                className="bg-[#0056D2] hover:bg-[#00419e] text-white font-bold text-xs px-5 h-10 rounded shadow-sm transition-all"
               >
-                Take Free Assessment
+                Join for Free
               </Button>
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -192,38 +312,28 @@ export function LandingPage({
           </div>
         </div>
 
-        {/* Mobile Dropdown */}
+        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-3">
-            <button 
-              onClick={() => scrollTo('frameworks')} 
-              className="block w-full text-left py-2 text-sm font-medium text-slate-700"
-            >
-              Assessments & Dimensions
+            <div className="relative mb-3">
+              <input 
+                type="text"
+                placeholder="Search assessments & tools..."
+                className="w-full h-10 pl-3 pr-10 text-xs bg-slate-50 border border-slate-300 rounded"
+              />
+              <Search className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
+            </div>
+            <button onClick={() => scrollTo('catalog')} className="block w-full text-left py-2 text-xs font-semibold text-slate-700">
+              All Assessments
             </button>
-            <button 
-              onClick={() => scrollTo('for-educators')} 
-              className="block w-full text-left py-2 text-sm font-medium text-slate-700"
-            >
-              For Educators & Schools
+            <button onClick={() => scrollTo('for-schools')} className="block w-full text-left py-2 text-xs font-semibold text-slate-700">
+              For Schools & Teachers
             </button>
-            <button 
-              onClick={() => scrollTo('solutions')} 
-              className="block w-full text-left py-2 text-sm font-medium text-slate-700"
-            >
-              Role-Specific Solutions
-            </button>
-            <button 
-              onClick={() => scrollTo('methodology')} 
-              className="block w-full text-left py-2 text-sm font-medium text-slate-700"
-            >
-              Cognitive Science
+            <button onClick={() => scrollTo('solutions')} className="block w-full text-left py-2 text-xs font-semibold text-slate-700">
+              For Parents & Students
             </button>
             {onSupervisorPortal && (
-              <button 
-                onClick={onSupervisorPortal} 
-                className="block w-full text-left py-2 text-sm font-semibold text-blue-700"
-              >
+              <button onClick={onSupervisorPortal} className="block w-full text-left py-2 text-xs font-bold text-blue-700">
                 Organization Portal →
               </button>
             )}
@@ -231,145 +341,125 @@ export function LandingPage({
         )}
       </header>
 
-      {/* ─── 3. HERO SECTION (Coursera Split Architecture) ─── */}
-      <section className="pt-12 pb-16 lg:pt-20 lg:pb-24 bg-gradient-to-b from-slate-50 via-white to-white border-b border-slate-200">
+      {/* ─── 3. COURSERA SIGNATURE HERO ─── */}
+      <section className="bg-slate-50 border-b border-slate-200 py-12 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
             
-            {/* Left Column: Authoritative Editorial Copy */}
+            {/* Left: Clean Headline & Call to Action */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold rounded-full">
-                <Award className="w-3.5 h-3.5 text-blue-600" />
-                Validated Educational Assessment Platform
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-bold text-slate-900 leading-[1.12] tracking-tight">
-                Understand how you <br />
-                <span className="text-[#0056D2]">learn, think, and decide.</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold text-slate-900 leading-[1.1] tracking-tight">
+                Learn Without Limits. <br />
+                <span className="text-[#0056D2]">Discover How You Think.</span>
               </h1>
 
-              <p className="text-lg text-slate-600 leading-relaxed max-w-xl">
-                JotMinds maps individual cognitive styles using proven experiential and triarchic frameworks. Unlock tailored study methods, differentiated teaching insights, and career clarity in minutes.
+              <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
+                Unlock your academic and professional potential with science-backed cognitive profiling. Personalized learning strategies, curriculum-aligned lesson planning, and institutional intelligence.
               </p>
 
-              {/* Action Strip */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
                 <Button 
                   onClick={onGetStarted}
-                  className="bg-[#0056D2] hover:bg-[#00419e] text-white font-semibold text-base px-8 h-13 rounded-md shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  className="bg-[#0056D2] hover:bg-[#00419e] text-white font-bold text-sm px-8 h-13 rounded shadow-md hover:shadow-lg transition-all"
                 >
-                  Start Assessment Free
-                  <ArrowRight className="w-4 h-4" />
+                  Join for Free
                 </Button>
                 {onSupervisorPortal && (
                   <Button 
                     variant="outline"
                     onClick={onSupervisorPortal}
-                    className="border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-base px-6 h-13 rounded-md"
+                    className="border-slate-300 text-slate-700 hover:bg-white font-bold text-sm px-6 h-13 rounded bg-white shadow-sm"
                   >
                     <Building2 className="w-4 h-4 mr-2 text-slate-500" />
-                    For Schools & Teams
+                    For Enterprise & Schools
                   </Button>
                 )}
               </div>
 
-              {/* Trust Indicators */}
-              <div className="pt-4 border-t border-slate-200 flex flex-wrap gap-y-2 gap-x-6 text-xs text-slate-500 font-medium">
+              <div className="pt-4 flex flex-wrap gap-y-2 gap-x-6 text-xs text-slate-500 font-medium">
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-600 font-bold" /> 100% Free for Learners
+                  <Check className="w-4 h-4 text-emerald-600 font-bold" /> Free for Learners
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-600 font-bold" /> 3 to 5 Minutes per Module
+                  <Check className="w-4 h-4 text-emerald-600 font-bold" /> Self-Paced (3 to 5 mins)
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-600 font-bold" /> Instant Actionable Report
+                  <Check className="w-4 h-4 text-emerald-600 font-bold" /> Actionable Study & Teaching Plan
                 </span>
               </div>
             </div>
 
-            {/* Right Column: Coursera-Style Structured Assessment Card Preview */}
+            {/* Right: Featured High-Credibility Course Card (Coursera Featured Specialization Style) */}
             <div className="lg:col-span-5">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-                {/* Card Header */}
-                <div className="bg-slate-900 text-white p-6">
-                  <div className="flex items-center justify-between mb-3">
+              <div className="bg-white rounded-lg border border-slate-200 shadow-xl overflow-hidden hover:shadow-2xl transition-shadow">
+                
+                {/* Visual Header */}
+                <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-6 relative">
+                  <div className="flex items-center justify-between mb-4">
                     <span className="text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 bg-blue-600 text-white rounded">
-                      Core Battery
+                      Featured Track
                     </span>
-                    <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" /> ~12 min total
+                    <span className="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" /> 12 mins · Free
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-white">Comprehensive Cognitive Profile</h3>
-                  <p className="text-xs text-slate-300 mt-1">Full evaluation across 3 scientific dimensions</p>
+                  <h3 className="text-xl font-bold text-white leading-snug">
+                    Complete Cognitive Triad Evaluation
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-1">
+                    JotMinds Assessment & Educational Frameworks
+                  </p>
                 </div>
 
-                {/* Modules List */}
-                <div className="p-6 divide-y divide-slate-100 space-y-4">
-                  
-                  {/* Module 1 */}
-                  <div className="pt-2 first:pt-0 flex items-start gap-3">
-                    <div className="w-8 h-8 rounded bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
-                      1
+                {/* Content Details */}
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <div className="flex text-amber-400">
+                      {[1,2,3,4,5].map(i => <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />)}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-bold text-slate-900">Learning Dimensions</h4>
-                        <span className="text-[11px] text-slate-500 font-medium">Kolb Model</span>
-                      </div>
-                      <p className="text-xs text-slate-600 mt-0.5">
-                        Identifies Diverging, Assimilating, Converging, and Accommodating styles.
-                      </p>
-                    </div>
+                    <span className="font-bold text-slate-900">4.9</span>
+                    <span className="text-slate-400">(3,800+ student & educator reviews)</span>
                   </div>
 
-                  {/* Module 2 */}
-                  <div className="pt-4 flex items-start gap-3">
-                    <div className="w-8 h-8 rounded bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">
-                      2
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-bold text-slate-900">Thinking Modes</h4>
-                        <span className="text-[11px] text-slate-500 font-medium">Sternberg Theory</span>
-                      </div>
-                      <p className="text-xs text-slate-600 mt-0.5">
-                        Evaluates Analytical, Creative, and Practical problem-solving strengths.
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Evaluates how your brain takes in information (Kolb), formulates solutions (Sternberg), and synthesizes decisions under academic pressure.
+                  </p>
 
-                  {/* Module 3 */}
-                  <div className="pt-4 flex items-start gap-3">
-                    <div className="w-8 h-8 rounded bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm shrink-0">
-                      3
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-bold text-slate-900">Decision-Making Style</h4>
-                        <span className="text-[11px] text-slate-500 font-medium">Dual-System Theory</span>
+                  <div className="border-t border-slate-100 pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      Included Modules
+                    </span>
+                    <div className="space-y-1.5 text-xs text-slate-700">
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                        <span>Learning Dimensions (Visual, Auditory, Kinesthetic, Read/Write)</span>
                       </div>
-                      <p className="text-xs text-slate-600 mt-0.5">
-                        Measures reliance on intuitive heuristics versus systematic analytical evaluation.
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                        <span>Thinking Modes (Analytical, Creative, Practical)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                        <span>Decision Systems (Heuristic Intuition vs Analytical Logic)</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Card Footer CTA */}
-                <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-500 block">Deliverable</span>
-                    <span className="text-xs font-bold text-slate-800">Diagnostic PDF & Action Plan</span>
-                  </div>
+                {/* Card Action */}
+                <div className="bg-slate-50 p-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Available Now
+                  </span>
                   <Button 
                     size="sm"
                     onClick={onGetStarted}
-                    className="bg-[#0056D2] hover:bg-[#00419e] text-white text-xs font-semibold px-4"
+                    className="bg-[#0056D2] hover:bg-[#00419e] text-white text-xs font-bold px-5"
                   >
-                    Start Free →
+                    Start Assessment →
                   </Button>
                 </div>
+
               </div>
             </div>
 
@@ -377,280 +467,161 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* ─── 4. INSTITUTIONAL & FRAMEWORK TRUST BAR ─── */}
-      <section className="bg-white py-10 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-6">
-            Grounded in Leading Cognitive Science & Education Frameworks
+      {/* ─── 4. INSTITUTIONAL COLLABORATORS & FRAMEWORKS (Coursera Partner Logos) ─── */}
+      <section className="bg-white py-12 border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-8">
+            Collaborating with Curricula & Research Frameworks Across 50+ Institutions
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-10 text-slate-700">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold">
-              <BookOpen className="w-4 h-4 text-blue-600" />
-              Kolb Experiential Learning Theory
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 items-center text-slate-600">
+            <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
+              <School className="w-4 h-4 text-blue-600" /> GES (Ghana)
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold">
-              <Brain className="w-4 h-4 text-indigo-600" />
-              Sternberg Triarchic Theory
+            <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
+              <Award className="w-4 h-4 text-indigo-600" /> Cambridge Int.
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold">
-              <School className="w-4 h-4 text-emerald-600" />
-              Ghana National Curriculum (GES) Aligned
+            <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
+              <BookOpen className="w-4 h-4 text-emerald-600" /> Pearson Edexcel
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold">
-              <Award className="w-4 h-4 text-amber-600" />
-              Cambridge & Pearson Edexcel Support
+            <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
+              <Globe className="w-4 h-4 text-purple-600" /> IB Curriculum
+            </div>
+            <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
+              <Brain className="w-4 h-4 text-amber-600" /> Kolb Model
+            </div>
+            <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
+              <Target className="w-4 h-4 text-teal-600" /> Sternberg Theory
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── 5. PLATFORM METRICS / SOCIAL PROOF (Coursera Numbers Style) ─── */}
-      <section className="py-12 bg-slate-50 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-            
-            <div className="text-center pt-4 md:pt-0">
-              <div className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                {stats.students.toLocaleString()}+
-              </div>
-              <p className="text-xs md:text-sm font-medium text-slate-600 mt-1">Students Assessed</p>
-            </div>
-
-            <div className="text-center pt-4 md:pt-0">
-              <div className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                {stats.teachers.toLocaleString()}+
-              </div>
-              <p className="text-xs md:text-sm font-medium text-slate-600 mt-1">Educators Onboarded</p>
-            </div>
-
-            <div className="text-center pt-4 md:pt-0">
-              <div className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                {stats.schools.toLocaleString()}+
-              </div>
-              <p className="text-xs md:text-sm font-medium text-slate-600 mt-1">Schools & Institutions</p>
-            </div>
-
-            <div className="text-center pt-4 md:pt-0">
-              <div className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                {stats.assessments.toLocaleString()}+
-              </div>
-              <p className="text-xs md:text-sm font-medium text-slate-600 mt-1">Assessments Completed</p>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 6. THE THREE SCIENTIFIC FRAMEWORKS (Course Catalog Style) ─── */}
-      <section id="frameworks" className="py-16 lg:py-24 bg-white border-b border-slate-200">
+      {/* ─── 5. COURSERA COURSE CATALOG GRID (Explore Assessments) ─── */}
+      <section id="catalog" className="py-16 bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          <div className="max-w-3xl mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700">Assessment Frameworks</span>
-            <h2 className="text-3xl font-bold text-slate-900 mt-1">
-              Explore Our Scientific Cognitive Dimensions
-            </h2>
-            <p className="text-base text-slate-600 mt-2">
-              Each module is self-paced, rigorously validated, and outputs practical pedagogical and personal strategies.
-            </p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#0056D2]">Assessment Catalog</span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
+                Explore Assessments & Pedagogical Tools
+              </h2>
+              <p className="text-sm text-slate-600 mt-1">
+                Validated psychological instruments and classroom intelligence software.
+              </p>
+            </div>
+
+            {/* Coursera-Style Filter Tabs */}
+            <div className="flex items-center gap-2 bg-slate-200/80 p-1 rounded-lg self-start md:self-auto overflow-x-auto">
+              {[
+                { id: 'popular', label: 'Most Popular' },
+                { id: 'students', label: 'For Students' },
+                { id: 'teachers', label: 'For Educators' },
+                { id: 'career', label: 'Career & Adults' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveCatalogTab(tab.id as any)}
+                  className={`text-xs font-bold px-3 py-1.5 rounded transition-all whitespace-nowrap ${
+                    activeCatalogTab === tab.id
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            
-            {/* Card 1: Learning Styles */}
-            <div className="bg-white rounded-lg border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all flex flex-col justify-between overflow-hidden group">
-              <div>
-                <div className="h-2 bg-blue-600" />
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded">
-                      DIMENSION 1 · 5 MIN
-                    </span>
-                    <BookOpen className="w-5 h-5 text-blue-600" />
-                  </div>
+          {/* Cards Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCatalog.map((item, idx) => (
+              <div 
+                key={idx}
+                className="bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all flex flex-col justify-between overflow-hidden cursor-pointer group"
+                onClick={onGetStarted}
+              >
+                <div>
+                  <div className={`h-1.5 ${item.badgeColor}`} />
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        {item.type}
+                      </span>
+                    </div>
 
-                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
-                    Learning Style Assessment
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium mt-1">Kolb Experiential Learning Model</p>
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-[#0056D2] transition-colors leading-snug mb-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium mb-3">{item.provider}</p>
 
-                  <p className="text-sm text-slate-600 mt-4 leading-relaxed">
-                    Determines how you take in and integrate information through experience, reflective observation, abstract thought, or active experimentation.
-                  </p>
+                    <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                      {item.description}
+                    </p>
 
-                  <div className="mt-6 pt-4 border-t border-slate-100 space-y-2">
-                    <div className="text-xs font-semibold text-slate-700">Key Outcomes:</div>
-                    <ul className="text-xs text-slate-600 space-y-1.5">
-                      <li className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-blue-600" /> Personalized study & homework habits
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-blue-600" /> Revision methods tailored to memory intake
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-blue-600" /> Classroom collaboration recommendations
-                      </li>
-                    </ul>
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {item.tags.map((tag, tIdx) => (
+                        <span key={tIdx} className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-6 pt-0 bg-white">
-                <Button 
-                  onClick={onGetStarted}
-                  className="w-full bg-slate-900 hover:bg-blue-700 text-white text-sm font-semibold h-10 transition-colors"
-                >
-                  Start Learning Assessment →
-                </Button>
-              </div>
-            </div>
-
-            {/* Card 2: Thinking Styles */}
-            <div className="bg-white rounded-lg border border-slate-200 hover:border-indigo-400 hover:shadow-lg transition-all flex flex-col justify-between overflow-hidden group">
-              <div>
-                <div className="h-2 bg-indigo-600" />
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded">
-                      DIMENSION 2 · 4 MIN
-                    </span>
-                    <Brain className="w-5 h-5 text-indigo-600" />
+                <div className="p-6 pt-0 border-t border-slate-100 mt-2 bg-slate-50/50 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span className="font-bold text-slate-900">{item.rating}</span>
+                    <span className="text-slate-400">({item.reviews})</span>
                   </div>
-
-                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">
-                    Thinking Style Assessment
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium mt-1">Sternberg Triarchic Theory</p>
-
-                  <p className="text-sm text-slate-600 mt-4 leading-relaxed">
-                    Evaluates how your brain structures problem-solving across analytical evaluation, creative synthesis, and practical execution.
-                  </p>
-
-                  <div className="mt-6 pt-4 border-t border-slate-100 space-y-2">
-                    <div className="text-xs font-semibold text-slate-700">Key Outcomes:</div>
-                    <ul className="text-xs text-slate-600 space-y-1.5">
-                      <li className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-indigo-600" /> Problem-solving & project approach
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-indigo-600" /> Cognitive strengths for subject selection
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-indigo-600" /> Career pathway alignment
-                      </li>
-                    </ul>
-                  </div>
+                  <span className="text-xs font-bold text-[#0056D2] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    Start <ArrowRight className="w-3 h-3" />
+                  </span>
                 </div>
               </div>
-
-              <div className="p-6 pt-0 bg-white">
-                <Button 
-                  onClick={onGetStarted}
-                  className="w-full bg-slate-900 hover:bg-indigo-700 text-white text-sm font-semibold h-10 transition-colors"
-                >
-                  Start Thinking Assessment →
-                </Button>
-              </div>
-            </div>
-
-            {/* Card 3: Decision Styles */}
-            <div className="bg-white rounded-lg border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all flex flex-col justify-between overflow-hidden group">
-              <div>
-                <div className="h-2 bg-emerald-600" />
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded">
-                      DIMENSION 3 · 3 MIN
-                    </span>
-                    <Target className="w-5 h-5 text-emerald-600" />
-                  </div>
-
-                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                    Decision-Making Assessment
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium mt-1">Dual-System Behavioral Cognition</p>
-
-                  <p className="text-sm text-slate-600 mt-4 leading-relaxed">
-                    Measures how you weigh evidence, assess uncertainty, and synthesize variables when making academic or career choices.
-                  </p>
-
-                  <div className="mt-6 pt-4 border-t border-slate-100 space-y-2">
-                    <div className="text-xs font-semibold text-slate-700">Key Outcomes:</div>
-                    <ul className="text-xs text-slate-600 space-y-1.5">
-                      <li className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-emerald-600" /> High-stakes exam & test decision patterns
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-emerald-600" /> Intuitive vs analytical balance
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-emerald-600" /> Leadership & team decision style
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 pt-0 bg-white">
-                <Button 
-                  onClick={onGetStarted}
-                  className="w-full bg-slate-900 hover:bg-emerald-700 text-white text-sm font-semibold h-10 transition-colors"
-                >
-                  Start Decision Assessment →
-                </Button>
-              </div>
-            </div>
-
+            ))}
           </div>
+
         </div>
       </section>
 
-      {/* ─── 7. COURSERA-FOR-ENTERPRISE STYLE SECTION: FOR EDUCATORS & SCHOOLS ─── */}
-      <section id="for-educators" className="py-20 bg-slate-900 text-white">
+      {/* ─── 6. JOTMINDS FOR SCHOOLS & ENTERPRISE (Coursera for Business Section) ─── */}
+      <section id="for-schools" className="py-16 lg:py-24 bg-slate-900 text-white border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-12 gap-12 items-center">
             
-            {/* Left: Solution Value */}
-            <div className="lg:col-span-6 space-y-6">
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
-                Institutional Capabilities
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
-                JotMinds for Schools & Educators
+            <div className="lg:col-span-7 space-y-6">
+              <Badge className="bg-blue-600 text-white border-0 text-xs uppercase font-bold tracking-wider px-3 py-1">
+                JotMinds for Institutions
+              </Badge>
+
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
+                Empower Your Faculty with Actionable Cognitive Intelligence
               </h2>
-              <p className="text-slate-300 text-base leading-relaxed">
-                Empower your teaching staff with actionable cognitive intelligence. Bridge pedagogical gaps, automate lesson preparation, and deliver differentiated instruction across every classroom.
+
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl">
+                Deliver school-wide differentiated instruction. JotMinds equips head teachers, subject leads, and classroom educators with real-time cognitive metrics and automated curriculum tools.
               </p>
 
-              <div className="space-y-4 pt-2">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded bg-blue-900/60 border border-blue-500 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                    ✓
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">AI-Assisted Lesson Planning & Differentiation</h4>
-                    <p className="text-xs text-slate-300 mt-0.5">Generate lesson plans automatically structured around your class’s specific cognitive distribution.</p>
-                  </div>
+              <div className="grid sm:grid-cols-2 gap-4 pt-2">
+                <div className="p-4 bg-slate-800/80 rounded border border-slate-700">
+                  <div className="font-bold text-white text-xs mb-1">Differentiated Lesson Prep</div>
+                  <p className="text-xs text-slate-400">AI-generated lesson plans structured around your class's specific visual, auditory, and kinesthetic proportions.</p>
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded bg-blue-900/60 border border-blue-500 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                    ✓
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Classroom Cognitive Heatmaps</h4>
-                    <p className="text-xs text-slate-300 mt-0.5">Instantly spot students who require alternative explanations, visual scaffolding, or active experimentation.</p>
-                  </div>
+                <div className="p-4 bg-slate-800/80 rounded border border-slate-700">
+                  <div className="font-bold text-white text-xs mb-1">Student Risk Heatmaps</div>
+                  <p className="text-xs text-slate-400">Spot cognitive friction points before examinations and deliver proactive scaffolding.</p>
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded bg-blue-900/60 border border-blue-500 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                    ✓
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Institution-Wide Reporting & Access Codes</h4>
-                    <p className="text-xs text-slate-300 mt-0.5">Batch onboard entire year groups, track term progress, and export administrative analytics.</p>
-                  </div>
+                <div className="p-4 bg-slate-800/80 rounded border border-slate-700">
+                  <div className="font-bold text-white text-xs mb-1">Bulk Access Codes</div>
+                  <p className="text-xs text-slate-400">Generate thousands of secure test codes and track class completion rates without complex onboarding.</p>
+                </div>
+                <div className="p-4 bg-slate-800/80 rounded border border-slate-700">
+                  <div className="font-bold text-white text-xs mb-1">Curriculum Alignment</div>
+                  <p className="text-xs text-slate-400">Fully structured with strands, sub-strands, and objectives across national and international syllabi.</p>
                 </div>
               </div>
 
@@ -658,7 +629,7 @@ export function LandingPage({
                 {onSupervisorPortal && (
                   <Button 
                     onClick={onSupervisorPortal}
-                    className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-6 h-12 rounded-md"
+                    className="bg-[#0056D2] hover:bg-[#00419e] text-white font-bold text-xs px-6 h-11 rounded"
                   >
                     Open Organization Portal
                   </Button>
@@ -666,68 +637,55 @@ export function LandingPage({
                 <Button 
                   variant="outline"
                   onClick={onGetStarted}
-                  className="border-slate-700 text-slate-200 hover:bg-slate-800 font-semibold text-sm px-6 h-12 rounded-md"
+                  className="border-slate-700 text-slate-200 hover:bg-slate-800 font-bold text-xs px-6 h-11 rounded"
                 >
-                  Explore Teacher Tools
+                  Explore Teacher Suite
                 </Button>
               </div>
             </div>
 
-            {/* Right: Institutional UI Preview Mockup */}
-            <div className="lg:col-span-6">
-              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-2xl text-slate-100">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-700 mb-6">
-                  <div>
-                    <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">Classroom Intelligence</span>
-                    <h4 className="text-base font-bold text-white">Grade 9A · Integrated Science</h4>
-                  </div>
-                  <Badge className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs">
-                    34 Students Profiled
-                  </Badge>
-                </div>
+            {/* Right: Clean Metric Summary */}
+            <div className="lg:col-span-5 bg-slate-800 border border-slate-700 rounded-lg p-6 space-y-6">
+              <div className="border-b border-slate-700 pb-4">
+                <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Institution Impact</span>
+                <h4 className="text-lg font-bold text-white mt-0.5">Proven Classroom Outcomes</h4>
+              </div>
 
-                {/* Cognitive Distribution Grid */}
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-slate-300">Visual & Conceptual Learners</span>
-                      <span className="text-blue-400">44% (15 students)</span>
-                    </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full w-[44%]" />
-                    </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-slate-200 mb-1">
+                    <span>Lesson Preparation Time Saved</span>
+                    <span className="text-emerald-400">5.2 hrs / week</span>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-slate-300">Hands-On & Kinesthetic Learners</span>
-                      <span className="text-amber-400">32% (11 students)</span>
-                    </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-500 rounded-full w-[32%]" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-slate-300">Reflective & Analytical Learners</span>
-                      <span className="text-purple-400">24% (8 students)</span>
-                    </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-purple-500 rounded-full w-[24%]" />
-                    </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 w-[78%]" />
                   </div>
                 </div>
 
-                {/* Pedagogical Recommendation Note */}
-                <div className="mt-6 p-4 rounded-lg bg-slate-900 border border-slate-700 text-xs">
-                  <div className="font-bold text-blue-400 mb-1 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" /> Differentiated Lesson Strategy
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-slate-200 mb-1">
+                    <span>Student Classroom Engagement</span>
+                    <span className="text-blue-400">+28% Increase</span>
                   </div>
-                  <p className="text-slate-300 leading-relaxed">
-                    High hands-on concentration detected. Pair the upcoming physics lab with concrete apparatus models before introducing mathematical formulas.
-                  </p>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 w-[84%]" />
+                  </div>
                 </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-slate-200 mb-1">
+                    <span>Classroom Cognitive Alignment</span>
+                    <span className="text-indigo-400">92% Harmony</span>
+                  </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-500 w-[92%]" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-900/60 rounded border border-slate-700/80 text-xs text-slate-300">
+                "JotMinds gives our teachers the ability to differentiate instruction based on concrete data rather than intuition alone."
+                <div className="text-[11px] text-slate-400 font-bold mt-2">— Cape Coast District Academic Directorate</div>
               </div>
             </div>
 
@@ -735,253 +693,114 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* ─── 8. TABBED AUDIENCE SOLUTIONS (Coursera "Who Is This For") ─── */}
-      <section id="solutions" className="py-16 lg:py-24 bg-white border-b border-slate-200">
+      {/* ─── 7. ROLE-SPECIFIC VALUE PILLARS (Who Is This For) ─── */}
+      <section id="solutions" className="py-16 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700">Tailored Solutions</span>
-            <h2 className="text-3xl font-bold text-slate-900 mt-1">
-              Built for Every Stakeholder in Education
+          <div className="max-w-3xl mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#0056D2]">Individual & Group Solutions</span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
+              Designed for Every Step in Education & Career
             </h2>
-            <p className="text-base text-slate-600 mt-2">
-              Select your role to explore how JotMinds delivers customized value.
-            </p>
           </div>
 
-          {/* Role Navigation Tabs */}
-          <div className="flex justify-center border-b border-slate-200 mb-10 overflow-x-auto">
-            <div className="flex gap-2 sm:gap-8">
-              {[
-                { id: 'students', label: 'For Students', icon: GraduationCap },
-                { id: 'teachers', label: 'For Teachers', icon: School },
-                { id: 'parents', label: 'For Parents', icon: Users },
-                { id: 'organizations', label: 'For Institutions', icon: Building2 },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const isActive = selectedRoleTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setSelectedRoleTab(tab.id as any)}
-                    className={`flex items-center gap-2 py-4 px-3 sm:px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
-                      isActive 
-                        ? 'border-[#0056D2] text-[#0056D2]' 
-                        : 'border-transparent text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
-                  </button>
-                );
-              })}
+          <div className="grid md:grid-cols-4 gap-6">
+            
+            {/* Student Pillar */}
+            <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
+              <div className="w-10 h-10 rounded bg-blue-100 text-[#0056D2] flex items-center justify-center font-bold mb-4">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 mb-2">Students</h3>
+              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                Understand how you retain concepts best. Receive actionable study strategies, exam preparation routines, and academic pathway guidance.
+              </p>
+              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-[#0056D2] p-0 h-auto">
+                Student Assessment →
+              </Button>
             </div>
-          </div>
 
-          {/* Tab Content Box */}
-          <div className="max-w-4xl mx-auto bg-slate-50 border border-slate-200 rounded-xl p-8 sm:p-10">
-            {selectedRoleTab === 'students' && (
-              <div className="grid md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                  <Badge className="bg-blue-100 text-blue-800 border-0 text-xs">Primary to Tertiary</Badge>
-                  <h3 className="text-2xl font-bold text-slate-900">Empowering Independent, Confident Learners</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    Stop forcing study habits that fight your biology. Learn how your mind naturally processes information and achieve better results with less stress.
-                  </p>
-                  <Button onClick={onGetStarted} className="bg-[#0056D2] hover:bg-[#00419e] text-white text-sm font-semibold">
-                    Start Student Assessment →
-                  </Button>
-                </div>
-                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-3">
-                  <div className="text-xs font-bold text-slate-900 uppercase tracking-wider">What You Receive:</div>
-                  <ul className="text-xs text-slate-700 space-y-2.5">
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Personalized Study Routine:</strong> Exact revision techniques matched to your learning dimensions.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Subject & Career Guidance:</strong> Tailored academic recommendations for high school and tertiary tracks.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Exam Strategies:</strong> Methods to manage time and decision-making under pressure.</span>
-                    </li>
-                  </ul>
-                </div>
+            {/* Educator Pillar */}
+            <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
+              <div className="w-10 h-10 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold mb-4">
+                <School className="w-5 h-5" />
               </div>
-            )}
+              <h3 className="text-base font-bold text-slate-900 mb-2">Teachers</h3>
+              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                View your class cognitive distribution. Plan differentiated lessons with AI and review pre-flight preparation checklists.
+              </p>
+              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-indigo-700 p-0 h-auto">
+                Teacher Dashboard →
+              </Button>
+            </div>
 
-            {selectedRoleTab === 'teachers' && (
-              <div className="grid md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                  <Badge className="bg-indigo-100 text-indigo-800 border-0 text-xs">Educator Suite</Badge>
-                  <h3 className="text-2xl font-bold text-slate-900">Actionable Classroom Insights</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    Differentiate your instruction with evidence. Know in advance which topics will trigger learning friction and how to scaffold them.
-                  </p>
-                  <Button onClick={onGetStarted} className="bg-[#0056D2] hover:bg-[#00419e] text-white text-sm font-semibold">
-                    Access Teacher Tools →
-                  </Button>
-                </div>
-                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-3">
-                  <div className="text-xs font-bold text-slate-900 uppercase tracking-wider">Teacher Features:</div>
-                  <ul className="text-xs text-slate-700 space-y-2.5">
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Cognitive Roster:</strong> View your entire class sorted by learning and thinking styles.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>AI Lesson Planning:</strong> Generate lesson plans with differentiated exercises in seconds.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Pre-Flight Lesson Prep:</strong> Review potential student bottlenecks before entering class.</span>
-                    </li>
-                  </ul>
-                </div>
+            {/* Parent Pillar */}
+            <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
+              <div className="w-10 h-10 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold mb-4">
+                <Users className="w-5 h-5" />
               </div>
-            )}
+              <h3 className="text-base font-bold text-slate-900 mb-2">Parents</h3>
+              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                Complete observation assessments and gain clarity on how your child handles study stress, homework, and problem-solving.
+              </p>
+              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-emerald-700 p-0 h-auto">
+                Parent Portal →
+              </Button>
+            </div>
 
-            {selectedRoleTab === 'parents' && (
-              <div className="grid md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                  <Badge className="bg-emerald-100 text-emerald-800 border-0 text-xs">Family Support</Badge>
-                  <h3 className="text-2xl font-bold text-slate-900">Understand Your Child’s Potential</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    Gain clarity on how your child handles homework, challenges, and motivation—without friction or guesswork.
-                  </p>
-                  <Button onClick={onGetStarted} className="bg-[#0056D2] hover:bg-[#00419e] text-white text-sm font-semibold">
-                    Start Parent Guide →
-                  </Button>
-                </div>
-                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-3">
-                  <div className="text-xs font-bold text-slate-900 uppercase tracking-wider">Parent Advantages:</div>
-                  <ul className="text-xs text-slate-700 space-y-2.5">
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Observation Assessments:</strong> Add your parental perspective to your child's profile.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Homework Support Tips:</strong> Practical environment tips to reduce evening study stress.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Privacy-First Control:</strong> Access child profiles securely only when shared.</span>
-                    </li>
-                  </ul>
-                </div>
+            {/* Organization Pillar */}
+            <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
+              <div className="w-10 h-10 rounded bg-amber-100 text-amber-700 flex items-center justify-center font-bold mb-4">
+                <Building2 className="w-5 h-5" />
               </div>
-            )}
-
-            {selectedRoleTab === 'organizations' && (
-              <div className="grid md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                  <Badge className="bg-slate-200 text-slate-800 border-0 text-xs">School Leaders & HR</Badge>
-                  <h3 className="text-2xl font-bold text-slate-900">Institutional Governance & Talent Matching</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    Deploy cognitive assessments at scale for admissions, student tracking, teacher performance support, or hiring.
-                  </p>
-                  {onSupervisorPortal ? (
-                    <Button onClick={onSupervisorPortal} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
-                      Open Organization Dashboard →
-                    </Button>
-                  ) : (
-                    <Button onClick={onGetStarted} className="bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">
-                      Get Started →
-                    </Button>
-                  )}
-                </div>
-                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-3">
-                  <div className="text-xs font-bold text-slate-900 uppercase tracking-wider">Enterprise Tools:</div>
-                  <ul className="text-xs text-slate-700 space-y-2.5">
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Bulk Code Generator:</strong> Issue thousands of unique student and teacher test codes.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>School-Wide Analytics:</strong> Track cognitive balance across subject departments and years.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span><strong>Custom CSV & PDF Exports:</strong> Export institutional accreditation and inspection data.</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            )}
+              <h3 className="text-base font-bold text-slate-900 mb-2">Institutions</h3>
+              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                Generate student test codes, track year-group cognitive profiles, and maintain department-level performance metrics.
+              </p>
+              {onSupervisorPortal && (
+                <Button onClick={onSupervisorPortal} variant="link" className="text-xs font-bold text-amber-700 p-0 h-auto">
+                  Organization Access →
+                </Button>
+              )}
+            </div>
 
           </div>
         </div>
       </section>
 
-      {/* ─── 9. METHODOLOGY & SCIENCE SECTION ─── */}
-      <section id="methodology" className="py-16 bg-slate-50 border-b border-slate-200">
+      {/* ─── 8. COURSERA-STYLE TESTIMONIALS & OUTCOMES ─── */}
+      <section className="py-16 bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700">Scientific Foundation</span>
-            <h2 className="text-3xl font-bold text-slate-900 mt-1">
-              Why Cognitive Profiling Works
-            </h2>
-            <p className="text-base text-slate-600 mt-2">
-              JotMinds moves away from generic personality quizzes to validated educational cognitive psychology.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
-              <div className="w-10 h-10 rounded bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Experiential Learning Theory</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Based on David Kolb’s research showing that effective learning requires a cyclical movement through concrete feeling, reflective watching, abstract thinking, and active doing.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
-              <div className="w-10 h-10 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
-                <Brain className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Triarchic Intelligence Model</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Informed by Robert Sternberg’s model establishing that academic success is not a single IQ number, but the dynamic combination of analytical, creative, and practical capabilities.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
-              <div className="w-10 h-10 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
-                <Target className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Differentiated Pedagogical Alignment</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Connects cognitive measurements directly to curriculum standards, helping teachers adapt lesson pacing, question framing, and assessments to the classroom's actual needs.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 10. REAL TESTIMONIALS & OUTCOMES ─── */}
-      <section className="py-16 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700">Educator & Learner Feedback</span>
-            <h2 className="text-3xl font-bold text-slate-900 mt-1">
-              Trusted in Classrooms Across Ghana & Beyond
+          <div className="max-w-3xl mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#0056D2]">Learner & Educator Outcomes</span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
+              From the Classroom to Graduation
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 flex flex-col justify-between">
+          <div className="grid md:grid-cols-3 gap-6">
+            
+            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
               <p className="text-xs text-slate-700 leading-relaxed italic mb-6">
-                "JotMinds has given our teaching staff the clarity they were missing. We can instantly identify which students struggle with abstract concepts and adapt our science labs accordingly."
+                "The cognitive breakdown showed that 60% of my class were active experimenters. Shifting my science lessons from theory lectures to hands-on demonstrations immediately turned around our term scores."
               </p>
-              <div className="border-t border-slate-200 pt-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-blue-700 text-white font-bold text-xs flex items-center justify-center">
+              <div className="border-t border-slate-100 pt-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-700 text-white font-bold text-xs flex items-center justify-center">
+                  AM
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Ama Mensah</h4>
+                  <p className="text-[11px] text-slate-500">JHS Integrated Science Teacher · Accra</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
+              <p className="text-xs text-slate-700 leading-relaxed italic mb-6">
+                "As head of school, onboarding JotMinds across all our secondary classes gave us an objective picture of student learning diversity and drastically improved parent-teacher meetings."
+              </p>
+              <div className="border-t border-slate-100 pt-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-indigo-700 text-white font-bold text-xs flex items-center justify-center">
                   EO
                 </div>
                 <div>
@@ -991,144 +810,129 @@ export function LandingPage({
               </div>
             </div>
 
-            <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 flex flex-col justify-between">
+            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
               <p className="text-xs text-slate-700 leading-relaxed italic mb-6">
-                "The AI Lesson Planner integrated with our class's cognitive summary saved me 5 hours a week while noticeably increasing classroom engagement and participation."
+                "I used to get overwhelmed during exams. Learning my decision-making style taught me how to manage test pacing and trust analytical elimination over second-guessing."
               </p>
-              <div className="border-t border-slate-200 pt-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-indigo-700 text-white font-bold text-xs flex items-center justify-center">
-                  AM
+              <div className="border-t border-slate-100 pt-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center justify-center">
+                  KA
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">Ama Mensah</h4>
-                  <p className="text-[11px] text-slate-500">JHS Teacher · Accra</p>
+                  <h4 className="text-xs font-bold text-slate-900">Kwesi Arthur</h4>
+                  <p className="text-[11px] text-slate-500">Secondary Student · Kumasi</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 flex flex-col justify-between">
-              <p className="text-xs text-slate-700 leading-relaxed italic mb-6">
-                "Understanding my son's thinking style completely changed our homework routine. He's a practical learner, so connecting concepts to real-life objects helped his confidence soar."
-              </p>
-              <div className="border-t border-slate-200 pt-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center justify-center">
-                  KA
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Kwame Asante</h4>
-                  <p className="text-[11px] text-slate-500">Parent · Kumasi</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* ─── 11. FAQ ACCORDION (Coursera Style) ─── */}
-      <section className="py-16 bg-slate-50 border-b border-slate-200">
+      {/* ─── 9. FREQUENTLY ASKED QUESTIONS (Coursera Accordion) ─── */}
+      <section className="py-16 bg-white border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700">Frequently Asked Questions</span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
-              Everything You Need to Know
+            <span className="text-xs font-bold uppercase tracking-wider text-[#0056D2]">Frequently Asked Questions</span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
+              Frequently Asked Questions
             </h2>
           </div>
 
           <Accordion type="single" collapsible className="space-y-3">
-            <AccordionItem value="item-1" className="bg-white border border-slate-200 rounded-lg px-6 py-2">
-              <AccordionTrigger className="text-sm font-bold text-slate-900 hover:no-underline text-left">
-                How long does an assessment take to complete?
+            <AccordionItem value="item-1" className="bg-slate-50 border border-slate-200 rounded-lg px-6 py-2">
+              <AccordionTrigger className="text-xs sm:text-sm font-bold text-slate-900 hover:no-underline text-left">
+                How does JotMinds assess cognitive styles?
               </AccordionTrigger>
               <AccordionContent className="text-xs text-slate-600 leading-relaxed pt-2">
-                Each individual dimension (Learning, Thinking, or Decision style) takes between 3 to 5 minutes. You can take them one at a time or complete the entire battery in under 15 minutes.
+                JotMinds uses validated psychological instruments based on David Kolb’s Experiential Learning Theory and Robert Sternberg’s Triarchic Theory. The assessments evaluate information processing, cognitive problem-solving, and decision-making through situational questions.
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="item-2" className="bg-white border border-slate-200 rounded-lg px-6 py-2">
-              <AccordionTrigger className="text-sm font-bold text-slate-900 hover:no-underline text-left">
-                Is JotMinds free for students and parents?
+            <AccordionItem value="item-2" className="bg-slate-50 border border-slate-200 rounded-lg px-6 py-2">
+              <AccordionTrigger className="text-xs sm:text-sm font-bold text-slate-900 hover:no-underline text-left">
+                Is the assessment free for individual students?
               </AccordionTrigger>
               <AccordionContent className="text-xs text-slate-600 leading-relaxed pt-2">
-                Yes! The core cognitive assessment, individual profiling, and personalized study recommendations are completely free for all learners and parents.
+                Yes. Individual learners can take the foundational cognitive battery, view their visual style breakdown, and receive study tips at zero cost.
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="item-3" className="bg-white border border-slate-200 rounded-lg px-6 py-2">
-              <AccordionTrigger className="text-sm font-bold text-slate-900 hover:no-underline text-left">
-                How do schools and teachers use the platform?
+            <AccordionItem value="item-3" className="bg-slate-50 border border-slate-200 rounded-lg px-6 py-2">
+              <AccordionTrigger className="text-xs sm:text-sm font-bold text-slate-900 hover:no-underline text-left">
+                How do schools deploy JotMinds for entire classes?
               </AccordionTrigger>
               <AccordionContent className="text-xs text-slate-600 leading-relaxed pt-2">
-                Teachers can create classes, generate individual access codes, and view class-wide cognitive insights. The system also includes an AI Lesson Planner that tailors lesson materials to the class's dominant cognitive patterns.
+                Institutions can sign in to the Organization Portal, generate batch student access codes (or upload class rosters via CSV), and assign tests. Teachers then immediately access class cognitive summaries and AI lesson differentiation.
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="item-4" className="bg-white border border-slate-200 rounded-lg px-6 py-2">
-              <AccordionTrigger className="text-sm font-bold text-slate-900 hover:no-underline text-left">
-                Is student cognitive data secure and private?
+            <AccordionItem value="item-4" className="bg-slate-50 border border-slate-200 rounded-lg px-6 py-2">
+              <AccordionTrigger className="text-xs sm:text-sm font-bold text-slate-900 hover:no-underline text-left">
+                Which curricula are supported in the Lesson Planner?
               </AccordionTrigger>
               <AccordionContent className="text-xs text-slate-600 leading-relaxed pt-2">
-                We prioritize learner privacy. Individual results are only shared with teachers and parents when explicitly authorized by school administration or the learner. Data is never sold or used for advertising.
+                The Lesson Planner natively supports the Ghana National Curriculum (GES with strands and sub-strands), Cambridge Assessment (Primary, Lower Secondary, IGCSE), Pearson Edexcel, Oxford International, and the IB framework.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         </div>
       </section>
 
-      {/* ─── 12. FEEDBACK PROMPT ─── */}
+      {/* ─── 10. FEEDBACK PROMPT ─── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <FeedbackPrompt variant="full" />
       </div>
 
-      {/* ─── 13. FINAL CALL TO ACTION BANNER (Coursera Blue Banner) ─── */}
+      {/* ─── 11. FINAL CTA BANNER (Coursera Signature Blue Block) ─── */}
       <section className="bg-[#0056D2] text-white py-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            Start Discovering How Your Mind Works Today
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Take the First Step Toward Cognitive Clarity
           </h2>
-          <p className="text-base sm:text-lg text-blue-100 max-w-2xl mx-auto leading-relaxed">
-            Join thousands of learners, teachers, and school administrators using cognitive insights to unlock their full educational potential.
+          <p className="text-sm sm:text-base text-blue-100 max-w-xl mx-auto leading-relaxed">
+            Join thousands of learners, teachers, and school administrators using JotMinds to personalize education across Africa and beyond.
           </p>
           <div className="pt-2 flex flex-col sm:flex-row justify-center gap-4">
             <Button 
               size="lg"
               onClick={onGetStarted}
-              className="bg-white text-[#0056D2] hover:bg-blue-50 font-bold text-base px-8 h-13 shadow-lg"
+              className="bg-white text-[#0056D2] hover:bg-blue-50 font-bold text-sm px-8 h-13 rounded shadow-lg"
             >
-              Take Free Assessment Now
+              Join for Free
             </Button>
             {onSupervisorPortal && (
               <Button 
                 size="lg"
                 variant="outline"
                 onClick={onSupervisorPortal}
-                className="border-white/40 text-white hover:bg-white/10 font-bold text-base px-8 h-13"
+                className="border-white/40 text-white hover:bg-white/10 font-bold text-sm px-8 h-13 rounded"
               >
-                Organization Portal
+                For Organizations
               </Button>
             )}
           </div>
-          <p className="text-xs text-blue-200 pt-2 font-medium">
-            No credit card required · Self-paced · Instant actionable results
+          <p className="text-xs text-blue-200 font-medium">
+            Takes ~5 minutes · No credit card required · Free forever for individual learners
           </p>
         </div>
       </section>
 
-      {/* ─── 14. INSTITUTIONAL COURSERA-STYLE FOOTER ─── */}
+      {/* ─── 12. COURSERA-STYLE GLOBAL FOOTER ─── */}
       <footer className="bg-slate-900 text-slate-400 text-xs border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             
-            {/* Col 1: Brand / Mission */}
+            {/* Col 1: Brand */}
             <div className="col-span-2 space-y-4">
               <div className="brightness-200">
                 <Logo size="md" />
               </div>
               <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
-                JotMinds is an educational cognitive assessment platform empowering learners, educators, and institutions with scientific insights.
+                JotMinds is an educational cognitive profiling platform empowering students, educators, and institutions with scientific insights.
               </p>
-              <div className="pt-2">
-                <span className="text-[11px] text-slate-500 font-semibold block">Accreditation & Curriculum Support:</span>
-                <span className="text-[11px] text-slate-400">GES (Ghana), Cambridge Assessment, Pearson Edexcel, IB.</span>
+              <div className="pt-2 text-[11px] text-slate-500">
+                Curricula: GES (Ghana) · Cambridge · Pearson Edexcel · Oxford · IB
               </div>
             </div>
 
@@ -1138,13 +942,12 @@ export function LandingPage({
               <ul className="space-y-2">
                 <li><button onClick={onGetStarted} className="hover:text-white transition-colors">Learning Dimensions</button></li>
                 <li><button onClick={onGetStarted} className="hover:text-white transition-colors">Thinking Modes</button></li>
-                <li><button onClick={onGetStarted} className="hover:text-white transition-colors">Decision-Making Style</button></li>
-                <li><button onClick={onGetStarted} className="hover:text-white transition-colors">Complete Battery</button></li>
-                <li><button onClick={onGetStarted} className="hover:text-white transition-colors">Student Study Guide</button></li>
+                <li><button onClick={onGetStarted} className="hover:text-white transition-colors">Decision Style Battery</button></li>
+                <li><button onClick={onGetStarted} className="hover:text-white transition-colors">Complete Triad Track</button></li>
               </ul>
             </div>
 
-            {/* Col 3: For Schools */}
+            {/* Col 3: Educator Suite */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold text-white uppercase tracking-wider">For Educators</h4>
               <ul className="space-y-2">
@@ -1152,27 +955,24 @@ export function LandingPage({
                 <li><button onClick={onGetStarted} className="hover:text-white transition-colors">AI Lesson Planner</button></li>
                 <li><button onClick={onGetStarted} className="hover:text-white transition-colors">Classroom Heatmaps</button></li>
                 {onSupervisorPortal && <li><button onClick={onSupervisorPortal} className="hover:text-white transition-colors">Organization Portal</button></li>}
-                <li><button onClick={onGetStarted} className="hover:text-white transition-colors">Batch Code Generation</button></li>
               </ul>
             </div>
 
-            {/* Col 4: Legal & Contact */}
+            {/* Col 4: Policies */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Policies & Support</h4>
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Legal & Support</h4>
               <ul className="space-y-2">
                 <li><button onClick={onViewPrivacyPolicy} className="hover:text-white transition-colors">Privacy Policy</button></li>
                 <li><button onClick={onViewTermsOfUse} className="hover:text-white transition-colors">Terms of Use</button></li>
-                <li><button onClick={onViewContact} className="hover:text-white transition-colors">Contact Support</button></li>
-                <li><button onClick={onViewContact} className="hover:text-white transition-colors">Institution Licensing</button></li>
+                <li><button onClick={onViewContact} className="hover:text-white transition-colors">Contact Us</button></li>
               </ul>
             </div>
 
           </div>
 
-          {/* Bottom Copyright & Accreditation Strip */}
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-slate-500">
             <div>
-              © {new Date().getFullYear()} JotMinds Education Technologies. All rights reserved.
+              © {new Date().getFullYear()} JotMinds Platform. All rights reserved.
             </div>
             <div className="flex items-center gap-4">
               <span>Empowering education across Africa and beyond</span>
