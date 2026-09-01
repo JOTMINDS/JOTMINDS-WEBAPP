@@ -2828,7 +2828,7 @@ app.delete('/make-server-fc8eb847/institutions/classes/:id', async (c) => {
     if (!classId) {
       return c.json({ error: 'Missing class ID' }, 400);
     }
-    await kv.delete(`class:${classId}`);
+    await kv.del(`class:${classId}`);
 
     try {
       const supabaseAdmin = getSupabaseClient(true);

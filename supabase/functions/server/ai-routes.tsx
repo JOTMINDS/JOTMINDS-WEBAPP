@@ -140,61 +140,6 @@ You must respond with valid JSON matching exactly this structure:
     const insightsJson = JSON.parse(aiText);
     return c.json(insightsJson);
 
-=======
-    if (OPENAI_API_KEY) {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Analyze these scores and return the JSON: ${JSON.stringify(scores)}` }
-          ],
-          temperature: 0.7
-        })
-      });
-
-      if (!response.ok) {
-        const err = await response.text();
-        console.error('OpenAI Insights Error:', err);
-        return c.json({ error: 'Failed to generate insights from OpenAI' }, 500);
-      }
-
-      const data = await response.json();
-      const aiText = data.choices?.[0]?.message?.content;
-      if (!aiText) return c.json({ error: 'Invalid response from OpenAI' }, 500);
-      return c.json(JSON.parse(aiText));
-    } else if (GEMINI_API_KEY) {
-      const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-      const response = await fetch(GEMINI_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: "user", parts: [{ text: `Analyze these scores and return the JSON: ${JSON.stringify(scores)}` }] }],
-          generationConfig: { response_mime_type: "application/json", temperature: 0.7 }
-        })
-      });
-
-      if (!response.ok) {
-        const err = await response.text();
-        console.error('Gemini API Error:', err);
-        return c.json({ error: 'Failed to generate insights from Gemini' }, 500);
-      }
-
-      const data = await response.json();
-      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!aiText) return c.json({ error: 'Invalid response from Gemini' }, 500);
-      return c.json(JSON.parse(aiText));
-    } else {
-      return c.json({ error: 'No AI Provider configured' }, 500);
-    }
->>>>>>> 36bd5346 (feat: JotMinds platform enhancements & live OpenAI integrations across 6 key modules)
   } catch (error) {
     console.error('AI Generation Error:', error);
     return c.json({ error: 'Internal Server Error' }, 500);
