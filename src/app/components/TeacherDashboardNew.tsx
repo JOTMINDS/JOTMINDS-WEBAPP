@@ -549,7 +549,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-xl border shadow-2xs">
             <div className="flex items-center gap-2">
               <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
-                JTIA • 5 Core Domains
+                Teaching Insights • 5 Core Domains
               </Badge>
             </div>
             <div className="flex gap-2">
@@ -559,7 +559,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm"
               >
                 <RefreshCcw className="h-3.5 w-3.5 mr-1.5" />
-                {displayedAssessment ? 'Retake JTIA' : 'Start JTIA Assessment'}
+                {displayedAssessment ? 'Retake Teaching Insights Assessment' : 'Start Teaching Insights Assessment'}
               </Button>
             </div>
           </div>
@@ -593,10 +593,10 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">🧠</span>
               </div>
-              <Badge className="bg-indigo-100 text-indigo-800 mb-3">JTIA • Scenario & Preference Items</Badge>
-              <h2 className="text-2xl font-bold mb-2">Teaching Insights Assessment (JTIA)</h2>
+              <Badge className="bg-indigo-100 text-indigo-800 mb-3">Teaching Insights • Scenario & Preference Items</Badge>
+              <h2 className="text-2xl font-bold mb-2">Teaching Insights Assessment</h2>
               <p className="text-muted-foreground max-w-lg mx-auto mb-6">
-                Unlike traditional assessments that focus on qualifications or compliance, JTIA evaluates the deeper cognitive and professional capabilities that drive effective teaching across 5 Core Domains: Cognitive Intelligence, Instructional Intelligence, Classroom Leadership, Relationship Intelligence, and Professional Intelligence.
+                Unlike traditional assessments that focus on qualifications or compliance, The Teaching Insights Assessment evaluates the deeper cognitive and professional capabilities that drive effective teaching across 5 Core Domains: Cognitive Intelligence, Instructional Intelligence, Classroom Leadership, Relationship Intelligence, and Professional Intelligence.
               </p>
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 max-w-md mx-auto mb-8 text-left">
                 <p className="text-xs text-emerald-800">
@@ -607,7 +607,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 onClick={() => setIsTakingAssessment(true)}
                 className="bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl cursor-pointer"
               >
-                Start JTIA Assessment
+                Start Teaching Insights Assessment
               </button>
             </div>
           )}
@@ -637,6 +637,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
       <LessonCopilotDrawer
         isOpen={isCopilotOpen}
+        context={activeTab}
         onClose={() => setIsCopilotOpen(false)}
       />
     </DashboardLayout>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -23,24 +24,31 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   onPlanCreated,
   user
 }) => {
-  const [mode, setMode] = useState<'ai' | 'manual'>('ai');
+  const [mode, setMode] = useState<'ai' | 'manual' | 'upload'>('ai');
   const [subject, setSubject] = useState('');
   const [gradeClass, setGradeClass] = useState('');
-  const [curriculumFramework, setCurriculumFramework] = useState<any>('National');
+  const [curriculumFramework, setCurriculumFramework] = useState<any>('National Curriculum');
   const [topic, setTopic] = useState('');
   const [subtopic, setSubtopic] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState(40);
+  const [durationMinutes,
+      existingPlanText: mode === "upload" ? existingPlanText : undefined, setDurationMinutes] = useState(40);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Manual mode state
   const [knowledgeObj, setKnowledgeObj] = useState('');
   const [skillsObj, setSkillsObj] = useState('');
   const [appObj, setAppObj] = useState('');
+  const [existingPlanText, setExistingPlanText] = useState('');
 
   const handleGenerateAI = async () => {
     if (!subject || !topic || !gradeClass) {
       toast.error('Please enter Subject, Grade/Class, and Topic.');
+      return;
+    }
+    if (mode === 'upload' && !existingPlanText.trim()) {
+      toast.error('Please paste or upload your existing lesson plan first.');
       return;
     }
 
@@ -53,6 +61,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       gradeClass,
       topic,
       durationMinutes,
+      existingPlanText: mode === "upload" ? existingPlanText : undefined,
       classSummary
     });
 
@@ -66,7 +75,9 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       topic,
       subtopic,
       durationMinutes,
+      existingPlanText: mode === "upload" ? existingPlanText : undefined,
       date,
+      endDate,
       curriculumFramework: curriculumFramework as any,
             objectives: (Array.isArray(aiResult?.objectives) ? {
         knowledge: aiResult.objectives,
@@ -165,7 +176,9 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       topic,
       subtopic,
       durationMinutes,
+      existingPlanText: mode === "upload" ? existingPlanText : undefined,
       date,
+      endDate,
       curriculumFramework: curriculumFramework as any,
       objectives: {
         knowledge: knowledgeObj.split('\n').filter(Boolean),
@@ -227,6 +240,14 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
           >
             <FileText className="w-3.5 h-3.5 mr-1.5" /> Manual Form
           </Button>
+          <Button
+            variant={mode === 'upload' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMode('upload')}
+            className={mode === 'upload' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-white/10 text-white border-white/20'}
+          >
+            <BookOpen className="w-3.5 h-3.5 mr-1.5" /> Upload Existing
+          </Button>
         </div>
       </div>
 
@@ -268,17 +289,17 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                     <SelectValue placeholder="Select curriculum..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="National">National Curriculum</SelectItem>
-                    <SelectItem value="Cambridge">Cambridge</SelectItem>
-                    <SelectItem value="IB">International Baccalaureate (IB)</SelectItem>
-                    <SelectItem value="Montessori">Montessori</SelectItem>
+                    <SelectItem value="National Curriculum">National Curriculum</SelectItem>
+                    <SelectItem value="British Curriculum (Cambridge/Pearson Edexcel)">British Curriculum (Cambridge/Pearson Edexcel)</SelectItem>
+                    <SelectItem value="Oxford International Curriculum">Oxford International Curriculum</SelectItem>
+                    <SelectItem value="International Baccalaureate (IB)">International Baccalaureate (IB)</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div>
-              <Label className="text-xs font-semibold">Lesson Date</Label>
+              <Label className="text-xs font-semibold">Start Date</Label>
               <Input
                 type="date"
                 value={date}
@@ -286,11 +307,20 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                 className="mt-1"
               />
             </div>
+            <div>
+              <Label className="text-xs font-semibold">End Date (Optional)</Label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <Label className="text-xs font-semibold">Topic</Label>
+              <Label className="text-xs font-semibold">Topic / Strand</Label>
               <Input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
@@ -311,7 +341,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
           </div>
 
           <div>
-            <Label className="text-xs font-semibold">Subtopic (Optional)</Label>
+            <Label className="text-xs font-semibold">Subtopic / Sub-strand (Optional)</Label>
             <Input
               value={subtopic}
               onChange={(e) => setSubtopic(e.target.value)}

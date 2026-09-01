@@ -187,15 +187,15 @@ export function TeacherManagementContent({
         {/* PERFORMANCE TAB */}
         {activeTab === 'performance' && (
           <div className="space-y-5">
-            {/* Teaching Insights Profile (JTIA) */}
+            {/* Teaching Insights Profile */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teaching Insights Profile (JTIA)
+                <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teaching Insights Profile
               </h4>
               {jtiaAssmt && (jtiaAssmt.report || jtiaAssmt.results || jtiaAssmt.score?.jtia) ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-purple-50 border border-purple-100 p-4 rounded-lg">
-                    <p className="text-xs text-purple-600 font-medium mb-1">Overall JTIA Score</p>
+                    <p className="text-xs text-purple-600 font-medium mb-1">Overall Insights Score</p>
                     <p className="font-semibold text-purple-900">
                       {(jtiaAssmt.report || jtiaAssmt.results || jtiaAssmt.score?.jtia).overallScore}/100
                     </p>
@@ -207,7 +207,7 @@ export function TeacherManagementContent({
                 </div>
               ) : (
                 <div className="bg-white p-4 rounded-lg text-sm text-gray-500 border border-gray-200 text-center">
-                  This teacher has not yet completed the Teaching Insights Assessment (JTIA).
+                  This teacher has not yet completed the Teaching Insights Assessment.
                 </div>
               )}
             </div>

@@ -1167,7 +1167,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                           </Alert>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          Enter the Jots Code (Organisation Code) provided by your head teacher. This links your account to the school — the head teacher can then view your <strong>Teaching Insights (JTIA)</strong> and <strong>Thinking Style</strong> side by side and access your full combined professional profile. After signup, complete both assessments from your dashboard's <em>My Style</em> tab.
+                          Enter the Jots Code (Organisation Code) provided by your head teacher. This links your account to the school — the head teacher can then view your <strong>Teaching Insights</strong> and <strong>Thinking Style</strong> side by side and access your full combined professional profile. After signup, complete both assessments from your dashboard's <em>My Style</em> tab.
                         </p>
                       </div>
                     </>

@@ -96,7 +96,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
             </Badge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            {schoolName} — Teacher Insights Analytics (JTIA)
+            {schoolName} — Teacher Insights Analytics 
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-3xl">
             Aggregated intelligence insights across 5 Core Domains to support evidence-based professional development and institutional excellence.

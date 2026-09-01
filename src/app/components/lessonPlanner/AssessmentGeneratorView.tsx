@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
+import { Upload } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { FileCheck, Sparkles, CheckCircle2, HelpCircle, BookOpen, MessageSquare, Loader } from 'lucide-react';
@@ -30,6 +33,8 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
   );
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [uploadText, setUploadText] = useState('');
+  const [showUpload, setShowUpload] = useState(false);
 
   const handleGenerateAssessment = async () => {
     setIsGenerating(true);
@@ -38,6 +43,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
     const res = await generateAILessonAssessment({
       subject: plan?.subject || '',
       topic: plan?.topic || 'Topic',
+      uploadText,
       gradeClass: plan?.gradeClass || 'JHS 2'
     });
 

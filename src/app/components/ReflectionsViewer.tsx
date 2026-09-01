@@ -75,7 +75,7 @@ export function ReflectionsViewer({ userId, onViewAssessment }: ReflectionsViewe
       case 'dual-process':
       case 'decision': return 'Decision Style Reflection';
       case 'jtia':
-      case 'teaching-style': return 'Teaching Style (JTIA) Reflection';
+      case 'teaching-style': return 'Teaching Style  Reflection';
       default: return type ? `${type.charAt(0).toUpperCase() + type.slice(1)} Reflection` : 'General Cognitive Reflection';
     }
   };

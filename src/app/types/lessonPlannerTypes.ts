@@ -109,6 +109,7 @@ export interface LessonPlan {
   subtopic?: string;
   durationMinutes: number;
   date: string;
+  endDate?: string;
   curriculumFramework?: 'National' | 'Cambridge' | 'IB' | 'School Custom';
   curriculumTopicId?: string;
   objectives: LearningObjectives;
@@ -145,6 +146,7 @@ export interface PostLessonReflection {
   whatWorkedWell: string;
   areasForImprovement: string;
   followUpActions: string;
+  schoolRecommendations?: string;
   reflectedAt: string;
 }
 

@@ -242,7 +242,10 @@ Topic: ${topicStr}
 Grade/Level: ${gradeStr}
 Curriculum Standard: ${curriculum || 'Standard'}
 ${customQuestions ? `Custom Assessment Questions requested by teacher: ${customQuestions}` : ''}
-${typeof subjectOrPayload === 'object' ? `Additional payload: ${JSON.stringify(subjectOrPayload)}` : ''}
+${typeof subjectOrPayload === 'object' && subjectOrPayload.existingPlanText ? `CRITICAL INSTRUCTION: The teacher provided an EXISTING lesson plan. You MUST tailor and enhance this exact plan to fit the class demands (using the cognitive profile summary) and curriculum. Do not ignore the existing content, rebuild upon it!
+EXISTING PLAN CONTENT:
+${subjectOrPayload.existingPlanText}` : ''}
+${typeof subjectOrPayload === 'object' ? `Class Summary Data: ${JSON.stringify(subjectOrPayload.classSummary)}` : ''}
 
 Respond strictly with valid JSON with this structure:
 {
@@ -396,10 +399,15 @@ export async function generateJTIAAIRecommendations(
   report: any
 ): Promise<JTIAAIRecommendations | null> {
   try {
-    const prompt = `Generate JTIA teaching insights recommendations based on this report:
+    const prompt = `Generate Teaching Insights recommendations based on this report:
 Report Data: ${JSON.stringify(report)}
 
-Return JSON matching the JTIAAIRecommendations interface format precisely, which includes executiveSummary, pedagogicalArchetype (name, description, cognitiveAlignment), personalizedStrategies (array of domain, strategies, implementation), and professionalDevelopment (focusAreas, suggestedResources).`;
+Return JSON matching the JTIAAIRecommendations interface format precisely (executiveSummary, pedagogicalArchetype, personalizedStrategies, professionalDevelopment).
+
+Crucial Instructions:
+1. Personalization: Use empowering, highly personalized language (e.g., "Your unique strength in...", "You have a natural ability to...").
+2. Local Context: When suggesting resources or strategies, use culturally relevant local references suited for the Ghanaian/African education market (e.g., GES curriculum context, local classroom realities, accessible low-cost materials).
+3. Growth Mindset: Frame growth opportunities as exciting pathways for professional mastery rather than deficits.`;
     
     const res = await callOpenAI([
       { role: 'system', content: 'You are an expert teacher trainer and pedagogical coach. Ensure your phrasing is highly unique, creative, and personalized to the specific metrics.' },
@@ -448,17 +456,20 @@ export async function generateSchoolJTIAAIInsights(
   schoolName?: string
 ): Promise<JTIASchoolAggregatedInsights['pdPriorities'] | null> {
   try {
-    const prompt = `Generate school-wide JTIA PD Priorities based on this data:
+    const prompt = `Generate school-wide Teaching Insights Professional Development Priorities based on this data:
 School Name: ${schoolName || 'The School'}
 Data: ${JSON.stringify(schoolInsights)}
 
-Return strictly a JSON array of objects representing pdPriorities, each containing:
+Crucial Instructions:
+1. Ensure your phrasing is highly encouraging and acknowledges the collective strengths of the teaching staff.
+2. Provide PD formats and themes that use local context suited for the Ghanaian/African education market (e.g. INSET trainings, GES curriculum alignment, low-cost scalable workshops).
+3. Return strictly a JSON array of objects representing pdPriorities, each containing:
 - theme (string)
 - description (string)
 - priority (number, 1-3)
 - recommendedFormat (string)
 
-Example: { "pdPriorities": [ { "theme": "...", "description": "...", "priority": 1, "recommendedFormat": "Workshop" } ] }`;
+Example: { "pdPriorities": [ { "theme": "...", "description": "...", "priority": 1, "recommendedFormat": "INSET Workshop" } ] }`;
 
     const res = await callOpenAI([
       { role: 'system', content: 'You are an expert educational consultant planning professional development. Ensure your phrasing is unique, creative, and avoids repetitive generic templates.' },
@@ -722,4 +733,60 @@ Return ONLY valid JSON matching this schema:
   } catch {
     return null;
   }
+}
+
+export async function chatWithJotti(message: string, history: any[], context?: string, contextData?: any): Promise<string | null> {
+  try {
+    let contextInstructions = "";
+    
+    if (context === "lesson-planner") {
+      contextInstructions = `You are in the Lesson Planner. If the user asks you to create a lesson plan, include this at the very end of your message on a new line: [ACTION_CREATE_PLAN] Subject | Topic | Grade.`;
+    } else if (context === "analytics") {
+      contextInstructions = `You are helping the teacher analyze class data and student insights. Use the provided context data to answer questions about student performance, cognitive styles, and classroom synergy.`;
+    } else if (context === "students") {
+      contextInstructions = `You are helping the teacher manage students. Offer advice on engaging students based on cognitive profiles, generating codes, or differentiated activities.`;
+    } else if (context === "jtia") {
+      contextInstructions = `You are helping the teacher interpret their Teaching Insights Assessment results. Give them empowering advice on professional development and growth.`;
+    } else {
+      contextInstructions = `You are a general teaching assistant on the JotMinds platform.`;
+    }
+
+    const systemMsg = {
+      role: 'system',
+      content: `You are Jotti, an expert, friendly AI Teaching Assistant for the JotMinds platform. 
+${contextInstructions}
+Context Data: ${JSON.stringify(contextData || {})}`
+    };
+    const messages = [systemMsg, ...history, { role: 'user', content: message }];
+    return await callOpenAI(messages, false, 800);
+  } catch (err) {
+    console.error('Failed to chat with Jotti:', err);
+    return null;
+  }
+}
+
+export async function generateAICurriculumTopics(subject: string, grade: string, curriculum: string, mainTopic: string): Promise<any[] | null> {
+  const prompt = `Generate a structured list of sub-topics or strands for a curriculum tracker based on the following:
+Subject: ${subject}
+Grade/Class: ${grade}
+Curriculum Type: ${curriculum}
+Main Topic/Strand: ${mainTopic}
+
+Return ONLY a JSON array of objects, where each object has:
+- title (string): The subtopic or specific lesson goal
+- status (string): Must be exactly "outstanding"
+- estimatedHours (number): Estimated hours to teach this subtopic (usually 1-3)
+
+Example: [ { "title": "Introduction to Photosynthesis", "status": "outstanding", "estimatedHours": 1 } ]`;
+
+  try {
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an expert curriculum designer. Output strict JSON array only.' },
+      { role: 'user', content: prompt }
+    ], true, 600);
+    if (res) return JSON.parse(res);
+  } catch (error) {
+    console.error('Failed to generate curriculum topics', error);
+  }
+  return null;
 }

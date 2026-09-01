@@ -6,6 +6,8 @@ import { Button } from '../ui/button';
 import { CheckCircle2, Clock, AlertCircle, BookOpen, Layers, CheckSquare } from 'lucide-react';
 import { CurriculumTrack, CurriculumTopic, LessonPlan } from '../../types/lessonPlannerTypes';
 import { getCurriculumTrack, saveCurriculumTrack } from '../../utils/lessonPlannerStorage';
+import { generateAICurriculumTopics } from '../../utils/aiService';
+import { Loader, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CurriculumTrackerViewProps {
@@ -14,10 +16,44 @@ interface CurriculumTrackerViewProps {
 
 export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ plan }) => {
   const [track, setTrack] = useState<CurriculumTrack>(getCurriculumTrack());
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Use the plan's subject and grade if available, otherwise fallback to the track's data
   const subject = plan?.subject || track.subject;
   const grade = plan?.gradeClass || track.grade;
+
+  const handleAutoGenerate = async () => {
+    setIsGenerating(true);
+    toast.info('Analyzing curriculum & generating topics...');
+    
+    try {
+      const generated = await generateAICurriculumTopics(subject, grade, track.frameworkName, plan?.topic || 'General Overview');
+      if (generated && generated.length > 0) {
+        const newTopics = generated.map((t: any, i: number) => ({
+          id: `topic-gen-${Date.now()}-${i}`,
+          title: t.title,
+          status: 'outstanding',
+          estimatedHours: t.estimatedHours || 1
+        }));
+        
+        const updatedTrack = {
+          ...track,
+          topics: [...track.topics, ...newTopics],
+          totalTopicsCount: track.topics.length + newTopics.length,
+          completionPercentage: Math.round((track.coveredTopicsCount / (track.topics.length + newTopics.length)) * 100) || 0
+        };
+        
+        setTrack(updatedTrack);
+        saveCurriculumTrack(updatedTrack);
+        toast.success(`Generated ${newTopics.length} curriculum topics!`);
+      } else {
+        toast.error('Failed to generate topics.');
+      }
+    } catch (e) {
+      toast.error('Error connecting to AI.');
+    }
+    setIsGenerating(false);
+  };
 
   const toggleTopicStatus = (topicId: string) => {
     const updatedTopics = track.topics.map(t => {
@@ -63,6 +99,11 @@ export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ pl
           <p className="text-xs text-slate-300 mt-1">
             Easily align lesson plans with various educational curricula.
           </p>
+        </div>
+        <div>
+          <Button onClick={handleAutoGenerate} disabled={isGenerating} className="bg-indigo-600 hover:bg-indigo-700 text-white border-none text-xs">
+            {isGenerating ? <><Loader className="w-4 h-4 mr-2 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4 mr-2" /> Auto-Generate Topics</>}
+          </Button>
         </div>
       </div>
 

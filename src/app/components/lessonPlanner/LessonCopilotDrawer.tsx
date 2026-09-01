@@ -6,7 +6,7 @@ import { Badge } from '../ui/badge';
 import { Sparkles, Send, X, Bot, User, Loader, HelpCircle } from 'lucide-react';
 import { CopilotChatMessage } from '../../types/lessonPlannerTypes';
 import { getCopilotChatHistory, saveCopilotChatHistory } from '../../utils/lessonPlannerStorage';
-import { chatWithLessonCopilot } from '../../utils/aiService';
+import { chatWithJotti } from '../../utils/aiService';
 import { toast } from 'sonner';
 
 interface LessonCopilotDrawerProps {
@@ -43,7 +43,7 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
     setInput('');
     setIsThinking(true);
 
-    const replyText = await chatWithLessonCopilot(userMsg.text, updated.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })), context);
+    const replyText = await chatWithJotti(userMsg.text, updated.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })), context);
 
     setIsThinking(false);
 
@@ -106,25 +106,24 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
       {/* Suggested Quick Prompts */}
       <div className="p-3 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 space-y-1.5">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Quick Prompts:</span>
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setInput('Create a 60-minute lesson on Photosynthesis for SHS 1.')}
-            className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors"
-          >
-            Photosynthesis Lesson
-          </button>
-          <button
-            onClick={() => setInput('Generate a 3-question quiz on the current topic.')}
-            className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors"
-          >
-            Generate Quiz
-          </button>
-          <button
-            onClick={() => setInput('Suggest a group activity for visual learners.')}
-            className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors"
-          >
-            Visual Group Activity
-          </button>
+                <div className="flex flex-wrap gap-1.5">
+          {context === 'lesson-planner' ? (
+            <>
+              <button onClick={() => setInput('Create a 60-minute lesson on Photosynthesis for SHS 1.')} className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors">Photosynthesis Lesson</button>
+              <button onClick={() => setInput('Generate a 3-question quiz on the current topic.')} className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors">Generate Quiz</button>
+              <button onClick={() => setInput('Suggest a group activity for visual learners.')} className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors">Visual Group Activity</button>
+            </>
+          ) : context === 'analytics' ? (
+            <>
+              <button onClick={() => setInput('How can I better engage kinesthetic learners?')} className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors">Engage Kinesthetic Learners</button>
+              <button onClick={() => setInput('Explain the Alignment Score.')} className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors">Explain Alignment</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setInput('Help me analyze my teaching strengths.')} className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors">Analyze Strengths</button>
+              <button onClick={() => setInput('Suggest a fun icebreaker activity.')} className="text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-colors">Icebreaker Activity</button>
+            </>
+          )}
         </div>
       </div>
 
@@ -173,7 +172,7 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Jotti for lesson ideas or quizzes..."
+            placeholder={context === "lesson-planner" ? "Ask Jotti for lesson ideas..." : "Ask Jotti anything..."}
             className="text-xs"
           />
           <Button type="submit" disabled={!input.trim() || isThinking} className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0">

@@ -25,8 +25,13 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
   const [whatWorkedWell, setWhatWorkedWell] = useState('Visual balance scale diagram engaged visual learners quickly.');
   const [areasForImprovement, setAreasForImprovement] = useState('Pacing during guided practice ran 3 minutes over.');
   const [followUpActions, setFollowUpActions] = useState('Provide 2 additional word problem scaffolds in next session.');
+  const [schoolRecommendations, setSchoolRecommendations] = useState('');
 
   const handleSubmit = async () => {
+    if (!whatWorkedWell.trim() || !areasForImprovement.trim() || !followUpActions.trim()) {
+      toast.error('Please fill out all compulsory reflection fields.');
+      return;
+    }
     const reflection: PostLessonReflection = {
       reflectionId: `refl-${Date.now()}`,
       lessonId: plan.id,
@@ -36,6 +41,7 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
       whatWorkedWell,
       areasForImprovement,
       followUpActions,
+      schoolRecommendations,
       reflectedAt: new Date().toISOString()
     };
 

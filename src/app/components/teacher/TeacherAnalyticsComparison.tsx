@@ -228,7 +228,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
 
             <Card className="md:col-span-2 shadow-sm border-slate-200">
               <CardHeader>
-                <CardTitle className="text-xl">Teaching Insights (JTIA) Context</CardTitle>
+                <CardTitle className="text-xl">Teaching Insights Context</CardTitle>
                 <CardDescription>How your educator intelligence profile maps to student needs</CardDescription>
               </CardHeader>
               <CardContent>
@@ -246,14 +246,14 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
                       <p className="text-sm text-slate-700 leading-relaxed">
                         Your highest synergy is in <strong>{tJtiaReport.topSynergyDomain || 'Teaching Adaptability'}</strong>.
-                        Combine this with your {alignmentScore}% alignment score to see where you might stretch your approach across the 5 JTIA domains to reach students with different cognitive preferences.
+                        Combine this with your {alignmentScore}% alignment score to see where you might stretch your approach across the 5 Teaching Insights domains to reach students with different cognitive preferences.
                       </p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 text-slate-500 bg-slate-50 p-4 rounded-lg">
                     <Info className="h-5 w-5" />
-                    <p className="text-sm">Complete your Teaching Insights (JTIA) assessment to see insights here.</p>
+                    <p className="text-sm">Complete your Teaching Insights assessment to see insights here.</p>
                   </div>
                 )}
               </CardContent>

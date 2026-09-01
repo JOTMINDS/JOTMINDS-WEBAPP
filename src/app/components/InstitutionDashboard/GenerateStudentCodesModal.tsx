@@ -121,6 +121,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
     document.body.removeChild(link);
   };
 
+  
   const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -129,37 +130,44 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
     reader.onload = (event) => {
       try {
         const csv = event.target?.result as string;
-        const lines = csv.split(/\r\n|\n|\r/).filter(line => line.trim().length > 0);
+        const lines = csv.split(/
+|
+|/).filter(line => line.trim().length > 0);
         
         if (lines.length < 2) {
           toast.error("CSV file seems empty or invalid.");
           return;
         }
 
-        const newStudents = [];
-        // Skip header
-        for (let i = 1; i < lines.length; i++) {
-          // Simple CSV parser that handles basic quotes
-          const line = lines[i];
+        // Parse headers to find indexes
+        const parseLine = (line: string) => {
           let parts = [];
           let current = '';
           let inQuotes = false;
-          
           for (let j = 0; j < line.length; j++) {
-            if (line[j] === '"') {
-              inQuotes = !inQuotes;
-            } else if (line[j] === ',' && !inQuotes) {
+            if (line[j] === '"') inQuotes = !inQuotes;
+            else if (line[j] === ',' && !inQuotes) {
               parts.push(current);
               current = '';
-            } else {
-              current += line[j];
-            }
+            } else current += line[j];
           }
           parts.push(current);
+          return parts.map(p => p.replace(/^"|"$/g, '').trim());
+        };
 
+        const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        const nameIdx = headers.findIndex(h => h.includes('name'));
+        const dobIdx = headers.findIndex(h => h.includes('dob') || h.includes('dateofbirth') || h.includes('birth'));
+
+        const actualNameIdx = nameIdx >= 0 ? nameIdx : 0;
+        const actualDobIdx = dobIdx >= 0 ? dobIdx : 1;
+
+        const newStudents = [];
+        for (let i = 1; i < lines.length; i++) {
+          const parts = parseLine(lines[i]);
           if (parts.length >= 1) {
-            const name = parts[0].replace(/^"|"$/g, '').trim();
-            const dob = parts.length > 1 ? parts[1].replace(/^"|"$/g, '').trim() : '';
+            const name = parts[actualNameIdx] || '';
+            const dob = parts.length > actualDobIdx ? parts[actualDobIdx] : '';
             if (name) {
               newStudents.push({ name, dob, id: generateId() });
             }
@@ -167,12 +175,13 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
         }
 
         if (newStudents.length > 0) {
-          if (students.length === 1 && !students[0].name && !students[0].dob) {
-            setStudents(newStudents);
-          } else {
-            setStudents([...students, ...newStudents]);
-          }
+          setStudents(prev => {
+            const emptyRemoved = prev.filter(s => s.name.trim() !== '' || s.dob.trim() !== '');
+            return [...emptyRemoved, ...newStudents];
+          });
           toast.success(`Imported ${newStudents.length} students from CSV`);
+        } else {
+          toast.error("No valid students found in CSV");
         }
       } catch (err) {
         toast.error("Failed to parse CSV file");
@@ -185,14 +194,14 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
   };
 
   const generateCodes = async () => {
-    if (!selectedClass) {
+    if (!selectedClass && selectedClassId !== 'unassigned') {
       toast.error('Please select a class first');
       return;
     }
 
     setIsGenerating(true);
     
-    const validStudents = students.filter(s => s.name.trim().length > 0 && s.dob.trim().length > 0);
+        const validStudents = students.filter(s => s.name.trim().length > 0 && s.dob.trim().length > 0);
     
     if (validStudents.length === 0) {
       toast.error('Please provide name and date of birth for all students');
@@ -207,10 +216,11 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
           const response = await enrollStudent({
             studentName: student.name.trim(),
             dateOfBirth: student.dob.trim(),
-            classId: selectedClass.id,
-            className: selectedClass.name,
+            classId: selectedClass?.id || 'unassigned',
+            className: selectedClass?.name || 'Unassigned',
             teacherId,
             institutionId,
+
             educationLevel: selectedClass.educationLevel
           });
           
@@ -369,7 +379,8 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                     <SelectItem value="JHS">JHS (Junior High)</SelectItem>
                     <SelectItem value="SHS">SHS (Senior High)</SelectItem>
                     <SelectItem value="Tertiary">Tertiary (University/College)</SelectItem>
-                  </SelectContent>
+                    <SelectItem value="unassigned" className="italic font-medium">Unassigned (Generate codes only)</SelectItem>
+                    </SelectContent>
                 </Select>
                 <div className="flex gap-2">
                   <Button

@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
+import { Plus } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Layers, Users, HelpCircle, Zap, Sparkles, CheckCircle2, Loader, ArrowRight } from 'lucide-react';
 import { DifferentiatedInstruction, LessonPlan } from '../../types/lessonPlannerTypes';
@@ -96,6 +100,10 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
   );
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newActTitle, setNewActTitle] = useState('');
+  const [newActDesc, setNewActDesc] = useState('');
+  const [newActTarget, setNewActTarget] = useState('All Students');
 
   const handleReGenerate = async () => {
     setIsGenerating(true);
@@ -290,6 +298,62 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
             ))}
           </div>
         </div>
+      )}
+            {/* Teacher Suggestions */}
+      {instruction.teacherSuggestedActivities && instruction.teacherSuggestedActivities.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Teacher Suggested Activities</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {instruction.teacherSuggestedActivities.map((act, i) => (
+              <Card key={i} className="border-indigo-200 shadow-sm bg-white">
+                <CardHeader className="bg-indigo-50/50 pb-4">
+                  <Badge className="w-fit bg-indigo-100 text-indigo-700 hover:bg-indigo-200 mb-2">{act.targetGroup}</Badge>
+                  <CardTitle className="text-md text-indigo-900">{act.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <p className="text-sm text-slate-600 leading-relaxed mb-4">{act.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {showAddForm ? (
+        <Card className="border-indigo-200 shadow-sm bg-indigo-50/30">
+          <CardHeader>
+            <CardTitle className="text-sm">Suggest an Activity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="text-xs">Activity Title</Label>
+              <Input value={newActTitle} onChange={e => setNewActTitle(e.target.value)} placeholder="e.g. Peer Teaching Exercise" />
+            </div>
+            <div>
+              <Label className="text-xs">Target Group</Label>
+              <Input value={newActTarget} onChange={e => setNewActTarget(e.target.value)} placeholder="e.g. Visual Learners, Fast Finishers" />
+            </div>
+            <div>
+              <Label className="text-xs">Description</Label>
+              <Textarea value={newActDesc} onChange={e => setNewActDesc(e.target.value)} placeholder="Describe the activity..." />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => {
+                if(!newActTitle.trim()) return;
+                const updated = { ...instruction, teacherSuggestedActivities: [...(instruction.teacherSuggestedActivities || []), { title: newActTitle, description: newActDesc, targetGroup: newActTarget }] };
+                setInstruction(updated);
+                if (onUpdateInstruction) onUpdateInstruction(updated);
+                setShowAddForm(false);
+                setNewActTitle(''); setNewActDesc(''); setNewActTarget('All Students');
+              }} className="bg-indigo-600 text-white">Save Suggestion</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Button variant="outline" onClick={() => setShowAddForm(true)} className="w-full border-dashed text-slate-500">
+          <Plus className="w-4 h-4 mr-2" /> Suggest an Activity
+        </Button>
       )}
     </div>
   );

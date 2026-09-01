@@ -386,7 +386,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
         <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-0 overflow-x-auto">
           {([
             ['overview', Layers, 'Overview'],
-            ['teaching', BookOpen, 'Teaching Insights (JTIA)'],
+            ['teaching', BookOpen, 'Teaching Insights'],
             ['cognitive', Brain, 'Cognitive Profile'],
             ['analysis', TrendingUp, 'Full Analysis'],
           ] as const).map(([t, Icon, label]) => (
@@ -495,7 +495,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                   <th className="text-left px-4 py-2.5">Teacher</th>
                   <th className="text-left px-3 py-2.5">Phone</th>
                   <th className="text-center px-2 py-2.5">Done</th>
-                  <th className="text-center px-2 py-2.5">JTIA Profile</th>
+                  <th className="text-center px-2 py-2.5">Teaching Insights Profile</th>
                   <th className="text-center px-2 py-2.5">Learning</th>
                   <th className="text-center px-2 py-2.5">Thinking</th>
                   <th className="text-center px-2 py-2.5">Decision</th>
@@ -519,7 +519,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
           </Card>
         </>)}
 
-        {/* ── TEACHING INSIGHTS (JTIA) ── */}
+        {/* ── TEACHING INSIGHTS  ── */}
         {tab === 'teaching' && (
           <JTIASchoolDashboard 
             reports={jtiaReports}
@@ -649,7 +649,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
           </Card>
 
           {!fullProfiles.filter(x => x.profile).length && (
-            <Card className="mb-4"><CardContent className="py-14 text-center"><TrendingUp className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">Full Analysis requires at least JTIA + one cognitive assessment</p><p className="text-xs text-gray-400 mt-1">Encourage teachers to complete all 4 assessments for a complete report</p></CardContent></Card>
+            <Card className="mb-4"><CardContent className="py-14 text-center"><TrendingUp className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">Full Analysis requires at least Teaching Insights + one cognitive assessment</p><p className="text-xs text-gray-400 mt-1">Encourage teachers to complete all 4 assessments for a complete report</p></CardContent></Card>
           )}
 
           {avgOverall > 0 && (
@@ -678,7 +678,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                   <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm shrink-0">{t.user.name.charAt(0)}</div>
                   <div>
                     <p className="text-sm text-gray-700">{t.user.name}</p>
-                    <p className="text-xs text-gray-400">JTIA required for Full Analysis · {t.completedCount}/4 complete</p>
+                    <p className="text-xs text-gray-400">Teaching Insights required for Full Analysis · {t.completedCount}/4 complete</p>
                   </div>
                   <CompletionDots t={t} />
                 </CardContent>
@@ -714,7 +714,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                       {/* Alignment scores */}
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-gray-700">Alignment Scores</p>
-                        <ScoreBar label="JTIA ↔ Thinking style" value={p.teachingAlignment} />
+                        <ScoreBar label="Teaching Insights ↔ Thinking style" value={p.teachingAlignment} />
                         <ScoreBar label="Learning style ↔ Teaching approach" value={p.cognitiveAlignment} />
                         <ScoreBar label="Decision style ↔ Teaching environment" value={p.decisionAlignment} />
                         <div className="pt-1 border-t">

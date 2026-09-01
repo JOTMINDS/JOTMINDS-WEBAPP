@@ -561,7 +561,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-xl border shadow-2xs">
             <div className="flex items-center gap-2">
               <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
-                JTIA • 5 Core Domains
+                Teaching Insights • 5 Core Domains
               </Badge>
             </div>
             <div className="flex gap-2">
@@ -571,7 +571,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm"
               >
                 <RefreshCcw className="h-3.5 w-3.5 mr-1.5" />
-                {displayedAssessment ? 'Retake JTIA' : 'Start JTIA Assessment'}
+                {displayedAssessment ? 'Retake Teaching Insights Assessment' : 'Start Teaching Insights Assessment'}
               </Button>
             </div>
           </div>
@@ -619,7 +619,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 onClick={() => setIsTakingAssessment(true)}
                 className="bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl cursor-pointer"
               >
-                Start JTIA Assessment
+                Start Teaching Insights Assessment
               </button>
             </div>
           )}

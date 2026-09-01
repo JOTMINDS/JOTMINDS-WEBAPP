@@ -20,6 +20,7 @@ import { CurriculumTrackerView } from './CurriculumTrackerView';
 import { TeacherPerformanceAnalyticsView } from './TeacherPerformanceAnalyticsView';
 import { SchoolInsightsDashboardView } from './SchoolInsightsDashboardView';
 import { LessonCopilotDrawer } from './LessonCopilotDrawer';
+import { LessonDocumentEditor } from './LessonDocumentEditor';
 
 interface AILessonPlannerContainerProps {
   students?: any[];
@@ -33,6 +34,11 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
   const [activePlan, setActivePlan] = useState<LessonPlan | undefined>(plans[0] || getSavedLessonPlans(user?.id)[0]);
   
   // Dynamically compute class cognitive summary based on students and assessments
+    const handlePlanUpdate = (updatedPlan: LessonPlan) => {
+    setActivePlan(updatedPlan);
+    setPlans(prev => prev.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+  };
+
   const computeClassSummary = (): ClassCognitiveSummary => {
     const totalStudents = students.length;
     

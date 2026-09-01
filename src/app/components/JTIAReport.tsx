@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { exportReportToPDF } from '../utils/pdfGenerator';
 import { toast } from "sonner";
 
 import {
@@ -65,6 +66,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
   onRetake,
   onBack,
 }) => {
+  const [exportingPDF, setExportingPDF] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "overview" | "strengths" | "growth" | "ai"
   >("overview");
@@ -181,31 +183,61 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
   };
 
   const handleExportCSV = () => {
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "JTIA Assessment Report\n\n";
-    csvContent += "Domain,Score\n";
+    let csvRows = [];
+    csvRows.push(["Teaching Insights Assessment Report"]);
+    csvRows.push(["Teacher Name", teacherName]);
+    csvRows.push(["Date", new Date().toLocaleDateString()]);
+    csvRows.push(["Overall Score", report.overallScore?.toString() || "N/A"]);
+    csvRows.push([]);
+    
+    csvRows.push(["Domain Scores"]);
+    csvRows.push(["Domain", "Score"]);
     radarData.forEach((d) => {
-      csvContent += `"${d.full}",${d.score}\n`;
+      csvRows.push([d.full, d.score.toString()]);
     });
+    csvRows.push([]);
 
-    if (report.strengths) {
-      csvContent += "\nStrengths\n";
+    if (report.subCompetencies) {
+      csvRows.push(["Sub-Competency Scores"]);
+      csvRows.push(["Competency", "Score"]);
+      Object.entries(report.subCompetencies).forEach(([comp, score]) => {
+        csvRows.push([comp, score.toString()]);
+      });
+      csvRows.push([]);
+    }
+
+    if (report.strengths && report.strengths.length > 0) {
+      csvRows.push(["Professional Strengths"]);
+      csvRows.push(["Domain", "Competency", "Title", "Description"]);
       report.strengths.forEach((s) => {
-        csvContent += `"${s.title}","${s.domain}"\n`;
+        csvRows.push([s.domain, s.competency || "", s.title, s.description || ""]);
       });
+      csvRows.push([]);
     }
 
-    if (report.growthOpportunities) {
-      csvContent += "\nGrowth Opportunities\n";
+    if (report.growthOpportunities && report.growthOpportunities.length > 0) {
+      csvRows.push(["Growth Opportunities"]);
+      csvRows.push(["Domain", "Competency", "Title", "Description"]);
       report.growthOpportunities.forEach((s) => {
-        csvContent += `"${s.title}","${s.domain}"\n`;
+        csvRows.push([s.domain, s.competency || "", s.title, s.description || ""]);
       });
+      csvRows.push([]);
     }
 
-    const encodedUri = encodeURI(csvContent);
+    // Escape CSV values
+    const escapeCSV = (val: string | undefined | null) => {
+      if (val === undefined || val === null) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const csvContent = csvRows.map(row => row.map(escapeCSV).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `JTIA_Report.csv`);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Teaching_Insights_Report_${teacherName.replace(/\s+/g, "_")}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -266,7 +298,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-1 text-xs font-semibold">
-              JTIA • Teacher Insights & Adaptive Assessment
+              Teaching Insights • Teacher Insights & Adaptive Assessment
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-1 text-xs font-semibold">
               5 Core Domains
@@ -328,7 +360,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
               className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 flex items-center gap-1.5 shadow-sm"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Retake JTIA
+              Retake Teaching Insights Assessment
             </Button>
           )}
         </div>
@@ -346,7 +378,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
           <p className="text-xs md:text-sm text-slate-300 mt-1">
             The Teaching Insights Assessment does not rank or compare
             teachers against one another. Unlike traditional compliance
-            evaluations, your JTIA profile is dedicated entirely to personal
+            evaluations, your Teaching Insights profile is dedicated entirely to personal
             self-awareness, professional growth, and classroom excellence.
           </p>
         </div>
@@ -613,12 +645,18 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                           </div>
                         </div>
 
-                        <div className="text-right shrink-0">
+                        <div className="text-right shrink-0 flex flex-col items-end gap-1">
                           {getOrientationBadge(item.score)}
-                          <div className="text-[10px] text-slate-400 uppercase font-semibold mt-1">
-                            Domain Orientation
+                          <div className="text-2xl font-black text-indigo-950 dark:text-indigo-100 mt-1">
+                            {item.score}
+                          </div>
+                          <div className="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">
+                            Domain Score
                           </div>
                         </div>
+                      </div>
+                      <div className="mt-4 flex items-center gap-3">
+                        <Progress value={item.score} className="h-2 w-full bg-slate-100 dark:bg-slate-800"  />
                       </div>
                     </CardContent>
                   </Card>
@@ -775,7 +813,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                 <p className="text-sm text-purple-200">
                   Custom-curated learning resources, classroom activities,
                   coaching suggestions, and career growth pathways based on your
-                  JTIA responses.
+                  Teaching Insights responses.
                 </p>
               </div>
             </div>
@@ -884,7 +922,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
               </CardTitle>
             </div>
             <CardDescription className="text-xs text-slate-300">
-              Development recommendations and JTIA competency mappings are grounded in
+              Development recommendations and competency mappings are grounded in
               peer-reviewed cognitive psychology and educational research.
             </CardDescription>
           </CardHeader>

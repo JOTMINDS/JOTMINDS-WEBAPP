@@ -34,32 +34,38 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardContent className="p-5 space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total Students Assessed</span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">128</span>
-            <p className="text-[10px] text-slate-500">Across your 4 Class Sections</p>
+            <span className="text-2xl font-black text-slate-900 dark:text-white">{summary.totalStudents}</span>
+            <p className="text-[10px] text-slate-500">In your current class context</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardContent className="p-5 space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Students Requiring Support</span>
-            <span className="text-2xl font-black text-amber-600 dark:text-amber-400">14</span>
-            <p className="text-[10px] text-slate-500">Additional conceptual scaffolding</p>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Unique Profiles</span>
+            <span className="text-2xl font-black text-amber-600 dark:text-amber-400">{Object.keys(summary.dominantStyles).length}</span>
+            <p className="text-[10px] text-slate-500">Distinct learning types in class</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardContent className="p-5 space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Lesson Completion Rate</span>
-            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">92%</span>
-            <p className="text-[10px] text-slate-500">Delivered vs. Planned (Your Classes)</p>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Class Harmony Index</span>
+            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+              {summary.totalStudents > 0 ? 
+                (Object.values(summary.dominantStyles)[0] || 0) / summary.totalStudents > 0.5 ? 'High' : 'Moderate'
+               : 'N/A'}
+            </span>
+            <p className="text-[10px] text-slate-500">Based on style distribution</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardContent className="p-5 space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Avg Student Engagement</span>
-            <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">4.5 / 5.0</span>
-            <p className="text-[10px] text-slate-500">Your average classroom rating</p>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Primary Approach</span>
+            <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400 truncate">
+              {Object.entries(summary.dominantStyles).sort((a,b) => b[1] - a[1])[0]?.[0] || 'Mixed'}
+            </span>
+            <p className="text-[10px] text-slate-500">Most effective strategy</p>
           </CardContent>
         </Card>
       </div>
@@ -76,34 +82,34 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
               Aggregated learning modalities and support patterns across classes.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+                    <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-semibold">
                 <span>Visual Learners</span>
-                <span className="text-indigo-600">45%</span>
+                <span className="text-indigo-600">{Math.round((summary.learningStyles.Visual / summary.totalStudents) * 100) || 0}%</span>
               </div>
-              <Progress value={45} className="h-2 bg-indigo-100" />
+              <Progress value={Math.round((summary.learningStyles.Visual / summary.totalStudents) * 100) || 0} className="h-2 bg-indigo-100" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-semibold">
                 <span>Auditory Learners</span>
-                <span className="text-purple-600">20%</span>
+                <span className="text-purple-600">{Math.round((summary.learningStyles.Auditory / summary.totalStudents) * 100) || 0}%</span>
               </div>
-              <Progress value={20} className="h-2 bg-purple-100" />
+              <Progress value={Math.round((summary.learningStyles.Auditory / summary.totalStudents) * 100) || 0} className="h-2 bg-purple-100" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-semibold">
                 <span>Kinesthetic Learners</span>
-                <span className="text-amber-600">20%</span>
+                <span className="text-amber-600">{Math.round((summary.learningStyles.Kinesthetic / summary.totalStudents) * 100) || 0}%</span>
               </div>
-              <Progress value={20} className="h-2 bg-amber-100" />
+              <Progress value={Math.round((summary.learningStyles.Kinesthetic / summary.totalStudents) * 100) || 0} className="h-2 bg-amber-100" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-semibold">
                 <span>Read/Write Learners</span>
-                <span className="text-emerald-600">15%</span>
+                <span className="text-emerald-600">{Math.round((summary.learningStyles.ReadWrite / summary.totalStudents) * 100) || 0}%</span>
               </div>
-              <Progress value={15} className="h-2 bg-emerald-100" />
+              <Progress value={Math.round((summary.learningStyles.ReadWrite / summary.totalStudents) * 100) || 0} className="h-2 bg-emerald-100" />
             </div>
           </CardContent>
         </Card>

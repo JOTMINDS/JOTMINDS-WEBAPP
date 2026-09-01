@@ -84,7 +84,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
       institutionId: teacher.institutionId,
       studentCount: 0,
       createdAt: new Date().toISOString(),
-      status: 'pending' // Classes created by teachers need approval
+      status: 'approved' // Auto-approve classes created by teachers (Revised system)
     };
 
     saveClass(newClass);
@@ -169,7 +169,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
           <School className="w-6 h-6" /> Class Management
         </h2>
         <p className="text-white/80 mt-1">
-          Create and manage your classes. New classes must be approved by your school admin before students can join them.
+          Create and manage your classes.
         </p>
       </div>
 

@@ -98,7 +98,7 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
           <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
-            JTIA Assessment Selector
+            Teaching Insights Selector
           </Badge>
         </div>
 
@@ -236,7 +236,7 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-1 text-xs">
-              JTIA • Item {currentIndex + 1} of {totalQuestions}
+              Teaching Insights • Item {currentIndex + 1} of {totalQuestions}
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-1 text-xs">
               {progressPct}% Completed
