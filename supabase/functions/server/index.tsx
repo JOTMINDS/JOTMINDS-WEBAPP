@@ -16,6 +16,7 @@ import checkinRoutes from './checkin-routes.tsx';
 import roleFitRoutes from './role-fit-routes.tsx';
 import brainGymRoutes from './brain-gym-routes.tsx';
 import teacherObservationRoutes from './teacher-observation-routes.tsx';
+import accountRoutes from './account-routes.tsx';
 
 import { rateLimiter } from 'npm:hono-rate-limiter';
 
@@ -47,6 +48,7 @@ app.route('/make-server-fc8eb847/checkin', checkinRoutes);
 app.route('/make-server-fc8eb847/role-fit', roleFitRoutes);
 app.route('/make-server-fc8eb847/brain-gym', brainGymRoutes);
 app.route('/make-server-fc8eb847/teacher-observation', teacherObservationRoutes);
+app.route('/make-server-fc8eb847/account', accountRoutes);
 
 // Health check and diagnostics endpoint
 app.get('/make-server-fc8eb847/health', async (c) => {
