@@ -115,8 +115,8 @@ export function LandingPage({
     {
       category: 'students',
       type: 'FOUNDATIONAL · 5 MIN',
-      title: 'Learning Dimensions Assessment (Kolb-Based)',
-      provider: 'Experiential Learning Institute',
+      title: 'Learning Dimensions Assessment',
+      provider: 'Experiential Learning Frameworks',
       rating: 4.9,
       reviews: '2.4k',
       duration: '5 min · Free',
@@ -127,7 +127,7 @@ export function LandingPage({
     {
       category: 'students',
       type: 'COGNITIVE ARCHITECTURE · 4 MIN',
-      title: 'Thinking Styles Assessment (Sternberg Triarchic)',
+      title: 'Thinking Styles Assessment',
       provider: 'Cognitive Science Frameworks',
       rating: 4.8,
       reviews: '1.9k',
@@ -186,16 +186,16 @@ export function LandingPage({
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
             <span className="font-semibold text-white flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-[#1FC8E1]" /> Grounded in Kolb & Sternberg Cognitive Science
+              <Globe className="w-3.5 h-3.5 text-[#1FC8E1]" /> Grounded in Validated Cognitive Science
             </span>
             <span className="hidden md:inline text-slate-500">|</span>
-            <span className="hidden md:inline text-slate-300">Aligned with Ghana (GES), Cambridge & IB Standards</span>
+            <span className="hidden md:inline text-slate-300">Aligned with Ghana (GES/NaCCA), Cambridge & IB Standards</span>
           </div>
           <div className="flex items-center gap-4">
             {onSupervisorPortal && (
               <button 
                 onClick={onSupervisorPortal} 
-                className="text-slate-200 hover:text-[#1FC8E1] font-medium transition-colors flex items-center gap-1"
+                className="text-slate-200 hover:text-[#1FC8E1] font-medium transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Building2 className="w-3.5 h-3.5 text-[#1FC8E1]" />
                 For Schools & Institutions
@@ -203,7 +203,7 @@ export function LandingPage({
             )}
             <button 
               onClick={onViewContact} 
-              className="text-slate-400 hover:text-slate-200 transition-colors hidden sm:inline"
+              className="text-slate-400 hover:text-slate-200 transition-colors hidden sm:inline cursor-pointer"
             >
               Support
             </button>
@@ -216,96 +216,60 @@ export function LandingPage({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-18 gap-4">
             
-            {/* Logo & Explore Dropdown */}
-            <div className="flex items-center gap-6 shrink-0">
+            {/* Logo & Navigation Links */}
+            <div className="flex items-center gap-8 shrink-0">
               <div className="cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                 <Logo size="md" />
               </div>
 
-              {/* Explore Button with Brand Colors */}
-              <div className="relative hidden lg:block">
-                <Button 
-                  variant="outline"
-                  onClick={() => setExploreDropdownOpen(!exploreDropdownOpen)}
-                  className="border-[#2C2E83] text-[#2C2E83] hover:bg-[#2C2E83]/5 font-bold text-xs h-10 px-4 flex items-center gap-1.5"
+              {/* Desktop Nav Links */}
+              <nav className="hidden md:flex items-center gap-6">
+                <button
+                  onClick={() => scrollTo('learners')}
+                  className="text-xs font-bold text-slate-700 hover:text-[#2C2E83] transition-colors cursor-pointer"
                 >
-                  Explore <ChevronDown className={`w-4 h-4 transition-transform ${exploreDropdownOpen ? 'rotate-180' : ''}`} />
-                </Button>
-
-                {exploreDropdownOpen && (
-                  <div className="absolute top-12 left-0 w-72 bg-white border border-slate-200 rounded-lg shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">Assessments</div>
-                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
-                      Learning Dimensions (Kolb) <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
-                      Thinking Styles (Sternberg) <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                    <button onClick={() => scrollTo('catalog')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
-                      Decision-Making Battery <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                    <div className="border-t border-slate-100 my-1"></div>
-                    <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">Educator Tools</div>
-                    <button onClick={() => scrollTo('for-schools')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
-                      AI Lesson Planner <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                    <button onClick={() => scrollTo('for-schools')} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#2C2E83] flex items-center justify-between">
-                      Class Cognitive Heatmaps <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Search Input with Brand Accent */}
-            <div className="hidden md:flex items-center flex-1 max-w-lg relative">
-              <input 
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && scrollTo('catalog')}
-                placeholder="What do you want to discover? (e.g. Learning Style, Lesson Planner)"
-                className="w-full h-11 pl-4 pr-12 text-xs bg-slate-50 border border-slate-300 rounded-full focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2C2E83] focus:border-[#2C2E83] transition-all text-slate-800"
-              />
-              <button 
-                onClick={() => scrollTo('catalog')}
-                className="absolute right-1.5 w-8 h-8 bg-[#2C2E83] hover:bg-[#1a1b4d] text-white rounded-full flex items-center justify-center transition-colors shadow-sm"
-              >
-                <Search className="w-4 h-4" />
-              </button>
+                  For Learners
+                </button>
+                <button
+                  onClick={() => scrollTo('teachers')}
+                  className="text-xs font-bold text-slate-700 hover:text-[#2C2E83] transition-colors cursor-pointer"
+                >
+                  For Teachers
+                </button>
+                <button
+                  onClick={() => scrollTo('for-schools')}
+                  className="text-xs font-bold text-slate-700 hover:text-[#2C2E83] transition-colors cursor-pointer"
+                >
+                  For Schools
+                </button>
+                <button
+                  onClick={() => scrollTo('catalog')}
+                  className="text-xs font-bold text-slate-700 hover:text-[#2C2E83] transition-colors cursor-pointer"
+                >
+                  Assessments
+                </button>
+              </nav>
             </div>
 
             {/* Right Action Links */}
             <div className="flex items-center gap-3 shrink-0">
-              <button 
-                onClick={() => scrollTo('for-schools')}
-                className="hidden xl:inline text-xs font-semibold text-slate-700 hover:text-[#2C2E83] py-2"
-              >
-                For Schools
-              </button>
-              <button 
-                onClick={() => scrollTo('solutions')}
-                className="hidden xl:inline text-xs font-semibold text-slate-700 hover:text-[#2C2E83] py-2"
-              >
-                For Parents
-              </button>
               <LanguageSelector />
               <Button 
                 variant="ghost" 
                 onClick={onGetStarted}
-                className="hidden sm:inline-flex text-xs font-bold text-slate-700 hover:text-[#2C2E83] hover:bg-slate-50 h-10 px-3"
+                className="hidden sm:inline-flex text-xs font-bold text-slate-700 hover:text-[#2C2E83] hover:bg-slate-50 h-10 px-3 cursor-pointer"
               >
                 Log In
               </Button>
               <Button 
                 onClick={onGetStarted}
-                className="bg-[#2C2E83] hover:bg-[#1a1b4d] text-white font-bold text-xs px-5 h-10 rounded shadow-sm transition-all"
+                className="bg-[#2C2E83] hover:bg-[#1a1b4d] text-white font-bold text-xs px-5 h-10 rounded shadow-sm transition-all cursor-pointer"
               >
                 Join for Free
               </Button>
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 text-slate-600 hover:text-slate-900"
+                className="md:hidden p-2 text-slate-600 hover:text-slate-900 cursor-pointer"
                 aria-label="Toggle Navigation Menu"
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -317,28 +281,40 @@ export function LandingPage({
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-3">
-            <div className="relative mb-3">
-              <input 
-                type="text"
-                placeholder="Search assessments & tools..."
-                className="w-full h-10 pl-3 pr-10 text-xs bg-slate-50 border border-slate-300 rounded"
-              />
-              <Search className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
-            </div>
-            <button onClick={() => scrollTo('catalog')} className="block w-full text-left py-2 text-xs font-semibold text-slate-700">
+            <button 
+              onClick={() => scrollTo('learners')}
+              className="w-full text-left py-2 text-sm font-semibold text-slate-700 hover:text-[#2C2E83] border-b border-slate-100"
+            >
+              For Learners
+            </button>
+            <button 
+              onClick={() => scrollTo('teachers')}
+              className="w-full text-left py-2 text-sm font-semibold text-slate-700 hover:text-[#2C2E83] border-b border-slate-100"
+            >
+              For Teachers
+            </button>
+            <button 
+              onClick={() => scrollTo('for-schools')}
+              className="w-full text-left py-2 text-sm font-semibold text-slate-700 hover:text-[#2C2E83] border-b border-slate-100"
+            >
+              For Schools & Institutions
+            </button>
+            <button 
+              onClick={() => scrollTo('catalog')}
+              className="w-full text-left py-2 text-sm font-semibold text-slate-700 hover:text-[#2C2E83] border-b border-slate-100"
+            >
               All Assessments
             </button>
-            <button onClick={() => scrollTo('for-schools')} className="block w-full text-left py-2 text-xs font-semibold text-slate-700">
-              For Schools & Teachers
-            </button>
-            <button onClick={() => scrollTo('solutions')} className="block w-full text-left py-2 text-xs font-semibold text-slate-700">
-              For Parents & Students
-            </button>
-            {onSupervisorPortal && (
-              <button onClick={onSupervisorPortal} className="block w-full text-left py-2 text-xs font-bold text-[#2C2E83]">
-                Organization Portal →
-              </button>
-            )}
+            <div className="pt-2 flex flex-col gap-2">
+              <Button onClick={onGetStarted} className="w-full bg-[#2C2E83] text-white font-bold text-xs">
+                Join for Free
+              </Button>
+              {onSupervisorPortal && (
+                <Button onClick={onSupervisorPortal} variant="outline" className="w-full text-xs font-bold text-slate-700">
+                  Institution Portal
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </header>
@@ -429,7 +405,7 @@ export function LandingPage({
                   </div>
 
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    Evaluates how your brain takes in information (Kolb), formulates solutions (Sternberg), and synthesizes decisions under academic pressure.
+                    Evaluates how your brain absorbs information across sensory dimensions, formulates creative and analytical solutions, and synthesizes decisions under academic pressure.
                   </p>
 
                   <div className="border-t border-slate-100 pt-3">
@@ -495,10 +471,10 @@ export function LandingPage({
               <Globe className="w-4 h-4 text-[#2C2E83]" /> IB Curriculum
             </div>
             <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
-              <Brain className="w-4 h-4 text-[#FF715B]" /> Kolb Model
+              <Brain className="w-4 h-4 text-[#FF715B]" /> Experiential Learning
             </div>
             <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2">
-              <Target className="w-4 h-4 text-[#5B7DB1]" /> Sternberg Theory
+              <Target className="w-4 h-4 text-[#5B7DB1]" /> Triarchic Framework
             </div>
           </div>
         </div>
@@ -701,74 +677,279 @@ export function LandingPage({
       </section>
 
       {/* ─── 7. ROLE-SPECIFIC PILLARS ─── */}
-      <section id="solutions" className="py-16 bg-white border-b border-slate-200">
+      {/* ─── 7. HOW JOTMINDS HELPS: LEARNERS, TEACHERS & SCHOOLS ─── */}
+      <section id="solutions" className="py-20 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          <div className="max-w-3xl mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#2C2E83]">Individual & Group Solutions</span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
-              Designed for Every Step in Education & Career
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge className="bg-[#2C2E83]/10 text-[#2C2E83] border-[#2C2E83]/20 text-xs font-bold uppercase tracking-wider px-3 py-1 mb-3">
+              Tailored Educational Solutions
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              One Unified Platform. Built for Every Stakeholder.
             </h2>
+            <p className="text-sm sm:text-base text-slate-600 mt-3 leading-relaxed">
+              JotMinds bridges the gap between student cognitive discovery, classroom instructional differentiation, and school-wide academic leadership.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="space-y-12">
             
-            {/* Student Pillar */}
-            <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
-              <div className="w-10 h-10 rounded bg-[#2C2E83]/10 text-[#2C2E83] flex items-center justify-center font-bold mb-4">
-                <GraduationCap className="w-5 h-5" />
+            {/* 1. FOR LEARNERS */}
+            <div id="learners" className="bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/50 rounded-3xl border border-indigo-100 p-8 sm:p-10 shadow-md">
+              <div className="grid lg:grid-cols-12 gap-8 items-center">
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold">
+                    <GraduationCap className="w-4 h-4 text-indigo-600" />
+                    For Learners & Students
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-snug">
+                    Understand How You Think & Supercharge Your Study Habits
+                  </h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    Stop forcing study techniques that don’t fit your brain. JotMinds evaluates your natural learning, thinking, and decision modalities in under 10 minutes to generate custom revision workflows.
+                  </p>
+                  
+                  <div className="grid sm:grid-cols-2 gap-3 pt-2">
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-700"><strong>Personalized Cognitive Profile:</strong> Visual, kinesthetic, and reflective breakdown.</span>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-700"><strong>Targeted Revision Tactics:</strong> Mind-mapping, structured problem-solving, and active recall.</span>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-700"><strong>Exam Stress Mastery:</strong> Learn how you make decisions under timed conditions.</span>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-700"><strong>100% Free & Self-Paced:</strong> Instant downloadable reports and actionable growth steps.</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4">
+                    <Button onClick={onGetStarted} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-6 py-5 rounded-xl shadow-md cursor-pointer">
+                      Start Learner Assessment <ArrowRight className="w-4 h-4 ml-1.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Visual Preview Card for Learners */}
+                <div className="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-xs">
+                        KM
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">Student Cognitive Preview</div>
+                        <div className="text-[10px] text-slate-500">Form 2 • JHS Cohort</div>
+                      </div>
+                    </div>
+                    <Badge className="bg-emerald-100 text-emerald-800 text-[10px]">Active Learner</Badge>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                        <span>Visual / Spatial Processing</span>
+                        <span className="text-indigo-600 font-bold">84%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div className="bg-indigo-600 h-full rounded-full" style={{ width: '84%' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                        <span>Analytical Problem Solving</span>
+                        <span className="text-purple-600 font-bold">76%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div className="bg-purple-600 h-full rounded-full" style={{ width: '76%' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                        <span>Deliberate Decision System</span>
+                        <span className="text-emerald-600 font-bold">90%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div className="bg-emerald-600 h-full rounded-full" style={{ width: '90%' }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 text-xs text-slate-700 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span><strong>Tailored Strategy:</strong> Incorporate balance-scale diagrams and structured flashcards before tests.</span>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Students</h3>
-              <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                Understand how you retain concepts best. Receive actionable study strategies, exam preparation routines, and academic pathway guidance.
-              </p>
-              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-[#2C2E83] p-0 h-auto">
-                Student Assessment →
-              </Button>
             </div>
 
-            {/* Educator Pillar */}
-            <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
-              <div className="w-10 h-10 rounded bg-[#7B61FF]/10 text-[#7B61FF] flex items-center justify-center font-bold mb-4">
-                <School className="w-5 h-5" />
+            {/* 2. FOR TEACHERS */}
+            <div id="teachers" className="bg-gradient-to-br from-purple-50/70 via-white to-pink-50/50 rounded-3xl border border-purple-100 p-8 sm:p-10 shadow-md">
+              <div className="grid lg:grid-cols-12 gap-8 items-center">
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-bold">
+                    <School className="w-4 h-4 text-purple-600" />
+                    For Classroom Teachers & Subject Leads
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-snug">
+                    Cut Lesson Planning Time in Half with Curriculum-Aligned AI
+                  </h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    Plan differentiated, high-impact lessons in minutes. Structure objectives, phases, practical exercises, and multi-format assessments tailored directly to your class’s cognitive distribution.
+                  </p>
+                  
+                  <div className="grid sm:grid-cols-2 gap-3 pt-2">
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-700"><strong>10-Module Lesson Suite:</strong> AI-generated phases, timings, TLM resources, and exit slips.</span>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-700"><strong>National & International Alignment:</strong> GES/NaCCA, Cambridge, and IB frameworks.</span>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-700"><strong>Assessment Generator:</strong> Instant MCQs, short answers, and homework rubrics.</span>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-700"><strong>Compulsory Post-Lesson Reflection:</strong> Log observations, insights, and recommendations.</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4">
+                    <Button onClick={onGetStarted} className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-6 py-5 rounded-xl shadow-md cursor-pointer">
+                      Launch Teacher Workspace <ArrowRight className="w-4 h-4 ml-1.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Visual Preview Card for Teachers */}
+                <div className="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-purple-600" />
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">Linear Equations • Lesson Plan</div>
+                        <div className="text-[10px] text-slate-500">NaCCA Curriculum • 45 Mins</div>
+                      </div>
+                    </div>
+                    <Badge className="bg-purple-100 text-purple-800 text-[10px]">AI Generated</Badge>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                      <span className="font-bold text-slate-800 block text-[11px]">Phase 1: Hook & Concrete Demo (10 min)</span>
+                      <span className="text-slate-600 text-[11px]">Physical balance scale demonstration for hands-on learners.</span>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                      <span className="font-bold text-slate-800 block text-[11px]">Phase 2: Direct Modeling (15 min)</span>
+                      <span className="text-slate-600 text-[11px]">Step-by-step color-coded inverse operations on whiteboard.</span>
+                    </div>
+                    <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200">
+                      <span className="font-bold text-emerald-800 block text-[11px]">Phase 3: Differentiated Group Task (15 min)</span>
+                      <span className="text-emerald-700 text-[11px]">Scaffolded card sets for core, support, and extension cohorts.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                    <span>Export: <strong>PDF & CSV</strong></span>
+                    <span className="text-purple-600 font-bold">✓ Ready for Class</span>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Teachers</h3>
-              <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                View your class cognitive distribution. Plan differentiated lessons with AI and review pre-flight preparation checklists.
-              </p>
-              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-[#7B61FF] p-0 h-auto">
-                Teacher Dashboard →
-              </Button>
             </div>
 
-            {/* Parent Pillar */}
-            <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
-              <div className="w-10 h-10 rounded bg-[#1FC8E1]/10 text-[#0c707f] flex items-center justify-center font-bold mb-4">
-                <Users className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Parents</h3>
-              <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                Complete observation assessments and gain clarity on how your child handles study stress, homework, and problem-solving.
-              </p>
-              <Button onClick={onGetStarted} variant="link" className="text-xs font-bold text-[#0c707f] p-0 h-auto">
-                Parent Portal →
-              </Button>
-            </div>
+            {/* 3. FOR SCHOOLS & HEADTEACHERS */}
+            <div id="for-schools" className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl border border-slate-800 p-8 sm:p-10 shadow-xl">
+              <div className="grid lg:grid-cols-12 gap-8 items-center">
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1FC8E1]/20 text-[#1FC8E1] text-xs font-bold border border-[#1FC8E1]/30">
+                    <Building2 className="w-4 h-4 text-[#1FC8E1]" />
+                    For Schools, Principals & Academic Directors
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-white leading-snug">
+                    School-Wide Pedagogical Intelligence & Faculty Oversight
+                  </h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Gain centralized visibility across your entire institution. Monitor faculty instructional preparation, track curriculum coverage by educational level, and evaluate student cognitive data in real time.
+                  </p>
+                  
+                  <div className="grid sm:grid-cols-2 gap-3 pt-2">
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-[#1FC8E1] shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-200"><strong>Faculty Lesson Tracking:</strong> Track planned vs delivered lessons and teacher post-lesson reflections.</span>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-[#1FC8E1] shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-200"><strong>Bulk & Individual Codes:</strong> Upload rosters via CSV or generate codes for independent students.</span>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-[#1FC8E1] shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-200"><strong>Level-Grouped Classes:</strong> Early Years, Primary, JHS, and SHS hierarchical organization.</span>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-[#1FC8E1] shrink-0 mt-0.5" />
+                      <span className="text-xs text-slate-200"><strong>Institutional Analytics:</strong> Multi-class cognitive heatmaps and district reporting.</span>
+                    </div>
+                  </div>
 
-            {/* Organization Pillar */}
-            <div className="p-6 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
-              <div className="w-10 h-10 rounded bg-[#FF715B]/10 text-[#d44833] flex items-center justify-center font-bold mb-4">
-                <Building2 className="w-5 h-5" />
+                  <div className="pt-4 flex flex-wrap gap-3">
+                    {onSupervisorPortal && (
+                      <Button onClick={onSupervisorPortal} className="bg-[#1FC8E1] hover:bg-[#1bb4ca] text-[#1a1b4d] font-bold text-xs px-6 py-5 rounded-xl shadow-md cursor-pointer">
+                        Open School Portal <ArrowRight className="w-4 h-4 ml-1.5" />
+                      </Button>
+                    )}
+                    <Button onClick={onGetStarted} variant="outline" className="border-slate-600 text-slate-200 hover:bg-white/10 font-bold text-xs px-6 py-5 rounded-xl cursor-pointer">
+                      Register Your Institution
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Visual Preview Card for Schools */}
+                <div className="lg:col-span-5 bg-[#232560] rounded-2xl p-6 border border-[#2C2E83] shadow-xl space-y-4 text-white">
+                  <div className="flex items-center justify-between border-b border-slate-700 pb-3">
+                    <div>
+                      <div className="text-xs font-bold text-white">Academic Leadership Overview</div>
+                      <div className="text-[10px] text-slate-300">Cape Coast Academy • Term 1</div>
+                    </div>
+                    <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
+                      98% Faculty Active
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="bg-[#1a1b4d] p-3 rounded-xl border border-slate-700">
+                      <span className="text-2xl font-black text-[#1FC8E1]">142</span>
+                      <span className="text-[10px] text-slate-300 block">Lessons Delivered</span>
+                    </div>
+                    <div className="bg-[#1a1b4d] p-3 rounded-xl border border-slate-700">
+                      <span className="text-2xl font-black text-emerald-400">94%</span>
+                      <span className="text-[10px] text-slate-300 block">Reflections Logged</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-slate-200">
+                      <span>Curriculum Coverage Progress</span>
+                      <span className="font-bold text-[#1FC8E1]">82%</span>
+                    </div>
+                    <div className="w-full bg-[#1a1b4d] h-2 rounded-full overflow-hidden">
+                      <div className="bg-gradient-to-r from-[#1FC8E1] to-emerald-400 h-full rounded-full" style={{ width: '82%' }} />
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-[#1a1b4d] rounded-xl border border-slate-700 text-xs text-slate-300">
+                    💡 <strong>Administrator Insight:</strong> Grade 8 Science showed 28% improvement in guided practice after adopting visual scaffolds.
+                  </div>
+                </div>
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Institutions</h3>
-              <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                Generate student test codes, track year-group cognitive profiles, and maintain department-level performance metrics.
-              </p>
-              {onSupervisorPortal && (
-                <Button onClick={onSupervisorPortal} variant="link" className="text-xs font-bold text-[#d44833] p-0 h-auto">
-                  Organization Access →
-                </Button>
-              )}
             </div>
 
           </div>
@@ -852,7 +1033,7 @@ export function LandingPage({
                 How does JotMinds assess cognitive styles?
               </AccordionTrigger>
               <AccordionContent className="text-xs text-slate-600 leading-relaxed pt-2">
-                JotMinds uses validated psychological instruments based on David Kolb’s Experiential Learning Theory and Robert Sternberg’s Triarchic Theory. The assessments evaluate information processing, cognitive problem-solving, and decision-making through situational questions.
+                JotMinds uses validated psychometric instruments grounded in experiential learning and multi-dimensional cognitive science. The assessments evaluate information absorption, problem-solving modalities, and decision-making systems through real-world academic scenarios.
               </AccordionContent>
             </AccordionItem>
 

@@ -3,7 +3,7 @@ import { createClient } from '../utils/supabase/client';
 import { setAuthToken, clearAuthToken, getSession } from '../utils/api';
 
 import { User } from '../types';
-import { getCurrentUser } from '../utils/storage';
+import { getCurrentUser, saveCurrentUser } from '../utils/storage';
 
 interface AuthContextType {
   user: User | null;
@@ -161,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    saveCurrentUser(null);
     setUser(null);
     setImpersonatedUser(null);
     clearAuthToken();

@@ -331,7 +331,13 @@ function AppContent() {
 
   const handleLogout = async () => {
     console.log('[App] Logout requested');
-    await signOut();
+    try {
+      localStorage.removeItem('ts_current_user');
+      localStorage.removeItem('jotminds_current_user');
+      await signOut();
+    } catch (e) {
+      console.error('Error during logout:', e);
+    }
     setCurrentView('landing');
     setCurrentAssessment(null);
     setAssessmentResults(null);

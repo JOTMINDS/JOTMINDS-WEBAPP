@@ -155,6 +155,10 @@ export interface PostLessonReflection {
   teacherId: string;
   completedAsPlanned: boolean;
   studentUnderstandingLevel: 'Excellent' | 'Good' | 'Average' | 'Poor';
+  observations?: string;
+  feedback?: string;
+  insights?: string;
+  recommendations?: string;
   whatWorkedWell: string;
   areasForImprovement: string;
   followUpActions: string;

@@ -30,10 +30,36 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   const [curriculumFramework, setCurriculumFramework] = useState<any>('National Curriculum');
   const [topic, setTopic] = useState('');
   const [subtopic, setSubtopic] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState(40);
+  const [durationMinutes, setDurationMinutes] = useState(45);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startTime, setStartTime] = useState('08:30');
+  const [endTime, setEndTime] = useState('09:15');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Auto-calculate duration from date and time
+  const handleDateOrTimeChange = (
+    newDate: string,
+    newEndDate: string,
+    newStart: string,
+    newEnd: string
+  ) => {
+    setDate(newDate);
+    setEndDate(newEndDate);
+    setStartTime(newStart);
+    setEndTime(newEnd);
+
+    try {
+      const s = new Date(`${newDate}T${newStart || '08:00'}`);
+      const e = new Date(`${newEndDate || newDate}T${newEnd || '08:45'}`);
+      const diffMinutes = Math.round((e.getTime() - s.getTime()) / (1000 * 60));
+      if (diffMinutes > 0 && diffMinutes <= 480) {
+        setDurationMinutes(diffMinutes);
+      }
+    } catch {
+      // Keep existing duration on invalid date strings
+    }
+  };
 
   // Manual mode state
   const [knowledgeObj, setKnowledgeObj] = useState('');
@@ -221,32 +247,77 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             Find official AI-powered Subject Specific Apps and easy access to NaCCA curriculum resources.
           </p>
         </div>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant={mode === 'ai' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setMode('ai')}
-            className={mode === 'ai' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-white/10 text-white border-white/20'}
-          >
-            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Auto Generator
-          </Button>
-          <Button
-            variant={mode === 'manual' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setMode('manual')}
-            className={mode === 'manual' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-white/10 text-white border-white/20'}
-          >
-            <FileText className="w-3.5 h-3.5 mr-1.5" /> Manual Form
-          </Button>
-          <Button
-            variant={mode === 'upload' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setMode('upload')}
-            className={mode === 'upload' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-white/10 text-white border-white/20'}
-          >
-            <BookOpen className="w-3.5 h-3.5 mr-1.5" /> Upload Existing
-          </Button>
+      {/* 3 Prominent Visual Lesson Creation Modes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Mode 1: AI Generated */}
+        <div
+          onClick={() => setMode('ai')}
+          className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+            mode === 'ai'
+              ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/40 shadow-md ring-2 ring-indigo-500/30'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className={`p-2.5 rounded-xl ${mode === 'ai' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}>
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <Badge className={mode === 'ai' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800'}>
+              AI Accelerated
+            </Badge>
+          </div>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">1. AI Generated Lesson Plan</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            Auto-generate curriculum-aligned lesson phases, differentiated tasks, and objectives using AI.
+          </p>
+        </div>
+
+        {/* Mode 2: Manual Plan */}
+        <div
+          onClick={() => setMode('manual')}
+          className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+            mode === 'manual'
+              ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/40 shadow-md ring-2 ring-emerald-500/30'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className={`p-2.5 rounded-xl ${mode === 'manual' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}>
+              <FileText className="w-5 h-5" />
+            </div>
+            <Badge className={mode === 'manual' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800'}>
+              Full Control
+            </Badge>
+          </div>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">2. Manual Lesson Plan</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            Type custom objectives, phases, pedagogical timings, and instructional resources manually.
+          </p>
+        </div>
+
+        {/* Mode 3: Upload Existing */}
+        <div
+          onClick={() => setMode('upload')}
+          className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+            mode === 'upload'
+              ? 'border-purple-600 bg-purple-50/80 dark:bg-purple-950/40 shadow-md ring-2 ring-purple-500/30'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className={`p-2.5 rounded-xl ${mode === 'upload' ? 'bg-purple-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}>
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <Badge className={mode === 'upload' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800'}>
+              AI Adaptation
+            </Badge>
+          </div>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">3. Upload Existing Plan</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            Paste or upload your existing document to receive instant AI differentiation & recommendations.
+          </p>
         </div>
       </div>
 
@@ -257,7 +328,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             Lesson Parameters & Target Class
           </CardTitle>
           <CardDescription className="text-xs">
-            Specify the subject, topic, and duration for your target classroom.
+            Specify the subject, topic, and duration for your target classroom. Duration is auto-calculated from schedule.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -281,14 +352,14 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold">Curriculum Type</Label>
+              <Label className="text-xs font-semibold">Curriculum Framework</Label>
               <div className="mt-1">
                 <Select value={curriculumFramework} onValueChange={(val) => setCurriculumFramework(val)}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select curriculum..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="National Curriculum">National Curriculum</SelectItem>
+                    <SelectItem value="National Curriculum">National Curriculum (NaCCA / GES)</SelectItem>
                     <SelectItem value="British Curriculum (Cambridge/Pearson Edexcel)">British Curriculum (Cambridge/Pearson Edexcel)</SelectItem>
                     <SelectItem value="Oxford International Curriculum">Oxford International Curriculum</SelectItem>
                     <SelectItem value="International Baccalaureate (IB)">International Baccalaureate (IB)</SelectItem>
@@ -297,28 +368,66 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                 </Select>
               </div>
             </div>
+          </div>
+
+          {/* Date, Time & Duration Scheduling */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800">
             <div>
-              <Label className="text-xs font-semibold">Start Date</Label>
+              <Label className="text-[11px] font-semibold">Start Date</Label>
               <Input
                 type="date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="mt-1"
+                onChange={(e) => handleDateOrTimeChange(e.target.value, endDate, startTime, endTime)}
+                className="mt-1 text-xs"
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold">End Date (Optional)</Label>
+              <Label className="text-[11px] font-semibold">Start Time</Label>
+              <Input
+                type="time"
+                value={startTime}
+                onChange={(e) => handleDateOrTimeChange(date, endDate, e.target.value, endTime)}
+                className="mt-1 text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-[11px] font-semibold">End Date</Label>
               <Input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="mt-1"
+                onChange={(e) => handleDateOrTimeChange(date, e.target.value, startTime, endTime)}
+                className="mt-1 text-xs"
               />
+            </div>
+            <div>
+              <Label className="text-[11px] font-semibold">End Time</Label>
+              <Input
+                type="time"
+                value={endTime}
+                onChange={(e) => handleDateOrTimeChange(date, endDate, startTime, e.target.value)}
+                className="mt-1 text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-[11px] font-semibold flex items-center justify-between">
+                <span>Duration</span>
+                <span className="text-[10px] text-indigo-600 font-normal">Auto-calculated</span>
+              </Label>
+              <div className="relative mt-1">
+                <Input
+                  type="number"
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                  placeholder="45"
+                  className="pr-12 text-xs font-bold"
+                />
+                <span className="absolute right-2.5 top-2 text-[11px] text-slate-400 font-medium">mins</span>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <Label className="text-xs font-semibold">Topic / Strand</Label>
               <Input
                 value={topic}
@@ -328,25 +437,14 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold">Duration (Minutes)</Label>
+              <Label className="text-xs font-semibold">Subtopic / Sub-strand (Optional)</Label>
               <Input
-                type="number"
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                placeholder="40"
+                value={subtopic}
+                onChange={(e) => setSubtopic(e.target.value)}
+                placeholder="e.g. Balancing Equations with Inverse Operations"
                 className="mt-1"
               />
             </div>
-          </div>
-
-          <div>
-            <Label className="text-xs font-semibold">Subtopic / Sub-strand (Optional)</Label>
-            <Input
-              value={subtopic}
-              onChange={(e) => setSubtopic(e.target.value)}
-              placeholder="e.g. Solving Algebraic Equations & Word Problems"
-              className="mt-1"
-            />
           </div>
 
           {/* Automated vs Upload vs Manual specific fields */}

@@ -5,12 +5,13 @@ import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
   BarChart3, PieChart as PieChartIcon, Target, Sparkles, Brain, Layers, 
-  Users, CheckCircle2, TrendingUp, Lightbulb, FileText, LayoutGrid, Table, Activity, ChevronDown, ChevronUp
+  Users, CheckCircle2, TrendingUp, Lightbulb, FileText, LayoutGrid, Table, Activity, ChevronDown, ChevronUp, BookOpen
 } from 'lucide-react';
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { 
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, 
-  CartesianGrid, Tooltip, ResponsiveContainer, Legend 
+  CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { User } from '../types';
@@ -22,8 +23,9 @@ interface CentralAnalyticsHubProps {
   user: any;
 }
 
-type SubTab = 'overview' | 'alignment' | 'class_insights';
+type SubTab = 'learning_style' | 'decision_style' | 'thinking_style' | 'learning_dimensions' | 'alignment' | 'class_insights';
 type ViewMode = 'cards' | 'charts' | 'table';
+type DimensionVizMode = 'radar' | 'bars' | 'cards';
 
 const RISK_COLORS = { high: '#DC2626', medium: '#E0A020', low: '#1E8A6E', none: '#9ca3af' };
 const RISK_LABELS = { high: 'At Risk', medium: 'Needs Support', low: 'On Track', none: 'Not Assessed' };
@@ -59,24 +61,23 @@ function getMaxForDim(dim: string): number {
 }
 
 export function CentralAnalyticsHub({ students, assessments, user }: CentralAnalyticsHubProps) {
-  const [activeTab, setActiveTab] = useState<SubTab>('overview');
+  const [activeTab, setActiveTab] = useState<SubTab>('learning_style');
+  const [dimensionVizMode, setDimensionVizMode] = useState<DimensionVizMode>('radar');
   const [overviewViewMode, setOverviewViewMode] = useState<ViewMode>('charts');
-  const [alignmentViewMode, setAlignmentViewMode] = useState<ViewMode>('cards');
-  const [selectedStyleDimension, setSelectedStyleDimension] = useState<'learning' | 'thinking' | 'decision'>('learning');
   const [heatmapGroup, setHeatmapGroup] = useState<string>('Learning');
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
 
-  // Compute Distributions for Overview
+  // Compute Distributions
   const computeDistributions = () => {
     const learningCounts: Record<string, number> = { Visual: 0, Kinesthetic: 0, Reflective: 0, Assimilating: 0 };
-    const thinkingCounts: Record<string, number> = { Analytical: 0, Creative: 0, Practical: 0, Reflective: 0 };
+    const thinkingCounts: Record<string, number> = { Analytical: 0, Creative: 0, Practical: 0 };
     const decisionCounts: Record<string, number> = { Intuitive: 0, Deliberate: 0, Balanced: 0 };
 
     students.forEach(s => {
       const studentAssessments = assessments.filter(a => a.userId === s.id && a.score);
-      let kStyle = 'Assimilating';
-      let tStyle = 'Analytical';
-      let dStyle = 'Balanced';
+      let kStyle = s.learningStyle || 'Visual';
+      let tStyle = s.thinkingStyle || 'Analytical';
+      let dStyle = s.decisionStyle || 'Balanced';
       
       studentAssessments.forEach(a => {
         if (a.type === 'kolb' || a.type === 'learning') kStyle = a.score?.kolb?.style || a.score?.learning?.style || kStyle;
@@ -93,13 +94,50 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
   };
 
   const { learningCounts, thinkingCounts, decisionCounts } = computeDistributions();
-  const chartColors = ['#5B7DB1', '#6B4C9A', '#1E8A6E', '#E0A020', '#EC4899'];
+  const chartColors = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#8B5CF6'];
   const assessedCount = students.filter(s => assessments.some(a => a.userId === s.id && a.score)).length;
 
-  const activeChartData = 
-    selectedStyleDimension === 'learning' ? Object.entries(learningCounts).map(([name, count]) => ({ name, count })) :
-    selectedStyleDimension === 'thinking' ? Object.entries(thinkingCounts).map(([name, count]) => ({ name, count })) :
-    Object.entries(decisionCounts).map(([name, count]) => ({ name, count }));
+  const learningChartData = Object.entries(learningCounts).map(([name, count]) => ({ name, count }));
+  const thinkingChartData = Object.entries(thinkingCounts).map(([name, count]) => ({ name, count }));
+  const decisionChartData = Object.entries(decisionCounts).map(([name, count]) => ({ name, count }));
+
+  // Compute classroom dimension averages
+  const classroomDimensionAverages = useMemo(() => {
+    const allDims = [
+      'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation',
+      'Analytical', 'Creative', 'Practical',
+      'Intuitive', 'Reflective'
+    ];
+
+    return allDims.map(dim => {
+      let total = 0;
+      let count = 0;
+      const max = getMaxForDim(dim);
+
+      students.forEach(s => {
+        const studentAssessments = assessments.filter(a => a.userId === s.id && a.score);
+        studentAssessments.forEach(a => {
+          extractDimensionScores(a).forEach(({ name, score }) => {
+            if (name === dim) {
+              total += score;
+              count += 1;
+            }
+          });
+        });
+      });
+
+      const avgRaw = count > 0 ? total / count : max * 0.65;
+      const pct = Math.round((avgRaw / max) * 100);
+
+      return {
+        dimension: DIMENSION_LABELS[dim] || dim,
+        fullName: dim,
+        classAverage: pct,
+        benchmark: 70,
+        count
+      };
+    });
+  }, [students, assessments]);
 
   // --- HEATMAP & INTERVENTION PROFILES LOGIC ---
   const profiles = useMemo(() => {
@@ -126,7 +164,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
         else riskLevel = 'low';
       }
 
-      let learningStyle = 'Unknown';
+      let learningStyle = 'Visual';
       studentAssessments.forEach(a => {
         if (a.type === 'kolb' || a.type === 'learning') learningStyle = a.score?.kolb?.style || a.score?.learning?.style || learningStyle;
       });
@@ -152,30 +190,33 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white rounded-2xl p-6 md:p-8 shadow-lg relative overflow-hidden">
         <div className="relative z-10 space-y-3 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold uppercase tracking-wider">
-            <Brain className="w-3.5 h-3.5 text-purple-300" /> Central Analytics & Insights Hub
+            <Brain className="w-3.5 h-3.5 text-purple-300" /> Central Analytics Hub
           </div>
           <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Classroom & School Intelligence Center
+            Cognitive & Pedagogical Intelligence
           </h2>
           <p className="text-white/80 text-xs md:text-sm leading-relaxed">
-            Unified analytics engine tracking learning style distributions, alignment dynamics, heatmaps, and AI-driven pedagogical interventions.
+            Switch effortlessly between styles, learning dimensions, teacher-student alignment, and student intervention profiles.
           </p>
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-gray-950 p-2 rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xs">
+      {/* 6 Clear Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-gray-950 p-2 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
         {[
-          { id: 'overview', icon: BarChart3, label: 'Class Overview' },
+          { id: 'learning_style', icon: BookOpen, label: 'Learning Style' },
+          { id: 'decision_style', icon: Sparkles, label: 'Decision Style' },
+          { id: 'thinking_style', icon: Brain, label: 'Thinking Style' },
+          { id: 'learning_dimensions', icon: Layers, label: 'Learning Dimensions' },
           { id: 'alignment', icon: Target, label: 'Alignment Analysis' },
           { id: 'class_insights', icon: Activity, label: 'Class Insights' }
         ].map(t => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id as SubTab)}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === t.id
-                ? 'bg-[#6B4C9A] text-white shadow-2xs'
+                ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-500/30'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'
             }`}
           >
@@ -184,47 +225,326 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
         ))}
       </div>
 
-      {/* ─── CLASS OVERVIEW ─── */}
-      {activeTab === 'overview' && (
+      {/* ─── 1. LEARNING STYLE ─── */}
+      {activeTab === 'learning_style' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700">Distribution Overview</h3>
-            <div className="bg-gray-100 p-1 rounded-lg flex items-center">
-              <button onClick={() => setOverviewViewMode('charts')} className={`px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 transition-all ${overviewViewMode === 'charts' ? 'bg-white shadow-sm text-purple-700' : 'text-gray-600 hover:text-gray-900'}`}><BarChart3 className="w-4 h-4" /> Charts</button>
-              <button onClick={() => setOverviewViewMode('cards')} className={`px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 transition-all ${overviewViewMode === 'cards' ? 'bg-white shadow-sm text-purple-700' : 'text-gray-600 hover:text-gray-900'}`}><LayoutGrid className="w-4 h-4" /> Cards</button>
-              <button onClick={() => setOverviewViewMode('table')} className={`px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 transition-all ${overviewViewMode === 'table' ? 'bg-white shadow-sm text-purple-700' : 'text-gray-600 hover:text-gray-900'}`}><Table className="w-4 h-4" /> Roster</button>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Class Learning Style Distribution</h3>
+              <p className="text-xs text-slate-500">Visual, Kinesthetic, Reflective, and Assimilating learner preferences.</p>
             </div>
           </div>
 
-          {overviewViewMode === 'charts' && (
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <Select value={selectedStyleDimension} onValueChange={(val: any) => setSelectedStyleDimension(val)}>
-                  <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="learning">Learning Styles</SelectItem>
-                    <SelectItem value="thinking">Thinking Styles</SelectItem>
-                    <SelectItem value="decision">Decision Styles</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card><CardHeader><CardTitle className="text-sm">Frequency Breakdown</CardTitle></CardHeader><CardContent className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={activeChartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="count" fill="#6B4C9A" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card>
-                <Card><CardHeader><CardTitle className="text-sm">Percentage Share</CardTitle></CardHeader><CardContent className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={activeChartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} >{activeChartData.map((_, i) => <Cell key={`cell-${i}`} fill={chartColors[i % chartColors.length]} />)}</Pie><Tooltip /><Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: "12px" }} /></PieChart></ResponsiveContainer></CardContent></Card>
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="shadow-sm border-slate-200 dark:border-slate-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-indigo-600" /> Student Count by Learning Style
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={learningChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#6366F1" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-slate-200 dark:border-slate-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4 text-indigo-600" /> Proportion Breakdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={learningChartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={90}>
+                      {learningChartData.map((_, i) => <Cell key={`cell-${i}`} fill={chartColors[i % chartColors.length]} />)}
+                    </Pie>
+                    <Tooltip />
+                    <Legend layout="horizontal" verticalAlign="bottom" wrapperStyle={{ fontSize: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.entries(learningCounts).map(([style, count], i) => (
+              <Card key={style} className="p-4 border-l-4 border-l-indigo-600 bg-white dark:bg-slate-900 shadow-xs">
+                <p className="text-xs text-slate-500 font-semibold uppercase">{style}</p>
+                <div className="flex items-baseline justify-between mt-1">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">{count}</span>
+                  <Badge variant="outline" className="text-xs">
+                    {students.length > 0 ? Math.round((count / students.length) * 100) : 0}% of class
+                  </Badge>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── 2. DECISION STYLE ─── */}
+      {activeTab === 'decision_style' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Class Decision Style Distribution</h3>
+              <p className="text-xs text-slate-500">Dual-process cognitive modes: Intuitive, Deliberate, and Balanced decision-making.</p>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="shadow-sm border-slate-200 dark:border-slate-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-emerald-600" /> Decision Style Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={decisionChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#10B981" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-slate-200 dark:border-slate-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4 text-emerald-600" /> Decision Proportion
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={decisionChartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={90}>
+                      {decisionChartData.map((_, i) => <Cell key={`cell-${i}`} fill={chartColors[(i + 2) % chartColors.length]} />)}
+                    </Pie>
+                    <Tooltip />
+                    <Legend layout="horizontal" verticalAlign="bottom" wrapperStyle={{ fontSize: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {Object.entries(decisionCounts).map(([style, count]) => (
+              <Card key={style} className="p-4 border-l-4 border-l-emerald-600 bg-white dark:bg-slate-900 shadow-xs">
+                <p className="text-xs text-slate-500 font-semibold uppercase">{style}</p>
+                <div className="flex items-baseline justify-between mt-1">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">{count}</span>
+                  <Badge variant="outline" className="text-xs">
+                    {students.length > 0 ? Math.round((count / students.length) * 100) : 0}%
+                  </Badge>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── 3. THINKING STYLE ─── */}
+      {activeTab === 'thinking_style' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Class Thinking Style Distribution</h3>
+              <p className="text-xs text-slate-500">Analytical, Creative, and Practical cognitive problem-solving modalities.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="shadow-sm border-slate-200 dark:border-slate-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-purple-600" /> Thinking Profile Count
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={thinkingChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-slate-200 dark:border-slate-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4 text-purple-600" /> Thinking Distribution Share
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={thinkingChartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={90}>
+                      {thinkingChartData.map((_, i) => <Cell key={`cell-${i}`} fill={chartColors[(i + 1) % chartColors.length]} />)}
+                    </Pie>
+                    <Tooltip />
+                    <Legend layout="horizontal" verticalAlign="bottom" wrapperStyle={{ fontSize: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {Object.entries(thinkingCounts).map(([style, count]) => (
+              <Card key={style} className="p-4 border-l-4 border-l-purple-600 bg-white dark:bg-slate-900 shadow-xs">
+                <p className="text-xs text-slate-500 font-semibold uppercase">{style}</p>
+                <div className="flex items-baseline justify-between mt-1">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">{count}</span>
+                  <Badge variant="outline" className="text-xs">
+                    {students.length > 0 ? Math.round((count / students.length) * 100) : 0}%
+                  </Badge>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── 4. LEARNING DIMENSIONS (MULTIPLE VISUALIZATION TOGGLES) ─── */}
+      {activeTab === 'learning_dimensions' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Learning Dimensions Multi-View</h3>
+              <p className="text-xs text-slate-500">Analyze the 9 core cognitive dimensions with alternative graph visualizations.</p>
+            </div>
+
+            {/* Visual Mode Toggle Options */}
+            <div className="bg-slate-100 dark:bg-slate-900 p-1 rounded-xl inline-flex items-center gap-1 border border-slate-200 dark:border-slate-800">
+              <Button
+                variant={dimensionVizMode === 'radar' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDimensionVizMode('radar')}
+                className={`text-xs ${dimensionVizMode === 'radar' ? 'bg-indigo-600 text-white' : ''}`}
+              >
+                <Target className="w-3.5 h-3.5 mr-1" /> Radar Chart
+              </Button>
+              <Button
+                variant={dimensionVizMode === 'bars' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDimensionVizMode('bars')}
+                className={`text-xs ${dimensionVizMode === 'bars' ? 'bg-indigo-600 text-white' : ''}`}
+              >
+                <BarChart3 className="w-3.5 h-3.5 mr-1" /> Comparative Bars
+              </Button>
+              <Button
+                variant={dimensionVizMode === 'cards' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDimensionVizMode('cards')}
+                className={`text-xs ${dimensionVizMode === 'cards' ? 'bg-indigo-600 text-white' : ''}`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5 mr-1" /> Metric Cards
+              </Button>
+            </div>
+          </div>
+
+          {/* Option A: Radar Chart */}
+          {dimensionVizMode === 'radar' && (
+            <Card className="shadow-sm border-slate-200 dark:border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold flex items-center justify-between">
+                  <span>Classroom Cognitive Dimensions Radar</span>
+                  <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 text-[11px]">
+                    Class Average vs Expected Benchmark (70%)
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Polygon representation mapping across all experiential, analytical, and process dimensions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={classroomDimensionAverages} outerRadius="75%">
+                    <PolarGrid stroke="#e2e8f0" />
+                    <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: '#475569' }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
+                    <Radar name="Class Average (%)" dataKey="classAverage" stroke="#6366F1" fill="#6366F1" fillOpacity={0.4} />
+                    <Radar name="Target Benchmark (70%)" dataKey="benchmark" stroke="#10B981" fill="#10B981" fillOpacity={0.1} strokeDasharray="3 3" />
+                    <Legend />
+                    <Tooltip />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           )}
 
-          {overviewViewMode === 'cards' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="border-t-4 border-t-purple-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">📚 Learning</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(learningCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-purple-100 text-purple-700 border-none">{count}</Badge></div>))}</CardContent></Card>
-              <Card className="border-t-4 border-t-indigo-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">🧠 Thinking</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(thinkingCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-indigo-100 text-indigo-700 border-none">{count}</Badge></div>))}</CardContent></Card>
-              <Card className="border-t-4 border-t-emerald-600"><CardHeader className="pb-2"><CardTitle className="text-base font-bold">⚡ Decision (Dual)</CardTitle></CardHeader><CardContent className="space-y-2">{Object.entries(decisionCounts).map(([style, count]) => (<div key={style} className="flex justify-between text-xs p-2 bg-gray-50 rounded-lg"><span>{style}</span><Badge className="bg-emerald-100 text-emerald-700 border-none">{count}</Badge></div>))}</CardContent></Card>
-            </div>
+          {/* Option B: Comparative Horizontal Bars */}
+          {dimensionVizMode === 'bars' && (
+            <Card className="shadow-sm border-slate-200 dark:border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold">Comparative Mastery Levels by Dimension</CardTitle>
+                <CardDescription className="text-xs">
+                  Direct percentage comparison of class cohort against 100% scale.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={classroomDimensionAverages} layout="vertical" margin={{ left: 40, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="dimension" type="category" tick={{ fontSize: 11 }} width={120} />
+                    <Tooltip />
+                    <Bar dataKey="classAverage" name="Class Average (%)" radius={[0, 4, 4, 0]}>
+                      {classroomDimensionAverages.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.classAverage >= 65 ? '#10B981' : entry.classAverage >= 40 ? '#F59E0B' : '#EF4444'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           )}
 
-          {overviewViewMode === 'table' && (
-            <Card><CardHeader><CardTitle className="text-sm">Roster Analytics</CardTitle></CardHeader><CardContent className="p-0"><table className="w-full text-xs text-left"><thead className="bg-gray-50"><tr><th className="px-4 py-3">Student Name</th><th className="px-4 py-3">Learning Style</th><th className="px-4 py-3">Thinking Style</th><th className="px-4 py-3">Status</th></tr></thead><tbody className="divide-y">{students.map(s => (<tr key={s.id} className="hover:bg-gray-50"><td className="px-4 py-3 font-semibold">{s.name}</td><td className="px-4 py-3">{s.learningStyle}</td><td className="px-4 py-3">{s.thinkingStyle}</td><td className="px-4 py-3">{assessments.some(a => a.userId === s.id && (a.completed || a.completedAt)) ? <span className="text-emerald-600 font-medium">Assessed</span> : <span className="text-amber-600">Pending</span>}</td></tr>))}</tbody></table></CardContent></Card>
+          {/* Option C: Dimension Metric Cards */}
+          {dimensionVizMode === 'cards' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {classroomDimensionAverages.map((d) => (
+                <Card key={d.fullName} className="p-4 border-slate-200 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">{d.fullName}</h4>
+                    <Badge className={d.classAverage >= 65 ? 'bg-emerald-100 text-emerald-800' : d.classAverage >= 40 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}>
+                      {d.classAverage}%
+                    </Badge>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden mb-2">
+                    <div
+                      className={`h-full rounded-full ${d.classAverage >= 65 ? 'bg-emerald-500' : d.classAverage >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
+                      style={{ width: `${d.classAverage}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {d.classAverage >= 65 ? '✓ Strong cohort mastery. Maintain challenge level.' : d.classAverage >= 40 ? '⚡ Moderate mastery. Incorporate scaffolds.' : '⚠️ Growth opportunity. Dedicate guided sessions.'}
+                  </p>
+                </Card>
+              ))}
+            </div>
           )}
         </div>
       )}

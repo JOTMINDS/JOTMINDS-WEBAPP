@@ -1,5 +1,5 @@
 import { AssessmentScore } from '../types';
-import { JTIAAIRecommendations, JTIASchoolAggregatedInsights } from './jtiaScoring';
+import { JTIAAIRecommendations, JTIASchoolAggregatedInsights, generatePersonalizedRecommendations } from './jtiaScoring';
 
 // We now securely proxy through our Cloudflare Pages Function
 const getBaseUrl = () => {
@@ -397,28 +397,54 @@ Provide empathetic, constructive coaching feedback in JSON format:
 
 export async function generateJTIAAIRecommendations(
   report: any
-): Promise<JTIAAIRecommendations | null> {
+): Promise<JTIAAIRecommendations> {
+  const fallback = generatePersonalizedRecommendations(
+    report?.domainScores || { cognitive: 80, instructional: 85, leadership: 78, relationship: 82, professional: 84 },
+    report?.strengths || [],
+    report?.growthOpportunities || []
+  );
+
   try {
-    const prompt = `Generate Teaching Insights recommendations based on this report:
+    const prompt = `Generate Teaching Insights recommendations based on this teacher assessment report:
 Report Data: ${JSON.stringify(report)}
 
-Return JSON matching the JTIAAIRecommendations interface format precisely (executiveSummary, pedagogicalArchetype, personalizedStrategies, professionalDevelopment).
+Return strictly valid JSON with this exact schema:
+{
+  "resources": ["4 specific locally grounded teaching and learning resources (mentioning NaCCA, GES curriculum, or accessible African classroom TLMs)"],
+  "activities": ["4 highly actionable classroom activities tailored to this teacher's strengths and growth areas"],
+  "coaching": ["4 peer observation, coaching, or school PLC exercises"],
+  "pathways": ["4 career growth pathways or leadership opportunities"],
+  "executiveSummary": "A 2-3 sentence inspiring synthesis of the teacher's cognitive and pedagogical strengths",
+  "pedagogicalArchetype": "e.g. Socratic Facilitator / Inquisitive Synthesizer"
+}
 
 Crucial Instructions:
-1. Personalization: Use empowering, highly personalized language (e.g., "Your unique strength in...", "You have a natural ability to...").
-2. Local Context: When suggesting resources or strategies, use culturally relevant local references suited for the Ghanaian/African education market (e.g., GES curriculum context, local classroom realities, accessible low-cost materials).
-3. Growth Mindset: Frame growth opportunities as exciting pathways for professional mastery rather than deficits.`;
+1. Personalization: Address the teacher's specific score profile and growth areas.
+2. Local Context: Include culturally relevant West African / Ghanaian education context (e.g. GES standards, low-cost local TLMs, school-based INSET / PLC).
+3. Professionalism: Frame growth areas positively as mastery pathways.`;
     
     const res = await callOpenAI([
-      { role: 'system', content: 'You are an expert teacher trainer and pedagogical coach. Ensure your phrasing is highly unique, creative, and personalized to the specific metrics.' },
+      { role: 'system', content: 'You are an expert teacher educator and pedagogical coach. Always return valid JSON with resources, activities, coaching, pathways.' },
       { role: 'user', content: prompt }
     ], true, 1200);
 
-    if (res) return JSON.parse(res);
+    if (res) {
+      const parsed = JSON.parse(res);
+      if (Array.isArray(parsed.resources) && parsed.resources.length > 0) {
+        return {
+          ...fallback,
+          ...parsed,
+          resources: parsed.resources || fallback.resources,
+          activities: parsed.activities || fallback.activities,
+          coaching: parsed.coaching || fallback.coaching,
+          pathways: parsed.pathways || fallback.pathways,
+        };
+      }
+    }
   } catch (error) {
-    console.error('Failed to generate JTIA AI recommendations:', error);
+    console.warn('Using personalized local recommendations fallback:', error);
   }
-  return null;
+  return fallback;
 }
 
 export async function generateAICognitiveExecutiveSummary(

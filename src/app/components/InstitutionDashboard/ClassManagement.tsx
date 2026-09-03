@@ -267,9 +267,15 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
 
   const displayedClasses = classes.filter(cls => {
     if (levelFilter === 'all') return true;
-    if (levelFilter === 'Elementary') {
-      return cls.educationLevel === 'Elementary' || !cls.educationLevel || (cls.educationLevel as any) === 'Primary';
+    if (levelFilter === 'Early Years') {
+      return ['Early Years', 'Nursery', 'Kindergarten'].includes(cls.educationLevel || '');
     }
+    if (levelFilter === 'Primary') {
+      return ['Primary', 'Elementary'].includes(cls.educationLevel || '') || !cls.educationLevel;
+    }
+    if (levelFilter === 'JHS') return cls.educationLevel === 'JHS';
+    if (levelFilter === 'SHS') return cls.educationLevel === 'SHS';
+    if (levelFilter === 'Tertiary') return cls.educationLevel === 'Tertiary';
     return cls.educationLevel === levelFilter;
   });
 
@@ -278,11 +284,11 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Class Management</h2>
-          <p className="text-xs text-gray-500 mt-1">Review teacher classes, approve creations, assign educators, and manage enrolled learners.</p>
+          <p className="text-xs text-gray-500 mt-1">Review teacher classes, approve creations, assign educators, and manage enrolled learners grouped by educational level.</p>
         </div>
         <button
-          onClick={() => { setCurrentClass({ academicYear: new Date().getFullYear().toString() }); setIsModalOpen(true); }}
-          className="bg-[#1E8A6E] text-white px-4 py-2 rounded-lg hover:bg-[#156e57] transition-colors text-sm font-semibold shadow-xs"
+          onClick={() => { setCurrentClass({ academicYear: new Date().getFullYear().toString(), educationLevel: 'Primary' }); setIsModalOpen(true); }}
+          className="bg-[#1E8A6E] text-white px-4 py-2 rounded-lg hover:bg-[#156e57] transition-colors text-sm font-semibold shadow-xs cursor-pointer"
         >
           Add New Class
         </button>
@@ -292,20 +298,24 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       <div className="flex flex-wrap gap-2 mb-4 pb-2 border-b">
         {[
           { id: 'all', label: 'All Levels' },
-          { id: 'Nursery', label: 'Kindergarten / Early Childhood' },
-          { id: 'Elementary', label: 'Elementary / Primary' },
-          { id: 'JHS', label: 'Junior High (JHS)' },
-          { id: 'SHS', label: 'Senior High (SHS)' },
+          { id: 'Early Years', label: 'Early Years' },
+          { id: 'Primary', label: 'Primary / Elementary' },
+          { id: 'JHS', label: 'Junior High School (JHS)' },
+          { id: 'SHS', label: 'Senior High School (SHS)' },
           { id: 'Tertiary', label: 'Tertiary' },
         ].map(cat => {
           const count = cat.id === 'all' 
             ? classes.length 
-            : classes.filter(c => c.educationLevel === cat.id || (cat.id === 'Elementary' && (!c.educationLevel || (c.educationLevel as any) === 'Primary'))).length;
+            : classes.filter(c => {
+                if (cat.id === 'Early Years') return ['Early Years', 'Nursery', 'Kindergarten'].includes(c.educationLevel || '');
+                if (cat.id === 'Primary') return ['Primary', 'Elementary'].includes(c.educationLevel || '') || !c.educationLevel;
+                return c.educationLevel === cat.id;
+              }).length;
           return (
             <button
               key={cat.id}
               onClick={() => setLevelFilter(cat.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
                 levelFilter === cat.id
                   ? 'bg-[#1E8A6E] text-white shadow-xs'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -355,9 +365,32 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
-                      {cls.educationLevel || 'Elementary'}
-                    </span>
+                    {(() => {
+                      const lvl = cls.educationLevel || 'Primary';
+                      let color = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+                      let label = lvl;
+                      if (['Early Years', 'Nursery', 'Kindergarten'].includes(lvl)) {
+                        color = 'bg-pink-50 text-pink-800 border-pink-200';
+                        label = 'Early Years';
+                      } else if (['Primary', 'Elementary'].includes(lvl)) {
+                        color = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+                        label = 'Primary';
+                      } else if (lvl === 'JHS') {
+                        color = 'bg-blue-50 text-blue-800 border-blue-200';
+                        label = 'JHS';
+                      } else if (lvl === 'SHS') {
+                        color = 'bg-purple-50 text-purple-800 border-purple-200';
+                        label = 'SHS';
+                      } else if (lvl === 'Tertiary') {
+                        color = 'bg-amber-50 text-amber-800 border-amber-200';
+                        label = 'Tertiary';
+                      }
+                      return (
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full border font-bold ${color}`}>
+                          {label}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="p-4 text-gray-600 text-sm">{cls.academicYear}</td>
                   <td className="p-4">
@@ -506,9 +539,10 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E8A6E]"
                 >
                   <option value="">-- Select Level --</option>
-                  <option value="Elementary">Elementary (Primary)</option>
-                  <option value="JHS">JHS (Junior High)</option>
-                  <option value="SHS">SHS (Senior High)</option>
+                  <option value="Early Years">Early Years (Kindergarten / Nursery)</option>
+                  <option value="Primary">Primary / Elementary (Basic 1-6)</option>
+                  <option value="JHS">Junior High School (JHS 1-3)</option>
+                  <option value="SHS">Senior High School (SHS 1-3)</option>
                   <option value="Tertiary">Tertiary (University/College)</option>
                 </select>
               </div>

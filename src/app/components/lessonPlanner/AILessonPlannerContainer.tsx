@@ -93,7 +93,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
   const handlePlanCreated = (newPlan: LessonPlan) => {
     setPlans(getSavedLessonPlans(user?.id));
     setActivePlan(newPlan);
-    setActiveTab('insights');
+    setActiveTab('document');
   };
 
   const handleFinishDelivery = (session: LessonDeliverySession) => {
@@ -221,6 +221,9 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             <TabsTrigger value="create" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Creation
             </TabsTrigger>
+            <TabsTrigger value="document" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5" /> Plan Document
+            </TabsTrigger>
             <TabsTrigger value="insights" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
               <Brain className="w-3.5 h-3.5" /> Cognitive
             </TabsTrigger>
@@ -258,6 +261,17 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
           <LessonPlanCreation user={user}
             classSummary={classSummary}
             onPlanCreated={handlePlanCreated}
+          />
+        </TabsContent>
+
+        {/* Document View & Edit Tab */}
+        <TabsContent value="document">
+          <LessonDocumentEditor
+            plan={activePlan}
+            onUpdate={handlePlanUpdate}
+            onCompleteRequest={() => {
+              setShowReflectionModal(true);
+            }}
           />
         </TabsContent>
 
@@ -307,7 +321,13 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
 
         {/* History Tab */}
         <TabsContent value="history">
-          <ReflectionHistoryView user={user} />
+          <ReflectionHistoryView
+            user={user}
+            onSelectPlan={(plan) => {
+              setActivePlan(plan);
+              setActiveTab('document');
+            }}
+          />
         </TabsContent>
 
         {/* Module 5 Launcher */}

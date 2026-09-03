@@ -48,22 +48,48 @@ export function NudgesPanel({ userId, onNavigate, isNavbarMode = false }: Props)
   const handleAction = (nudge: Nudge) => {
     interactWithNudge(nudge.id);
     if (nudge.action) {
-      const rawRoute = nudge.action.route || '';
-      let normalizedRoute = rawRoute.startsWith('/') ? rawRoute.substring(1) : rawRoute;
-      
-      // Clean up common aliases to prevent invalid tab states
-      if (normalizedRoute.includes('jtia') || normalizedRoute.includes('teaching')) normalizedRoute = 'jtia';
-      else if (normalizedRoute.includes('lesson')) normalizedRoute = 'lesson-planner';
-      else if (normalizedRoute.includes('analytic')) normalizedRoute = 'analytics';
-      else if (normalizedRoute.includes('student')) normalizedRoute = 'students';
-      else if (normalizedRoute.includes('class')) normalizedRoute = 'manage-classes';
-      else if (!normalizedRoute) normalizedRoute = 'overview';
+      const rawRoute = (nudge.action.route || '').trim();
+      let route = rawRoute.startsWith('/') ? rawRoute.substring(1) : rawRoute;
+
+      const currentUserStr = localStorage.getItem('currentUser');
+      let userRole = '';
+      if (currentUserStr) {
+        try {
+          userRole = JSON.parse(currentUserStr)?.role || '';
+        } catch {
+          // ignore
+        }
+      }
+
+      // Preserve exact known tab names
+      const knownTabs = [
+        'overview', 'class_management', 'student_insights', 'student_management',
+        'lesson-planner', 'lesson_planning', 'analytics', 'jtia', 'classes', 'students',
+        'staff_directory', 'assessment_monitor', 'settings'
+      ];
+
+      if (!knownTabs.includes(route)) {
+        // Map common legacy URLs or paths safely
+        if (route === 'dashboard/jtia' || route.includes('teaching-insights')) {
+          route = 'jtia';
+        } else if (route.includes('lesson') || route.includes('planner')) {
+          route = (userRole === 'school_admin' || userRole === 'institution_admin') ? 'lesson_planning' : 'lesson-planner';
+        } else if (route.includes('analytic')) {
+          route = 'analytics';
+        } else if (route === 'dashboard/classes') {
+          route = (userRole === 'school_admin' || userRole === 'institution_admin') ? 'class_management' : 'classes';
+        } else if (route === 'dashboard/students') {
+          route = (userRole === 'school_admin' || userRole === 'institution_admin') ? 'student_insights' : 'students';
+        } else if (!route) {
+          route = 'overview';
+        }
+      }
 
       try {
         if (onNavigate) {
-          onNavigate(normalizedRoute);
+          onNavigate(route);
         } else {
-          window.dispatchEvent(new CustomEvent('nudge-navigate', { detail: normalizedRoute }));
+          window.dispatchEvent(new CustomEvent('nudge-navigate', { detail: route }));
         }
       } catch (err) {
         console.warn('Notification navigation error:', err);

@@ -48,12 +48,15 @@ export const LessonDocumentEditor: React.FC<LessonDocumentEditorProps> = ({ plan
   }
 
   const handleSave = () => {
-    toast.success('Lesson document saved successfully.');
-    // Normally we'd parse the text back into JSON or save a "documentContent" field.
-    // For now, we update the timestamp to reflect an edit.
-    const updatedPlan = { ...plan, updatedAt: new Date().toISOString() };
+    const updatedPlan: LessonPlan = {
+      ...plan,
+      existingPlanText: content,
+      uploadText: content,
+      updatedAt: new Date().toISOString()
+    };
     saveLessonPlan(updatedPlan);
     onUpdate(updatedPlan);
+    toast.success('Lesson document saved successfully.');
   };
 
   const handleDownload = () => {

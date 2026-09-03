@@ -5,7 +5,7 @@ import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { CheckCircle2, XCircle, Star, MessageSquare, Save, Sparkles } from 'lucide-react';
 import { PostLessonReflection, LessonPlan } from '../../types/lessonPlannerTypes';
-import { savePostLessonReflection } from '../../utils/lessonPlannerStorage';
+import { savePostLessonReflection, saveLessonPlan } from '../../utils/lessonPlannerStorage';
 import { syncLessonReflectionToSupabase } from '../../utils/lessonPlannerApi';
 import { toast } from 'sonner';
 
@@ -22,33 +22,62 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
 }) => {
   const [completedAsPlanned, setCompletedAsPlanned] = useState<boolean>(true);
   const [understandingLevel, setUnderstandingLevel] = useState<'Excellent' | 'Good' | 'Average' | 'Poor'>('Good');
-  const [whatWorkedWell, setWhatWorkedWell] = useState('Visual balance scale diagram engaged visual learners quickly.');
-  const [areasForImprovement, setAreasForImprovement] = useState('Pacing during guided practice ran 3 minutes over.');
-  const [followUpActions, setFollowUpActions] = useState('Provide 2 additional word problem scaffolds in next session.');
+  const [observations, setObservations] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [insights, setInsights] = useState('');
+  const [recommendations, setRecommendations] = useState('');
+  const [whatWorkedWell, setWhatWorkedWell] = useState('Visual diagrams and interactive examples engaged visual and auditory learners quickly.');
+  const [areasForImprovement, setAreasForImprovement] = useState('Pacing during guided practice required additional scaffolding for abstract concepts.');
+  const [followUpActions, setFollowUpActions] = useState('Provide differentiated exit slip review in subsequent session.');
   const [schoolRecommendations, setSchoolRecommendations] = useState('');
 
   const handleSubmit = async () => {
-    if (!whatWorkedWell.trim() || !areasForImprovement.trim() || !followUpActions.trim()) {
-      toast.error('Please fill out all compulsory reflection fields.');
+    if (!observations.trim() && !whatWorkedWell.trim()) {
+      toast.error('Please enter your lesson observations.');
       return;
     }
+    if (!feedback.trim() && !areasForImprovement.trim()) {
+      toast.error('Please enter student feedback or engagement response.');
+      return;
+    }
+    if (!insights.trim() && !followUpActions.trim()) {
+      toast.error('Please enter pedagogical insights.');
+      return;
+    }
+    if (!recommendations.trim() && !schoolRecommendations.trim()) {
+      toast.error('Please enter actionable next steps or recommendations.');
+      return;
+    }
+
     const reflection: PostLessonReflection = {
       reflectionId: `refl-${Date.now()}`,
       lessonId: plan.id,
       teacherId: plan.teacherId || 'teacher-1',
       completedAsPlanned,
       studentUnderstandingLevel: understandingLevel,
-      whatWorkedWell,
-      areasForImprovement,
-      followUpActions,
-      schoolRecommendations,
+      observations: observations.trim() || whatWorkedWell.trim(),
+      feedback: feedback.trim() || areasForImprovement.trim(),
+      insights: insights.trim() || followUpActions.trim(),
+      recommendations: recommendations.trim() || schoolRecommendations.trim(),
+      whatWorkedWell: whatWorkedWell.trim() || observations.trim(),
+      areasForImprovement: areasForImprovement.trim() || feedback.trim(),
+      followUpActions: followUpActions.trim() || insights.trim(),
+      schoolRecommendations: schoolRecommendations.trim() || recommendations.trim(),
       reflectedAt: new Date().toISOString()
     };
 
     savePostLessonReflection(reflection);
     await syncLessonReflectionToSupabase(reflection);
 
-    toast.success('Post-Lesson Reflection saved successfully!');
+    // Auto-mark lesson as completed
+    const updatedPlan: LessonPlan = {
+      ...plan,
+      status: 'completed',
+      updatedAt: new Date().toISOString()
+    };
+    saveLessonPlan(updatedPlan);
+
+    toast.success('Post-Lesson Reflection recorded & Lesson marked as Completed!');
     onSaved(reflection);
     onClose();
   };
@@ -126,24 +155,61 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
             </div>
           </div>
 
-          {/* Reflection Text Fields */}
-          <div className="space-y-3">
-            <div>
-              <Label className="text-xs font-semibold">What worked well?</Label>
+          {/* 4 Compulsory Structured Reflection Sections */}
+          <div className="space-y-3.5">
+            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+              <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                <span>1. Classroom Observations</span>
+                <span className="text-[10px] text-indigo-600 font-normal">Compulsory</span>
+              </Label>
               <textarea
-                value={whatWorkedWell}
-                onChange={(e) => setWhatWorkedWell(e.target.value)}
+                value={observations}
+                onChange={(e) => setObservations(e.target.value)}
+                placeholder="What did you observe regarding learner dynamics, visual attention, and participation?"
                 rows={2}
-                className="w-full p-2.5 text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-1"
+                className="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mt-1.5"
               />
             </div>
-            <div>
-              <Label className="text-xs font-semibold">Areas for improvement / Pacing notes</Label>
+
+            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+              <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                <span>2. Student Feedback & Responses</span>
+                <span className="text-[10px] text-indigo-600 font-normal">Compulsory</span>
+              </Label>
               <textarea
-                value={areasForImprovement}
-                onChange={(e) => setAreasForImprovement(e.target.value)}
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="How did students receive activities, task cards, and questions? Note verbal feedback or confusion."
                 rows={2}
-                className="w-full p-2.5 text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-1"
+                className="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mt-1.5"
+              />
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+              <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                <span>3. Pedagogical Insights & Pacing</span>
+                <span className="text-[10px] text-indigo-600 font-normal">Compulsory</span>
+              </Label>
+              <textarea
+                value={insights}
+                onChange={(e) => setInsights(e.target.value)}
+                placeholder="What did you learn about lesson timing, differentiation effectiveness, and teaching notes?"
+                rows={2}
+                className="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mt-1.5"
+              />
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+              <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                <span>4. Next Steps & Recommendations</span>
+                <span className="text-[10px] text-indigo-600 font-normal">Compulsory</span>
+              </Label>
+              <textarea
+                value={recommendations}
+                onChange={(e) => setRecommendations(e.target.value)}
+                placeholder="Actionable follow-up steps for the next lesson or resource requests for school administration."
+                rows={2}
+                className="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mt-1.5"
               />
             </div>
           </div>

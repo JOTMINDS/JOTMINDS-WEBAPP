@@ -153,34 +153,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
   };
 
   const handlePrint = () => {
-    const printContent = document.getElementById("jtia-printable-report");
-    const root = document.getElementById("root");
-    if (printContent && root) {
-      // Hide the main app
-      const originalRootDisplay = root.style.display;
-      root.style.display = "none";
-
-      // Create a temporary div for printing
-      const printDiv = document.createElement("div");
-      printDiv.id = "temp-print-div";
-      printDiv.className = "p-8 max-w-4xl mx-auto";
-      printDiv.innerHTML = printContent.innerHTML;
-
-      // Hide elements that shouldn't be printed
-      const noPrintElements = printDiv.querySelectorAll(".no-print-btn");
-      noPrintElements.forEach(
-        (el) => ((el as HTMLElement).style.display = "none"),
-      );
-
-      document.body.appendChild(printDiv);
-      window.print();
-
-      // Cleanup
-      document.body.removeChild(printDiv);
-      root.style.display = originalRootDisplay;
-    } else {
-      window.print();
-    }
+    window.print();
   };
 
   const handleExportCSV = () => {
@@ -191,15 +164,17 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
     csvRows.push(["Overall Score", report.overallScore?.toString() || "N/A"]);
     csvRows.push([]);
     
-    csvRows.push(["Domain Scores"]);
-    csvRows.push(["Domain", "Score"]);
-    radarData.forEach((d) => {
-      csvRows.push([d.full, d.score.toString()]);
+    csvRows.push(["5 Core Domain Scores"]);
+    csvRows.push(["Domain", "Score", "Orientation Level"]);
+    const getLevelText = (s: number) => s >= 85 ? "Exemplary Practice" : s >= 70 ? "Established Practice" : "Developing Focus";
+    Object.entries(domainScores).forEach(([dom, score]) => {
+      const formattedDom = dom.charAt(0).toUpperCase() + dom.slice(1) + " Intelligence";
+      csvRows.push([formattedDom, score.toString(), getLevelText(score)]);
     });
     csvRows.push([]);
 
     if (report.subCompetencies) {
-      csvRows.push(["Sub-Competency Scores"]);
+      csvRows.push(["Sub-Competency Breakdown"]);
       csvRows.push(["Competency", "Score"]);
       Object.entries(report.subCompetencies).forEach(([comp, score]) => {
         csvRows.push([comp, score.toString()]);
@@ -225,6 +200,16 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
       csvRows.push([]);
     }
 
+    if (displayedRecommendations) {
+      csvRows.push(["Personalized Development Recommendations (Ghana & Standards-Based Context)"]);
+      csvRows.push(["Category", "Recommendation"]);
+      displayedRecommendations.resources?.forEach(r => csvRows.push(["Learning Resources", r]));
+      displayedRecommendations.activities?.forEach(a => csvRows.push(["Classroom Activities", a]));
+      displayedRecommendations.coaching?.forEach(c => csvRows.push(["Coaching & Mentoring", c]));
+      displayedRecommendations.pathways?.forEach(p => csvRows.push(["Growth Pathways", p]));
+      csvRows.push([]);
+    }
+
     // Escape CSV values
     const escapeCSV = (val: string | undefined | null) => {
       if (val === undefined || val === null) return '""';
@@ -242,6 +227,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success("Teaching Insights CSV report downloaded successfully!");
   };
 
   const getOrientationBadge = (score: number) => {
@@ -272,20 +258,33 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
       <style>{`
         /* Global print overrides */
         @media print {
-          @page { margin: 15mm; }
+          @page { margin: 12mm; size: auto; }
+          body * {
+            visibility: hidden;
+          }
+          #jtia-printable-report, #jtia-printable-report * {
+            visibility: visible;
+          }
+          #jtia-printable-report {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .no-print-btn {
+            display: none !important;
+          }
           body { 
             -webkit-print-color-adjust: exact; 
             print-color-adjust: exact; 
             background: white !important; 
             font-size: 11pt;
           }
-          #temp-print-div {
-            padding: 0 !important;
-            max-width: 100% !important;
-          }
           .shadow-sm, .shadow-md, .shadow-xl {
             box-shadow: none !important;
-            border: 1px solid #e2e8f0 !important;
+            border: 1px solid #cbd5e1 !important;
           }
           /* Page breaking rules */
           h2, h3, h4 { page-break-after: avoid; }

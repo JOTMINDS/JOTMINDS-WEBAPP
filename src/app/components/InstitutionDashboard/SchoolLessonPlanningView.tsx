@@ -309,28 +309,35 @@ export const SchoolLessonPlanningView: React.FC<SchoolLessonPlanningViewProps> =
                     </div>
                   </CardHeader>
                   <CardContent className="pt-3 space-y-3 text-xs">
-                    <div>
-                      <p className="font-bold text-emerald-800">What Worked Well:</p>
-                      <p className="text-gray-700 mt-0.5 bg-emerald-50/40 p-2 rounded border border-emerald-100">
-                        {ref.whatWorkedWell || 'Instruction proceeded smoothly.'}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="font-bold text-amber-800">Areas for Improvement:</p>
-                      <p className="text-gray-700 mt-0.5 bg-amber-50/40 p-2 rounded border border-amber-100">
-                        {ref.areasForImprovement || 'Additional group scaffolding recommended.'}
-                      </p>
-                    </div>
-
-                    {ref.followUpActions && (
-                      <div>
-                        <p className="font-bold text-blue-800">Follow-up Action Steps:</p>
-                        <p className="text-gray-700 mt-0.5 bg-blue-50/40 p-2 rounded border border-blue-100">
-                          {ref.followUpActions}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="bg-emerald-50/40 p-2 rounded border border-emerald-100">
+                        <p className="font-bold text-emerald-800 text-[11px]">1. Observations & What Worked:</p>
+                        <p className="text-gray-700 mt-0.5 text-xs">
+                          {ref.observations || ref.whatWorkedWell || 'Instruction proceeded smoothly.'}
                         </p>
                       </div>
-                    )}
+
+                      <div className="bg-amber-50/40 p-2 rounded border border-amber-100">
+                        <p className="font-bold text-amber-800 text-[11px]">2. Student Feedback & Responses:</p>
+                        <p className="text-gray-700 mt-0.5 text-xs">
+                          {ref.feedback || ref.areasForImprovement || 'Additional group scaffolding recommended.'}
+                        </p>
+                      </div>
+
+                      <div className="bg-blue-50/40 p-2 rounded border border-blue-100">
+                        <p className="font-bold text-blue-800 text-[11px]">3. Pedagogical Insights:</p>
+                        <p className="text-gray-700 mt-0.5 text-xs">
+                          {ref.insights || ref.followUpActions || 'Standard curriculum pacing.'}
+                        </p>
+                      </div>
+
+                      <div className="bg-purple-50/40 p-2 rounded border border-purple-100">
+                        <p className="font-bold text-purple-800 text-[11px]">4. Next Steps & Recommendations:</p>
+                        <p className="text-gray-700 mt-0.5 text-xs">
+                          {ref.recommendations || ref.schoolRecommendations || 'Ready for next instructional unit.'}
+                        </p>
+                      </div>
+                    </div>
 
                     <div className="flex items-center justify-between text-[11px] text-gray-500 pt-2 border-t">
                       <span>Completed as Planned: <b className="text-gray-800">{ref.completedAsPlanned ? 'Yes' : 'Adjusted'}</b></span>

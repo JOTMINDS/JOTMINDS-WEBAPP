@@ -12,6 +12,8 @@ export interface JTIAAIRecommendations {
   activities: string[];
   coaching: string[];
   pathways: string[];
+  executiveSummary?: string;
+  pedagogicalArchetype?: string;
 }
 
 export interface JTIAReportData {
@@ -235,32 +237,11 @@ export function calculateJTIAScore(responses: number[] = [], sessionQuestions: J
       domainScores.professional) / 5
   );
 
-  const recommendations: JTIAAIRecommendations = {
-    resources: [
-      "Book: 'Teach Like a Champion 3.0' by Doug Lemov - Techniques for Classroom Management & Rigor",
-      "Toolkit: Collaborative Learning Structures & Kagan Strategies for active student engagement",
-      "Guide: Universal Design for Learning (UDL) Guidelines for differentiating diverse classrooms",
-      "JotMinds Library: 'Cognitive Diversity in Action: Mapping Student Thinking Styles'"
-    ],
-    activities: [
-      "Wait-Time Practice: Intentionally implement a 3-5 second pause after asking questions before calling on students.",
-      "Formative Checks: Use daily 'Exit Tickets' to quickly gauge student understanding before the next lesson.",
-      "Restorative Practices: Lead a weekly morning circle or check-in to build classroom community and trust.",
-      "Scaffolded Modeling: Use the 'I Do, We Do, You Do' gradual release model explicitly for complex tasks."
-    ],
-    coaching: [
-      "Peer Observation: Visit a colleague's classroom to observe how they manage transitions and student behavior.",
-      "Student Feedback: Run a short, anonymous survey asking students what helps them learn best in your class.",
-      "Lesson Plan Review: Sit with your department head to align an upcoming unit's assessments with learning objectives.",
-      "Video Reflection: Record 10 minutes of your teaching to self-evaluate your teacher-talk vs. student-talk ratio."
-    ],
-    pathways: [
-      "Curriculum Development: Take a lead role in designing interdisciplinary projects for your grade level.",
-      "Mentorship: Become a mentor or cooperating teacher for newly qualified teachers in your school.",
-      "Subject Matter Expert: Lead professional development workshops on subject-specific pedagogical strategies.",
-      "Student Support Liaison: Specialize in creating inclusion strategies and IEP accommodations in general education."
-    ]
-  };
+  const recommendations = generatePersonalizedRecommendations(
+    domainScores,
+    strengths,
+    growthOpportunities
+  );
 
   return {
     domainScores,
@@ -270,6 +251,57 @@ export function calculateJTIAScore(responses: number[] = [], sessionQuestions: J
     recommendations,
     overallScore,
     completedAt: new Date().toISOString()
+  };
+}
+
+/**
+ * Generate culturally relevant, personalized recommendations grounded in NaCCA / GES standards
+ * and African classroom context when AI is offline or as standard baseline.
+ */
+export function generatePersonalizedRecommendations(
+  domainScores: Record<string, number>,
+  strengths: Array<{ title: string; domain: string; description?: string }>,
+  growthOpportunities: Array<{ title: string; domain: string; description?: string }>,
+  teacherName?: string
+): JTIAAIRecommendations {
+  // Find highest and lowest scoring domains
+  const sortedDomains = Object.entries(domainScores).sort((a, b) => b[1] - a[1]);
+  const topDomainEntry = sortedDomains[0] || ['instructional', 80];
+  const lowestDomainEntry = sortedDomains[sortedDomains.length - 1] || ['cognitive', 65];
+
+  const topDomainName = topDomainEntry[0].charAt(0).toUpperCase() + topDomainEntry[0].slice(1);
+  const lowestDomainName = lowestDomainEntry[0].charAt(0).toUpperCase() + lowestDomainEntry[0].slice(1);
+
+  const primaryStrength = strengths[0]?.title || `${topDomainName} Intelligence`;
+  const primaryGrowth = growthOpportunities[0]?.title || `${lowestDomainName} Intelligence`;
+
+  return {
+    resources: [
+      `NaCCA / GES Standards-Based Curriculum Toolkit: Differentiated instructional protocols leveraging your high ${topDomainName} mastery (${primaryStrength}).`,
+      `West African Classroom Low-Cost TLM Manual: Practical guides for creating concrete manipulative teaching aids from local materials to boost ${lowestDomainName} engagement.`,
+      `Ghana Education Service (GES) PLC Handbook: Collaborative lesson study templates and peer micro-teaching strategies.`,
+      `JotMinds Cognitive Diversity In Action: Field guide for mapping student learning styles to lesson pacing in large classrooms.`
+    ],
+    activities: [
+      `Formative Exit Slips: End each lesson with a 3-minute check on learning aligned to NaCCA core competencies before student dismissal.`,
+      `Think-Pair-Share with Structured Wait-Time: Build confidence by allowing students 5 seconds of silence before sharing in pairs to reinforce ${primaryGrowth}.`,
+      `Differentiated Task Cards: Organize tiered practice sets (Core, Scaffolded, Extension) using real-world Ghanaian community examples.`,
+      `Socratic Circle Modeling: Utilize gradual release ('I Do, We Do, You Do') to guide abstract reasoning and collaborative problem solving.`
+    ],
+    coaching: [
+      `Departmental Peer Observation: Pair with a senior subject teacher for a 20-minute exchange focusing on ${primaryGrowth} and student question-flow.`,
+      `School PLC Lesson Study: Present an upcoming unit plan during your weekly school Professional Learning Community (PLC) session for feedback.`,
+      `Student Feedback Pulse: Run a short, anonymous 3-question survey once per term asking learners which classroom activities help them understand best.`,
+      `Curriculum Leader Debrief: Meet with your head of department or academic supervisor to align termly scheme of work milestones with learner progress.`
+    ],
+    pathways: [
+      `School-Based INSET Lead: Facilitate peer professional development workshops on effective TLM utilization and differentiated instruction.`,
+      `Curriculum Differentiation Mentor: Guide early-career teachers in tailoring lesson plans to diverse cognitive styles and special educational needs.`,
+      `Subject Area PLC Coordinator: Lead departmental coordination in continuous assessment methods aligned to national testing frameworks.`,
+      `Institutional Assessment Lead: Champion cognitive and formative evaluation strategies across your school cluster.`
+    ],
+    executiveSummary: `Demonstrates exemplary capability in ${topDomainName} Intelligence (${primaryStrength}). A targeted focus on ${lowestDomainName} Intelligence through structured peer activities and localized TLMs will yield exceptional growth in classroom impact.`,
+    pedagogicalArchetype: `${topDomainName}-Driven Facilitator`
   };
 }
 
