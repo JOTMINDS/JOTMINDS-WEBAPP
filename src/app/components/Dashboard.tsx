@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { NudgesPanel } from './NudgesPanel';
+import { LanguageSelector } from './ui/LanguageSelector';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -200,6 +201,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <p className="text-xs mt-1" style={{ color: '#6B4C9A' }}>Discover How You Think</p>
             </div>
             <div className="flex items-center gap-3">
+              <LanguageSelector />
               {user && (
                 <div className="mr-2 border-r pr-4 border-gray-200">
                   <NudgesPanel userId={user.id} isNavbarMode={true} />

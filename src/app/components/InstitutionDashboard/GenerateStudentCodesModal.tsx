@@ -24,6 +24,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
   // Step 1: Class selection
   const [teacherClasses, setTeacherClasses] = useState<Class[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [individualEducationLevel, setIndividualEducationLevel] = useState<EducationLevel>('JHS');
   const [isCreatingClass, setIsCreatingClass] = useState(false);
   const [newClassName, setNewClassName] = useState('');
   const [newClassYear, setNewClassYear] = useState(new Date().getFullYear().toString());
@@ -44,6 +45,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
       loadTeacherClasses();
       setStep('select-class');
       setSelectedClassId('');
+      setIndividualEducationLevel('JHS');
       setIsCreatingClass(false);
       setNewClassName('');
       setNewClassYear(new Date().getFullYear().toString());
@@ -137,46 +139,20 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
           return;
         }
 
-        // Parse headers to find indexes
-        const parseLine = (line: string) => {
-          let parts = [];
-          let current = '';
-          let inQuotes = false;
-          for (let j = 0; j < line.length; j++) {
-            if (line[j] === '"') inQuotes = !inQuotes;
-            else if (line[j] === ',' && !inQuotes) {
-              parts.push(current);
-              current = '';
-            } else current += line[j];
-          }
-          parts.push(current);
-          return parts.map(p => p.replace(/^"|"$/g, '').trim());
-        };
-
-        const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
-        const nameIdx = headers.findIndex(h => h.includes('name'));
-        const dobIdx = headers.findIndex(h => h.includes('dob') || h.includes('dateofbirth') || h.includes('birth'));
-
-        const actualNameIdx = nameIdx >= 0 ? nameIdx : 0;
-        const actualDobIdx = dobIdx >= 0 ? dobIdx : 1;
-
-        const newStudents = [];
+        const newStudents: Array<{ name: string; dob: string; id: string }> = [];
         for (let i = 1; i < lines.length; i++) {
-          const parts = parseLine(lines[i]);
-          if (parts.length >= 1) {
-            const name = parts[actualNameIdx] || '';
-            const dob = parts.length > actualDobIdx ? parts[actualDobIdx] : '';
-            if (name) {
-              newStudents.push({ name, dob, id: generateId() });
-            }
+          const parts = lines[i].split(',').map(p => p.trim().replace(/^["']|["']$/g, ''));
+          if (parts.length >= 2 && parts[0]) {
+            newStudents.push({
+              name: parts[0],
+              dob: parts[1] || '2010-01-01',
+              id: generateId()
+            });
           }
         }
 
         if (newStudents.length > 0) {
-          setStudents(prev => {
-            const emptyRemoved = prev.filter(s => s.name.trim() !== '' || s.dob.trim() !== '');
-            return [...emptyRemoved, ...newStudents];
-          });
+          setStudents(newStudents);
           toast.success(`Imported ${newStudents.length} students from CSV`);
         } else {
           toast.error("No valid students found in CSV");
@@ -192,14 +168,14 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
   };
 
   const generateCodes = async () => {
-    if (!selectedClass && selectedClassId !== 'unassigned') {
-      toast.error('Please select a class first');
+    if (!selectedClass && selectedClassId !== 'individual' && selectedClassId !== 'unassigned') {
+      toast.error('Please select a class or choose Individual Student Code option');
       return;
     }
 
     setIsGenerating(true);
     
-        const validStudents = students.filter(s => s.name.trim().length > 0 && s.dob.trim().length > 0);
+    const validStudents = students.filter(s => s.name.trim().length > 0 && s.dob.trim().length > 0);
     
     if (validStudents.length === 0) {
       toast.error('Please provide name and date of birth for all students');
@@ -209,17 +185,20 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
 
     try {
       const results = [];
+      const targetClassId = selectedClassId === 'individual' ? 'individual' : (selectedClass?.id || 'unassigned');
+      const targetClassName = selectedClassId === 'individual' ? 'Individual Learner' : (selectedClass?.name || 'Unassigned');
+      const targetLevel = selectedClassId === 'individual' ? individualEducationLevel : (selectedClass?.educationLevel || 'JHS');
+
       for (const student of validStudents) {
         try {
           const response = await enrollStudent({
             studentName: student.name.trim(),
             dateOfBirth: student.dob.trim(),
-            classId: selectedClass?.id || 'unassigned',
-            className: selectedClass?.name || 'Unassigned',
+            classId: targetClassId,
+            className: targetClassName,
             teacherId,
             institutionId,
-
-            educationLevel: selectedClass.educationLevel
+            educationLevel: targetLevel
           });
           
           if (response.success) {
@@ -239,7 +218,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
       setGeneratedCodes(results);
       setStep('results');
       if (results.length > 0) {
-        toast.success(`Successfully enrolled ${results.length} students into ${selectedClass.name}`);
+        toast.success(`Successfully generated ${results.length} student codes!`);
       }
     } catch (err) {
       console.error('Failed to generate codes', err);
@@ -341,6 +320,49 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                     <p className="text-xs mt-1">Create your first class to start generating student codes.</p>
                   </div>
                 )}
+
+                {/* Option to generate individual student code directly */}
+                <div
+                  onClick={() => setSelectedClassId('individual')}
+                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
+                    selectedClassId === 'individual'
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/30'
+                      : 'border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-sm text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
+                        <UserPlus className="w-4 h-4 text-purple-600" /> Generate Individual Student Code (No Class Required)
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Direct code generation for independent or transfer students without creating a class upfront.
+                      </p>
+                    </div>
+                    {selectedClassId === 'individual' && (
+                      <CheckCircle2 className="w-5 h-5 text-purple-600" />
+                    )}
+                  </div>
+
+                  {selectedClassId === 'individual' && (
+                    <div className="mt-3 pt-3 border-t border-purple-200 dark:border-purple-800" onClick={(e) => e.stopPropagation()}>
+                      <label className="text-xs font-semibold text-purple-900 dark:text-purple-300 block mb-1">
+                        Select Target Education Level for Individual Learner:
+                      </label>
+                      <Select value={individualEducationLevel} onValueChange={(v) => setIndividualEducationLevel(v as EducationLevel)}>
+                        <SelectTrigger className="h-8 text-xs bg-white dark:bg-slate-900">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Elementary">Elementary (Primary)</SelectItem>
+                          <SelectItem value="JHS">JHS (Junior High)</SelectItem>
+                          <SelectItem value="SHS">SHS (Senior High)</SelectItem>
+                          <SelectItem value="Tertiary">Tertiary (University/College)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
 
                 <Button
                   variant="outline"

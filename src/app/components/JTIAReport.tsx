@@ -11,6 +11,7 @@ import {
 } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { Progress } from "./ui/progress";
 import {
   Brain,
   BookOpen,
@@ -210,7 +211,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
       csvRows.push(["Professional Strengths"]);
       csvRows.push(["Domain", "Competency", "Title", "Description"]);
       report.strengths.forEach((s) => {
-        csvRows.push([s.domain, s.competency || "", s.title, s.description || ""]);
+        csvRows.push([s.domain, (s as any).competency || s.title, s.title, s.description || ""]);
       });
       csvRows.push([]);
     }
@@ -219,7 +220,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
       csvRows.push(["Growth Opportunities"]);
       csvRows.push(["Domain", "Competency", "Title", "Description"]);
       report.growthOpportunities.forEach((s) => {
-        csvRows.push([s.domain, s.competency || "", s.title, s.description || ""]);
+        csvRows.push([s.domain, (s as any).competency || s.title, s.title, s.description || ""]);
       });
       csvRows.push([]);
     }

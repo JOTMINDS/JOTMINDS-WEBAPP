@@ -42,6 +42,12 @@ export interface DifferentiatedInstruction {
     targetGroup: string;
     type: string;
   }>;
+  teacherSuggestedActivities?: Array<{
+    title: string;
+    description: string;
+    targetGroup?: string;
+    type?: string;
+  }>;
 }
 
 export interface AssessmentQuestion {
@@ -86,6 +92,8 @@ export interface ClassCognitiveSummary {
     readWritePct: number;
     kinestheticPct: number;
   };
+  learningStyles?: any;
+  dominantStyles?: string[];
   topCognitiveStrengths: string[];
   riskAlerts: Array<{
     alertType: 'abstract_concepts' | 'attention_span' | 'collaboration' | 'reading_pace';
@@ -107,16 +115,20 @@ export interface LessonPlan {
   gradeClass: string;
   topic: string;
   subtopic?: string;
+  strand?: string;
+  substrand?: string;
   durationMinutes: number;
   date: string;
   endDate?: string;
-  curriculumFramework?: 'National' | 'Cambridge' | 'IB' | 'School Custom';
+  existingPlanText?: string;
+  uploadText?: string;
+  curriculumFramework?: 'National' | 'Cambridge' | 'IB' | 'School Custom' | string;
   curriculumTopicId?: string;
   objectives: LearningObjectives;
   phases: LessonPhase[];
   differentiatedInstruction?: DifferentiatedInstruction;
   assessment?: GeneratedAssessment;
-  status: 'draft' | 'generated' | 'delivered' | 'reviewed';
+  status: 'draft' | 'generated' | 'delivered' | 'reviewed' | 'completed' | 'pending';
   createdAt: string;
   updatedAt: string;
 }
@@ -156,6 +168,9 @@ export interface CurriculumTopic {
   title: string;
   subject: string;
   grade: string;
+  strand?: string;
+  substrand?: string;
+  estimatedHours?: number;
   status: 'covered' | 'in_progress' | 'outstanding';
   mappedLessonId?: string;
 }

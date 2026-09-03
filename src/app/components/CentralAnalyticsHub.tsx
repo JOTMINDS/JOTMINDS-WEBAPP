@@ -86,7 +86,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
 
       learningCounts[kStyle] = (learningCounts[kStyle] || 0) + 1;
       thinkingCounts[tStyle] = (thinkingCounts[tStyle] || 0) + 1;
-      decisionCounts[tStyle] = (decisionCounts[tStyle] || 0) + 1;
+      decisionCounts[dStyle] = (decisionCounts[dStyle] || 0) + 1;
     });
 
     return { learningCounts, thinkingCounts, decisionCounts };

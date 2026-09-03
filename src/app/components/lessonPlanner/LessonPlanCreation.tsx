@@ -349,8 +349,8 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             />
           </div>
 
-          {/* Automated vs Manual specific fields */}
-          {mode === 'ai' ? (
+          {/* Automated vs Upload vs Manual specific fields */}
+          {mode === 'ai' && (
             <div className="bg-indigo-50/70 dark:bg-indigo-950/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/50 space-y-3">
               <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-300 font-semibold text-xs">
                 <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -358,12 +358,12 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                 The system will automatically incorporate your class cognitive summary (e.g.{' '}
-                <strong>{classSummary?.className || 'JHS 2A'}</strong>: {classSummary?.learningStylesBreakdown?.visualPct || 45}% Visual, {classSummary?.learningStylesBreakdown?.kinestheticPct || 20}% Kinesthetic, and 5 students flagged for abstract support) to structure your lesson phases and differentiated activities.
+                <strong>{classSummary?.className || 'JHS 2A'}</strong>: {classSummary?.learningStylesBreakdown?.visualPct || 45}% Visual, {classSummary?.learningStylesBreakdown?.kinestheticPct || 20}% Kinesthetic, and students flagged for abstract support) to structure your lesson phases and differentiated activities.
               </p>
               <Button
                 onClick={handleGenerateAI}
                 disabled={isGenerating}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-md py-5"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-md py-5 cursor-pointer"
               >
                 {isGenerating ? (
                   <>
@@ -378,7 +378,80 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                 )}
               </Button>
             </div>
-          ) : (
+          )}
+
+          {mode === 'upload' && (
+            <div className="bg-purple-50/70 dark:bg-purple-950/30 p-5 rounded-xl border border-purple-200 dark:border-purple-900/50 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-purple-900 dark:text-purple-300 font-bold text-xs">
+                  <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span>Upload or Paste Your Existing Lesson Plan</span>
+                </div>
+                <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-[10px]">
+                  AI Adaptation Engine
+                </Badge>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Have a lesson plan from past terms or external sources? Paste the text or upload your file below. JotMinds AI will analyze and tailor it to your class's specific cognitive profile and curriculum standards.
+              </p>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label className="text-xs font-semibold">Existing Plan Content</Label>
+                  <label className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1 font-semibold">
+                    <input
+                      type="file"
+                      accept=".txt,.json,.md,.doc,.docx,.pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const txt = ev.target?.result as string;
+                            if (txt) {
+                              setExistingPlanText(txt);
+                              toast.success(`Loaded "${file.name}"!`);
+                            }
+                          };
+                          reader.readAsText(file);
+                        }
+                      }}
+                    />
+                    📂 Upload File (.txt, .md, etc.)
+                  </label>
+                </div>
+                <textarea
+                  value={existingPlanText}
+                  onChange={(e) => setExistingPlanText(e.target.value)}
+                  placeholder="Paste your existing lesson objectives, phases, teaching notes, or activities here..."
+                  rows={6}
+                  className="w-full p-3 text-xs rounded-xl border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 leading-relaxed font-mono focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <Button
+                onClick={handleGenerateAI}
+                disabled={isGenerating}
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold shadow-md py-5 cursor-pointer"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader className="w-4 h-4 mr-2 animate-spin" />
+                    Tailoring & Enhancing Lesson Plan with AI...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Tailor & Generate Enhanced Plan
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {mode === 'manual' && (
             <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800">
               <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Manual Learning Objectives
@@ -410,7 +483,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                   className="w-full p-2.5 text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-1"
                 />
               </div>
-              <Button onClick={handleManualSave} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-4">
+              <Button onClick={handleManualSave} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-4 cursor-pointer">
                 Save Manual Lesson Plan
               </Button>
             </div>

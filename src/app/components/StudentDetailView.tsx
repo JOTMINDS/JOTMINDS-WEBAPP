@@ -2,10 +2,18 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { Progress } from './ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { User, Assessment } from '../types';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
-import { ArrowLeft, TrendingUp, BookOpen, Brain, Target, Lightbulb, FileText, Download } from 'lucide-react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend,
+  BarChart, Bar
+} from 'recharts';
+import { 
+  ArrowLeft, TrendingUp, BookOpen, Brain, Target, Lightbulb, FileText, Download,
+  Radar as RadarIcon, BarChart3, Compass, LayoutGrid, CheckCircle2, AlertTriangle
+} from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 import { Textarea } from './ui/textarea';
 import { formatDate } from '../utils/dateFormat';
@@ -20,6 +28,7 @@ interface StudentDetailViewProps {
 
 export function StudentDetailView({ student, assessments, onBack }: StudentDetailViewProps) {
   const [teacherNotes, setTeacherNotes] = useState('');
+  const [graphViewMode, setGraphViewMode] = useState<'radar' | 'bars' | 'quadrant' | 'breakdown'>('radar');
 
   // Get student's assessments
   const studentAssessments = assessments.filter(a => a.userId === student.id && a.completed);
@@ -326,30 +335,180 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
           </div>
 
           {latestLearning && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Learning Dimensions Radar</CardTitle>
-                <CardDescription>
-                  Visual representation of {student.name}'s learning preferences
-                </CardDescription>
+            <Card className="shadow-xs border-slate-200 dark:border-slate-800">
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3 pb-3">
+                <div>
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <Compass className="w-5 h-5 text-indigo-600" /> Experiential Learning Dimensions Interpretation
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Multidimensional cognitive analysis for {student.name}
+                  </CardDescription>
+                </div>
+
+                {/* Graph Interpretation Mode Switcher */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  <button
+                    onClick={() => setGraphViewMode('radar')}
+                    className={`p-1.5 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      graphViewMode === 'radar' ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <RadarIcon className="w-3.5 h-3.5" /> Radar View
+                  </button>
+                  <button
+                    onClick={() => setGraphViewMode('bars')}
+                    className={`p-1.5 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      graphViewMode === 'bars' ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" /> Capability Bars
+                  </button>
+                  <button
+                    onClick={() => setGraphViewMode('quadrant')}
+                    className={`p-1.5 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      graphViewMode === 'quadrant' ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Compass className="w-3.5 h-3.5" /> 2D Continuum
+                  </button>
+                  <button
+                    onClick={() => setGraphViewMode('breakdown')}
+                    className={`p-1.5 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      graphViewMode === 'breakdown' ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" /> Dimension Cards
+                  </button>
+                </div>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <RadarChart data={cognitiveProfile}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="dimension" />
-                    <PolarRadiusAxis angle={90} domain={[0, 48]} />
-                    <Radar
-                      name={student.name}
-                      dataKey="score"
-                      stroke="#3b82f6"
-                      fill="#3b82f6"
-                      fillOpacity={0.6}
-                    />
-                    <Legend />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
+
+              <CardContent className="space-y-4">
+                {/* 1. RADAR CHART VIEW */}
+                {graphViewMode === 'radar' && (
+                  <ResponsiveContainer width="100%" height={350}>
+                    <RadarChart data={cognitiveProfile}>
+                      <PolarGrid stroke="#E2E8F0" />
+                      <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: '#475569' }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 48]} tick={{ fontSize: 10 }} />
+                      <Radar
+                        name={student.name}
+                        dataKey="score"
+                        stroke="#4F46E5"
+                        fill="#6366F1"
+                        fillOpacity={0.5}
+                      />
+                      <Legend />
+                      <Tooltip />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                )}
+
+                {/* 2. HORIZONTAL CAPABILITY BARS VIEW */}
+                {graphViewMode === 'bars' && (
+                  <div className="space-y-4 py-2">
+                    {cognitiveProfile.map(item => {
+                      const pct = Math.round((item.score / item.fullMark) * 100);
+                      const isHigh = pct >= 65;
+                      const isLow = pct < 40;
+                      return (
+                        <div key={item.dimension} className="space-y-1.5 p-3 rounded-xl border bg-slate-50/50 dark:bg-slate-900/50">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                              {item.dimension}
+                              <Badge variant="outline" className={isHigh ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : isLow ? 'bg-amber-50 text-amber-700 border-amber-300' : 'text-slate-600'}>
+                                {isHigh ? 'Strong Modality' : isLow ? 'Growth Focus' : 'Balanced'}
+                              </Badge>
+                            </span>
+                            <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                              {item.score} / {item.fullMark} ({pct}%)
+                            </span>
+                          </div>
+                          <Progress value={pct} className={`h-2.5 ${isHigh ? 'bg-emerald-100' : isLow ? 'bg-amber-100' : 'bg-indigo-100'}`} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 3. 2D EXPERIENTIAL CONTINUUM GRID */}
+                {graphViewMode === 'quadrant' && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-900/50 text-xs text-indigo-900 dark:text-indigo-200">
+                      <strong>Kolb Experiential Continuum:</strong> Grasping axis: <em>Concrete (CE: {ce}) vs Abstract (AC: {ac})</em> • Processing axis: <em>Active (AE: {ae}) vs Reflective (RO: {ro})</em>.
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className={`p-4 rounded-xl border text-xs space-y-1 ${ce >= ac && ro >= ae ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                        <div className="font-bold text-sm text-amber-900">1. Diverging Quadrant</div>
+                        <p className="text-slate-600">Concrete Experience + Reflective Observation</p>
+                        <p className="text-[11px] text-slate-500">Excels in brainstorming, viewing situations from multiple perspectives.</p>
+                      </div>
+
+                      <div className={`p-4 rounded-xl border text-xs space-y-1 ${ac >= ce && ro >= ae ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-400' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                        <div className="font-bold text-sm text-blue-900">2. Assimilating Quadrant</div>
+                        <p className="text-slate-600">Abstract Conceptualization + Reflective Observation</p>
+                        <p className="text-[11px] text-slate-500">Excels in inductive reasoning, organizing ideas into clear concise models.</p>
+                      </div>
+
+                      <div className={`p-4 rounded-xl border text-xs space-y-1 ${ac >= ce && ae >= ro ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                        <div className="font-bold text-sm text-emerald-900">3. Converging Quadrant</div>
+                        <p className="text-slate-600">Abstract Conceptualization + Active Experimentation</p>
+                        <p className="text-[11px] text-slate-500">Excels in finding practical solutions and solving technical problems.</p>
+                      </div>
+
+                      <div className={`p-4 rounded-xl border text-xs space-y-1 ${ce >= ac && ae >= ro ? 'bg-purple-50 border-purple-300 ring-2 ring-purple-400' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                        <div className="font-bold text-sm text-purple-900">4. Accommodating Quadrant</div>
+                        <p className="text-slate-600">Concrete Experience + Active Experimentation</p>
+                        <p className="text-[11px] text-slate-500">Excels in hands-on trial-and-error, adapting quickly to new challenges.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. DETAILED DIMENSION BREAKDOWN CARDS */}
+                {graphViewMode === 'breakdown' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-4 rounded-xl border bg-white dark:bg-slate-900 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-800 dark:text-white">Concrete Experience (CE)</span>
+                        <Badge variant="outline">{ce} / 48</Badge>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        Learning by experiencing: Relies on feelings, personal involvement, and real-life human interactions.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-xl border bg-white dark:bg-slate-900 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-800 dark:text-white">Reflective Observation (RO)</span>
+                        <Badge variant="outline">{ro} / 48</Badge>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        Learning by reflecting: Observes carefully before making judgements, viewing ideas from multiple sides.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-xl border bg-white dark:bg-slate-900 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-800 dark:text-white">Abstract Conceptualization (AC)</span>
+                        <Badge variant="outline">{ac} / 48</Badge>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        Learning by thinking: Uses logic, ideas, systematic analysis, and theoretical structures to solve problems.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-xl border bg-white dark:bg-slate-900 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-800 dark:text-white">Active Experimentation (AE)</span>
+                        <Badge variant="outline">{ae} / 48</Badge>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        Learning by doing: Shows willingness to take risks, try new techniques, and influence people or situations directly.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

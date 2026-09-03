@@ -32,6 +32,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { FeedbackPrompt } from './FeedbackPrompt';
 import { Logo } from './Logo';
 import { createClient } from '../utils/supabase/client';
+import { LanguageSelector } from './ui/LanguageSelector';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -288,6 +289,7 @@ export function LandingPage({
               >
                 For Parents
               </button>
+              <LanguageSelector />
               <Button 
                 variant="ghost" 
                 onClick={onGetStarted}

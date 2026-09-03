@@ -2,6 +2,7 @@ import React from 'react';
 import { CollapsibleSidebar, NavGroup } from './collapsible-sidebar';
 import { User } from '../../types';
 import { NudgesPanel } from '../NudgesPanel';
+import { LanguageSelector } from './LanguageSelector';
 
 export interface DashboardLayoutProps {
   navGroups: NavGroup[];
@@ -48,18 +49,21 @@ export function DashboardLayout({
               {headerContent}
             </div>
             {user && (
-              <div className="flex items-center ml-4 gap-4">
-                <div id="google_translate_element" className="scale-90 origin-right hidden md:block"></div>
+              <div className="flex items-center ml-4 gap-3">
+                <LanguageSelector />
                 <NudgesPanel userId={user.id} isNavbarMode={true} onNavigate={(route) => {
                   // Map legacy route names to new dashboard tabs
                   let targetTab = route;
-                  if (route.includes('/assessments') || route.includes('jtia')) targetTab = 'jtia';
-                  else if (route.includes('/profile') || route.includes('my-style')) targetTab = 'my-style';
-                  else if (route.includes('/analytics')) targetTab = 'analytics';
-                  else if (route.includes('/lesson')) targetTab = 'lesson-planner';
-                  else if (route.includes('/students') || route.includes('class')) targetTab = 'students';
+                  if (route.includes('jtia') || route.includes('teaching')) targetTab = 'jtia';
+                  else if (route.includes('my-style') || route.includes('profile')) targetTab = 'my-style';
+                  else if (route.includes('analytics')) targetTab = 'analytics';
+                  else if (route.includes('lesson')) targetTab = 'lesson-planner';
+                  else if (route.includes('student')) targetTab = 'students';
+                  else if (route.includes('class')) targetTab = 'manage-classes';
+                  else if (route.includes('overview')) targetTab = 'overview';
                   setActiveTab(targetTab);
-                }} />              </div>
+                }} />
+              </div>
             )}
           </header>
         )}

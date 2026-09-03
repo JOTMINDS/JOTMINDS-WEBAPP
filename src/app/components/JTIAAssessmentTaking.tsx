@@ -206,7 +206,7 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
     const report = calculateJTIAScore(responses, sessionQuestions);
     localStorage.removeItem(`jtia_progress_${userId}`);
     localStorage.removeItem(`jtia_session_ids_${userId}`);
-    toast.success("JTIA Assessment completed successfully!");
+    toast.success("Teaching Insights Assessment completed successfully!");
     onComplete(report, responses);
   };
 

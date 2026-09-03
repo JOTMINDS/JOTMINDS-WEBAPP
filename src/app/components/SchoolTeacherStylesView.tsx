@@ -414,7 +414,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
             <div>
               <p className="text-white/70 text-xs mb-1 flex items-center gap-1"><QrCode className="w-3.5 h-3.5" /> School Jots Code (Organisation Code)</p>
               <div className="text-3xl tracking-widest mb-1">{jotsCode || '—'}</div>
-              <p className="text-white/70 text-xs max-w-xs">Teachers enter this during signup to link their account. They then complete all 4 assessments from their <em>Cognitive Profile & JTIA</em> tabs.</p>
+              <p className="text-white/70 text-xs max-w-xs">Teachers enter this during signup to link their account. They then complete all assessments from their <em>Cognitive Profile & Teaching Insights</em> tabs.</p>
             </div>
             <Button size="sm" onClick={handleCopy} className="bg-white/20 hover:bg-white/30 text-white border-white/30 border shrink-0">
               {copied ? <CheckCircle className="w-3.5 h-3.5 mr-1" /> : <Copy className="w-3.5 h-3.5 mr-1" />}

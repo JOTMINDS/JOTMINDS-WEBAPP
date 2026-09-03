@@ -221,7 +221,7 @@ Keep answers concise, warm, structured, and highly practical. Use markdown.`
 }
 
 export async function generateAILessonPlan(
-  subjectOrPayload: string | { subject: string; gradeClass: string; topic: string; durationMinutes?: number; classSummary?: any },
+  subjectOrPayload: string | { subject: string; gradeClass: string; topic: string; durationMinutes?: number; classSummary?: any; existingPlanText?: string },
   topic?: string,
   grade?: string,
   curriculum?: string,
@@ -582,15 +582,30 @@ export async function generateAILessonAssessment(payload: {
   subject: string;
   topic: string;
   gradeClass: string;
+  uploadText?: string;
 }): Promise<any | null> {
   try {
-    const prompt = `Generate a lesson assessment format:
-Payload: ${JSON.stringify(payload)}
-Return JSON with assessment questions, answers, and rubrics.`;
+    const prompt = `Generate a multi-format lesson assessment suite for:
+Subject: ${payload.subject}
+Topic: ${payload.topic}
+Grade/Class: ${payload.gradeClass}
+${payload.uploadText ? `Teacher Uploaded Reference Materials / Custom Assessment Base:
+${payload.uploadText}
+Please adapt, organize, and expand upon the teacher's uploaded assessment materials to create structured MCQs, short answers, discussion items, practical exercises, and homework.` : ''}
+
+Return JSON with this structure:
+{
+  "title": "${payload.topic} Assessment Suite",
+  "mcqs": [{ "id": "m1", "type": "mcq", "question": "Question text", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "Why A is correct" }],
+  "shortAnswer": [{ "id": "s1", "type": "short_answer", "question": "Question text", "correctAnswer": "Model answer", "explanation": "Marking scheme note" }],
+  "discussion": [{ "id": "d1", "type": "discussion", "question": "Deep thinking prompt", "explanation": "Facilitation guide" }],
+  "practicalExercises": [{ "id": "p1", "type": "practical", "question": "Hands-on activity task", "explanation": "Success criteria" }],
+  "homework": [{ "id": "h1", "type": "homework", "question": "Take-home extension problem", "explanation": "Target completion time: 20 mins" }]
+}`;
     const res = await callOpenAI([
-      { role: 'system', content: 'You are an expert assessment designer.' },
+      { role: 'system', content: 'You are an expert assessment designer creating differentiated quizzes and homework aligned to national and international curricula.' },
       { role: 'user', content: prompt }
-    ], true, 800);
+    ], true, 1200);
     if (res) return JSON.parse(res);
   } catch (err) {
     console.error('Failed to generate Lesson Assessment:', err);

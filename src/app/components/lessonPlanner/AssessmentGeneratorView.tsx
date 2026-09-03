@@ -79,15 +79,83 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
           </p>
         </div>
 
-        <Button
-          onClick={handleGenerateAssessment}
-          disabled={isGenerating}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md"
-        >
-          {isGenerating ? <Loader className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
-          Generate Full Assessment Suite
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowUpload(!showUpload)}
+            className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold"
+          >
+            <Upload className="w-3.5 h-3.5 mr-1.5" />
+            {showUpload ? 'Hide Custom Materials' : 'Upload / Paste Questions'}
+          </Button>
+          <Button
+            onClick={handleGenerateAssessment}
+            disabled={isGenerating}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md"
+          >
+            {isGenerating ? <Loader className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
+            Generate Full Assessment Suite
+          </Button>
+        </div>
       </div>
+
+      {/* Custom Assessment Upload / Reference Card */}
+      {showUpload && (
+        <Card className="bg-purple-50/70 dark:bg-purple-950/30 border-purple-200 dark:border-purple-900/50 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-purple-900 dark:text-purple-300">
+                <Upload className="w-4 h-4 text-purple-600" /> Upload Your Own Assessment Questions & Reference Materials
+              </CardTitle>
+              <label className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1 font-semibold">
+                <input
+                  type="file"
+                  accept=".txt,.json,.md,.doc,.docx,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const txt = ev.target?.result as string;
+                        if (txt) {
+                          setUploadText(txt);
+                          toast.success(`Loaded "${file.name}"!`);
+                        }
+                      };
+                      reader.readAsText(file);
+                    }
+                  }}
+                />
+                📂 Choose File (.txt, .md, etc.)
+              </label>
+            </div>
+            <CardDescription className="text-xs">
+              Paste your own test questions, past examination items, or source texts below. The AI will structure them into differentiated MCQs, short answers, and rubrics.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <textarea
+              value={uploadText}
+              onChange={(e) => setUploadText(e.target.value)}
+              placeholder="Paste your questions, answers, or study notes here..."
+              rows={4}
+              className="w-full p-3 text-xs rounded-xl border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 font-mono"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                size="sm"
+                onClick={handleGenerateAssessment}
+                disabled={isGenerating}
+                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold"
+              >
+                {isGenerating ? 'Structuring Materials...' : 'Generate Suite from Custom Materials'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs for Question Formats */}
       <Tabs defaultValue="mcqs" className="w-full">

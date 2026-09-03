@@ -340,7 +340,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
     setMyAssessments([...myAssessments, newAssessment]);
     setIsTakingAssessment(false);
-    toast.success('JTIA Assessment completed successfully!');
+    toast.success('Teaching Insights Assessment completed successfully!');
   };
 
   const teachingStyleAssessments = useMemo(() => 

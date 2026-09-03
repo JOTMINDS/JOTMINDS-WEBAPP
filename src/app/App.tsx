@@ -444,18 +444,25 @@ function AppContent() {
 
   // Helper to navigate from nudges
   const handleNudgeNavigate = (route: string) => {
-    if (route === '/brain-gym') {
+    if (!route) return;
+    const cleanRoute = route.startsWith('/') ? route.slice(1) : route;
+
+    if (cleanRoute === 'brain-gym' || cleanRoute === 'skill-builder') {
       setCurrentView('skill-builder');
-    } else if (route === '/gamification') {
+    } else if (cleanRoute === 'gamification') {
       setCurrentView('gamification');
-    } else if (route === '/assessments') {
-      setCurrentView('dashboard');
-    } else if (route === '/career-exploration') {
-      setCurrentView('dashboard');
-    } else if (route === '/profile-improvement') {
+    } else if (cleanRoute === 'profile-improvement') {
       setCurrentView('profile-improvement');
-    } else if (route === '/cognitive-workout') {
+    } else if (cleanRoute === 'cognitive-workout') {
       setCurrentView('cognitive-workout');
+    } else if (cleanRoute === 'teacher-analytics' || cleanRoute.includes('analytic')) {
+      setCurrentView(user?.role === 'teacher' ? 'dashboard' : 'teacher-analytics');
+    } else if (cleanRoute === 'teacher-intelligence' || cleanRoute.includes('intelligence')) {
+      setCurrentView(user?.role === 'teacher' ? 'dashboard' : 'teacher-intelligence');
+    } else if (cleanRoute === 'school-teacher-styles' || cleanRoute.includes('school')) {
+      setCurrentView('school-teacher-styles');
+    } else {
+      setCurrentView('dashboard');
     }
   };
 

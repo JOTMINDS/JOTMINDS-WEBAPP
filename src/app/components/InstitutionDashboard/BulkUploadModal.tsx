@@ -71,16 +71,21 @@ export function BulkUploadModal({
         const actualPhoneIdx = phoneIdx >= 0 ? phoneIdx : 2;
         const actualDobIdx = dobIdx >= 0 ? dobIdx : 3;
 
+        let imported = 0;
         for (let i = 1; i < lines.length; i++) {
           const parts = parseLine(lines[i]);
           if (parts.length === 0) continue;
 
           const name = parts[actualNameIdx] || '';
-          const email = parts[actualEmailIdx] || '';
+          let email = parts[actualEmailIdx] || '';
           const phone = parts[actualPhoneIdx] || '';
-          const dateOfBirth = parts[actualDobIdx] || '';
+          const dateOfBirth = parts[actualDobIdx] || '2010-01-01';
           
-          if (name && email) {
+          if (!email && name) {
+            email = `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}_${Date.now()}_${i}@student.jotminds.internal`;
+          }
+
+          if (name) {
             const newStudent: User = {
               id: `usr_${Date.now()}_${i}`,
               role: 'student',

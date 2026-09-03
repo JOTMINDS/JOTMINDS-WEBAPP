@@ -6,11 +6,13 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
   Users, Search, Filter, Eye, Download, CheckCircle2, 
-  Clock, AlertCircle, Award, Sparkles, X, ChevronRight, User as UserIcon
+  Clock, AlertCircle, Award, Sparkles, X, ChevronRight, User as UserIcon, Upload
 } from 'lucide-react';
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { StudentDetailView } from './StudentDetailView';
 import { GenerateStudentCodesModal } from './InstitutionDashboard/GenerateStudentCodesModal';
+import { BulkUploadModal } from './InstitutionDashboard/BulkUploadModal';
+import { toast } from 'sonner';
 
 interface CentralStudentManagementProps {
   students: any[];
@@ -25,6 +27,7 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
   const [assessmentFilter, setAssessmentFilter] = useState<'all' | 'complete' | 'incomplete'>('all');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
 
   // Extract unique classes
   const uniqueClasses = Array.from(new Set(students.map(s => s.className).filter(Boolean)));
@@ -79,14 +82,25 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
               <div className="text-[10px] uppercase text-white/80">Assessed</div>
             </div>
           </div>
-          <Button
-            onClick={() => setIsGenerateModalOpen(true)}
-            className="bg-white text-[#6B4C9A] hover:bg-white/90 font-bold shadow-sm"
-            size="sm"
-          >
-            <UserIcon className="w-4 h-4 mr-2" />
-            Generate Student Codes
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setIsBulkUploadModalOpen(true)}
+              variant="outline"
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30 font-semibold shadow-xs"
+              size="sm"
+            >
+              <Upload className="w-4 h-4 mr-1.5" />
+              Upload CSV
+            </Button>
+            <Button
+              onClick={() => setIsGenerateModalOpen(true)}
+              className="bg-white text-[#6B4C9A] hover:bg-white/90 font-bold shadow-sm"
+              size="sm"
+            >
+              <UserIcon className="w-4 h-4 mr-2" />
+              Generate Student Codes
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -98,6 +112,18 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
         }}
         teacherId={teacher?.id}
         institutionId={teacher?.institutionId}
+      />
+
+      <BulkUploadModal
+        isOpen={isBulkUploadModalOpen}
+        onClose={() => setIsBulkUploadModalOpen(false)}
+        institutionId={teacher?.institutionId || 'inst_default'}
+        institutionName={teacher?.school || teacher?.organizationName || 'School'}
+        institutionCode={teacher?.schoolCode || 'SCH123'}
+        onUploadSuccess={() => {
+          if (onRefresh) onRefresh();
+          toast.success('Roster refreshed with uploaded students!');
+        }}
       />
 
       {/* Filter and Search Bar */}

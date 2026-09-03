@@ -48,12 +48,26 @@ export function NudgesPanel({ userId, onNavigate, isNavbarMode = false }: Props)
   const handleAction = (nudge: Nudge) => {
     interactWithNudge(nudge.id);
     if (nudge.action) {
-      if (onNavigate) {
-        onNavigate(nudge.action.route);
-      } else {
-        window.dispatchEvent(new CustomEvent('nudge-navigate', { detail: nudge.action.route }));
+      const rawRoute = nudge.action.route || '';
+      let normalizedRoute = rawRoute.startsWith('/') ? rawRoute.substring(1) : rawRoute;
+      
+      // Clean up common aliases to prevent invalid tab states
+      if (normalizedRoute.includes('jtia') || normalizedRoute.includes('teaching')) normalizedRoute = 'jtia';
+      else if (normalizedRoute.includes('lesson')) normalizedRoute = 'lesson-planner';
+      else if (normalizedRoute.includes('analytic')) normalizedRoute = 'analytics';
+      else if (normalizedRoute.includes('student')) normalizedRoute = 'students';
+      else if (normalizedRoute.includes('class')) normalizedRoute = 'manage-classes';
+      else if (!normalizedRoute) normalizedRoute = 'overview';
+
+      try {
+        if (onNavigate) {
+          onNavigate(normalizedRoute);
+        } else {
+          window.dispatchEvent(new CustomEvent('nudge-navigate', { detail: normalizedRoute }));
+        }
+      } catch (err) {
+        console.warn('Notification navigation error:', err);
       }
-      // Close the panel after clicking an action so the user actually sees the new view
       setShowNudges(false);
     }
     loadNudges();
