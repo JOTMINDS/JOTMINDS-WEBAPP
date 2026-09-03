@@ -66,14 +66,19 @@
 
     <body>
 
-      <!-- Google Translate -->
+      <!-- Google Translate Mount & Initialization -->
+      <div id="google_translate_element" style="position:fixed;bottom:-200px;left:0;opacity:0.01;pointer-events:none;z-index:-1;"></div>
       <script type="text/javascript">
         function googleTranslateElementInit() {
-          new google.translate.TranslateElement({
-            pageLanguage: 'en',
-            includedLanguages: 'en,fr,es,ak,tw,ee,ga,ha,ar,sw',
-            layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-          }, 'google_translate_element');
+          try {
+            new google.translate.TranslateElement({
+              pageLanguage: 'en',
+              includedLanguages: 'en,fr,es,ak,tw,ee,ga,gaa,ha,ar,sw',
+              autoDisplay: false
+            }, 'google_translate_element');
+          } catch (e) {
+            console.warn('[Translate] Init error:', e);
+          }
         }
       </script>
       <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>

@@ -23,7 +23,7 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', gtCode: 'es' },
   { code: 'tw', name: 'Twi', nativeName: 'Akan / Twi', flag: '🇬🇭', gtCode: 'ak' },
   { code: 'ee', name: 'Ewe', nativeName: 'Èʋegbe', flag: '🇬🇭', gtCode: 'ee' },
-  { code: 'ga', name: 'Ga', nativeName: 'Gã', flag: '🇬🇭', gtCode: 'ga' },
+  { code: 'ga', name: 'Ga', nativeName: 'Gã', flag: '🇬🇭', gtCode: 'gaa' },
   { code: 'ha', name: 'Hausa', nativeName: 'Harshen Hausa', flag: '🇳🇬', gtCode: 'ha' },
 ];
 
@@ -38,22 +38,67 @@ export function LanguageSelector() {
     try {
       const gtCode = langObj.gtCode || langObj.code;
       const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      const rootDomain = parts.length > 2 ? '.' + parts.slice(-2).join('.') : '.' + hostname;
 
-      // Update translation cookies
-      document.cookie = `googtrans=/en/${gtCode}; path=/;`;
-      document.cookie = `googtrans=/en/${gtCode}; path=/; domain=${hostname};`;
-      if (hostname !== 'localhost') {
-        document.cookie = `googtrans=/en/${gtCode}; path=/; domain=.${hostname};`;
+      if (gtCode === 'en') {
+        // Reset to English: Clear all translation cookies
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${hostname};`;
+        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`;
+        if (hostname !== 'localhost') {
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${rootDomain};`;
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${rootDomain};`;
+        }
+
+        const combo = document.querySelector<HTMLSelectElement>('.goog-te-combo');
+        if (combo) {
+          combo.value = '';
+          combo.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        const iframe = document.querySelector<HTMLIFrameElement>('.goog-te-banner-frame');
+        if (iframe) {
+          try {
+            const innerDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            const restoreBtn = innerDoc?.getElementById(':1.restore');
+            if (restoreBtn) restoreBtn.click();
+          } catch (e) {}
+        }
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 150);
+        return;
       }
 
-      // If Google Translate combo exists in the DOM, select and fire change
+      // Setting active non-English translation
+      document.cookie = `googtrans=/en/${gtCode}; path=/;`;
+      document.cookie = `googtrans=/en/${gtCode}; path=/; domain=${hostname};`;
+      document.cookie = `googtrans=/en/${gtCode}; path=/; domain=.${hostname};`;
+      if (hostname !== 'localhost') {
+        document.cookie = `googtrans=/en/${gtCode}; path=/; domain=${rootDomain};`;
+        document.cookie = `googtrans=/en/${gtCode}; path=/; domain=.${rootDomain};`;
+      }
+
       const combo = document.querySelector<HTMLSelectElement>('.goog-te-combo');
       if (combo) {
         combo.value = gtCode;
         combo.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        // If combo is not yet loaded into DOM, wait briefly and fallback to reload
+        setTimeout(() => {
+          const lateCombo = document.querySelector<HTMLSelectElement>('.goog-te-combo');
+          if (lateCombo) {
+            lateCombo.value = gtCode;
+            lateCombo.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            window.location.reload();
+          }
+        }, 300);
       }
     } catch (e) {
-      console.warn('Google Translate sync issue:', e);
+      console.warn('[Translate] sync issue:', e);
     }
   };
 
@@ -61,7 +106,6 @@ export function LanguageSelector() {
     if (currentLang && currentLang !== 'en') {
       const chosen = SUPPORTED_LANGUAGES.find(l => l.code === currentLang);
       if (chosen) {
-        // Wait briefly for google translate script to initialize
         const timer = setTimeout(() => applyGoogleTranslate(chosen), 500);
         return () => clearTimeout(timer);
       }
