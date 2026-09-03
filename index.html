@@ -103,6 +103,10 @@
             });
           });
         }
+        // Auto-reload on deployment chunk changes
+        window.addEventListener('vite:preloadError', function() {
+          window.location.reload();
+        });
       </script>
     </head>
 
