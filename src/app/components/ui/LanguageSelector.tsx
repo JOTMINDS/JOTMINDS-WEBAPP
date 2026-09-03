@@ -42,14 +42,23 @@ export function LanguageSelector() {
       const rootDomain = parts.length > 2 ? '.' + parts.slice(-2).join('.') : '.' + hostname;
 
       if (gtCode === 'en') {
-        // Reset to English: Clear all translation cookies
-        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${hostname};`;
-        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`;
-        if (hostname !== 'localhost') {
-          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${rootDomain};`;
-          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${rootDomain};`;
+        // Reset to English: Clear all translation cookies across all host combinations
+        const domains = [
+          '',
+          hostname,
+          '.' + hostname,
+        ];
+        if (parts.length > 2) {
+          domains.push(rootDomain, '.' + rootDomain);
+          const pagesDomain = parts.slice(-3).join('.');
+          domains.push(pagesDomain, '.' + pagesDomain);
         }
+
+        domains.forEach(d => {
+          const dStr = d ? `; domain=${d}` : '';
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/${dStr}`;
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${dStr}`;
+        });
 
         const combo = document.querySelector<HTMLSelectElement>('.goog-te-combo');
         if (combo) {
