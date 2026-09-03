@@ -116,8 +116,7 @@
             new google.translate.TranslateElement({
               pageLanguage: 'en',
               includedLanguages: 'en,fr,es,ak,tw,ee,ga,gaa,ha,ar,sw',
-              autoDisplay: false,
-              layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+              autoDisplay: false
             }, 'google_translate_element');
           } catch (e) {
             console.warn('[Translate] Init error:', e);
@@ -157,7 +156,21 @@
           }
           window.addEventListener('DOMContentLoaded', suppress);
           window.addEventListener('load', suppress);
-          setInterval(suppress, 200);
+
+          var count = 0;
+          function rafLoop() {
+            suppress();
+            count++;
+            if (count < 600) {
+              requestAnimationFrame(rafLoop);
+            }
+          }
+          rafLoop();
+          window.addEventListener('jm-language-changed', function() {
+            count = 0;
+            rafLoop();
+          });
+          setInterval(suppress, 250);
         })();
       </script>
 
