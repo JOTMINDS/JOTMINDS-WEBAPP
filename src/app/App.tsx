@@ -193,10 +193,13 @@ function AppContent() {
         return;
       }
 
+      const viewParam = searchParams.get('view');
+      if (viewParam) {
+        setCurrentView(viewParam as ViewType);
+      }
       const mode = searchParams.get('mode');
       const inviteToken = searchParams.get('inviteToken');
-      
-      
+
       if (mode === 'signup' || inviteToken || path === '/auth') {
         console.log('[App] Auth routing detected (signup, invite, or /auth)');
         setCurrentView('auth');

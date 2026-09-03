@@ -56,9 +56,81 @@ export interface UserBehaviorPattern {
 const NUDGES_STORAGE_KEY = 'jotminds_nudges';
 const REMINDER_SCHEDULE_KEY = 'jotminds_reminder_schedule';
 
+function generateInstitutionNudges(user: User): Nudge[] {
+  const nudges: Nudge[] = [];
+  try {
+    // 1. Pending Class Approvals
+    const allClasses = safeParse<Class[]>('classes', []);
+    const pendingClasses = allClasses.filter(c => c.status === 'pending');
+    if (pendingClasses.length > 0) {
+      nudges.push({
+        id: `nudge_pending_classes_${user.id}`,
+        userId: user.id,
+        type: 'reminder',
+        priority: 'high',
+        title: `${pendingClasses.length} Class Approval${pendingClasses.length > 1 ? 's' : ''} Pending`,
+        message: `${pendingClasses.length} class${pendingClasses.length > 1 ? 'es' : ''} created by teachers require institutional approval.`,
+        action: {
+          label: 'Review Classes',
+          route: 'class_management',
+        },
+        icon: '🎓',
+        color: '#5B7DB1',
+        createdAt: new Date().toISOString(),
+        dismissed: false,
+        interacted: false,
+      });
+    }
+
+    // 2. Cognitive Insights Ready
+    nudges.push({
+      id: `nudge_insights_ready_${user.id}`,
+      userId: user.id,
+      type: 'achievement',
+      priority: 'medium',
+      title: 'Institutional Cognitive Intelligence',
+      message: 'Classroom cognitive distributions and learner risk profiles are up to date.',
+      action: {
+        label: 'Open Student Insights',
+        route: 'student_insights',
+      },
+      icon: '📊',
+      color: '#6B4C9A',
+      createdAt: new Date().toISOString(),
+      dismissed: false,
+      interacted: false,
+    });
+
+    // 3. Faculty Lessons & Reflections
+    nudges.push({
+      id: `nudge_lesson_planner_${user.id}`,
+      userId: user.id,
+      type: 'suggestion',
+      priority: 'low',
+      title: 'Faculty Lesson Planning & Reflections',
+      message: 'Monitor curriculum pacing, delivered lesson logs, and teacher reflections.',
+      action: {
+        label: 'Lesson Planning',
+        route: 'lesson_planning',
+      },
+      icon: '📖',
+      color: '#1E8A6E',
+      createdAt: new Date().toISOString(),
+      dismissed: false,
+      interacted: false,
+    });
+  } catch (err) {
+    console.error('Failed generating institution nudges', err);
+  }
+  return nudges;
+}
+
 // Nudge Generation
 export function generatePersonalizedNudges(userId: string): Nudge[] {
   const user = getCurrentUser();
+  if (user && ((user.role as string) === 'institution' || user.role === 'admin' || user.role === 'school_admin' || user.role === 'organization')) {
+    return generateInstitutionNudges(user);
+  }
   if (user && user.role !== 'student') return [];
 
   const engagement = getEngagementMetrics(userId);
@@ -353,12 +425,33 @@ export function saveNudges(nudges: Nudge[]): void {
 export function getUserNudges(userId: string, includeExpired: boolean = false): Nudge[] {
   const allNudges = safeParse<Nudge[]>(NUDGES_STORAGE_KEY, []).filter(Boolean);
   const now = new Date();
+  const currentUser = getCurrentUser();
+  const isSchoolAccount = currentUser && ((currentUser.role as string) === 'institution' || currentUser.role === 'admin' || currentUser.role === 'school_admin' || currentUser.role === 'organization');
 
   return allNudges
     .filter(n => {
       if (n.userId !== userId) return false;
       if (n.dismissed) return false;
       if (!includeExpired && n.expiresAt && new Date(n.expiresAt) < now) return false;
+
+      // School accounts must NEVER see student-facing prompts like "Try Cognitive Assessments", streak alerts, or XP challenges
+      if (isSchoolAccount) {
+        const titleLower = (n.title || '').toLowerCase();
+        const routeLower = (n.action?.route || '').toLowerCase();
+        if (
+          titleLower.includes('cognitive assessment') ||
+          titleLower.includes('try ') ||
+          titleLower.includes('streak') ||
+          titleLower.includes('almost there') ||
+          titleLower.includes('ready to continue') ||
+          routeLower.includes('assessments') ||
+          n.type === 'streak' ||
+          n.type === 'challenge'
+        ) {
+          return false;
+        }
+      }
+
       return true;
     })
     .sort((a, b) => {

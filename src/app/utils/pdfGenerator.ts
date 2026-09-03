@@ -520,17 +520,22 @@ export async function generateSchoolSummaryPDF(
     teacherCount: number;
   },
   assessmentRecords: Array<{
-    date: string;
+    date?: string;
     studentName: string;
+    studentCode?: string;
     className: string;
-    teacherName: string;
-    type: string;
+    teacherName?: string;
+    type?: string;
+    learningStyle?: string;
+    thinkingStyle?: string;
+    decisionStyle?: string;
+    risk?: string;
   }>
 ): Promise<boolean> {
   try {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 16;
+    const margin = 14;
     let yPos = 20;
 
     // Header bar
@@ -538,102 +543,104 @@ export async function generateSchoolSummaryPDF(
     doc.rect(0, 0, pageWidth, 36, 'F');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setTextColor(255, 255, 255);
-    doc.text(institutionName, margin, 20);
+    doc.text(institutionName, margin, 18);
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(200, 210, 230);
-    doc.text('Official Cognitive & Educational Summary Report', margin, 28);
+    doc.text('Institutional Cognitive Analytics & Learner Profile Report', margin, 26);
 
     doc.setTextColor(255, 255, 255);
-    doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, pageWidth - margin - 40, 28);
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, pageWidth - margin - 40, 26);
 
-    yPos = 48;
+    yPos = 46;
 
     // Stats Grid Box
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(...BRAND.hairline);
-    doc.roundedRect(margin, yPos, pageWidth - (margin * 2), 28, 3, 3, 'FD');
+    doc.roundedRect(margin, yPos, pageWidth - (margin * 2), 24, 3, 3, 'FD');
 
     const colWidth = (pageWidth - (margin * 2)) / 4;
     const statItems = [
-      { label: 'Total Students', val: stats.studentCount.toString() },
-      { label: 'Total Teachers', val: stats.teacherCount.toString() },
-      { label: 'Completed Tests', val: stats.totalAssessments.toString() },
+      { label: 'Connected Students', val: stats.studentCount.toString() },
+      { label: 'Faculty Members', val: stats.teacherCount.toString() },
+      { label: 'Assessed Students', val: assessmentRecords.filter(r => r.learningStyle && r.learningStyle !== 'Pending').length.toString() },
       { label: 'School Status', val: 'Active' },
     ];
 
     statItems.forEach((item, idx) => {
-      const x = margin + (idx * colWidth) + 8;
-      doc.setFontSize(9);
+      const x = margin + (idx * colWidth) + 6;
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...BRAND.muted);
-      doc.text(item.label.toUpperCase(), x, yPos + 10);
+      doc.text(item.label.toUpperCase(), x, yPos + 8);
 
-      doc.setFontSize(14);
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...BRAND.dark);
-      doc.text(item.val, x, yPos + 22);
+      doc.text(item.val, x, yPos + 18);
     });
 
-    yPos += 38;
+    yPos += 34;
 
-    // Table Title
-    doc.setFontSize(12);
+    // Section Title
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...BRAND.dark);
-    doc.text(`Assessment Activity Log (${assessmentRecords.length} records)`, margin, yPos);
-    yPos += 8;
+    doc.text(`Student Cognitive Roster (${assessmentRecords.length} learners)`, margin, yPos);
+    yPos += 6;
 
     // Table Header
     doc.setFillColor(...BRAND.indigo);
-    doc.rect(margin, yPos, pageWidth - (margin * 2), 10, 'F');
+    doc.rect(margin, yPos, pageWidth - (margin * 2), 8, 'F');
 
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
 
-    doc.text('Date', margin + 4, yPos + 7);
-    doc.text('Student', margin + 30, yPos + 7);
-    doc.text('Class', margin + 85, yPos + 7);
-    doc.text('Teacher', margin + 120, yPos + 7);
-    doc.text('Assessment Type', margin + 155, yPos + 7);
+    doc.text('Student Name', margin + 3, yPos + 5.5);
+    doc.text('Code', margin + 46, yPos + 5.5);
+    doc.text('Class', margin + 68, yPos + 5.5);
+    doc.text('Learning Style', margin + 98, yPos + 5.5);
+    doc.text('Thinking Style', margin + 132, yPos + 5.5);
+    doc.text('Decision Style', margin + 162, yPos + 5.5);
 
-    yPos += 10;
+    yPos += 8;
 
     // Table Rows
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(...BRAND.ink);
 
-    const maxRows = Math.min(25, assessmentRecords.length);
+    const maxRows = Math.min(30, assessmentRecords.length);
     for (let i = 0; i < maxRows; i++) {
       const rec = assessmentRecords[i];
-      const rowY = yPos + (i * 8);
+      const rowY = yPos + (i * 7);
 
-      if (rowY > 270) break; // page overflow guard
+      if (rowY > 272) break; // page overflow guard
 
       if (i % 2 === 1) {
         doc.setFillColor(248, 250, 252);
-        doc.rect(margin, rowY - 5, pageWidth - (margin * 2), 8, 'F');
+        doc.rect(margin, rowY - 4.5, pageWidth - (margin * 2), 7, 'F');
       }
 
-      doc.text(rec.date, margin + 4, rowY);
-      doc.text(rec.studentName.substring(0, 22), margin + 30, rowY);
-      doc.text(rec.className.substring(0, 15), margin + 85, rowY);
-      doc.text(rec.teacherName.substring(0, 16), margin + 120, rowY);
-      doc.text(rec.type.substring(0, 20), margin + 155, rowY);
+      doc.text(rec.studentName.substring(0, 22), margin + 3, rowY);
+      doc.text((rec.studentCode || '—').substring(0, 10), margin + 46, rowY);
+      doc.text((rec.className || 'General').substring(0, 14), margin + 68, rowY);
+      doc.text((rec.learningStyle || 'Pending').substring(0, 16), margin + 98, rowY);
+      doc.text((rec.thinkingStyle || 'Pending').substring(0, 14), margin + 132, rowY);
+      doc.text((rec.decisionStyle || 'Pending').substring(0, 12), margin + 162, rowY);
     }
 
     // Footer
-    const footerY = 285;
-    doc.setFontSize(8);
+    const footerY = 286;
+    doc.setFontSize(7.5);
     doc.setTextColor(...BRAND.muted);
-    doc.text('JotMinds Educational Cognitive Platform · Confidential Official Report', margin, footerY);
+    doc.text('JotMinds Educational Cognitive Platform · Confidential Institutional Report', margin, footerY);
 
-    doc.save(`${institutionName.replace(/[^a-zA-Z0-9]/g, '_')}_School_Report.pdf`);
+    doc.save(`${institutionName.replace(/[^a-zA-Z0-9]/g, '_')}_Cognitive_Summary_Report.pdf`);
     return true;
   } catch (err) {
     console.error('Failed to generate school summary PDF:', err);

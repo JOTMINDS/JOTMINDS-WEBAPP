@@ -62,7 +62,7 @@ export interface TeacherClassAssignment {
   teacherId: string;
   classId: string;
   subjectId?: string; // Can be a custom string for subject names
-  role: 'class_teacher' | 'subject_teacher' | 'both';
+  role: 'class_teacher' | 'subject_teacher' | 'both' | 'substitute' | 'assistant';
 }
 
 export interface User {

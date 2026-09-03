@@ -31,7 +31,7 @@ export function StudentDetailView({ student, assessments, onBack }: StudentDetai
   const [graphViewMode, setGraphViewMode] = useState<'radar' | 'bars' | 'quadrant' | 'breakdown'>('radar');
 
   // Get student's assessments
-  const studentAssessments = assessments.filter(a => a.userId === student.id && a.completed);
+  const studentAssessments = assessments.filter(a => a.userId === student.id && (a.completed || a.completedAt || (a as any).status === 'completed'));
   
   const latestLearning = studentAssessments
     .filter(a => a.type === 'kolb' || (a.type as any) === 'learning')

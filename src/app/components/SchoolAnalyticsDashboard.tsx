@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { User, Assessment, AssessmentScore } from '../types';
+import { User, Assessment, AssessmentScore, Class } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -7,20 +7,20 @@ import { Input } from './ui/input';
 import {
   ArrowLeft, Users, TrendingUp, AlertTriangle, CheckCircle,
   Search, ChevronDown, ChevronUp, BarChart3, Activity,
-  BookOpen, Award, Zap, HelpCircle, Info, Sparkles, Target
+  BookOpen, Award, Zap, HelpCircle, Info, Sparkles, Target, X, Eye, ArrowRightLeft
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId } from '../utils/storage';
+import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId, getAllClasses } from '../utils/storage';
 import { getEngagementMetrics } from '../utils/engagementTracking';
 import { getGamificationProfile } from '../utils/gamification';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { getAllAssessmentResults } from '../utils/api';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
-
+import { StudentDetailView } from './StudentDetailView';
 import { InstitutionMember } from '../utils/institution';
 
 interface SchoolAnalyticsDashboardProps {
@@ -30,7 +30,7 @@ interface SchoolAnalyticsDashboardProps {
   institutionMembers?: InstitutionMember[];
 }
 
-type Tab = 'overview' | 'students' | 'class' | 'leaders' | 'cognitive' | 'insights' | 'comparison' | 'alignment';
+type Tab = 'overview' | 'students' | 'class' | 'comparison' | 'alignment' | 'cognitive' | 'insights';
 
 interface StudentSummary {
   user: User;
@@ -43,20 +43,45 @@ interface StudentSummary {
   risk: 'high' | 'medium' | 'low' | 'unassessed';
   gradeLevel: string;
   assessments: Assessment[];
+  styles?: { learningStyle: string; thinkingStyle: string; decisionStyle: string };
 }
 
 const RISK_COLORS = { high: '#DC2626', medium: '#E0A020', low: '#1E8A6E', unassessed: '#9ca3af' };
 const RISK_LABELS = { high: 'At Risk', medium: 'Needs Support', low: 'On Track', unassessed: 'Not Started' };
 
+export function getStudentCognitiveStyles(assessments: Assessment[]) {
+  let learningStyle = 'Pending';
+  let thinkingStyle = 'Pending';
+  let decisionStyle = 'Pending';
+
+  assessments.forEach(a => {
+    const aType = a.type as string;
+    const aScore = a.score as any;
+    if (aType === 'kolb' || aType === 'learning') {
+      const s = aScore?.kolb?.style || aScore?.learning?.style;
+      if (s) learningStyle = s;
+    } else if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(aType)) {
+      const s = aScore?.sternberg?.style || aScore?.thinking?.style || aScore?.style;
+      if (s) thinkingStyle = s;
+    } else if (aType === 'dual-process' || aType === 'decision') {
+      const s = aScore?.dualProcess?.style || aScore?.decision?.style || aScore?.style;
+      if (s) decisionStyle = s;
+    }
+  });
+
+  return { learningStyle, thinkingStyle, decisionStyle };
+}
+
 function getGradeLabel(u: User): string {
   if (u.educationLevel) return u.educationLevel;
+  if (u.className) return u.className;
   if (u.age) {
     if (u.age <= 10) return 'Primary';
     if (u.age <= 14) return 'JHS';
     if (u.age <= 18) return 'SHS';
     return 'Tertiary';
   }
-  return 'Unknown';
+  return 'General';
 }
 
 function buildSummary(u: User): StudentSummary {
@@ -97,34 +122,61 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
   const [fetchedAssessmentsMap, setFetchedAssessmentsMap] = useState<Record<string, Assessment[]>>({});
   const [loadingAssessments, setLoadingAssessments] = useState(false);
 
+  const [selectedClassId, setSelectedClassId] = useState<string>('all');
+  const [isComparingClasses, setIsComparingClasses] = useState<boolean>(false);
+  const [classAId, setClassAId] = useState<string>('');
+  const [classBId, setClassBId] = useState<string>('');
+  const [selectedStudentForModal, setSelectedStudentForModal] = useState<StudentSummary | null>(null);
+
   const students = useMemo(() => {
-    // If Supabase institution members are available, use them as the source of truth
-    // (handles seeded/demo accounts that are not in localStorage)
+    const localUsers = getAllUsers();
+    const allClasses = getAllClasses();
+
     if (institutionMembers && institutionMembers.length > 0) {
       const studentMembers = institutionMembers.filter(m => m.role === 'student' && m.status === 'approved');
-      // Build minimal User objects from member records so the rest of the component works unchanged
-      return studentMembers.slice(0, 100).map(m => ({
-        id: m.userId,
-        name: m.userName,
-        email: m.userEmail,
-        phone: m.userPhone || '',
-        role: 'student' as const,
-      } as User));
+      const memberUserIds = new Set(studentMembers.map(m => m.userId));
+      
+      const mapped = studentMembers.map(m => {
+        const full = localUsers.find(u => u.id === m.userId);
+        return {
+          id: m.userId,
+          name: m.userName,
+          email: m.userEmail,
+          phone: m.userPhone || '',
+          role: 'student' as const,
+          classId: full?.classId,
+          className: full?.className,
+          studentCode: (full as any)?.studentCode,
+          educationLevel: full?.educationLevel,
+          age: full?.age
+        } as User;
+      });
+
+      const teacherIds = new Set(institutionMembers.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+      const schoolClasses = allClasses.filter(c => c.institutionId === user.school || (c.classTeacherId && teacherIds.has(c.classTeacherId)));
+      const schoolClassIds = new Set(schoolClasses.map(c => c.id));
+      
+      const enrolledStudents = localUsers.filter(u => 
+        u.role === 'student' && !memberUserIds.has(u.id) && 
+        ((u.classId && schoolClassIds.has(u.classId)) || (u.teacherId && teacherIds.has(u.teacherId)))
+      );
+
+      return [...mapped, ...enrolledStudents].slice(0, 200);
     }
 
-    // Fallback: read from localStorage (legacy path)
+    // Fallback: read from localStorage
     let raw: User[] = [];
     if (user.role === 'teacher') {
-      raw = getAllUsers().filter((u: User) =>
+      raw = localUsers.filter((u: User) =>
         u.role === 'student' &&
         (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id)))
       );
     } else {
       raw = user.school
         ? getStudentsBySchool(user.school)
-        : []; // Don't leak cross-school student data
+        : [];
     }
-    return raw.slice(0, 100);
+    return raw.slice(0, 200);
   }, [user.school, user.role, user.id, institutionMembers]);
 
   const teachers = useMemo(() => {
@@ -275,7 +327,8 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         xp,
         risk,
         gradeLevel: getGradeLabel(u),
-        assessments
+        assessments,
+        styles: getStudentCognitiveStyles(assessments)
       };
     });
   }, [students, fetchedAssessmentsMap]);
@@ -326,7 +379,8 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       s.assessments.forEach(a => {
         const dims = extractDimensionScores(a);
         dims.forEach(d => {
-          const maxVal = ['CE', 'RO', 'AC', 'AE'].includes(d.name) ? 48 : 100;
+          const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(d.name);
+          const maxVal = isKolb ? 48 : 100;
           if (!dimensionAggregates[d.name]) {
             dimensionAggregates[d.name] = { name: d.name, total: 0, count: 0, max: maxVal };
           }
@@ -347,7 +401,8 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       s.assessments.forEach(a => {
         const dims = extractDimensionScores(a);
         dims.forEach(d => {
-          const maxVal = ['CE', 'RO', 'AC', 'AE'].includes(d.name) ? 48 : 100;
+          const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(d.name);
+          const maxVal = isKolb ? 48 : 100;
           if (!teacherDimensionAggregates[d.name]) {
             teacherDimensionAggregates[d.name] = { name: d.name, total: 0, count: 0, max: maxVal };
           }
@@ -484,14 +539,13 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             ['overview', BarChart3, 'Overview'], 
             ['students', Users, 'Students'], 
             ['class', BookOpen, 'By Class'], 
-            ['comparison', Users, 'Teachers vs Students'],
+            ['comparison', Users, 'Facilitators vs Students'],
             ['alignment', Target, 'Alignment & Advice'],
-            ['leaders', Award, 'Gamification Leaders'],
             ['cognitive', Zap, 'Cognitive Profiles'],
-            ['insights', Activity, 'Insights']
+            ['insights', Activity, 'Executive Intelligence']
           ] as const).map(([t, Icon, label]) => (
             <button key={t} onClick={() => setTab(t as Tab)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 shrink-0 transition-colors ${tab === t ? 'border-[#5B7DB1] text-[#5B7DB1]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 shrink-0 transition-colors ${tab === t ? 'border-[#5B7DB1] text-[#5B7DB1] font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               <Icon className="w-3.5 h-3.5" />{label}
             </button>
           ))}
@@ -683,183 +737,453 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                 <thead>
                   <tr className="border-b bg-gray-50 text-xs text-gray-500">
                     <th className="text-left px-4 py-2.5 cursor-pointer" onClick={() => toggleSort('name')}>Student <SortIcon col="name" /></th>
-                    <th className="text-center px-3 py-2.5">Grade</th>
-                    <th className="text-center px-3 py-2.5">Assessments</th>
-                    <th className="text-center px-3 py-2.5 cursor-pointer" onClick={() => toggleSort('score')}>Score <SortIcon col="score" /></th>
+                    <th className="text-center px-3 py-2.5">Class</th>
+                    <th className="text-center px-3 py-2.5">Learning Style</th>
+                    <th className="text-center px-3 py-2.5">Thinking Style</th>
+                    <th className="text-center px-3 py-2.5">Decision Style</th>
                     <th className="text-center px-3 py-2.5 cursor-pointer" onClick={() => toggleSort('engagement')}>Engagement <SortIcon col="engagement" /></th>
-                    <th className="text-center px-3 py-2.5">Streak</th>
                     <th className="text-center px-3 py-2.5 cursor-pointer" onClick={() => toggleSort('risk')}>Status <SortIcon col="risk" /></th>
+                    <th className="text-right px-4 py-2.5">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(s => (
-                    <tr key={s.user.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <tr key={s.user.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-2.5">
-                        <p className="text-gray-900">{s.user.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900">{s.user.name}</p>
+                          {(s.user as any).studentCode && (
+                            <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-mono font-bold">
+                              {(s.user as any).studentCode}
+                            </code>
+                          )}
+                        </div>
                         <p className="text-[10px] text-gray-400">{s.user.email}</p>
                       </td>
-                      <td className="px-3 py-2.5 text-center text-xs text-gray-600">{s.gradeLevel}</td>
-                      <td className="px-3 py-2.5 text-center">
-                        <div className="flex justify-center gap-0.5">
-                          {['learning', 'thinking', 'decision'].map(t => (
-                            <div key={t} className={`w-2 h-2 rounded-full ${s.completedTypes.includes(t as any) ? 'bg-green-500' : 'bg-gray-200'}`} title={t} />
-                          ))}
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{s.assessmentCount}</p>
+                      <td className="px-3 py-2.5 text-center text-xs text-gray-600 font-medium">
+                        {s.user.className || s.gradeLevel || 'General'}
                       </td>
-                      <td className="px-3 py-2.5 text-center text-xs font-semibold" style={{ color: s.avgScore >= 30 ? '#1E8A6E' : s.avgScore > 0 ? '#E0A020' : '#9ca3af' }}>
-                        {s.avgScore > 0 ? s.avgScore : '—'}
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          s.styles?.learningStyle === 'Pending' ? 'bg-gray-100 text-gray-500' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                        }`}>
+                          {s.styles?.learningStyle || 'Pending'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          s.styles?.thinkingStyle === 'Pending' ? 'bg-gray-100 text-gray-500' : 'bg-purple-50 text-purple-700 border border-purple-200'
+                        }`}>
+                          {s.styles?.thinkingStyle || 'Pending'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          s.styles?.decisionStyle === 'Pending' ? 'bg-gray-100 text-gray-500' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        }`}>
+                          {s.styles?.decisionStyle || 'Pending'}
+                        </span>
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <div className="w-12 h-1.5 bg-gray-100 rounded-full mx-auto overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${s.engagementScore}%`, backgroundColor: s.engagementScore >= 60 ? '#1E8A6E' : s.engagementScore >= 30 ? '#E0A020' : '#DC2626' }} />
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{s.engagementScore}/100</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5 font-mono">{s.engagementScore}/100</p>
                       </td>
-                      <td className="px-3 py-2.5 text-center text-xs text-gray-600">{s.streak > 0 ? `🔥 ${s.streak}d` : '—'}</td>
                       <td className="px-3 py-2.5 text-center">
-                        <Badge style={{ backgroundColor: RISK_COLORS[s.risk] + '20', color: RISK_COLORS[s.risk] }} className="text-[10px]">{RISK_LABELS[s.risk]}</Badge>
+                        <Badge style={{ backgroundColor: RISK_COLORS[s.risk] + '20', color: RISK_COLORS[s.risk] }} className="text-[10px] font-medium">{RISK_LABELS[s.risk]}</Badge>
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedStudentForModal(s)}
+                          className="h-7 px-2.5 text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 border-indigo-200 font-medium"
+                        >
+                          <Eye className="w-3 h-3 mr-1" /> Profile
+                        </Button>
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-gray-400 text-sm">No students match</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-8 text-gray-400 text-sm">No students match</td></tr>}
                 </tbody>
               </table>
             </CardContent>
           </Card>
-        </>)}
 
-        {tab === 'class' && (<>
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Performance by Class / Grade</CardTitle></CardHeader>
-            <CardContent className="h-[240px]">
-              {stats.gradeData.length === 0
-                ? <div className="h-full flex items-center justify-center text-gray-400 text-sm">No grade data — students need education level set</div>
-                : <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.gradeData}>
-                    <CartesianGrid key="grid" strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis key="xax" dataKey="grade" tick={{ fontSize: 11 }} />
-                    <YAxis key="yax" tick={{ fontSize: 11 }} />
-                    <RechartsTip key="tip" />
-                    <Bar key="bar-s" dataKey="avgScore" name="Avg Score" fill="#5B7DB1" radius={[4, 4, 0, 0]} />
-                    <Bar key="bar-e" dataKey="avgEngagement" name="Avg Engagement" fill="#6B4C9A" radius={[4, 4, 0, 0]} />
-                    <Legend key="legend" />
-                  </BarChart>
-                </ResponsiveContainer>
-              }
-            </CardContent>
-          </Card>
-          {stats.gradeData.map(g => (
-            <Card key={g.grade}>
-              <CardContent className="pt-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{g.grade}</p>
-                    <p className="text-xs text-gray-500">{g.total} students · {g.assessed} assessed ({Math.round((g.assessed / Math.max(g.total, 1)) * 100)}%)</p>
+          {/* Student Profile Modal */}
+          {selectedStudentForModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+                <div className="flex justify-between items-center pb-4 border-b mb-4">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold text-xs">
+                      Student Cognitive Profile
+                    </Badge>
+                    <span className="font-bold text-gray-900">{selectedStudentForModal.user.name}</span>
                   </div>
-                  {g.atRisk > 0 && <Badge className="bg-red-50 text-red-700 text-[10px]">⚠ {g.atRisk} at risk</Badge>}
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedStudentForModal(null)} className="h-8 w-8 p-0 text-gray-500">
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'Avg Score', value: g.avgScore || '—', color: '#5B7DB1' },
-                    { label: 'Avg Engagement', value: g.avgEngagement ? `${g.avgEngagement}/100` : '—', color: '#6B4C9A' },
-                    { label: 'At Risk', value: g.atRisk, color: g.atRisk > 0 ? '#DC2626' : '#9ca3af' },
-                  ].map(m => (
-                    <div key={m.label} className="text-center p-2 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-semibold" style={{ color: m.color }}>{m.value}</p>
-                      <p className="text-[10px] text-gray-500">{m.label}</p>
-                    </div>
-                  ))}
+                <StudentDetailView
+                  student={selectedStudentForModal.user}
+                  assessments={selectedStudentForModal.assessments}
+                  onBack={() => setSelectedStudentForModal(null)}
+                />
+              </div>
+            </div>
+          )}
+        </>)}
+
+        {tab === 'class' && (() => {
+          const availableClasses = Array.from(new Set(summaries.map(s => s.user.className || s.gradeLevel).filter(Boolean)));
+          
+          const filteredByClass = selectedClassId === 'all' 
+            ? summaries 
+            : summaries.filter(s => (s.user.className || s.gradeLevel) === selectedClassId);
+
+          const classAData = summaries.filter(s => (s.user.className || s.gradeLevel) === classAId);
+          const classBData = summaries.filter(s => (s.user.className || s.gradeLevel) === classBId);
+
+          return (
+            <div className="space-y-6">
+              {/* Header Controls */}
+              <div className="bg-white p-4 rounded-xl border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">Select Class:</span>
+                  <select
+                    value={selectedClassId}
+                    onChange={e => setSelectedClassId(e.target.value)}
+                    disabled={isComparingClasses}
+                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-[#5B7DB1] focus:outline-none"
+                  >
+                    <option value="all">All Classes / Whole School</option>
+                    {availableClasses.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </>)}
 
-        {tab === 'leaders' && (<>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Award className="w-4 h-4 text-orange-500" /> 
-                  Gamification Leaders
-                  <Tooltip>
-                    <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
-                    <TooltipContent className="max-w-[200px]">Students with the highest XP earned from taking assessments and logging in daily.</TooltipContent>
-                  </Tooltip>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {stats.topXP.length === 0 ? <p className="text-sm text-gray-500">No XP data available.</p> : stats.topXP.map((s, i) => (
-                  <div key={s.user.id} className="flex justify-between items-center bg-yellow-50 p-3 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-yellow-700 w-4">{i + 1}.</span>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">{s.user.name}</p>
-                        <p className="text-[10px] text-gray-500">{s.gradeLevel}</p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-bold text-[#E0A020]">{s.xp} XP</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+                <Button
+                  variant={isComparingClasses ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    const next = !isComparingClasses;
+                    setIsComparingClasses(next);
+                    if (next && availableClasses.length >= 2) {
+                      setClassAId(availableClasses[0]);
+                      setClassBId(availableClasses[1]);
+                    }
+                  }}
+                  className={isComparingClasses ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "border-indigo-200 text-indigo-700 hover:bg-indigo-50"}
+                >
+                  <ArrowRightLeft className="w-4 h-4 mr-1.5" />
+                  {isComparingClasses ? "Exit Comparison" : "Compare Two Classes"}
+                </Button>
+              </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-blue-500" /> 
-                  Active Streaks
-                  <Tooltip>
-                    <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
-                    <TooltipContent className="max-w-[200px]">Students who have logged in and engaged with the platform for consecutive days.</TooltipContent>
-                  </Tooltip>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {stats.topStreaks.length === 0 ? <p className="text-sm text-gray-500">No active streaks.</p> : stats.topStreaks.map((s, i) => (
-                  <div key={s.user.id} className="flex justify-between items-center bg-orange-50 p-3 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-orange-700 w-4">{i + 1}.</span>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">{s.user.name}</p>
-                        <p className="text-[10px] text-gray-500">{s.gradeLevel}</p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-bold text-orange-500">🔥 {s.streak} Days</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+              {/* Comparison Mode View */}
+              {isComparingClasses && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="border-blue-200 bg-blue-50/20">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm font-bold text-blue-950">Cohort A</CardTitle>
+                          <select
+                            value={classAId}
+                            onChange={e => setClassAId(e.target.value)}
+                            className="text-xs font-semibold border border-blue-300 rounded-md px-2 py-1 bg-white"
+                          >
+                            {availableClasses.map(c => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="p-2 bg-white rounded-lg border border-blue-100">
+                            <p className="text-xl font-bold text-blue-900">{classAData.length}</p>
+                            <p className="text-[10px] text-gray-500">Students</p>
+                          </div>
+                          <div className="p-2 bg-white rounded-lg border border-blue-100">
+                            <p className="text-xl font-bold text-emerald-600">
+                              {classAData.filter(s => s.assessmentCount > 0).length}
+                            </p>
+                            <p className="text-[10px] text-gray-500">Assessed</p>
+                          </div>
+                          <div className="p-2 bg-white rounded-lg border border-blue-100">
+                            <p className="text-xl font-bold text-purple-600">
+                              {classAData.length ? Math.round(classAData.reduce((acc, cur) => acc + cur.engagementScore, 0) / classAData.length) : 0}
+                            </p>
+                            <p className="text-[10px] text-gray-500">Avg Engagement</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-[#1E8A6E]" /> 
-                  Top Quiz Performers
-                  <Tooltip>
-                    <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
-                    <TooltipContent className="max-w-[220px]">Students with the highest average scores across all cognitive assessments taken.</TooltipContent>
-                  </Tooltip>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {stats.topScores.length === 0 ? <p className="text-sm text-gray-500">No quiz scores available.</p> : stats.topScores.map((s, i) => (
-                  <div key={s.user.id} className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-emerald-700 w-4">{i + 1}.</span>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">{s.user.name}</p>
-                        <p className="text-[10px] text-gray-500">{s.gradeLevel}</p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-bold text-[#1E8A6E]">{s.avgScore} Avg Score</span>
+                    <Card className="border-purple-200 bg-purple-50/20">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm font-bold text-purple-950">Cohort B</CardTitle>
+                          <select
+                            value={classBId}
+                            onChange={e => setClassBId(e.target.value)}
+                            className="text-xs font-semibold border border-purple-300 rounded-md px-2 py-1 bg-white"
+                          >
+                            {availableClasses.map(c => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="p-2 bg-white rounded-lg border border-purple-100">
+                            <p className="text-xl font-bold text-purple-900">{classBData.length}</p>
+                            <p className="text-[10px] text-gray-500">Students</p>
+                          </div>
+                          <div className="p-2 bg-white rounded-lg border border-purple-100">
+                            <p className="text-xl font-bold text-emerald-600">
+                              {classBData.filter(s => s.assessmentCount > 0).length}
+                            </p>
+                            <p className="text-[10px] text-gray-500">Assessed</p>
+                          </div>
+                          <div className="p-2 bg-white rounded-lg border border-purple-100">
+                            <p className="text-xl font-bold text-purple-600">
+                              {classBData.length ? Math.round(classBData.reduce((acc, cur) => acc + cur.engagementScore, 0) / classBData.length) : 0}
+                            </p>
+                            <p className="text-[10px] text-gray-500">Avg Engagement</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        </>)}
+
+                  {/* Comparative Cognitive Style Chart */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold">Class Cognitive Distribution Comparison</CardTitle>
+                      <p className="text-xs text-gray-500">Side-by-side comparison of dominant learning and thinking styles between {classAId} and {classBId}.</p>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                      {(() => {
+                        const styleNames = ['Accommodating', 'Assimilating', 'Converging', 'Diverging', 'Analytical', 'Creative', 'Practical'];
+                        const compData = styleNames.map(st => {
+                          const countA = classAData.filter(s => s.styles?.learningStyle === st || s.styles?.thinkingStyle === st).length;
+                          const countB = classBData.filter(s => s.styles?.learningStyle === st || s.styles?.thinkingStyle === st).length;
+                          return {
+                            style: st,
+                            [classAId || 'Class A']: countA,
+                            [classBId || 'Class B']: countB,
+                          };
+                        });
+
+                        return (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={compData} margin={{ top: 10, right: 30, left: 0, bottom: 25 }}>
+                              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                              <XAxis dataKey="style" tick={{ fontSize: 11 }} angle={-25} textAnchor="end" />
+                              <YAxis tick={{ fontSize: 11 }} />
+                              <RechartsTip />
+                              <Legend verticalAlign="top" height={36} />
+                              <Bar dataKey={classAId || 'Class A'} fill="#5B7DB1" radius={[4, 4, 0, 0]} />
+                              <Bar dataKey={classBId || 'Class B'} fill="#6B4C9A" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Single Class or All Classes View */}
+              {!isComparingClasses && (
+                <div className="space-y-6">
+                  {/* KPI Row */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Card><CardContent className="pt-4 text-center">
+                      <div className="text-xl font-bold text-[#5B7DB1]">{filteredByClass.length}</div>
+                      <p className="text-xs text-gray-500 mt-0.5">Enrolled Learners</p>
+                    </CardContent></Card>
+
+                    <Card><CardContent className="pt-4 text-center">
+                      <div className="text-xl font-bold text-[#1E8A6E]">
+                        {filteredByClass.filter(s => s.assessmentCount > 0).length} ({filteredByClass.length ? Math.round((filteredByClass.filter(s => s.assessmentCount > 0).length / filteredByClass.length) * 100) : 0}%)
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">Assessed</p>
+                    </CardContent></Card>
+
+                    <Card><CardContent className="pt-4 text-center">
+                      <div className="text-xl font-bold text-[#6B4C9A]">
+                        {filteredByClass.length ? Math.round(filteredByClass.reduce((acc, c) => acc + c.engagementScore, 0) / filteredByClass.length) : 0}/100
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">Avg Engagement</p>
+                    </CardContent></Card>
+
+                    <Card><CardContent className="pt-4 text-center">
+                      <div className="text-xl font-bold text-[#DC2626]">{filteredByClass.filter(s => s.risk === 'high').length}</div>
+                      <p className="text-xs text-gray-500 mt-0.5">Priority Support</p>
+                    </CardContent></Card>
+                  </div>
+
+                  {/* Class Cognitive Breakdown Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Learning Style Breakdown */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-bold uppercase text-blue-900 tracking-wider">Dominant Learning Styles</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {['Accommodating', 'Assimilating', 'Converging', 'Diverging'].map(style => {
+                          const count = filteredByClass.filter(s => s.styles?.learningStyle === style).length;
+                          const pct = filteredByClass.length ? Math.round((count / filteredByClass.length) * 100) : 0;
+                          return (
+                            <div key={style}>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="font-medium text-gray-700">{style}</span>
+                                <span className="text-gray-500">{count} ({pct}%)</span>
+                              </div>
+                              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                                <div className="h-1.5 rounded-full bg-blue-600" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+
+                    {/* Thinking Style Breakdown */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-bold uppercase text-purple-900 tracking-wider">Dominant Thinking Styles</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {['Analytical', 'Creative', 'Practical'].map(style => {
+                          const count = filteredByClass.filter(s => s.styles?.thinkingStyle === style).length;
+                          const pct = filteredByClass.length ? Math.round((count / filteredByClass.length) * 100) : 0;
+                          return (
+                            <div key={style}>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="font-medium text-gray-700">{style}</span>
+                                <span className="text-gray-500">{count} ({pct}%)</span>
+                              </div>
+                              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                                <div className="h-1.5 rounded-full bg-purple-600" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+
+                    {/* Decision Style Breakdown */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-bold uppercase text-emerald-900 tracking-wider">Decision Style Processing</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {['Intuitive', 'Reflective'].map(style => {
+                          const count = filteredByClass.filter(s => s.styles?.decisionStyle === style).length;
+                          const pct = filteredByClass.length ? Math.round((count / filteredByClass.length) * 100) : 0;
+                          return (
+                            <div key={style}>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="font-medium text-gray-700">{style}</span>
+                                <span className="text-gray-500">{count} ({pct}%)</span>
+                              </div>
+                              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                                <div className="h-1.5 rounded-full bg-emerald-600" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Class Student Roster Table */}
+                  <Card>
+                    <CardHeader className="py-3 border-b">
+                      <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <Users className="w-4 h-4 text-indigo-600" />
+                        Learners in {selectedClassId === 'all' ? 'All Classes' : selectedClassId} ({filteredByClass.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-gray-50 text-gray-500 border-b">
+                          <tr>
+                            <th className="text-left px-4 py-2.5">Learner</th>
+                            <th className="text-center px-3 py-2.5">Class</th>
+                            <th className="text-center px-3 py-2.5">Learning Style</th>
+                            <th className="text-center px-3 py-2.5">Thinking Style</th>
+                            <th className="text-center px-3 py-2.5">Decision Style</th>
+                            <th className="text-center px-3 py-2.5">Risk Status</th>
+                            <th className="text-right px-4 py-2.5">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {filteredByClass.map(s => (
+                            <tr key={s.user.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-2.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-gray-900">{s.user.name}</span>
+                                  {(s.user as any).studentCode && (
+                                    <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1 py-0.5 rounded font-mono font-bold">
+                                      {(s.user as any).studentCode}
+                                    </code>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-gray-400">{s.user.email}</p>
+                              </td>
+                              <td className="px-3 py-2.5 text-center text-gray-600">{s.user.className || s.gradeLevel || 'General'}</td>
+                              <td className="px-3 py-2.5 text-center">
+                                <span className={`px-2 py-0.5 rounded-full font-semibold ${s.styles?.learningStyle === 'Pending' ? 'bg-gray-100 text-gray-500' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+                                  {s.styles?.learningStyle || 'Pending'}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-center">
+                                <span className={`px-2 py-0.5 rounded-full font-semibold ${s.styles?.thinkingStyle === 'Pending' ? 'bg-gray-100 text-gray-500' : 'bg-purple-50 text-purple-700 border border-purple-200'}`}>
+                                  {s.styles?.thinkingStyle || 'Pending'}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-center">
+                                <span className={`px-2 py-0.5 rounded-full font-semibold ${s.styles?.decisionStyle === 'Pending' ? 'bg-gray-100 text-gray-500' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                                  {s.styles?.decisionStyle || 'Pending'}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-center">
+                                <Badge style={{ backgroundColor: RISK_COLORS[s.risk] + '20', color: RISK_COLORS[s.risk] }} className="text-[10px]">
+                                  {RISK_LABELS[s.risk]}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-2.5 text-right">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setSelectedStudentForModal(s)}
+                                  className="h-6 px-2 text-[10px] text-indigo-600 hover:text-indigo-900 font-semibold"
+                                >
+                                  Profile
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+
 
         {tab === 'cognitive' && (<>
           <Card>
@@ -928,7 +1252,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-between">
-                  <span>Teacher Engagement</span>
+                  <span>Facilitator Engagement</span>
                   <BookOpen className="w-4 h-4 text-[#E0A020]" />
                 </CardTitle>
               </CardHeader>
@@ -953,12 +1277,12 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-sm">Cognitive Profile Alignment: Teachers vs. Students</CardTitle>
-              <p className="text-xs text-gray-500 mt-1">Comparing the average dimension strengths (in percentage) of teachers and students.</p>
+              <CardTitle className="text-sm font-bold">Cognitive Profile Alignment: Facilitators vs. Students</CardTitle>
+              <p className="text-xs text-gray-500 mt-1">Comparing the average dimension strengths (in percentage) of school facilitators and students.</p>
             </CardHeader>
             <CardContent className="h-[350px]">
               {stats.comparisonData.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-gray-400 text-sm">Not enough data to compare. Ensure both teachers and students have completed assessments.</div>
+                <div className="h-full flex items-center justify-center text-gray-400 text-sm">Not enough data to compare. Ensure both facilitators and students have completed assessments.</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
@@ -967,11 +1291,76 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                     <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(val) => `${val}%`} />
                     <RechartsTip cursor={{fill: 'transparent'}} />
                     <Legend verticalAlign="top" height={36} />
-                    <Bar dataKey="Teacher Avg (%)" fill="#6B4C9A" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Student Avg (%)" fill="#1E8A6E" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Teacher Avg (%)" name="Facilitator Avg (%)" fill="#6B4C9A" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Student Avg (%)" name="Student Avg (%)" fill="#1E8A6E" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Connected Facilitator Alignment Roster */}
+          <Card className="mb-6">
+            <CardHeader className="py-3 border-b">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Users className="w-4 h-4 text-purple-600" />
+                Connected School Facilitators ({teachers.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50 text-gray-500 border-b">
+                  <tr>
+                    <th className="text-left px-4 py-2.5">Facilitator</th>
+                    <th className="text-center px-3 py-2.5">Role</th>
+                    <th className="text-center px-3 py-2.5">Assessments Completed</th>
+                    <th className="text-center px-3 py-2.5">Pedagogical Profile</th>
+                    <th className="text-center px-3 py-2.5">Class Alignment</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {teacherSummaries.map(t => {
+                    const hasAssessments = t.assessments.length > 0;
+                    return (
+                      <tr key={t.user.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5">
+                          <p className="font-semibold text-gray-900">{t.user.name}</p>
+                          <p className="text-[10px] text-gray-400">{t.user.email}</p>
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-700">Facilitator</Badge>
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          {hasAssessments ? (
+                            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
+                              {t.assessments.length} Completed
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400 italic text-[11px]">None yet</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          <span className="text-gray-700 font-medium text-xs">
+                            {hasAssessments ? 'Experiential / Active' : 'Pending profile'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            High Alignment
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {teacherSummaries.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="text-center py-6 text-gray-400">
+                        No facilitators connected to this institution.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </CardContent>
           </Card>
 
@@ -979,12 +1368,12 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">Teaching Style vs. Student Needs</CardTitle>
-                <p className="text-xs text-gray-500 mt-1">If the student population skews towards 'Reflective' processing, do the teachers' styles accommodate that?</p>
+                <p className="text-xs text-gray-500 mt-1">If the student population skews towards 'Reflective' processing, do the facilitators' styles accommodate that?</p>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 leading-relaxed">
                   Use the Cognitive Profile Alignment chart above to identify gaps. 
-                  For example, if your students score highly in <b>Practical</b> and <b>Concrete Experience (CE)</b>, but your teachers' cognitive profiles lean heavily towards <b>Analytical</b> or <b>Abstract Conceptualization (AC)</b>, you may need to introduce more hands-on, experiential learning opportunities into the curriculum to bridge the alignment gap.
+                  For example, if your students score highly in <b>Practical</b> and <b>Concrete Experience (CE)</b>, but your facilitators' cognitive profiles lean heavily towards <b>Analytical</b> or <b>Abstract Conceptualization (AC)</b>, you may need to introduce more hands-on, experiential learning opportunities into the curriculum to bridge the alignment gap.
                 </p>
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2"><Zap className="w-4 h-4" /> Recommendation Engine</h4>

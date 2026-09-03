@@ -17,7 +17,9 @@ export const PWAInstallPrompt: React.FC = () => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowPrompt(true);
+      if (localStorage.getItem('jotminds_pwa_dismissed') !== 'true') {
+        setShowPrompt(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -67,7 +69,10 @@ export const PWAInstallPrompt: React.FC = () => {
           <Download className="w-3.5 h-3.5 mr-1" /> Install
         </Button>
         <button
-          onClick={() => setShowPrompt(false)}
+          onClick={() => {
+            setShowPrompt(false);
+            localStorage.setItem('jotminds_pwa_dismissed', 'true');
+          }}
           className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors"
         >
           <X className="w-4 h-4" />

@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
-  Users, Upload, UserPlus, AlertCircle, CheckCircle2, Trash2, Mail, Clock, RefreshCw, Loader, BarChart3, Crown, ShieldMinus, Brain, Download, ChevronDown, ChevronRight
+  Users, Upload, UserPlus, AlertCircle, CheckCircle2, Trash2, Mail, Clock, RefreshCw, Loader, BarChart3, Crown, ShieldMinus, Brain, Download, ChevronDown, ChevronRight, GraduationCap, X
 } from 'lucide-react';
 import { generatePDF } from '../../utils/pdfGenerator';
 import { formatAssessmentType } from '../InstitutionReporting';
@@ -20,7 +20,7 @@ import {
   getInstitutionMembers,
   deleteInstitutionInvitation
 } from '../../utils/institution';
-import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../../utils/storage';
+import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, saveTeacherAssignment, saveClass } from '../../utils/storage';
 
 interface InstitutionMembersProps {
   institution: Institution;
@@ -84,6 +84,45 @@ export function InstitutionMembers({
       else next.add(group);
       return next;
     });
+  };
+
+  const [assignClassTeacher, setAssignClassTeacher] = useState<InstitutionMember | null>(null);
+  const [selectedAssignClassId, setSelectedAssignClassId] = useState<string>('');
+  const [selectedAssignRole, setSelectedAssignRole] = useState<'class_teacher' | 'subject_teacher' | 'substitute' | 'assistant'>('class_teacher');
+  const [selectedAssignSubject, setSelectedAssignSubject] = useState<string>('');
+
+  const handleSaveClassAssignment = () => {
+    if (!assignClassTeacher || !selectedAssignClassId) {
+      toast.error('Please select a class');
+      return;
+    }
+    const allClasses = getAllClasses();
+    const targetClass = allClasses.find(c => c.id === selectedAssignClassId);
+    if (!targetClass) {
+      toast.error('Class not found');
+      return;
+    }
+
+    // Save teacher assignment
+    saveTeacherAssignment({
+      id: `ta_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      teacherId: assignClassTeacher.userId,
+      classId: selectedAssignClassId,
+      role: selectedAssignRole,
+      subjectId: selectedAssignRole === 'subject_teacher' ? selectedAssignSubject : undefined
+    });
+
+    // If assigned as class_teacher, also set targetClass.classTeacherId
+    if (selectedAssignRole === 'class_teacher') {
+      targetClass.classTeacherId = assignClassTeacher.userId;
+      saveClass(targetClass);
+    }
+
+    toast.success(`Assigned ${assignClassTeacher.userName} to ${targetClass.name} (${selectedAssignRole.replace('_', ' ')})`);
+    setAssignClassTeacher(null);
+    setSelectedAssignClassId('');
+    setSelectedAssignSubject('');
+    if (onRefresh) onRefresh();
   };
 
   // Reset pagination when search/filter changes
@@ -334,24 +373,24 @@ export function InstitutionMembers({
                           Joined {new Date(m.joinedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                       </td>
-                      {/* Assessments cell — hidden on mobile */}
+                      {/* Assessments cell — single percentage bar */}
                       <td className="px-3 py-2.5 hidden lg:table-cell">
                         {(() => {
                           const userAssessments = assessments.length > 0 ? assessments.filter(a => a.userId === m.userId) : getAssessmentsByUserId(m.userId);
-                          const completed = userAssessments.filter((a: any) => a.completedAt);
+                          const isDone = userAssessments.some((a: any) => a.completedAt || a.completed || a.status === 'completed');
                           return (
-                            <div className="flex items-center gap-1.5">
-                              <Badge variant="secondary" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">
-                                {completed.length} Done
-                              </Badge>
-                              {completed.slice(0, 2).map((a: any, i: number) => (
-                                <Badge key={i} variant="outline" className="text-[10px] text-[#6B4C9A] border-[#6B4C9A]/20">
-                                  {formatAssessmentType(a.type)}
-                                </Badge>
-                              ))}
-                              {completed.length > 2 && (
-                                <span className="text-[10px] text-gray-400">+{completed.length - 2}</span>
-                              )}
+                            <div className="w-28 space-y-1">
+                              <div className="flex justify-between items-center text-[10px]">
+                                <span className={isDone ? "text-emerald-700 font-bold" : "text-gray-400 font-medium"}>
+                                  {isDone ? "100% Completed" : "0% Pending"}
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${isDone ? "bg-emerald-500" : "bg-gray-200"}`}
+                                  style={{ width: isDone ? "100%" : "0%" }}
+                                />
+                              </div>
                             </div>
                           );
                         })()}
@@ -359,6 +398,23 @@ export function InstitutionMembers({
                       {/* Actions cell */}
                       <td className="px-3 py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {/* Assign Class button */}
+                          {(m.role === 'teacher' || m.role === 'admin') && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-indigo-600 hover:bg-indigo-50 h-7 px-2 text-xs flex items-center gap-1"
+                              onClick={() => {
+                                setAssignClassTeacher(m);
+                                const available = getAllClasses().filter(c => c.institutionId === institution.id || !c.institutionId);
+                                if (available.length > 0) setSelectedAssignClassId(available[0].id);
+                              }}
+                              title="Assign to Class"
+                            >
+                              <GraduationCap className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Assign Class</span>
+                            </Button>
+                          )}
                           {/* Export Report button */}
                           {(() => {
                             const completedAssessments = getAssessmentsByUserId(m.userId).filter((a: any) => a.completedAt);
@@ -714,6 +770,83 @@ export function InstitutionMembers({
           
           {/* Teacher group */}
           {teacherMembers.length > 0 && renderRoleGroup(teacherMembers, 'Teachers', 'teacher', ROLE_COLORS.teacher)}
+        </div>
+      )}
+
+      {/* Assign Teacher to Class Modal */}
+      {assignClassTeacher && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-gray-100 animate-in fade-in">
+            <div className="flex justify-between items-center pb-3 border-b mb-4">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-bold text-gray-900">Assign Teacher to Class</h3>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setAssignClassTeacher(null)} className="h-8 w-8 p-0 text-gray-400">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Faculty Member</p>
+                <p className="text-sm font-bold text-gray-900">{assignClassTeacher.userName}</p>
+                <p className="text-xs text-gray-400">{assignClassTeacher.userEmail}</p>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1">Select Target Class</label>
+                <select
+                  value={selectedAssignClassId}
+                  onChange={e => setSelectedAssignClassId(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                >
+                  <option value="">-- Choose Class --</option>
+                  {getAllClasses()
+                    .filter(c => c.institutionId === institution.id || !c.institutionId)
+                    .map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} {c.educationLevel ? `(${c.educationLevel})` : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1">Teaching Role in Class</label>
+                <select
+                  value={selectedAssignRole}
+                  onChange={e => setSelectedAssignRole(e.target.value as any)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                >
+                  <option value="class_teacher">Class Teacher / Form Tutor</option>
+                  <option value="subject_teacher">Subject Teacher</option>
+                  <option value="substitute">Substitute Teacher</option>
+                  <option value="assistant">Assistant / Co-Teacher</option>
+                </select>
+              </div>
+
+              {selectedAssignRole === 'subject_teacher' && (
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Subject Taught</label>
+                  <Input
+                    placeholder="e.g. Mathematics, Integrated Science, English"
+                    value={selectedAssignSubject}
+                    onChange={e => setSelectedAssignSubject(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6 pt-3 border-t">
+              <Button variant="outline" size="sm" onClick={() => setAssignClassTeacher(null)}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveClassAssignment} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                Confirm Assignment
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

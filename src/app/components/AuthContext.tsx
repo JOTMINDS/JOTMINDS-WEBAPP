@@ -3,6 +3,7 @@ import { createClient } from '../utils/supabase/client';
 import { setAuthToken, clearAuthToken, getSession } from '../utils/api';
 
 import { User } from '../types';
+import { getCurrentUser } from '../utils/storage';
 
 interface AuthContextType {
   user: User | null;
@@ -37,7 +38,7 @@ const enrichUserWithAge = (userData: any): User => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => getCurrentUser());
   const [impersonatedUser, setImpersonatedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -99,7 +100,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return null;
         }
       } else {
-        console.log('[AuthContext] No access token found');
+        console.log('[AuthContext] No access token found, checking local storage user');
+        const localUser = getCurrentUser();
+        if (localUser) {
+          setUser(localUser);
+          return localUser;
+        }
         setUser(null);
         setAuthToken(null);
         return null;
@@ -130,9 +136,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAuthToken(session.access_token);
         refreshUser();
       } else {
-        console.log('[AuthContext] No session, clearing user');
-        setUser(null);
-        setAuthToken(null);
+        if (_event === 'SIGNED_OUT') {
+          console.log('[AuthContext] Explicit signed out event, clearing user');
+          setUser(null);
+          setAuthToken(null);
+        } else {
+          const localUser = getCurrentUser();
+          if (localUser) {
+            console.log('[AuthContext] Preserving active local user in fallback');
+            setUser(localUser);
+          } else {
+            setUser(null);
+            setAuthToken(null);
+          }
+        }
       }
     });
 

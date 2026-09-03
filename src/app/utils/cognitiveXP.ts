@@ -194,8 +194,8 @@ export function extractDimensionScores(assessment: any): { name: string; score: 
   if (!s) return result;
 
   // Kolb learning style
-  if (s.kolb?.scores) {
-    const k = s.kolb.scores;
+  if (s.kolb?.scores || s.learning?.scores) {
+    const k = s.kolb?.scores || s.learning?.scores;
     if (k.CE != null) result.push({ name: 'Concrete Experience', score: k.CE });
     if (k.RO != null) result.push({ name: 'Reflective Observation', score: k.RO });
     if (k.AC != null) result.push({ name: 'Abstract Conceptualization', score: k.AC });
@@ -203,8 +203,8 @@ export function extractDimensionScores(assessment: any): { name: string; score: 
   }
 
   // Sternberg thinking style
-  if (s.sternberg?.scores) {
-    const st = s.sternberg.scores;
+  if (s.sternberg?.scores || s.thinking?.scores) {
+    const st = s.sternberg?.scores || s.thinking?.scores;
     if (st.analytical != null) result.push({ name: 'Analytical', score: st.analytical });
     if (st.creative != null) result.push({ name: 'Creative', score: st.creative });
     if (st.practical != null) result.push({ name: 'Practical', score: st.practical });
@@ -253,6 +253,16 @@ export function extractDimensionScores(assessment: any): { name: string; score: 
     if (kids.analytical != null) result.push({ name: 'Analytical', score: kids.analytical });
     if (kids.practical != null) result.push({ name: 'Practical', score: kids.practical });
     if (kids.reflective != null) result.push({ name: 'Reflective', score: kids.reflective });
+  }
+
+  // JTIA Teaching Insights
+  if (s.jtia?.scores || s.teaching?.scores) {
+    const j = s.jtia?.scores || s.teaching?.scores || {};
+    if (j.facilitator != null) result.push({ name: 'Facilitator', score: j.facilitator });
+    if (j.expert != null) result.push({ name: 'Expert', score: j.expert });
+    if (j.formalAuthority != null) result.push({ name: 'Formal Authority', score: j.formalAuthority });
+    if (j.personalModel != null) result.push({ name: 'Personal Model', score: j.personalModel });
+    if (j.delegator != null) result.push({ name: 'Delegator', score: j.delegator });
   }
 
   // Teaching style

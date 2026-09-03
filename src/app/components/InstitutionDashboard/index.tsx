@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import {
-  ArrowLeft, Building2, Users, BarChart3, Download, Settings, Shield, Loader, LogOut, Brain, RefreshCw, BookOpen, Clock, GraduationCap
+  ArrowLeft, Building2, Users, BarChart3, Download, Settings, Shield, Loader, LogOut, Brain, RefreshCw, BookOpen, Clock, GraduationCap, Award, Sparkles
 } from 'lucide-react';
 import { DashboardLayout } from '../ui/dashboard-layout';
 import { NavGroup } from '../ui/collapsible-sidebar';
@@ -24,7 +24,8 @@ import {
   getInstitutionForMember,
   createInstitution,
   promoteMember,
-  demoteMember
+  demoteMember,
+  resolveSchoolLocation
 } from '../../utils/institution';
 import { getAllUsers } from '../../utils/storage';
 import { getAllAssessmentResults } from '../../utils/api';
@@ -41,6 +42,9 @@ import { BulkUploadModal } from './BulkUploadModal';
 import { TeacherManagementModal } from './TeacherManagementModal';
 import ClassManagement from './ClassManagement';
 import { CentralStudentManagement } from '../CentralStudentManagement';
+import { SchoolLessonPlanningView } from './SchoolLessonPlanningView';
+import { AdministratorSettingsView } from './AdministratorSettingsView';
+import { LessonCopilotDrawer } from '../lessonPlanner/LessonCopilotDrawer';
 // Shared siblings
 import { SchoolAnalyticsDashboard } from '../SchoolAnalyticsDashboard';
 import { InstitutionReporting } from '../InstitutionReporting';
@@ -56,7 +60,7 @@ interface InstitutionDashboardProps {
   onProfileUpdate?: () => void;
 }
 
-type Tab = 'overview' | 'class_management' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile';
+type Tab = 'overview' | 'class_management' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile' | 'lesson_planning';
 
 export function InstitutionDashboard({
   user,
@@ -90,6 +94,7 @@ export function InstitutionDashboard({
   const [isCodeManagerOpen, setIsCodeManagerOpen] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   // Initialize Institution
   useEffect(() => {
@@ -105,13 +110,14 @@ export function InstitutionDashboard({
           inst = await getInstitutionForMember(user.id);
         }
         if (!inst) {
-          // Auto-create a stub institution to avoid blocking the user
+          // Auto-create a stub institution with resolved location to avoid blocking the user
+          const loc = resolveSchoolLocation(null, user.organizationName || user.school);
           const newInst = await createInstitution({
-            name: user.organizationName || 'My School',
-            type: 'Other',
-            region: 'Not specified',
-            district: 'Not specified',
-            address: 'Not specified',
+            name: user.organizationName || user.school || 'My School',
+            type: (user.educationLevel as any) || 'SHS',
+            region: loc.region,
+            district: loc.district,
+            address: loc.address || `${user.organizationName || user.school || 'School'} Campus, Accra`,
             email: user.email,
             phone: user.phone || '',
             adminName: user.name,
@@ -126,6 +132,27 @@ export function InstitutionDashboard({
           setLoading(false);
           return;
         }
+
+        // Self-heal institution if region or district was stored as "Not specified" or blank
+        const isNotSpecified = (val?: string) => !val || val.trim().toLowerCase() === 'not specified' || val.trim().toLowerCase() === 'n/a';
+        if (isNotSpecified(inst.region) || isNotSpecified(inst.district)) {
+          const loc = resolveSchoolLocation(inst, inst.name || user.school);
+          const healedInst: Institution = {
+            ...inst,
+            region: isNotSpecified(inst.region) ? loc.region : inst.region,
+            district: isNotSpecified(inst.district) ? loc.district : inst.district,
+            address: isNotSpecified(inst.address) ? (loc.address || `${inst.name} Campus`) : inst.address,
+            updatedAt: new Date().toISOString()
+          };
+          try {
+            await saveInstitution(healedInst);
+          } catch (e) {
+            console.warn('Failed to save healed institution to remote DB:', e);
+          }
+          localStorage.setItem('jotminds_institution', JSON.stringify(healedInst));
+          inst = healedInst;
+        }
+
         setInstitution(inst);
       } catch (err) {
         console.error('Failed to initialize institution:', err);
@@ -349,12 +376,13 @@ export function InstitutionDashboard({
       ]
     },
     {
-      groupLabel: 'B. TEACHING & ANALYTICS',
+      groupLabel: 'B. TEACHING & ACADEMICS',
       items: [
-        { id: 'teacher_management', label: 'Teacher Roster', icon: Users },
-        { id: 'class_management', label: 'Class Approvals', icon: GraduationCap },
+        { id: 'teacher_management', label: 'Teacher Management', icon: Users },
+        { id: 'class_management', label: 'Class Management', icon: GraduationCap },
+        { id: 'lesson_planning', label: 'Lesson Planning', icon: BookOpen },
         { id: 'reports', label: 'Reports', icon: Download },
-        { id: 'training', label: 'Training', icon: BookOpen },
+        { id: 'training', label: 'Training & Alignment', icon: Award },
       ]
     },
     {
@@ -394,7 +422,7 @@ export function InstitutionDashboard({
           >
             {institution.isActive ? '● Active' : '● Inactive'}
           </Badge>
-          <span className="text-xs text-gray-500">{institution.type} · {institution.region}</span>
+          <span className="text-xs text-gray-500">{institution.type} · {resolveSchoolLocation(institution).displayLocation}</span>
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -437,6 +465,7 @@ export function InstitutionDashboard({
             handleShare={handleShare}
             setTab={setTab}
             onManageCodes={isPrimaryAdmin ? () => setIsCodeManagerOpen(true) : undefined}
+            onInstitutionUpdate={(updated) => setInstitution(updated)}
           />
         )}
 
@@ -496,8 +525,16 @@ export function InstitutionDashboard({
           </div>
         )}
         
+        {tab === 'lesson_planning' && (
+          <SchoolLessonPlanningView
+            institutionId={institution.id}
+            members={members}
+            onOpenTeacherProfile={setPerformanceTargetId}
+          />
+        )}
+
         {tab === 'training' && (
-          <TrainingPage />
+          <TrainingPage institutionId={institution.id} members={members} />
         )}
 
         {tab === 'reports' && (
@@ -505,9 +542,11 @@ export function InstitutionDashboard({
         )}
 
         {tab === 'profile' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px] relative">
-            <ProfileSettingsModal isOpen={true} onClose={() => setTab('overview')} user={user} onProfileUpdate={onProfileUpdate || (() => {})} />
-          </div>
+          <AdministratorSettingsView
+            user={user}
+            institution={institution}
+            onProfileUpdate={onProfileUpdate || (() => {})}
+          />
         )}
 
         {tab === 'settings' && (
@@ -603,6 +642,26 @@ export function InstitutionDashboard({
           </div>
         </div>
       )}
+
+      {/* Floating Ask Jotti AI Assistant Button */}
+      <div className="fixed bottom-6 right-6 z-40 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full blur-xs opacity-30 group-hover:opacity-60 transition duration-500"></div>
+          <button
+            onClick={() => setIsCopilotOpen(true)}
+            className="relative flex items-center justify-center gap-2 h-12 px-5 rounded-full shadow-xl bg-gradient-to-r from-[#6B4C9A] to-[#5B7DB1] text-white hover:opacity-95 transition-transform hover:scale-105"
+          >
+            <Sparkles className="h-4 w-4 text-amber-300" />
+            <span className="font-semibold text-xs tracking-wide">Ask Jotti AI</span>
+          </button>
+        </div>
+      </div>
+
+      <LessonCopilotDrawer
+        isOpen={isCopilotOpen}
+        context={`institution-admin-${tab}`}
+        onClose={() => setIsCopilotOpen(false)}
+      />
     </DashboardLayout>
   );
 }

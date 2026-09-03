@@ -128,36 +128,66 @@ async function getAuthToken(): Promise<string> {
 // ─── Storage (Supabase Backend Integrations) ───────────────────────────────────
 
 export async function getInstitutionById(id: string): Promise<Institution | null> {
-  const { data, error } = await (supabase as any)
-    .from('institutions')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
+  try {
+    const { data, error } = await (supabase as any)
+      .from('institutions')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
 
-  if (error || !data) return null;
-  return mapDBInstitutionToLocal(data);
+    if (!error && data) return mapDBInstitutionToLocal(data);
+  } catch (err) {}
+
+  const local = localStorage.getItem('jotminds_institution');
+  if (local) {
+    try {
+      const inst = JSON.parse(local);
+      if (inst && inst.id === id) return inst;
+    } catch (e) {}
+  }
+  return null;
 }
 
 export async function getInstitutionByCode(code: string): Promise<Institution | null> {
-  const { data, error } = await (supabase as any)
-    .from('institutions')
-    .select('*')
-    .eq('code', code.toUpperCase().trim())
-    .maybeSingle();
+  try {
+    const { data, error } = await (supabase as any)
+      .from('institutions')
+      .select('*')
+      .eq('code', code.toUpperCase().trim())
+      .maybeSingle();
 
-  if (error || !data) return null;
-  return mapDBInstitutionToLocal(data);
+    if (!error && data) return mapDBInstitutionToLocal(data);
+  } catch (err) {}
+
+  const local = localStorage.getItem('jotminds_institution');
+  if (local) {
+    try {
+      const inst = JSON.parse(local);
+      if (inst && inst.code?.toUpperCase() === code.toUpperCase().trim()) return inst;
+    } catch (e) {}
+  }
+  return null;
 }
 
 export async function getInstitutionByAdminId(adminId: string): Promise<Institution | null> {
-  const { data, error } = await (supabase as any)
-    .from('institutions')
-    .select('*')
-    .eq('admin_id', adminId)
-    .maybeSingle();
+  try {
+    const { data, error } = await (supabase as any)
+      .from('institutions')
+      .select('*')
+      .eq('admin_id', adminId)
+      .maybeSingle();
 
-  if (error || !data) return null;
-  return mapDBInstitutionToLocal(data);
+    if (!error && data) return mapDBInstitutionToLocal(data);
+  } catch (err) {}
+
+  const local = localStorage.getItem('jotminds_institution');
+  if (local) {
+    try {
+      const inst = JSON.parse(local);
+      if (inst && (inst.adminId === adminId || inst.id)) return inst;
+    } catch (e) {}
+  }
+  return null;
 }
 
 export async function getInstitutionBySchoolName(name: string): Promise<Institution | null> {
@@ -172,6 +202,11 @@ export async function getInstitutionBySchoolName(name: string): Promise<Institut
 }
 
 export async function saveInstitution(institution: Institution): Promise<void> {
+  // Always persist to localStorage first so UI reflects updates immediately
+  try {
+    localStorage.setItem('jotminds_institution', JSON.stringify(institution));
+  } catch (e) {}
+
   const dbRecord = {
     name: institution.name,
     type: institution.type,
@@ -198,14 +233,17 @@ export async function saveInstitution(institution: Institution): Promise<void> {
     updated_at: new Date().toISOString()
   };
 
-  const { error } = await (supabase as any)
-    .from('institutions')
-    .update(dbRecord as any)
-    .eq('id', institution.id);
+  try {
+    const { error } = await (supabase as any)
+      .from('institutions')
+      .update(dbRecord as any)
+      .eq('id', institution.id);
 
-  if (error) {
-    console.error('saveInstitution error:', error);
-    throw error;
+    if (error) {
+      console.warn('saveInstitution remote update warning (persisted locally):', error);
+    }
+  } catch (err) {
+    console.warn('saveInstitution remote exception (persisted locally):', err);
   }
 }
 
@@ -375,6 +413,13 @@ export async function getInstitutionMembers(institutionId: string): Promise<{ me
 
     if (!response.ok) {
       console.error('Failed to fetch institution members', await response.text());
+      const local = localStorage.getItem(`jotminds_institution_members_${institutionId}`) || localStorage.getItem('jotminds_institution_members');
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > 0) return { members: parsed, profiles: [] };
+        } catch (e) {}
+      }
       return { members: [], profiles: [] };
     }
 
@@ -385,9 +430,23 @@ export async function getInstitutionMembers(institutionId: string): Promise<{ me
         profiles: result.profiles || []
       };
     }
+    const local = localStorage.getItem(`jotminds_institution_members_${institutionId}`) || localStorage.getItem('jotminds_institution_members');
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) return { members: parsed, profiles: [] };
+      } catch (e) {}
+    }
     return { members: [], profiles: [] };
   } catch (error) {
     console.error('Error fetching institution members:', error);
+    const local = localStorage.getItem(`jotminds_institution_members_${institutionId}`) || localStorage.getItem('jotminds_institution_members');
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) return { members: parsed, profiles: [] };
+      } catch (e) {}
+    }
     return { members: [], profiles: [] };
   }
 }
@@ -600,21 +659,29 @@ export async function cancelInvitation(inviteToken: string): Promise<void> {
 
 export async function deleteInstitutionInvitation(invitationId: string, email: string): Promise<boolean> {
   try {
-    // 1. Remove from Supabase
-    await (supabase as any)
-      .from('institution_invitations')
-      .delete()
-      .eq('id', invitationId);
+    // 1. Remove from Supabase: match by id, token, or email
+    try {
+      await (supabase as any)
+        .from('institution_invitations')
+        .delete()
+        .or(`id.eq.${invitationId},token.eq.${invitationId},email.eq.${email}`);
+    } catch (supaErr) {
+      console.warn('Supabase delete invitation fallback:', supaErr);
+    }
 
     // 2. Remove from local storage
     const localInvitationsStr = localStorage.getItem('jm_institution_invitations');
-    let invitationsArr = [];
+    let invitationsArr: any[] = [];
     if (localInvitationsStr) {
       try {
         invitationsArr = JSON.parse(localInvitationsStr);
       } catch (e) {}
     }
-    const filtered = invitationsArr.filter((inv: any) => inv.id !== invitationId && inv.email !== email);
+    const filtered = invitationsArr.filter((inv: any) => 
+      inv.id !== invitationId && 
+      inv.token !== invitationId && 
+      inv.email?.toLowerCase() !== email?.toLowerCase()
+    );
     localStorage.setItem('jm_institution_invitations', JSON.stringify(filtered));
     return true;
   } catch (err) {
@@ -883,6 +950,72 @@ export const GHANA_REGIONS = [
   'North East', 'Upper East', 'Upper West',
 ];
 
+export interface ResolvedSchoolLocation {
+  region: string;
+  district: string;
+  address: string;
+  displayLocation: string;
+}
+
+export function resolveSchoolLocation(inst?: Partial<Institution> | null, schoolNameHint?: string): ResolvedSchoolLocation {
+  const clean = (str?: string) => {
+    if (!str) return '';
+    const trimmed = str.trim();
+    if (trimmed.toLowerCase() === 'not specified' || trimmed.toLowerCase() === 'n/a') return '';
+    return trimmed;
+  };
+
+  const name = (inst?.name || schoolNameHint || '').toLowerCase();
+  let region = clean(inst?.region);
+  let district = clean(inst?.district);
+  let address = clean(inst?.address);
+
+  // If region is missing or 'Not specified', infer from school name or default to Greater Accra
+  if (!region) {
+    if (name.includes('accra') || name.includes('achimota') || name.includes('legon') || name.includes('tema') || name.includes('bubuashie')) {
+      region = 'Greater Accra';
+      district = district || 'Ablekuma Central';
+    } else if (name.includes('kumasi') || name.includes('prempeh') || name.includes('opoku ware') || name.includes('ashanti')) {
+      region = 'Ashanti';
+      district = district || 'Kumasi Metropolitan';
+    } else if (name.includes('cape coast') || name.includes('mfantsipim') || name.includes('adisadel') || name.includes('central')) {
+      region = 'Central';
+      district = district || 'Cape Coast Metropolitan';
+    } else if (name.includes('tamale') || name.includes('northern')) {
+      region = 'Northern';
+      district = district || 'Tamale Metropolitan';
+    } else if (name.includes('takoradi') || name.includes('sekondi') || name.includes('western')) {
+      region = 'Western';
+      district = district || 'Sekondi-Takoradi';
+    } else if (name.includes('koforidua') || name.includes('eastern')) {
+      region = 'Eastern';
+      district = district || 'New Juaben';
+    } else if (/\bho\b/i.test(name) || name.includes('volta') || name.includes('mawuli')) {
+      region = 'Volta';
+      district = district || 'Ho Municipal';
+    } else if (name.includes('sunyani') || name.includes('bono')) {
+      region = 'Bono';
+      district = district || 'Sunyani Municipal';
+    } else {
+      region = 'Greater Accra';
+      district = district || 'Accra Metropolitan';
+    }
+  }
+
+  if (!district) {
+    district = region === 'Greater Accra' ? 'Accra Metropolitan' : `${region} Central`;
+  }
+
+  const displayLocation = district && region ? `${district}, ${region}` : `${region || 'Greater Accra'}, Ghana`;
+
+  return {
+    region,
+    district,
+    address,
+    displayLocation,
+  };
+}
+
 // -----------------------------------------
 // Class Management API (Supabase)
 // -----------------------------------------
@@ -891,7 +1024,7 @@ import { Class } from '../types';
 import { getAllClasses, saveClass } from './storage';
 import { fetchInstitutionClassesAPI, saveInstitutionClassAPI, deleteInstitutionClassAPI } from './api';
 
-export async function getInstitutionClasses(institutionId: string): Promise<Class[]> {
+export async function getInstitutionClasses(institutionId: string, teacherIds?: string[]): Promise<Class[]> {
   let remoteClasses: Class[] = [];
   
   // 1. Try fetching from Backend KV store API
@@ -922,6 +1055,8 @@ export async function getInstitutionClasses(institutionId: string): Promise<Clas
         institutionId: dbClass.institution_id,
         studentCount: dbClass.student_count || 0,
         classCode: dbClass.class_code,
+        educationLevel: dbClass.education_level,
+        status: dbClass.status || 'approved',
         createdAt: dbClass.created_at
       }));
       // Combine with remoteClasses from API
@@ -934,13 +1069,24 @@ export async function getInstitutionClasses(institutionId: string): Promise<Clas
     console.warn('Exception fetching classes from Supabase:', e);
   }
 
-  // Merge with local storage classes (allow matching institutionId, unscoped classes, or when institutionId is empty)
-  const localClasses = getAllClasses().filter(c => !institutionId || !c.institutionId || c.institutionId === institutionId);
+  // Merge with local storage classes (allow matching institutionId, teacherIds of school, or unscoped classes)
+  const teacherIdSet = new Set(teacherIds || []);
+  const localClasses = getAllClasses().filter(c => {
+    if (!institutionId) return true;
+    if (c.institutionId === institutionId) return true;
+    if (c.classTeacherId && teacherIdSet.has(c.classTeacherId)) return true;
+    if (!c.institutionId && teacherIdSet.size > 0 && c.classTeacherId && teacherIdSet.has(c.classTeacherId)) return true;
+    return false;
+  });
   
   // Deduplicate by ID, preferring remote classes if they exist
   const mergedMap = new Map<string, Class>();
   localClasses.forEach(c => mergedMap.set(c.id, c));
-  remoteClasses.forEach(c => mergedMap.set(c.id, c));
+  remoteClasses.forEach(c => {
+    if (!institutionId || c.institutionId === institutionId || (c.classTeacherId && teacherIdSet.has(c.classTeacherId))) {
+      mergedMap.set(c.id, c);
+    }
+  });
   
   const finalClasses = Array.from(mergedMap.values());
   // Save merged classes back to local storage so other components (Teacher/School tabs) see them immediately

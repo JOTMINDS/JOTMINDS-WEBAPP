@@ -4,6 +4,7 @@ import { InstitutionMember, getInstitutionClasses, createInstitutionClass, delet
 import { getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment, deleteTeacherAssignment, generateId, saveClass } from '../../utils/storage';
 import { assignMemberToClass, sendClassAssignmentEmail } from '../../utils/api';
 import { EnrollStudentModal } from './EnrollStudentModal';
+import { toast } from 'sonner';
 
 interface ClassManagementProps {
   institutionMembers?: InstitutionMember[];
@@ -39,14 +40,20 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [enrollStudentClassId, setEnrollStudentClassId] = useState<string>('');
 
+  const [levelFilter, setLevelFilter] = useState<string>('all');
+
   useEffect(() => {
     loadData();
   }, [institutionMembers, allPlatformUsers, institutionId]);
 
   const loadData = async () => {
     setIsLoadingClasses(true);
+    // Build a set of member user IDs belonging to THIS institution
+    const memberIds = new Set(institutionMembers.map(m => m.userId));
+    const teacherIds = institutionMembers.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId);
+
     try {
-      const dbClasses = await getInstitutionClasses(institutionId || '');
+      const dbClasses = await getInstitutionClasses(institutionId || '', teacherIds);
       setClasses(dbClasses);
     } catch (err) {
       console.error("Failed to load classes", err);
@@ -54,9 +61,6 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       setIsLoadingClasses(false);
     }
 
-    // Build a set of member user IDs belonging to THIS institution
-    const memberIds = new Set(institutionMembers.map(m => m.userId));
-    
     // Use allPlatformUsers (which includes server profiles) if available, else fall back to localStorage
     const usersSource = allPlatformUsers.length > 0 ? allPlatformUsers : getAllUsers();
     
@@ -65,7 +69,6 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       setTeachers(usersSource.filter((u: any) => u.role === 'teacher' && memberIds.has(u.id)));
       setStudents(usersSource.filter((u: any) => u.role === 'student' && memberIds.has(u.id)));
     } else {
-      // Fallback: if no institution members loaded yet, show nothing rather than all users
       setTeachers([]);
       setStudents([]);
     }
@@ -260,16 +263,63 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     loadData();
   };
 
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+
+  const displayedClasses = classes.filter(cls => {
+    if (levelFilter === 'all') return true;
+    if (levelFilter === 'Elementary') {
+      return cls.educationLevel === 'Elementary' || !cls.educationLevel || (cls.educationLevel as any) === 'Primary';
+    }
+    return cls.educationLevel === levelFilter;
+  });
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Class Management</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Class Management</h2>
+          <p className="text-xs text-gray-500 mt-1">Review teacher classes, approve creations, assign educators, and manage enrolled learners.</p>
+        </div>
         <button
           onClick={() => { setCurrentClass({ academicYear: new Date().getFullYear().toString() }); setIsModalOpen(true); }}
-          className="bg-[#1E8A6E] text-white px-4 py-2 rounded-lg hover:bg-[#156e57] transition-colors"
+          className="bg-[#1E8A6E] text-white px-4 py-2 rounded-lg hover:bg-[#156e57] transition-colors text-sm font-semibold shadow-xs"
         >
           Add New Class
         </button>
+      </div>
+
+      {/* Education Level Filter Tabs */}
+      <div className="flex flex-wrap gap-2 mb-4 pb-2 border-b">
+        {[
+          { id: 'all', label: 'All Levels' },
+          { id: 'Nursery', label: 'Kindergarten / Early Childhood' },
+          { id: 'Elementary', label: 'Elementary / Primary' },
+          { id: 'JHS', label: 'Junior High (JHS)' },
+          { id: 'SHS', label: 'Senior High (SHS)' },
+          { id: 'Tertiary', label: 'Tertiary' },
+        ].map(cat => {
+          const count = cat.id === 'all' 
+            ? classes.length 
+            : classes.filter(c => c.educationLevel === cat.id || (cat.id === 'Elementary' && (!c.educationLevel || (c.educationLevel as any) === 'Primary'))).length;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setLevelFilter(cat.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                levelFilter === cat.id
+                  ? 'bg-[#1E8A6E] text-white shadow-xs'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <span>{cat.label}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                levelFilter === cat.id ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="overflow-x-auto">
@@ -277,22 +327,25 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
           <thead className="bg-gray-50">
             <tr>
               <th className="p-4 font-semibold text-gray-600">Class Name</th>
+              <th className="p-4 font-semibold text-gray-600">Level</th>
               <th className="p-4 font-semibold text-gray-600">Academic Year</th>
               <th className="p-4 font-semibold text-gray-600">Class Teacher</th>
+              <th className="p-4 font-semibold text-gray-600">Students</th>
               <th className="p-4 font-semibold text-gray-600">Subject Teachers</th>
-              <th className="p-4 font-semibold text-gray-600">Actions</th>
+              <th className="p-4 font-semibold text-gray-600 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {classes.map(cls => {
+            {displayedClasses.map(cls => {
               const classTeacher = teachers.find(t => t.id === cls.classTeacherId);
               const subjectAssignments = assignments.filter(a => a.classId === cls.id);
+              const enrolledCount = students.filter(s => s.classId === cls.id).length;
 
               return (
                 <tr key={cls.id} className="hover:bg-gray-50">
                   <td className="p-4 font-medium text-gray-800">
                     <div className="flex items-center gap-2">
-                      {cls.name}
+                      <span className="font-semibold">{cls.name}</span>
                       {cls.status === 'pending' && (
                         <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Pending</span>
                       )}
@@ -301,15 +354,25 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                       )}
                     </div>
                   </td>
-                  <td className="p-4 text-gray-600">{cls.academicYear}</td>
+                  <td className="p-4">
+                    <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                      {cls.educationLevel || 'Elementary'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-600 text-sm">{cls.academicYear}</td>
                   <td className="p-4">
                     {classTeacher ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {classTeacher.name}
                       </span>
                     ) : (
-                      <span className="text-gray-400 italic">Unassigned</span>
+                      <span className="text-gray-400 italic text-xs">Unassigned</span>
                     )}
+                  </td>
+                  <td className="p-4">
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      {enrolledCount} {enrolledCount === 1 ? 'student' : 'students'}
+                    </span>
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col gap-1">
@@ -341,8 +404,12 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                             const updated = { ...cls, status: 'approved' as const };
                             saveClass(updated);
                             setClasses(prev => prev.map(c => c.id === cls.id ? updated : c));
+                            toast.success(`Class "${cls.name}" verified and approved!`);
+                            window.dispatchEvent(new CustomEvent('institution-notification', {
+                              detail: { title: 'Class Approved', message: `Class "${cls.name}" verified.` }
+                            }));
                           }}
-                          className="text-white bg-emerald-600 hover:bg-emerald-700 text-xs px-3 py-1 rounded shadow-sm font-medium"
+                          className="text-white bg-emerald-600 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded shadow-sm font-medium"
                         >
                           Approve
                         </button>
@@ -351,10 +418,14 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                             const updated = { ...cls, status: 'rejected' as const };
                             saveClass(updated);
                             setClasses(prev => prev.map(c => c.id === cls.id ? updated : c));
+                            toast.error(`Class "${cls.name}" was declined.`);
+                            window.dispatchEvent(new CustomEvent('institution-notification', {
+                              detail: { title: 'Class Declined', message: `Class "${cls.name}" declined.` }
+                            }));
                           }}
-                          className="text-white bg-red-500 hover:bg-red-600 text-xs px-3 py-1 rounded shadow-sm font-medium"
+                          className="text-white bg-red-500 hover:bg-red-600 text-xs px-3 py-1.5 rounded shadow-sm font-medium"
                         >
-                          Reject
+                          Decline
                         </button>
                       </>
                     ) : (
@@ -525,16 +596,25 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       {isStudentModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
-            <h3 className="text-xl font-bold mb-4 flex-shrink-0">Assign Students</h3>
-            <p className="text-sm text-gray-500 mb-4 flex-shrink-0">
-              Select students to assign to this class. Note that selecting a student will remove them from their current class if they are already assigned elsewhere.
+            <h3 className="text-xl font-bold mb-1 flex-shrink-0">Assign Students</h3>
+            <p className="text-sm text-gray-500 mb-3 flex-shrink-0">
+              Select or deselect students to add or remove them from this class.
             </p>
+            <div className="mb-3 flex-shrink-0">
+              <input
+                type="text"
+                value={studentSearchQuery}
+                onChange={e => setStudentSearchQuery(e.target.value)}
+                placeholder="Search students by name or email..."
+                className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E8A6E]"
+              />
+            </div>
             <div className="overflow-y-auto flex-1 border border-gray-200 rounded-lg p-4">
-              {students.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No approved students available.</p>
+              {students.filter(s => !studentSearchQuery || s.name?.toLowerCase().includes(studentSearchQuery.toLowerCase()) || s.email?.toLowerCase().includes(studentSearchQuery.toLowerCase())).length === 0 ? (
+                <p className="text-gray-500 text-center py-4 text-sm">No matching students found.</p>
               ) : (
                 <div className="space-y-2">
-                  {students.map(s => (
+                  {students.filter(s => !studentSearchQuery || s.name?.toLowerCase().includes(studentSearchQuery.toLowerCase()) || s.email?.toLowerCase().includes(studentSearchQuery.toLowerCase())).map(s => (
                     <label key={s.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer border border-transparent hover:border-gray-100 transition-colors">
                       <input 
                         type="checkbox"
