@@ -93,10 +93,11 @@
 
       <!-- PWA Service Worker Registration -->
       <script>
-        if ('serviceWorker' in navigator && window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
           window.addEventListener('load', function() {
             navigator.serviceWorker.register('/sw.js').then(function(registration) {
               console.log('[JotMinds PWA] ServiceWorker registered with scope: ', registration.scope);
+              registration.update();
             }, function(err) {
               console.log('[JotMinds PWA] ServiceWorker registration failed: ', err);
             });
@@ -115,7 +116,8 @@
             new google.translate.TranslateElement({
               pageLanguage: 'en',
               includedLanguages: 'en,fr,es,ak,tw,ee,ga,gaa,ha,ar,sw',
-              autoDisplay: false
+              autoDisplay: false,
+              layout: google.translate.TranslateElement.InlineLayout.SIMPLE
             }, 'google_translate_element');
           } catch (e) {
             console.warn('[Translate] Init error:', e);
@@ -124,34 +126,38 @@
       </script>
       <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
-      <!-- Banner Suppression Script -->
+      <!-- Permanent Banner Suppression Engine -->
       <script type="text/javascript">
         (function() {
-          function suppressBanner() {
-            if (document.body) {
-              if (document.body.style.top && document.body.style.top !== '0px') {
-                document.body.style.setProperty('top', '0px', 'important');
+          function suppress() {
+            try {
+              if (document.body) {
+                if (document.body.style.top && document.body.style.top !== '0px') {
+                  document.body.style.setProperty('top', '0px', 'important');
+                }
+                if (document.body.style.position === 'relative') {
+                  document.body.style.setProperty('position', 'static', 'important');
+                }
               }
-              if (document.body.style.position === 'relative') {
-                document.body.style.setProperty('position', 'static', 'important');
+              var nodes = document.querySelectorAll('iframe[id*="container"], iframe[class*="VIpgJd"], iframe.skiptranslate, .goog-te-banner-frame');
+              for (var i = 0; i < nodes.length; i++) {
+                nodes[i].style.setProperty('display', 'none', 'important');
+                nodes[i].style.setProperty('visibility', 'hidden', 'important');
+                nodes[i].style.setProperty('height', '0px', 'important');
+                nodes[i].style.setProperty('position', 'absolute', 'important');
+                nodes[i].style.setProperty('left', '-9999px', 'important');
+                nodes[i].style.setProperty('top', '-9999px', 'important');
               }
-            }
-            var banners = document.querySelectorAll('iframe.VIpgJd-ZVi9od-ORHb-OEVmcd, iframe[id*=":1.container"], .goog-te-banner-frame, iframe.skiptranslate');
-            banners.forEach(function(b) {
-              b.style.setProperty('display', 'none', 'important');
-              b.style.setProperty('visibility', 'hidden', 'important');
-              b.style.setProperty('height', '0px', 'important');
-            });
+            } catch(e) {}
           }
 
-          var observer = new MutationObserver(suppressBanner);
-          window.addEventListener('DOMContentLoaded', function() {
-            suppressBanner();
-            if (document.body) {
-              observer.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
-            }
-          });
-          setInterval(suppressBanner, 300);
+          var observer = new MutationObserver(suppress);
+          if (document.documentElement) {
+            observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+          }
+          window.addEventListener('DOMContentLoaded', suppress);
+          window.addEventListener('load', suppress);
+          setInterval(suppress, 200);
         })();
       </script>
 

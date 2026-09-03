@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jotminds-pwa-v1';
+const CACHE_NAME = 'jotminds-pwa-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -16,7 +16,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate Event - Clean up old caches
+// Activate Event - Clean up old caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -32,13 +32,26 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event - Stale-While-Revalidate Strategy for fast loading & offline resilience
+// Fetch Event - Network-First for HTML/Navigation, Stale-While-Revalidate for static assets
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
-
-  // Ignore chrome-extension and external requests
   if (!event.request.url.startsWith(self.location.origin)) return;
+
+  const isHtml = event.request.mode === 'navigate' || event.request.destination === 'document';
+  if (isHtml) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
@@ -52,12 +65,10 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch((err) => {
-          console.log('[JotMinds Service Worker] Fetch failed, serving offline cache:', err);
-          return cachedResponse;
-        });
+        .catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })
   );
 });
+
