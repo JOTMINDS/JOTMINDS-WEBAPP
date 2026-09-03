@@ -38,7 +38,38 @@
       <link rel="apple-touch-icon" href="/logo.png" />
       <link rel="icon" type="image/png" href="/logo.png" />
 
-      <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
+      <style>
+        html, body { height: 100%; margin: 0; }
+        #root { height: 100%; }
+
+        /* Completely hide Google Translate top banner & floating popups */
+        .goog-te-banner-frame,
+        .goog-te-banner-frame.skiptranslate,
+        iframe.goog-te-banner-frame,
+        iframe[class*="goog-te-banner-frame"],
+        .goog-te-balloon-frame,
+        #goog-gt-tt,
+        .goog-te-spinner-pos {
+          display: none !important;
+          visibility: hidden !important;
+          height: 0 !important;
+          width: 0 !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+
+        /* Prevent Google Translate from pushing the body down */
+        body {
+          top: 0px !important;
+          position: static !important;
+        }
+
+        /* Remove Google Translate word highlight boxes */
+        font[style] {
+          background-color: transparent !important;
+          box-shadow: none !important;
+        }
+      </style>
 
       <!-- Google tag (gtag.js) -->
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-S8X5F4Z598"></script>
