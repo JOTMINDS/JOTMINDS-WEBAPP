@@ -47,8 +47,15 @@
         .goog-te-banner-frame.skiptranslate,
         iframe.goog-te-banner-frame,
         iframe[class*="goog-te-banner-frame"],
+        iframe[id*=":1.container"],
+        iframe[id*="container"],
+        iframe.VIpgJd-ZVi9od-ORHb-OEVmcd,
+        iframe.VIpgJd-ZVi9od-xl07Ob-OEVmcd,
+        iframe.skiptranslate,
         .goog-te-balloon-frame,
         #goog-gt-tt,
+        .VIpgJd-yAWNEb-L7lbkb,
+        .VIpgJd-yAWNEb-hvhgNd,
         .goog-te-spinner-pos {
           display: none !important;
           visibility: hidden !important;
@@ -56,6 +63,9 @@
           width: 0 !important;
           opacity: 0 !important;
           pointer-events: none !important;
+          position: absolute !important;
+          left: -9999px !important;
+          top: -9999px !important;
         }
 
         /* Prevent Google Translate from pushing the body down */
@@ -111,8 +121,38 @@
             console.warn('[Translate] Init error:', e);
           }
         }
-      </script>
       <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+      <!-- Banner Suppression Script -->
+      <script type="text/javascript">
+        (function() {
+          function suppressBanner() {
+            if (document.body) {
+              if (document.body.style.top && document.body.style.top !== '0px') {
+                document.body.style.setProperty('top', '0px', 'important');
+              }
+              if (document.body.style.position === 'relative') {
+                document.body.style.setProperty('position', 'static', 'important');
+              }
+            }
+            var banners = document.querySelectorAll('iframe.VIpgJd-ZVi9od-ORHb-OEVmcd, iframe[id*=":1.container"], .goog-te-banner-frame, iframe.skiptranslate');
+            banners.forEach(function(b) {
+              b.style.setProperty('display', 'none', 'important');
+              b.style.setProperty('visibility', 'hidden', 'important');
+              b.style.setProperty('height', '0px', 'important');
+            });
+          }
+
+          var observer = new MutationObserver(suppressBanner);
+          window.addEventListener('DOMContentLoaded', function() {
+            suppressBanner();
+            if (document.body) {
+              observer.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
+            }
+          });
+          setInterval(suppressBanner, 300);
+        })();
+      </script>
 
       
       <div id="root"></div>

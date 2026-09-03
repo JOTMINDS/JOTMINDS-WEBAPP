@@ -794,8 +794,15 @@ html {
 .goog-te-banner-frame.skiptranslate,
 iframe.goog-te-banner-frame,
 iframe[class*="goog-te-banner-frame"],
+iframe[id*=":1.container"],
+iframe[id*="container"],
+iframe.VIpgJd-ZVi9od-ORHb-OEVmcd,
+iframe.VIpgJd-ZVi9od-xl07Ob-OEVmcd,
+iframe.skiptranslate,
 .goog-te-balloon-frame,
 #goog-gt-tt,
+.VIpgJd-yAWNEb-L7lbkb,
+.VIpgJd-yAWNEb-hvhgNd,
 .goog-te-spinner-pos {
   display: none !important;
   visibility: hidden !important;
@@ -803,6 +810,9 @@ iframe[class*="goog-te-banner-frame"],
   width: 0 !important;
   opacity: 0 !important;
   pointer-events: none !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
 }
 
 body {
