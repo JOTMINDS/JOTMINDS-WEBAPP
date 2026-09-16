@@ -540,8 +540,6 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
             setError('This email is already registered. Please login instead or use a different email.');
           } else if (signupError.message?.includes('invalid email')) {
             setError('Please enter a valid email address.');
-          } else if (signupError.message?.includes('Password')) {
-            setError('Password must be at least 6 characters long.');
           } else {
             setError(signupError.message || 'Failed to create account. Please try again.');
           }
