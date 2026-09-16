@@ -22,6 +22,8 @@ import { createClient } from './utils/supabase/client';
 import { setAuthToken, getUserData } from './utils/api';
 import { UserConsentFlow } from './components/consent/UserConsentFlow';
 import { OAuthConsentPage } from './components/OAuthConsentPage';
+import { useFeatureFlags } from './hooks/useFeatureFlags';
+import { FeatureDisabledNotice } from './components/FeatureDisabledNotice';
 import { PrivacyPolicyPage } from './components/PrivacyPolicyPage';
 import { TermsOfUsePage } from './components/TermsOfUsePage';
 import { ContactPage } from './components/ContactPage';
@@ -93,6 +95,7 @@ type AssessmentType = 'learning' | 'thinking' | 'decision';
 
 function AppContent() {
   const { user, loading, refreshUser, impersonatedUser, setImpersonatedUser, signOut } = useAuth();
+  const { isEnabled: isFeatureEnabled } = useFeatureFlags();
   const [currentView, setCurrentView] = useState<ViewType>('landing');
   const [currentAssessment, setCurrentAssessment] = useState<AssessmentType | null>(null);
   const [assessmentResults, setAssessmentResults] = useState<any>(null);
@@ -746,14 +749,16 @@ function AppContent() {
       ) : null;
 
     case 'cognitive-workout':
-      return user ? (
+      if (!user) return null;
+      if (!isFeatureEnabled('brain-gym')) return <FeatureDisabledNotice featureName="Brain Gym" onBack={handleBackToDashboard} />;
+      return (
         <CognitiveWorkoutDashboard
           userId={user.id}
           onBack={handleBackToDashboard}
           onStartLesson={handleStartLesson}
           onStartChallenge={handleStartDailyChallenge}
         />
-      ) : null;
+      );
 
     case 'lesson-viewer':
       return user && currentLessonId ? (
@@ -766,21 +771,25 @@ function AppContent() {
       ) : null;
 
     case 'daily-challenge':
-      return user ? (
+      if (!user) return null;
+      if (!isFeatureEnabled('daily-challenge')) return <FeatureDisabledNotice featureName="Daily Challenge" onBack={handleBackToDashboard} />;
+      return (
         <DailyChallengeRunner
           userId={user.id}
           onBack={handleBackToDashboard}
           onComplete={handleBackToDashboard}
         />
-      ) : null;
+      );
 
     case 'ai-coach':
-      return user ? (
+      if (!user) return null;
+      if (!isFeatureEnabled('ai-coach')) return <FeatureDisabledNotice featureName="AI Learning Coach" onBack={handleBackToDashboard} />;
+      return (
         <AILearningCoach
           userId={user.id}
           onBack={handleBackToDashboard}
         />
-      ) : null;
+      );
 
     case 'cognitive-growth':
       return user ? (

@@ -19,6 +19,7 @@ import teacherObservationRoutes from './teacher-observation-routes.tsx';
 import accountRoutes from './account-routes.tsx';
 import leaderboardRoutes from './leaderboard-routes.tsx';
 import superadminRoutes from './superadmin-routes.tsx';
+import featureFlagsRoutes from './feature-flags-routes.tsx';
 
 import { rateLimiter } from 'npm:hono-rate-limiter';
 
@@ -53,6 +54,7 @@ app.route('/make-server-fc8eb847/teacher-observation', teacherObservationRoutes)
 app.route('/make-server-fc8eb847/account', accountRoutes);
 app.route('/make-server-fc8eb847/leaderboard', leaderboardRoutes);
 app.route('/make-server-fc8eb847/superadmin', superadminRoutes);
+app.route('/make-server-fc8eb847/feature-flags', featureFlagsRoutes);
 
 // Health check and diagnostics endpoint
 app.get('/make-server-fc8eb847/health', async (c) => {

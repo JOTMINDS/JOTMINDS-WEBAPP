@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
-import { Search, MoreVertical, School, CheckCircle2, XCircle, UserCheck } from 'lucide-react';
+import { Badge } from '../../ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
+import { Search, MoreVertical, School, CheckCircle2, UserCheck, Loader } from 'lucide-react';
 import { createClient } from '../../../utils/supabase/client';
 import { useSupportMode } from '../SupportModeProvider';
+import { getInstitutionDetails } from '../../../utils/api';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +22,23 @@ export function InstitutionsView() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { requestSupportAccess, supportMode } = useSupportMode();
+  const [detailsFor, setDetailsFor] = useState<any | null>(null);
+  const [details, setDetails] = useState<{ institution: any; members: any[] } | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const openDetails = async (inst: any) => {
+    setDetailsFor(inst);
+    setLoadingDetails(true);
+    try {
+      const response = await getInstitutionDetails(inst.id);
+      setDetails({ institution: response?.institution, members: response?.members || [] });
+    } catch (err) {
+      console.error('Error loading institution details:', err);
+      toast.error('Failed to load institution details');
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
 
   const handleRequestAccess = async (inst: any) => {
     const reason = window.prompt(`Enter reason for requesting temporary access to ${inst.name}'s tenant:`);
@@ -26,9 +47,9 @@ export function InstitutionsView() {
       const email = inst.contact_email || inst.admin_email || 'admin@' + (inst.domain || 'example.com');
       const success = await requestSupportAccess(email, inst.name, inst.id, reason);
       if (success) {
-        alert(`Access request sent to institution admin at ${email}`);
+        toast.success(`Access request sent to institution admin at ${email}`);
       } else {
-        alert('Failed to send access request.');
+        toast.error('Failed to send access request.');
       }
     }
   };
@@ -61,7 +82,6 @@ export function InstitutionsView() {
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Institution Management</h2>
           <p className="text-slate-500 dark:text-slate-400">Manage all registered schools and educational tenants.</p>
         </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700">Add Institution</Button>
       </div>
 
       <div className="bg-white dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
@@ -131,9 +151,9 @@ export function InstitutionsView() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Members List</DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem onClick={() => openDetails(inst)}>View Details & Members</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
                               onClick={() => handleRequestAccess(inst)}
                               disabled={supportMode.pendingRequests.includes(inst.id)}
                             >
@@ -142,8 +162,6 @@ export function InstitutionsView() {
                                 {supportMode.pendingRequests.includes(inst.id) ? 'Access Requested' : 'Request Audited Access'}
                               </span>
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-amber-600">Suspend Institution</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
@@ -155,6 +173,44 @@ export function InstitutionsView() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!detailsFor} onOpenChange={(open) => { if (!open) { setDetailsFor(null); setDetails(null); } }}>
+        <DialogContent className="max-w-lg">
+          {detailsFor && (
+            <>
+              <DialogHeader><DialogTitle>{detailsFor.name}</DialogTitle></DialogHeader>
+              {loadingDetails ? (
+                <div className="flex items-center justify-center py-8 text-slate-500"><Loader className="w-5 h-5 animate-spin mr-2" /> Loading...</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><span className="text-slate-500">Code</span><p className="font-mono">{details?.institution?.code}</p></div>
+                    <div><span className="text-slate-500">Created</span><p>{details?.institution?.created_at ? new Date(details.institution.created_at).toLocaleDateString() : '—'}</p></div>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase text-slate-400 mb-2">Members ({details?.members.length || 0})</p>
+                    <div className="max-h-64 overflow-y-auto space-y-1">
+                      {(details?.members || []).map((m: any) => (
+                        <div key={m.user_id} className="flex items-center justify-between border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5">
+                          <div>
+                            <p className="text-sm text-slate-700 dark:text-slate-300">{m.user_name}</p>
+                            <p className="text-xs text-slate-500">{m.user_email}</p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="capitalize">{m.role}</Badge>
+                            <Badge variant={m.status === 'approved' ? 'secondary' : 'destructive'}>{m.status}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                      {(details?.members.length || 0) === 0 && <p className="text-sm text-slate-500">No members.</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

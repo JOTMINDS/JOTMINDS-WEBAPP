@@ -307,6 +307,59 @@ export const setAdminStatus = async (targetUserId: string, isAdmin: boolean) => 
   return makeRequest('/superadmin/admins/set', { method: 'POST', body: JSON.stringify({ targetUserId, isAdmin }) });
 };
 
+// Feature Flags
+export const listFeatureFlags = async () => {
+  return makeRequest('/feature-flags');
+};
+
+export const createFeatureFlag = async (flag: { key: string; name: string; description?: string; defaultEnabled?: boolean }) => {
+  return makeRequest('/feature-flags', { method: 'POST', body: JSON.stringify(flag) });
+};
+
+export const updateFeatureFlag = async (key: string, updates: { name?: string; description?: string; defaultEnabled?: boolean; roleRules?: Record<string, boolean>; planRules?: Record<string, boolean> }) => {
+  return makeRequest(`/feature-flags/${key}`, { method: 'PUT', body: JSON.stringify(updates) });
+};
+
+export const deleteFeatureFlag = async (key: string) => {
+  return makeRequest(`/feature-flags/${key}`, { method: 'DELETE' });
+};
+
+export const listFeatureOverrides = async (key: string) => {
+  return makeRequest(`/feature-flags/${key}/overrides`);
+};
+
+export const setFeatureOverride = async (key: string, targetUserId: string, targetEmail: string, enabled: boolean) => {
+  return makeRequest(`/feature-flags/${key}/overrides`, { method: 'POST', body: JSON.stringify({ targetUserId, targetEmail, enabled }) });
+};
+
+export const clearFeatureOverride = async (key: string, userId: string) => {
+  return makeRequest(`/feature-flags/${key}/overrides/${userId}`, { method: 'DELETE' });
+};
+
+export const getEffectiveFeatureFlags = async () => {
+  return makeRequest('/feature-flags/effective');
+};
+
+export const getInstitutionDetails = async (id: string) => {
+  return makeRequest(`/superadmin/institutions/${id}`);
+};
+
+export const getOrganizationDetails = async (code: string) => {
+  return makeRequest(`/superadmin/organizations/${code}`);
+};
+
+export const setOrganizationSuspended = async (code: string, isActive: boolean) => {
+  return makeRequest(`/superadmin/organizations/${code}/suspend`, { method: 'POST', body: JSON.stringify({ isActive }) });
+};
+
+export const getAssessmentModuleAnalytics = async (framework: string) => {
+  return makeRequest(`/superadmin/assessment-modules/${framework}/analytics`);
+};
+
+export const sendUserEmail = async (userId: string, subject: string, message: string) => {
+  return makeRequest(`/superadmin/users/${userId}/send-email`, { method: 'POST', body: JSON.stringify({ subject, message }) });
+};
+
 // Organization APIs
 export const getOrganizationMembers = async () => {
   return makeRequest('/organization/members');

@@ -2,8 +2,14 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
-import { Search, MoreVertical, ShieldBan, ShieldAlert, KeyRound, Mail, XCircle, CheckCircle2, UserCheck } from 'lucide-react';
+import { Textarea } from '../../ui/textarea';
+import { Label } from '../../ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
+import { Search, MoreVertical, ShieldBan, KeyRound, Mail, XCircle, CheckCircle2, UserCheck, Loader } from 'lucide-react';
 import { useSupportMode } from '../SupportModeProvider';
+import { createClient } from '../../../utils/supabase/client';
+import { sendUserEmail } from '../../../utils/api';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,16 +28,60 @@ export function UsersView({ users, toggleUserActivation }: UsersViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   const { requestSupportAccess, supportMode } = useSupportMode();
+  const [resettingId, setResettingId] = useState<string | null>(null);
+  const [emailTarget, setEmailTarget] = useState<any | null>(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const handleRequestAccess = async (user: any) => {
     const reason = window.prompt(`Enter reason for requesting temporary access to ${user.name}'s account:`);
     if (reason) {
       const success = await requestSupportAccess(user.email, user.name, user.id, reason);
       if (success) {
-        alert(`Access request sent to ${user.email}`);
+        toast.success(`Access request sent to ${user.email}`);
       } else {
-        alert('Failed to send access request.');
+        toast.error('Failed to send access request.');
       }
+    }
+  };
+
+  const handleResetPassword = async (user: any) => {
+    setResettingId(user.id);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+      if (error) throw error;
+      toast.success(`Password reset email sent to ${user.email}`);
+    } catch (err) {
+      console.error('Error sending password reset:', err);
+      toast.error('Failed to send password reset email');
+    } finally {
+      setResettingId(null);
+    }
+  };
+
+  const openEmailDialog = (user: any) => {
+    setEmailTarget(user);
+    setEmailSubject('');
+    setEmailMessage('');
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailTarget || !emailSubject.trim() || !emailMessage.trim()) {
+      toast.error('Subject and message are required');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      await sendUserEmail(emailTarget.id, emailSubject, emailMessage);
+      toast.success(`Email sent to ${emailTarget.email}`);
+      setEmailTarget(null);
+    } catch (err) {
+      console.error('Error sending email:', err);
+      toast.error('Failed to send email');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -48,7 +98,7 @@ export function UsersView({ users, toggleUserActivation }: UsersViewProps) {
   }));
 
   const filteredUsers = safeUsers.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           u.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'All' || u.role.toLowerCase() === roleFilter.toLowerCase();
     return matchesSearch && matchesRole;
@@ -64,15 +114,15 @@ export function UsersView({ users, toggleUserActivation }: UsersViewProps) {
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input 
-            placeholder="Search by name or email..." 
+          <Input
+            placeholder="Search by name or email..."
             className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <select 
+          <select
             className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus:ring-indigo-800"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
@@ -143,15 +193,15 @@ export function UsersView({ users, toggleUserActivation }: UsersViewProps) {
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuLabel>Admin Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => alert(`Password reset email sent to ${user.email}`)}>
-                            <KeyRound className="mr-2 h-4 w-4" />
+                          <DropdownMenuItem onClick={() => handleResetPassword(user)} disabled={resettingId === user.id}>
+                            {resettingId === user.id ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
                             <span>Reset Password</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => alert(`Email sent to ${user.email}`)}>
+                          <DropdownMenuItem onClick={() => openEmailDialog(user)}>
                             <Mail className="mr-2 h-4 w-4" />
                             <span>Send Email</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleRequestAccess(user)}
                             disabled={supportMode.pendingRequests.includes(user.id)}
                           >
@@ -161,7 +211,7 @@ export function UsersView({ users, toggleUserActivation }: UsersViewProps) {
                             </span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => toggleUserActivation(user.id, user.isActive)}
                             className={user.isActive ? "text-amber-600" : "text-emerald-600"}
                           >
@@ -170,10 +220,6 @@ export function UsersView({ users, toggleUserActivation }: UsersViewProps) {
                             ) : (
                               <><CheckCircle2 className="mr-2 h-4 w-4" /> <span>Enable User</span></>
                             )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50">
-                            <ShieldAlert className="mr-2 h-4 w-4" />
-                            <span>Suspend Account</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -190,6 +236,33 @@ export function UsersView({ users, toggleUserActivation }: UsersViewProps) {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!emailTarget} onOpenChange={(open) => !open && setEmailTarget(null)}>
+        <DialogContent>
+          {emailTarget && (
+            <>
+              <DialogHeader><DialogTitle>Email {emailTarget.name}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <p className="text-xs text-slate-500">To: {emailTarget.email}</p>
+                <div className="space-y-2">
+                  <Label htmlFor="email-subject">Subject</Label>
+                  <Input id="email-subject" value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email-message">Message (HTML supported)</Label>
+                  <Textarea id="email-message" rows={5} value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEmailTarget(null)}>Cancel</Button>
+                <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleSendEmail} disabled={sendingEmail}>
+                  {sendingEmail ? <Loader className="w-4 h-4 animate-spin" /> : 'Send'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

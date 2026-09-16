@@ -14,9 +14,10 @@ import {
   LifeBuoy, 
   ShieldCheck, 
   Settings, 
-  ScrollText, 
-  TerminalSquare, 
-  DatabaseBackup 
+  ScrollText,
+  TerminalSquare,
+  DatabaseBackup,
+  ToggleLeft
 } from 'lucide-react';
 import { cn } from "../ui/utils";
 
@@ -30,11 +31,12 @@ export type SuperAdminTab =
   | 'content' 
   | 'gamification' 
   | 'analytics' 
-  | 'billing' 
-  | 'communications' 
-  | 'support' 
-  | 'security' 
-  | 'settings' 
+  | 'billing'
+  | 'communications'
+  | 'support'
+  | 'security'
+  | 'feature-flags'
+  | 'settings'
   | 'audit-logs' 
   | 'developer' 
   | 'backup';
@@ -58,6 +60,7 @@ const navItems = [
   { id: 'communications', label: 'Communication Center', icon: Megaphone },
   { id: 'support', label: 'Support Center', icon: LifeBuoy },
   { id: 'security', label: 'Security Center', icon: ShieldCheck },
+  { id: 'feature-flags', label: 'Feature Flags', icon: ToggleLeft },
   { id: 'settings', label: 'Platform Settings', icon: Settings },
   { id: 'audit-logs', label: 'Audit Logs', icon: ScrollText },
   { id: 'developer', label: 'Developer Console', icon: TerminalSquare },

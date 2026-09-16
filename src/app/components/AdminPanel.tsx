@@ -23,6 +23,7 @@ import { PlatformSettingsView } from './SuperAdminPortal/modules/PlatformSetting
 import { AuditLogsView } from './SuperAdminPortal/modules/AuditLogsView';
 import { DeveloperConsoleView } from './SuperAdminPortal/modules/DeveloperConsoleView';
 import { BackupRecoveryView } from './SuperAdminPortal/modules/BackupRecoveryView';
+import { FeatureFlagsView } from './SuperAdminPortal/modules/FeatureFlagsView';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -96,6 +97,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         return <SupportCenterView />;
       case 'security':
         return <SecurityCenterView users={users} />;
+      case 'feature-flags':
+        return <FeatureFlagsView users={users} />;
       case 'settings':
         return <PlatformSettingsView />;
       case 'audit-logs':

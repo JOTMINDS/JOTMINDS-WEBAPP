@@ -564,4 +564,143 @@ app.post('/admins/set', async (c) => {
   }
 });
 
+// ============= INSTITUTION DETAILS =============
+
+app.get('/institutions/:id', async (c) => {
+  const admin = await verifyAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const id = c.req.param('id');
+    const supabaseAdmin = getSupabaseClient(true);
+
+    const { data: institution, error: instError } = await supabaseAdmin
+      .from('institutions').select('*').eq('id', id).maybeSingle();
+    if (instError) throw instError;
+    if (!institution) return c.json({ error: 'Institution not found' }, 404);
+
+    const { data: members, error: membersError } = await supabaseAdmin
+      .from('institution_members').select('*').eq('institution_id', id);
+    if (membersError) throw membersError;
+
+    return c.json({ success: true, institution, members: members || [] });
+  } catch (error) {
+    console.log(`[superadmin/institutions] Error: ${error}`);
+    return c.json({ error: 'Failed to fetch institution details' }, 500);
+  }
+});
+
+// ============= ORGANIZATION DETAILS & SUSPEND =============
+
+app.get('/organizations/:code', async (c) => {
+  const admin = await verifyAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const code = c.req.param('code');
+    const organization = await kv.get(`organization:${code}`);
+    if (!organization) return c.json({ error: 'Organization not found' }, 404);
+
+    const allUsers = await kv.getByPrefix('user:');
+    const employees = allUsers.filter((u: any) => u && u.organizationCode === code);
+
+    return c.json({ success: true, organization, employees });
+  } catch (error) {
+    console.log(`[superadmin/organizations] Error: ${error}`);
+    return c.json({ error: 'Failed to fetch organization details' }, 500);
+  }
+});
+
+app.post('/organizations/:code/suspend', async (c) => {
+  const admin = await verifyAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const code = c.req.param('code');
+    const { isActive } = await c.req.json();
+    if (typeof isActive !== 'boolean') return c.json({ error: 'isActive (boolean) is required' }, 400);
+
+    const organization = await kv.get(`organization:${code}`);
+    if (!organization) return c.json({ error: 'Organization not found' }, 404);
+
+    const updated = { ...organization, isActive, updatedAt: new Date().toISOString() };
+    await kv.set(`organization:${code}`, updated);
+    await logAudit(admin.id, admin.email || '', isActive ? 'reactivate_organization' : 'suspend_organization', { code });
+    return c.json({ success: true, organization: updated });
+  } catch (error) {
+    console.log(`[superadmin/organizations] Error: ${error}`);
+    return c.json({ error: 'Failed to update organization' }, 500);
+  }
+});
+
+// ============= ASSESSMENT MODULE ANALYTICS =============
+
+app.get('/assessment-modules/:framework/analytics', async (c) => {
+  const admin = await verifyAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const framework = c.req.param('framework');
+    const allResults = await kv.getByPrefix('result:');
+    const forFramework = allResults.filter((r: any) => (r.assessmentType || r.type) === framework);
+
+    const completions = forFramework.filter((r: any) => r.completedAt);
+    const last30Days = completions.filter((r: any) => Date.now() - new Date(r.completedAt).getTime() < 30 * 24 * 60 * 60 * 1000);
+
+    const styleCounts: Record<string, number> = {};
+    completions.forEach((r: any) => {
+      const style = r.results?.style || r.score?.style;
+      if (style) styleCounts[style] = (styleCounts[style] || 0) + 1;
+    });
+
+    return c.json({
+      success: true,
+      analytics: {
+        totalCompletions: completions.length,
+        completionsLast30Days: last30Days.length,
+        styleDistribution: styleCounts,
+      },
+    });
+  } catch (error) {
+    console.log(`[superadmin/assessment-modules] Error: ${error}`);
+    return c.json({ error: 'Failed to fetch module analytics' }, 500);
+  }
+});
+
+// ============= SEND ONE-OFF EMAIL TO A USER =============
+
+app.post('/users/:userId/send-email', async (c) => {
+  const admin = await verifyAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const userId = c.req.param('userId');
+    const { subject, message } = await c.req.json();
+    if (!subject || !message) return c.json({ error: 'subject and message are required' }, 400);
+
+    const targetProfile = await kv.get(`user:${userId}`);
+    if (!targetProfile?.email) return c.json({ error: 'User not found or has no email' }, 404);
+
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) return c.json({ error: 'RESEND_API_KEY is not configured' }, 500);
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendApiKey}` },
+      body: JSON.stringify({
+        from: 'JotMinds <noreply@jotminds.com>',
+        to: targetProfile.email,
+        subject,
+        html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">${message}</div>`,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return c.json({ error: 'Failed to send email', details: err }, 500);
+    }
+
+    await logAudit(admin.id, admin.email || '', 'send_user_email', { userId, targetEmail: targetProfile.email, subject });
+    return c.json({ success: true });
+  } catch (error) {
+    console.log(`[superadmin/users] Error: ${error}`);
+    return c.json({ error: 'Failed to send email' }, 500);
+  }
+});
+
 export default app;

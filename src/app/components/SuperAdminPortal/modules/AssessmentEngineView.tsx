@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../../ui/card';
-import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
-import { Search, MoreVertical, BrainCircuit, FileEdit, Trash2, Globe2 } from 'lucide-react';
-import { listAssessmentModules } from '../../../utils/api';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../../ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
+import { Search, BrainCircuit, Globe2, Loader } from 'lucide-react';
+import { listAssessmentModules, getAssessmentModuleAnalytics } from '../../../utils/api';
+import { toast } from 'sonner';
 
 export function AssessmentEngineView() {
   const [modules, setModules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsFor, setAnalyticsFor] = useState<any | null>(null);
+  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
   useEffect(() => {
     async function fetchModules() {
@@ -33,14 +30,28 @@ export function AssessmentEngineView() {
     fetchModules();
   }, []);
 
+  const openAnalytics = async (mod: any) => {
+    setAnalyticsFor(mod);
+    setLoadingAnalytics(true);
+    try {
+      const response = await getAssessmentModuleAnalytics(mod.framework);
+      setAnalytics(response?.analytics || null);
+    } catch (err) {
+      console.error('Error loading module analytics:', err);
+      toast.error('Failed to load analytics');
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Assessment Engine</h2>
-          <p className="text-slate-500 dark:text-slate-400">Manage cognitive assessment modules, question banks, and scoring logic.</p>
-        </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700">Create Module</Button>
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Assessment Engine</h2>
+        <p className="text-slate-500 dark:text-slate-400">
+          Cognitive assessment modules and their completion analytics. Question banks (100 questions each) are seeded in
+          code, not editable from here - a developer change is needed to modify question content or add new frameworks.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -70,7 +81,7 @@ export function AssessmentEngineView() {
                   <th className="px-6 py-4 font-medium">Target Age</th>
                   <th className="px-6 py-4 font-medium">Questions</th>
                   <th className="px-6 py-4 font-medium">Status</th>
-                  <th className="px-6 py-4 font-medium text-right">Actions</th>
+                  <th className="px-6 py-4 font-medium text-right">Analytics</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -82,8 +93,7 @@ export function AssessmentEngineView() {
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
                       <BrainCircuit className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-700 mb-3" />
-                      <p>No assessment modules found in database.</p>
-                      <Button variant="link" className="mt-2 text-indigo-600">Create your first module</Button>
+                      No assessment modules found.
                     </td>
                   </tr>
                 ) : (
@@ -98,19 +108,9 @@ export function AssessmentEngineView() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem><FileEdit className="mr-2 h-4 w-4" /> Edit Questions</DropdownMenuItem>
-                            <DropdownMenuItem><Globe2 className="mr-2 h-4 w-4" /> View Analytics</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete Module</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <button onClick={() => openAnalytics(mod)} className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                          <Globe2 className="w-4 h-4" /> View Analytics
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -120,6 +120,47 @@ export function AssessmentEngineView() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!analyticsFor} onOpenChange={(open) => { if (!open) { setAnalyticsFor(null); setAnalytics(null); } }}>
+        <DialogContent>
+          {analyticsFor && (
+            <>
+              <DialogHeader><DialogTitle>{analyticsFor.name} - Analytics</DialogTitle></DialogHeader>
+              {loadingAnalytics ? (
+                <div className="flex items-center justify-center py-8 text-slate-500"><Loader className="w-5 h-5 animate-spin mr-2" /> Loading...</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                      <p className="text-xs text-slate-500">Total Completions</p>
+                      <p className="text-xl font-bold">{analytics?.totalCompletions ?? 0}</p>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                      <p className="text-xs text-slate-500">Last 30 Days</p>
+                      <p className="text-xl font-bold">{analytics?.completionsLast30Days ?? 0}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase text-slate-400 mb-2">Style Distribution</p>
+                    {Object.keys(analytics?.styleDistribution || {}).length === 0 ? (
+                      <p className="text-sm text-slate-500">No completed assessments yet.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {Object.entries(analytics?.styleDistribution || {}).map(([style, count]) => (
+                          <div key={style} className="flex items-center justify-between text-sm">
+                            <span>{style}</span>
+                            <span className="font-medium">{count as number}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
