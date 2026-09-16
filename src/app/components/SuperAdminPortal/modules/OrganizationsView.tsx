@@ -3,7 +3,7 @@ import { Card, CardContent } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Search, MoreVertical, Building2, CheckCircle2, UserCheck } from 'lucide-react';
-import { createClient } from '../../../utils/supabase/client';
+import { listAllOrganizations } from '../../../utils/api';
 import { useSupportMode } from '../SupportModeProvider';
 import {
   DropdownMenu,
@@ -36,17 +36,18 @@ export function OrganizationsView() {
   useEffect(() => {
     async function fetchOrganizations() {
       try {
-        const supabase = createClient();
-        // Assuming organizations are stored in a table called organizations
-        const { data, error } = await supabase.from('organizations').select('*');
-        if (error) {
-          console.error('Error fetching organizations from table, maybe it does not exist:', error);
-          setOrganizations([]);
-        } else {
-          setOrganizations(data || []);
-        }
+        // Organizations live in the KV store (kv.set(`organization:${code}`, ...)),
+        // not a Postgres table - fetch via the admin-scoped backend endpoint.
+        const response = await listAllOrganizations();
+        const orgs = (response?.organizations || []).map((o: any) => ({
+          ...o,
+          id: o.code,
+          created_at: o.createdAt,
+        }));
+        setOrganizations(orgs);
       } catch (err) {
         console.error('Error fetching organizations:', err);
+        setOrganizations([]);
       } finally {
         setLoading(false);
       }

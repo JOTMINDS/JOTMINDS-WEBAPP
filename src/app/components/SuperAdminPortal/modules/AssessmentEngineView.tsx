@@ -3,7 +3,7 @@ import { Card, CardContent } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Search, MoreVertical, BrainCircuit, FileEdit, Trash2, Globe2 } from 'lucide-react';
-import { createClient } from '../../../utils/supabase/client';
+import { listAssessmentModules } from '../../../utils/api';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,17 +19,13 @@ export function AssessmentEngineView() {
   useEffect(() => {
     async function fetchModules() {
       try {
-        const supabase = createClient();
-        // Assuming an assessment_modules table exists. If not, it will return empty safely.
-        const { data, error } = await supabase.from('assessment_modules').select('*');
-        if (error) {
-          console.error('Error fetching modules:', error);
-          setModules([]);
-        } else {
-          setModules(data || []);
-        }
+        // Assessment modules are the seeded question banks in the KV store
+        // (questions:<framework>:<version>), not a Postgres table.
+        const response = await listAssessmentModules();
+        setModules(response?.modules || []);
       } catch (err) {
         console.error('Error:', err);
+        setModules([]);
       } finally {
         setLoading(false);
       }

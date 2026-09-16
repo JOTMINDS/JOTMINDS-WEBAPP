@@ -145,6 +145,34 @@ const initializeQuestionSets = async () => {
   console.log('[Questions] - Dual-Process: 100 questions (50 per style)');
 };
 
+// List the seeded assessment modules (admin only)
+app.get('/admin/assessment-modules', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+    if (user.user_metadata?.role !== 'admin') {
+      return c.json({ error: 'Forbidden - Admin access required' }, 403);
+    }
+
+    const keys = ['questions:kolb:v1', 'questions:sternberg:v1', 'questions:dual-process:v1'];
+    const sets = await Promise.all(keys.map(k => kv.get(k)));
+
+    const modules = sets.filter(Boolean).map((s: any) => ({
+      id: `${s.framework}:${s.version}`,
+      name: s.description || s.framework,
+      framework: s.framework,
+      target_age: 'All Ages',
+      question_count: s.totalQuestions ?? (Array.isArray(s.questions) ? s.questions.length : 0),
+      createdAt: s.createdAt,
+    }));
+
+    return c.json({ success: true, modules });
+  } catch (error) {
+    console.log(`[admin/assessment-modules] Error: ${error}`);
+    return c.json({ error: 'Failed to fetch assessment modules' }, 500);
+  }
+});
+
 // ============= PROGRESS ROUTES (must come before generic :framework/:version route) =============
 
 // Save assessment progress

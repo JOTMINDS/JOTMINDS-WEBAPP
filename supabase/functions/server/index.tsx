@@ -2580,6 +2580,40 @@ app.get('/make-server-fc8eb847/admin/stats', async (c) => {
   }
 });
 
+// Signup growth over time (admin only). auth.users is the authoritative signup
+// record - the public.users table and KV store are both partial mirrors of it.
+app.get('/make-server-fc8eb847/admin/user-growth', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    if (user.user_metadata?.role !== 'admin') {
+      return c.json({ error: 'Forbidden - Admin access required' }, 403);
+    }
+
+    const supabaseAdmin = getSupabaseClient(true);
+    const signups: { createdAt: string; role: string }[] = [];
+    let page = 1;
+    const perPage = 1000;
+    while (true) {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+      if (error) throw error;
+      const users = data?.users || [];
+      users.forEach((u: any) => {
+        signups.push({ createdAt: u.created_at, role: u.user_metadata?.role || 'unknown' });
+      });
+      if (users.length < perPage) break;
+      page++;
+    }
+
+    return c.json({ success: true, signups });
+  } catch (error) {
+    console.log(`Error fetching user growth: ${error}`);
+    return c.json({ error: 'Failed to fetch user growth' }, 500);
+  }
+});
+
 // Get specific user data (admin only)
 app.get('/make-server-fc8eb847/admin/user/:userId', async (c) => {
   try {

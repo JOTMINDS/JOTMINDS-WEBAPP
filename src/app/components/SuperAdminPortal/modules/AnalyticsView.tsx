@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { createClient } from '../../../utils/supabase/client';
+import { getUserGrowth } from '../../../utils/api';
 import {
   LineChart,
   Line,
@@ -20,29 +20,25 @@ export function AnalyticsView() {
   useEffect(() => {
     async function fetchAnalytics() {
       try {
-        const supabase = createClient();
-        // Here we would ideally group by date. For now, we simulate a grouping using real created_at dates if available.
-        const { data: usersData, error } = await supabase.from('users').select('created_at').order('created_at', { ascending: true });
-        
-        if (error) throw error;
-        
-        // Process into monthly data safely
+        // auth.users (via the admin API) is the authoritative signup record - the
+        // public.users table is only a partial mirror of it.
+        const response = await getUserGrowth();
+        const signups = (response?.signups || []) as { createdAt: string; role: string }[];
+        signups.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
         const monthlyData: Record<string, number> = {};
-        if (usersData) {
-          usersData.forEach((u: any) => {
-            if (u.created_at) {
-              const date = new Date(u.created_at);
-              const monthYear = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-              monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1;
-            }
-          });
-        }
-        
+        signups.forEach((s) => {
+          if (!s.createdAt) return;
+          const date = new Date(s.createdAt);
+          const monthYear = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+          monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1;
+        });
+
         const chartData = Object.keys(monthlyData).map(key => ({
           name: key,
           users: monthlyData[key]
         }));
-        
+
         setData(chartData);
       } catch (err) {
         console.error('Error fetching analytics:', err);

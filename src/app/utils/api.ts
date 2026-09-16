@@ -222,6 +222,18 @@ export const getUserAssessmentResults = async (userId: string) => {
   return makeRequest(`/admin/user/${userId}/results`);
 };
 
+export const listAllOrganizations = async () => {
+  return makeRequest('/admin/list-organizations');
+};
+
+export const listAssessmentModules = async () => {
+  return makeRequest('/admin/assessment-modules');
+};
+
+export const getUserGrowth = async () => {
+  return makeRequest('/admin/user-growth');
+};
+
 // Organization APIs
 export const getOrganizationMembers = async () => {
   return makeRequest('/organization/members');
