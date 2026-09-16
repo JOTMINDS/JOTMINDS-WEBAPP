@@ -2,9 +2,7 @@ import { Hono } from 'npm:hono';
 
 const aiRoutes = new Hono();
 
-const DEFAULT_KEY_P1 = 'sk-proj-RSXpvjInsGg_7PkJg8SDsHQE_hw0HrQmy_jOKcOB4Im_KiAZUpPMBKpwR20o0W3tAEwFWUQ_RmT3Bl';
-const DEFAULT_KEY_P2 = 'bkFJQAUuxjZdRFPEE17bT2Up9Y-gnXzEPrrcUVjtXgjUi6cNWFtGMuGbh78Nf2FHkK7-w-498pnigA';
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || (DEFAULT_KEY_P1 + DEFAULT_KEY_P2);
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
