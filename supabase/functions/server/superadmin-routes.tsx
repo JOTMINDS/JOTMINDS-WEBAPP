@@ -12,12 +12,11 @@ const getSupabaseClient = (serviceRole = false) => {
   );
 };
 
-// Verifies the caller is authenticated AND flagged as admin in their own
-// user_metadata. NOTE: user_metadata is client-editable via supabase.auth.updateUser(),
-// so this check is not a hard security boundary - see JOTMINDS-WEBAPP audit notes.
-// Every other admin endpoint in this codebase uses this same pattern; hardening it
-// (migrating to app_metadata or a server-side admin allowlist) is tracked separately.
-async function verifyAdmin(request: Request) {
+// Verifies the caller is authenticated AND flagged as admin in app_metadata.
+// app_metadata is only writable via the Admin API (service role) - unlike
+// user_metadata, a client can never set this on themselves via
+// supabase.auth.updateUser(), so this is an actual security boundary.
+export async function verifyAdmin(request: Request) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader) return null;
   const token = authHeader.replace('Bearer ', '');
@@ -25,7 +24,7 @@ async function verifyAdmin(request: Request) {
   try {
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data.user) return null;
-    if (data.user.user_metadata?.role !== 'admin') return null;
+    if (data.user.app_metadata?.role !== 'admin') return null;
     return data.user;
   } catch {
     return null;
@@ -497,6 +496,71 @@ app.get('/security-overview', async (c) => {
   } catch (error) {
     console.log(`[superadmin/security-overview] Error: ${error}`);
     return c.json({ error: 'Failed to fetch security overview' }, 500);
+  }
+});
+
+// ============= ADMIN MANAGEMENT =============
+
+// List everyone currently flagged as admin via app_metadata (the hardened source
+// of truth - see verifyAdmin above).
+app.get('/admins', async (c) => {
+  const admin = await verifyAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const supabaseAdmin = getSupabaseClient(true);
+    const admins: { id: string; email: string }[] = [];
+    let page = 1;
+    const perPage = 1000;
+    while (true) {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+      if (error) throw error;
+      const users = data?.users || [];
+      users.forEach((u: any) => {
+        if (u.app_metadata?.role === 'admin') admins.push({ id: u.id, email: u.email });
+      });
+      if (users.length < perPage) break;
+      page++;
+    }
+    return c.json({ success: true, admins });
+  } catch (error) {
+    console.log(`[superadmin/admins] Error: ${error}`);
+    return c.json({ error: 'Failed to list admins' }, 500);
+  }
+});
+
+// Grant or revoke admin access. Only an existing verified admin (app_metadata,
+// Admin-API-only writable) can call this, and it writes app_metadata via the
+// Admin API - never user_metadata, which a client could set on themselves.
+app.post('/admins/set', async (c) => {
+  const admin = await verifyAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const { targetUserId, isAdmin } = await c.req.json();
+    if (!targetUserId || typeof isAdmin !== 'boolean') {
+      return c.json({ error: 'targetUserId and isAdmin (boolean) are required' }, 400);
+    }
+
+    const supabaseAdmin = getSupabaseClient(true);
+    const { data: targetData, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
+    if (fetchError || !targetData?.user) {
+      return c.json({ error: 'Target user not found' }, 404);
+    }
+
+    const nextAppMetadata = { ...(targetData.user.app_metadata || {}) };
+    if (isAdmin) {
+      nextAppMetadata.role = 'admin';
+    } else {
+      delete nextAppMetadata.role;
+    }
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, { app_metadata: nextAppMetadata });
+    if (updateError) throw updateError;
+
+    await logAudit(admin.id, admin.email || '', isAdmin ? 'grant_admin' : 'revoke_admin', { targetUserId, targetEmail: targetData.user.email });
+    return c.json({ success: true });
+  } catch (error) {
+    console.log(`[superadmin/admins/set] Error: ${error}`);
+    return c.json({ error: 'Failed to update admin status' }, 500);
   }
 });
 

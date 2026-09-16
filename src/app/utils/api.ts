@@ -299,6 +299,14 @@ export const getSecurityOverview = async () => {
   return makeRequest('/superadmin/security-overview');
 };
 
+export const listAdmins = async () => {
+  return makeRequest('/superadmin/admins');
+};
+
+export const setAdminStatus = async (targetUserId: string, isAdmin: boolean) => {
+  return makeRequest('/superadmin/admins/set', { method: 'POST', body: JSON.stringify({ targetUserId, isAdmin }) });
+};
+
 // Organization APIs
 export const getOrganizationMembers = async () => {
   return makeRequest('/organization/members');

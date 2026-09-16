@@ -150,7 +150,7 @@ app.get('/admin/assessment-modules', async (c) => {
   try {
     const user = await verifyAuth(c.req.raw);
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
-    if (user.user_metadata?.role !== 'admin') {
+    if (user.app_metadata?.role !== 'admin') {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -697,12 +697,17 @@ app.get('/assessment/results', async (c) => {
 
     const userIdsParam = c.req.query('userIds');
     if (userIdsParam) {
-      // Role validation: Only admins, school admins, teachers, or organization/supervisors can query others' assessments
+      // Role validation: Only admins, school admins, teachers, or organization/supervisors can query others' assessments.
+      // Sourced from the KV profile only (its role can't be self-assigned - see
+      // PATCH /user/profile's allowlist) or app_metadata for admin (Admin-API-only
+      // writable). user_metadata is intentionally NOT trusted here since it's
+      // client-editable via supabase.auth.updateUser().
       const profile = await kv.get(`user:${user.id}`);
-      const role = (profile?.role || user.user_metadata?.role || '').toLowerCase();
-      
-      const allowedRoles = ['school_admin', 'admin', 'teacher', 'organization', 'supervisor'];
-      if (!allowedRoles.includes(role) && user.id !== 'admin-001') {
+      const role = (profile?.role || '').toLowerCase();
+      const isAdmin = user.app_metadata?.role === 'admin' || role === 'admin';
+
+      const allowedRoles = ['school_admin', 'teacher', 'organization', 'supervisor'];
+      if (!isAdmin && !allowedRoles.includes(role) && user.id !== 'admin-001') {
         console.log(`[Results] Access denied for role '${role}' trying to query batch results`);
         return c.json({ error: 'Forbidden' }, 403);
       }

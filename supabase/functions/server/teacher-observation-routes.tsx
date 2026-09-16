@@ -43,8 +43,12 @@ app.post('/', async (c) => {
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
     const profile = await kv.get(`user:${user.id}`);
-    const role = profile?.role || user.user_metadata?.role || '';
-    if (role !== 'teacher' && role !== 'admin') {
+    // Sourced from the KV profile (not self-assignable, see PATCH /user/profile's
+    // allowlist) and app_metadata for admin (Admin-API-only writable). user_metadata
+    // is intentionally not trusted here since it's client-editable.
+    const role = profile?.role || '';
+    const isAdmin = user.app_metadata?.role === 'admin' || role === 'admin';
+    if (role !== 'teacher' && !isAdmin) {
       return c.json({ error: 'Forbidden - Teacher access required' }, 403);
     }
 
@@ -107,7 +111,7 @@ app.get('/teacher/:teacherId', async (c) => {
 
     const teacherId = c.req.param('teacherId');
     const profile = await kv.get(`user:${user.id}`);
-    const isAdmin = (profile?.role || user.user_metadata?.role) === 'admin';
+    const isAdmin = user.app_metadata?.role === 'admin' || profile?.role === 'admin';
     if (user.id !== teacherId && !isAdmin) {
       return c.json({ error: 'Forbidden' }, 403);
     }
@@ -129,7 +133,8 @@ app.get('/child/:childId', async (c) => {
 
     const childId = c.req.param('childId');
     const profile = await kv.get(`user:${user.id}`);
-    const role = profile?.role || user.user_metadata?.role || '';
+    const role = profile?.role || '';
+    const isAdmin = user.app_metadata?.role === 'admin' || role === 'admin';
 
     const all = await kv.getByPrefix(PREFIX);
     const forChild = all.filter((o: any) => o.studentId === childId);
@@ -140,7 +145,7 @@ app.get('/child/:childId', async (c) => {
     //  - the authoring teacher: their own entries
     //  - a linked parent: only entries flagged sharedWithParent
     let visible: any[];
-    if (user.id === childId || role === 'admin') {
+    if (user.id === childId || isAdmin) {
       visible = forChild;
     } else if (role === 'teacher') {
       visible = forChild.filter((o: any) => o.teacherId === user.id);
@@ -170,7 +175,7 @@ app.delete('/:id', async (c) => {
     if (!existing) return c.json({ success: true }); // already gone
 
     const profile = await kv.get(`user:${user.id}`);
-    const isAdmin = (profile?.role || user.user_metadata?.role) === 'admin';
+    const isAdmin = user.app_metadata?.role === 'admin' || profile?.role === 'admin';
     if (existing.teacherId !== user.id && !isAdmin) {
       return c.json({ error: 'Forbidden' }, 403);
     }

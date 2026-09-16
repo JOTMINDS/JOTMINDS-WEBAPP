@@ -95,7 +95,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       case 'support':
         return <SupportCenterView />;
       case 'security':
-        return <SecurityCenterView />;
+        return <SecurityCenterView users={users} />;
       case 'settings':
         return <PlatformSettingsView />;
       case 'audit-logs':
