@@ -3433,8 +3433,69 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
         );
         institutionStudents = institutionStudents.filter(Boolean); // Remove nulls
       }
-      console.log(`[Backend] Found ${institutionStudents.length} students via institution_members for teacher ${user.id}`);
-      return c.json({ success: true, students: institutionStudents });
+
+      // Merge in legacy KV-linked students not yet migrated into institution_members.
+      // Same strict ownership checks as Strategy 2 below - only students explicitly
+      // owned by this teacher via teacherId or linkedTeachers are added.
+      const knownIds = new Set(institutionStudents.map((s: any) => s.id));
+      const legacyQueries: Promise<any>[] = [
+        supabaseAdmin.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').eq('value->>teacherId', user.id),
+        supabaseAdmin.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').eq('value->>role', 'student').contains('value', { linkedTeachers: [user.id] })
+      ];
+      const legacyResults = await Promise.all(legacyQueries);
+      const legacyRaw = legacyResults.flatMap(r => r.data || []);
+      const legacyMap = new Map();
+      for (const item of legacyRaw) {
+        if (item?.key) legacyMap.set(item.key, item);
+      }
+      const legacyStudents = Array.from(legacyMap.values())
+        .map(d => {
+          const val = d.value;
+          if (val && typeof val === 'object' && !val.id) {
+            const parts = d.key.split(':');
+            if (parts.length > 1) val.id = parts.slice(1).join(':');
+          }
+          return val;
+        })
+        .filter((s: any) => s && !knownIds.has(s.id));
+
+      const legacyWithAssessments = await Promise.all(
+        legacyStudents.map(async (student: any) => {
+          const allAssessments = await kv.getByPrefix(`result:${student.id}:`);
+          const completedAssessments = allAssessments.filter((a: any) => a.completedAt);
+          const transformedAssessments = completedAssessments.map((assessment: any) => {
+            const assessmentType = assessment.assessmentType || assessment.type;
+            const rawResults = assessment.results || assessment.score || {};
+            let score: any = {};
+            if (assessmentType === 'kolb' || assessmentType === 'learning') {
+              const { style, scores } = unpackAssessmentData(rawResults, 'kolb');
+              score.kolb = { style, scores };
+            } else if (assessmentType === 'sternberg' || assessmentType === 'thinking' || assessmentType?.includes('thinking')) {
+              const { style, scores } = unpackAssessmentData(rawResults, 'sternberg');
+              score.sternberg = { style, scores };
+            } else if (assessmentType === 'dual-process' || assessmentType === 'decision') {
+              const { style, scores } = unpackAssessmentData(rawResults, 'dual-process');
+              score.dualProcess = { style, scores };
+            } else {
+              score[assessmentType] = rawResults;
+            }
+            return {
+              id: assessment.id || `result:${student.id}:${assessmentType}`,
+              userId: student.id,
+              type: assessmentType === 'learning' ? 'kolb' : assessmentType === 'thinking' ? 'sternberg' : assessmentType === 'decision' ? 'dual-process' : assessmentType,
+              completed: true,
+              completedAt: assessment.completedAt,
+              responses: assessment.answers || assessment.responses || [],
+              score: score
+            };
+          });
+          return { ...student, assessments: transformedAssessments };
+        })
+      );
+
+      const allStudents = [...institutionStudents, ...legacyWithAssessments];
+      console.log(`[Backend] Found ${institutionStudents.length} students via institution_members + ${legacyWithAssessments.length} legacy KV-linked students for teacher ${user.id}`);
+      return c.json({ success: true, students: allStudents });
     }
 
     // ── Strategy 2: KV-based lookup (legacy / non-institution teachers) ──

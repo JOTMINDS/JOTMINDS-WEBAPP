@@ -109,20 +109,28 @@ export function InstitutionReporting({
 
     let studentsInScope = allUsers.filter(u => u.role === 'student' && memberUserIds.has(u.id));
 
-    // Fallback if no supabase members
-    if (studentsInScope.length === 0 && currentTeacherId) {
+    if (studentMembers.length > 0) {
+      // The local user cache (getAllUsers) can be incomplete on this device, so fill in
+      // any institution member not found locally with a minimal object built from the
+      // (server-authoritative) members list, instead of only falling back when the
+      // local match is completely empty.
+      const coveredIds = new Set(studentsInScope.map(u => u.id));
+      const missingMembers = studentMembers
+        .filter(m => !coveredIds.has(m.userId))
+        .map(m => ({
+          id: m.userId,
+          name: m.userName,
+          email: m.userEmail,
+          role: 'student' as const,
+        } as User));
+      studentsInScope = [...studentsInScope, ...missingMembers];
+    } else if (currentTeacherId) {
+      // Fallback if no supabase members
       const assignments = getAssignmentsForTeacher(currentTeacherId);
       const teacherClassIds = new Set<string>();
       allClasses.filter(c => c.classTeacherId === currentTeacherId).forEach(c => teacherClassIds.add(c.id));
       assignments.forEach(a => teacherClassIds.add(a.classId));
       studentsInScope = allUsers.filter(u => u.role === 'student' && u.classId && teacherClassIds.has(u.classId));
-    } else if (studentsInScope.length === 0 && studentMembers.length > 0) {
-      studentsInScope = studentMembers.map(m => ({
-        id: m.userId,
-        name: m.userName,
-        email: m.userEmail,
-        role: 'student' as const,
-      } as User));
     }
 
     return studentsInScope.map(stu => {
