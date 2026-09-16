@@ -138,9 +138,10 @@ const RESOURCES: ResourceItem[] = [
 interface TrainingPageProps {
   institutionId?: string;
   members?: InstitutionMember[];
+  allPlatformUsers?: any[];
 }
 
-export function TrainingPage({ institutionId, members = [] }: TrainingPageProps) {
+export function TrainingPage({ institutionId, members = [], allPlatformUsers = [] }: TrainingPageProps) {
   const [activeTab, setActiveTab] = useState<'risk-gaps' | 'resources'>('risk-gaps');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -148,7 +149,10 @@ export function TrainingPage({ institutionId, members = [] }: TrainingPageProps)
   const [isPlaying, setIsPlaying] = useState(false);
 
   const allClasses = getAllClasses();
-  const allUsers = getAllUsers();
+  // allPlatformUsers is fetched server-side for every institution member (via
+  // getInstitutionMembers) and includes classId; the local getAllUsers cache can be
+  // incomplete on this device, so prefer the scoped list when available.
+  const allUsers = allPlatformUsers.length > 0 ? allPlatformUsers : getAllUsers();
 
   const teacherMembers = useMemo(() => {
     return members.filter(m => (m.role === 'teacher' || m.role === 'admin') && m.status === 'approved');
