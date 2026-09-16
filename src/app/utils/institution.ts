@@ -809,64 +809,24 @@ export async function generateOTP(contact: string, type: string = 'login'): Prom
     throw new Error('OTP via email only. Please provide a valid email address.');
   }
 
-  // Pre-generate a 6-digit OTP code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  // Dispatch via Supabase Edge Function /send-otp (the code itself is generated
+  // server-side; the server ignores any code sent from the client)
+  const response = await fetch(`${BASE_URL}/send-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${publicAnonKey}`
+    },
+    body: JSON.stringify({ email: cleanContact, type })
+  });
 
-  // Store in sessionStorage and localStorage as backup for offline/timeout verification
-  try {
-    const payload = JSON.stringify({ otp: code, createdAt: Date.now() });
-    sessionStorage.setItem(`jotminds_otp_${cleanContact}`, payload);
-    localStorage.setItem(`jotminds_otp_${cleanContact}`, payload);
-  } catch (e) {
-    // Storage access may be restricted in some browsers
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    console.warn('[OTP] /send-otp returned status:', response.status, errData);
+    throw new Error(errData.error || 'Failed to send verification code. Please try again.');
   }
 
-  let sent = false;
-
-  // Layer 1: Dispatch via Supabase Edge Function /send-otp
-  try {
-    const response = await fetch(`${BASE_URL}/send-otp`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify({ email: cleanContact, otp: code, type })
-    });
-
-    if (response.ok) {
-      sent = true;
-      console.log('[OTP] Verification code sent via Supabase Edge Function to:', cleanContact);
-    } else {
-      const errData = await response.json().catch(() => ({}));
-      console.warn('[OTP] Supabase /send-otp returned status:', response.status, errData);
-    }
-  } catch (error: any) {
-    console.warn('[OTP] Primary /send-otp dispatch error:', error?.message);
-  }
-
-  // Layer 2: Fallback to Cloudflare Pages API route /api/send-otp
-  if (!sent) {
-    try {
-      console.log('[OTP] Attempting Cloudflare Pages API fallback /api/send-otp...');
-      const cfResponse = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanContact, otp: code })
-      });
-
-      if (cfResponse.ok) {
-        sent = true;
-        console.log('[OTP] Verification code sent via Cloudflare Pages API to:', cleanContact);
-      }
-    } catch (cfError: any) {
-      console.warn('[OTP] Cloudflare Pages /api/send-otp fallback notice:', cfError?.message);
-    }
-  }
-
-  if (!sent) {
-    console.warn('[OTP] Both remote delivery channels encountered issues; local OTP fallback is active.');
-  }
+  console.log('[OTP] Verification code sent to:', cleanContact);
 }
 
 export async function verifyOTP(contact: string, entered: string): Promise<boolean> {

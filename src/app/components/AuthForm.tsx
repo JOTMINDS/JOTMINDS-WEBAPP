@@ -1431,6 +1431,15 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                         required
                       />
                     </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="text-xs text-[#7B61FF] hover:text-[#5B7DB1] underline transition-colors"
+                        onClick={handleResendOTP}
+                      >
+                        Resend Code
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
