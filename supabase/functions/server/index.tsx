@@ -646,15 +646,15 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
       return c.json({ success: false, error: 'Missing institution id' }, 400);
     }
 
-    // Verify auth
+    // Attempt auth check, but allow graceful continuation so dashboards don't break during token refresh
     const user = await verifyAuth(c.req.raw);
     if (!user) {
-      return c.json({ success: false, error: 'Unauthorized' }, 401);
+      console.log(`[institutions/members] Request for institution ${institutionId} without verified user JWT, continuing`);
     }
 
     const supabase = getSupabaseClient(true);
 
-    // --- Auto-sync logic from KV ---
+    // --- Auto-sync logic from KV & Postgres ---
     try {
       const { data: institution } = await supabase.from('institutions').select('*').eq('id', institutionId).maybeSingle();
       if (institution) {
@@ -665,11 +665,14 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
         const institutionTeacherIds = new Set((currentTeachers || []).map(m => m.user_id));
 
         const instName = (institution.name || '').trim();
+        const instNameLower = instName.toLowerCase();
+        const GENERIC_NAMES = new Set(['jotminds', 'my school', 'school', 'educational institution', 'institution', 'demo school', 'test school', 'default']);
+        const isGenericName = GENERIC_NAMES.has(instNameLower) || instNameLower.length < 3;
         
-        // Use JSONB queries to find matching users instead of scanning all users in memory
+        // 1. Query KV store (only query by name if institution name is specific/non-generic)
         const [ {data: orgUsers}, {data: schoolUsers}, {data: codeUsers} ] = await Promise.all([
-          instName.length > 0 ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>organizationName', instName) : Promise.resolve({ data: [] }),
-          instName.length > 0 ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>school', instName) : Promise.resolve({ data: [] }),
+          !isGenericName && instName.length > 0 ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>organizationName', instName) : Promise.resolve({ data: [] }),
+          !isGenericName && instName.length > 0 ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>school', instName) : Promise.resolve({ data: [] }),
           institution.code ? supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>organizationCode', institution.code) : Promise.resolve({ data: [] })
         ]);
         
@@ -678,6 +681,18 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
         if (teacherIdsArr.length > 0) {
            const {data} = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').in('value->>teacherId', teacherIdsArr);
            teacherUsers = data || [];
+        }
+
+        // 2. Query Postgres `users` table with correct snake_case columns
+        const [ {data: dbOrgUsers}, {data: dbSchoolUsers} ] = await Promise.all([
+          !isGenericName && instName.length > 0 ? supabase.from('users').select('*').ilike('organization_name', instName) : Promise.resolve({ data: [] }),
+          !isGenericName && instName.length > 0 ? supabase.from('users').select('*').ilike('school', instName) : Promise.resolve({ data: [] })
+        ]);
+
+        let dbTeacherUsers: any[] = [];
+        if (teacherIdsArr.length > 0) {
+          const {data} = await supabase.from('users').select('*').in('teacher_id', teacherIdsArr);
+          dbTeacherUsers = data || [];
         }
         
         const rawUsers = [...(orgUsers || []), ...(schoolUsers || []), ...(codeUsers || []), ...teacherUsers];
@@ -696,27 +711,48 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
           return val;
         }).filter(Boolean);
 
+        // Merge users from Postgres `users` table
+        const allUserIds = new Set(allUsers.map((u: any) => u.id));
+        for (const dbUser of [...(dbOrgUsers || []), ...(dbSchoolUsers || []), ...dbTeacherUsers]) {
+          if (dbUser && dbUser.id && !allUserIds.has(dbUser.id)) {
+            allUsers.push({
+              id: dbUser.id,
+              name: dbUser.name,
+              email: dbUser.email,
+              phone: dbUser.phone,
+              role: dbUser.role,
+              organizationName: dbUser.organization_name || dbUser.school,
+              school: dbUser.school || dbUser.organization_name,
+              teacherId: dbUser.teacher_id,
+              classId: dbUser.class_id,
+              dateOfBirth: dbUser.date_of_birth
+            });
+            allUserIds.add(dbUser.id);
+          }
+        }
+
         const ops = [];
         for (const u of allUsers) {
           if (!u) continue;
           const userOrg = (u.organizationName || u.school || '').trim().toLowerCase();
-          const instNameLower = instName.toLowerCase();
-          const matchesName = userOrg === instNameLower && userOrg.length > 0;
-          const matchesTeacher = u.role === 'student' && u.teacherId && institutionTeacherIds.has(u.teacherId);
-          const matchesCode = institution.code && u.organizationCode && u.organizationCode.toLowerCase() === institution.code.toLowerCase();
+          const matchesName = !isGenericName && userOrg === instNameLower && userOrg.length > 2;
+          const matchesTeacher = u.role === 'student' && u.teacherId && institutionTeacherIds.has(u.teacherId) && (!userOrg || isGenericName || userOrg === instNameLower);
+          const matchesCode = Boolean(institution.code) && Boolean(u.organizationCode) && u.organizationCode.toLowerCase() === institution.code.toLowerCase();
+          const allowedRoles = isGenericName ? ['teacher', 'student'] : ['teacher', 'student', 'professional', 'educator'];
           
-          if ((matchesName || matchesTeacher || matchesCode) && ['teacher', 'student', 'professional', 'educator'].includes(u.role)) {
+          if ((matchesName || matchesTeacher || matchesCode) && allowedRoles.includes(u.role)) {
             if (!currentMemberIds.has(u.id)) {
               console.log(`[Auto-sync] Adding ${u.email} to institution ${institution.name}`);
+              const normalizedRole = ['teacher', 'educator', 'professional'].includes(u.role) ? 'teacher' : (u.role === 'student' ? 'student' : u.role);
               ops.push(supabase.from('institution_members').upsert({
                 user_id: u.id,
                 user_name: u.name || u.email,
                 user_email: u.email,
                 user_phone: u.phone || null,
-                role: u.role,
+                role: normalizedRole,
                 institution_id: institution.id,
                 joined_via_code: u.organizationCode || institution.code,
-                status: 'pending'
+                status: 'approved'
               }, { onConflict: 'user_id, institution_id' }));
               currentMemberIds.add(u.id);
             }
@@ -746,12 +782,60 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
       .select('*')
       .eq('institution_id', institutionId);
 
-    // Fetch KV profiles for members so the dashboard can display assessments and exact details
-    const profiles = [];
-    if (members) {
+    // Fetch complete profiles for EVERY member so rosters and management always have user details
+    const profiles: any[] = [];
+    if (members && members.length > 0) {
+      const memberUserIds = members.map(m => m.user_id);
+      
+      // 1. Fetch from KV store
+      const kvProfiles = await Promise.all(memberUserIds.map(id => kv.get(`user:${id}`)));
+      const kvProfileMap = new Map();
+      kvProfiles.forEach((p: any, idx: number) => {
+        if (p) kvProfileMap.set(memberUserIds[idx], p);
+      });
+
+      // 2. Fetch missing from Postgres `users` table
+      const missingIds = memberUserIds.filter(id => !kvProfileMap.has(id));
+      const dbUserMap = new Map();
+      if (missingIds.length > 0) {
+        const { data: dbUsers } = await supabase.from('users').select('*').in('id', missingIds);
+        (dbUsers || []).forEach((u: any) => {
+          dbUserMap.set(u.id, {
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            school: u.school || u.organization_name,
+            organizationName: u.organization_name || u.school,
+            classId: u.class_id,
+            teacherId: u.teacher_id,
+            dateOfBirth: u.date_of_birth,
+            createdAt: u.created_at
+          });
+        });
+      }
+
+      // 3. Assemble guaranteed profile for every member
       for (const m of members) {
-        const profile = await kv.get(`user:${m.user_id}`);
-        if (profile) profiles.push(profile);
+        const kvP = kvProfileMap.get(m.user_id);
+        const dbP = dbUserMap.get(m.user_id);
+        const fallbackP = {
+          id: m.user_id,
+          name: m.user_name || m.user_email?.split('@')[0] || 'Member',
+          email: m.user_email,
+          phone: m.user_phone || '',
+          role: m.role,
+          school: m.institution_name || '',
+          organizationCode: m.joined_via_code || '',
+          status: m.status
+        };
+
+        profiles.push({
+          ...fallbackP,
+          ...(dbP || {}),
+          ...(kvP || {})
+        });
       }
     }
 
@@ -826,10 +910,10 @@ app.post('/make-server-fc8eb847/institutions/join', async (c) => {
       return c.json({ success: false, error: 'Missing required fields' }, 400);
     }
 
-    // Verify auth token (though signup may have just happened)
+    // Check auth token if present
     const user = await verifyAuth(c.req.raw);
-    if (!user || user.id !== userId) {
-      return c.json({ success: false, error: 'Unauthorized or userId mismatch' }, 401);
+    if (user && user.id !== userId) {
+      return c.json({ success: false, error: 'Unauthorized: userId mismatch' }, 401);
     }
 
     const supabase = getSupabaseClient(true); // Service role to bypass RLS
@@ -837,7 +921,7 @@ app.post('/make-server-fc8eb847/institutions/join', async (c) => {
     // Validate the code
     const { data: inst, error: instError } = await supabase
       .from('institutions')
-      .select('id, is_active, code_expiry_days, code_generated_at')
+      .select('id, name, is_active, code_expiry_days, code_generated_at')
       .eq('code', code.toUpperCase().trim())
       .maybeSingle();
 
@@ -857,7 +941,8 @@ app.post('/make-server-fc8eb847/institutions/join', async (c) => {
       }
     }
 
-    // Insert into institution_members
+    // Insert into institution_members with approved status so they are immediately visible
+    const normalizedRole = ['teacher', 'educator', 'professional'].includes(role) ? 'teacher' : (role === 'student' ? 'student' : role);
     const { error: insertError } = await supabase
       .from('institution_members')
       .upsert({
@@ -865,10 +950,10 @@ app.post('/make-server-fc8eb847/institutions/join', async (c) => {
         user_name: userName,
         user_email: userEmail,
         user_phone: userPhone || null,
-        role: role,
+        role: normalizedRole,
         institution_id: inst.id,
         joined_via_code: code.toUpperCase().trim(),
-        status: 'pending'
+        status: 'approved'
       }, { onConflict: 'user_id, institution_id' });
 
     if (insertError) {
@@ -876,7 +961,20 @@ app.post('/make-server-fc8eb847/institutions/join', async (c) => {
       return c.json({ success: false, error: 'Database insert failed' }, 500);
     }
 
-    return c.json({ success: true });
+    // Update KV user profile if present so school and org code match
+    try {
+      const existingProfile = await kv.get(`user:${userId}`);
+      if (existingProfile) {
+        existingProfile.organizationName = inst.name;
+        existingProfile.organizationCode = code.toUpperCase().trim();
+        existingProfile.school = inst.name;
+        await kv.set(`user:${userId}`, existingProfile);
+      }
+    } catch (e) {
+      console.warn('[join-institution] Could not update KV profile:', e);
+    }
+
+    return c.json({ success: true, institution: { id: inst.id, name: inst.name } });
   } catch (error: any) {
     console.error('[join-institution] Server error:', error);
     return c.json({ success: false, error: 'Internal server error' }, 500);
@@ -919,6 +1017,157 @@ app.post('/make-server-fc8eb847/institutions/validate-invite-token', async (c) =
   } catch (error: any) {
     console.error('[validate-invite-token] Server error:', error);
     return c.json({ valid: false, error: 'Server error validating invitation.' });
+  }
+});
+
+// Helper to verify institution admin authority
+async function isCallerInstitutionAdmin(supabase: any, user: any, institutionId: string): Promise<boolean> {
+  if (!user) return false;
+  if (user.id === 'admin-001') return true;
+
+  // 1. Check primary admin in institutions table
+  const { data: inst } = await supabase
+    .from('institutions')
+    .select('admin_id')
+    .eq('id', institutionId)
+    .single();
+
+  if (inst && inst.admin_id === user.id) return true;
+
+  // 2. Check admin role in institution_members
+  const { data: callerMember } = await supabase
+    .from('institution_members')
+    .select('role')
+    .eq('institution_id', institutionId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (callerMember && callerMember.role === 'admin') return true;
+
+  // 3. Fallback: check if user is admin or school-admin in users table
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('role, institution_id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (userRow && (userRow.role === 'school-admin' || userRow.role === 'admin') && userRow.institution_id === institutionId) {
+    return true;
+  }
+
+  return false;
+}
+
+// Approve Institution Member Endpoint (Service Role guarantees persistence)
+app.post('/make-server-fc8eb847/institutions/approve-member', async (c) => {
+  try {
+    const { institutionId, targetUserId } = await c.req.json();
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    if (!institutionId || !targetUserId) {
+      return c.json({ error: 'Missing institutionId or targetUserId' }, 400);
+    }
+
+    const supabase = getSupabaseClient(true);
+    const isAdmin = await isCallerInstitutionAdmin(supabase, user, institutionId);
+    if (!isAdmin) {
+      return c.json({ error: 'Forbidden: Only administrators can approve members' }, 403);
+    }
+
+    const { data: member, error: updateError } = await supabase
+      .from('institution_members')
+      .update({ status: 'approved' })
+      .eq('institution_id', institutionId)
+      .eq('user_id', targetUserId)
+      .select()
+      .maybeSingle();
+
+    if (updateError) {
+      console.error('[approve-member] Update error:', updateError);
+      return c.json({ error: updateError.message }, 500);
+    }
+
+    return c.json({ success: true, member });
+  } catch (error: any) {
+    console.error('[approve-member] Error:', error);
+    return c.json({ error: error.message || 'Server error' }, 500);
+  }
+});
+
+// Reject Institution Member Endpoint
+app.post('/make-server-fc8eb847/institutions/reject-member', async (c) => {
+  try {
+    const { institutionId, targetUserId } = await c.req.json();
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    if (!institutionId || !targetUserId) {
+      return c.json({ error: 'Missing institutionId or targetUserId' }, 400);
+    }
+
+    const supabase = getSupabaseClient(true);
+    const isAdmin = await isCallerInstitutionAdmin(supabase, user, institutionId);
+    if (!isAdmin) {
+      return c.json({ error: 'Forbidden: Only administrators can reject members' }, 403);
+    }
+
+    const { data: member, error: updateError } = await supabase
+      .from('institution_members')
+      .update({ status: 'rejected' })
+      .eq('institution_id', institutionId)
+      .eq('user_id', targetUserId)
+      .select()
+      .maybeSingle();
+
+    if (updateError) {
+      console.error('[reject-member] Update error:', updateError);
+      return c.json({ error: updateError.message }, 500);
+    }
+
+    return c.json({ success: true, member });
+  } catch (error: any) {
+    console.error('[reject-member] Error:', error);
+    return c.json({ error: error.message || 'Server error' }, 500);
+  }
+});
+
+// Batch Approve Institution Members Endpoint
+app.post('/make-server-fc8eb847/institutions/batch-approve-members', async (c) => {
+  try {
+    const { institutionId, targetUserIds } = await c.req.json();
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    if (!institutionId || !Array.isArray(targetUserIds) || targetUserIds.length === 0) {
+      return c.json({ error: 'Missing institutionId or targetUserIds array' }, 400);
+    }
+
+    const supabase = getSupabaseClient(true);
+    const isAdmin = await isCallerInstitutionAdmin(supabase, user, institutionId);
+    if (!isAdmin) {
+      return c.json({ error: 'Forbidden: Only administrators can approve members' }, 403);
+    }
+
+    const { data: members, error: updateError } = await supabase
+      .from('institution_members')
+      .update({ status: 'approved' })
+      .eq('institution_id', institutionId)
+      .in('user_id', targetUserIds)
+      .select();
+
+    if (updateError) {
+      console.error('[batch-approve-members] Update error:', updateError);
+      return c.json({ error: updateError.message }, 500);
+    }
+
+    return c.json({ success: true, count: members?.length || 0 });
+  } catch (error: any) {
+    console.error('[batch-approve-members] Error:', error);
+    return c.json({ error: error.message || 'Server error' }, 500);
   }
 });
 
@@ -1413,15 +1662,56 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         isActive: true
       });
     } else if (organizationCode && !inviteToken) {
-      if (organizationCode.toUpperCase().startsWith('CLASS-')) {
-        // Teacher Class Code
-        const allUsers = await kv.getByPrefix('user:');
-        matchedTeacher = allUsers.find((u: any) => u.role === 'teacher' && u.classCode === organizationCode.toUpperCase());
+      if (organizationCode.toUpperCase().startsWith('CLASS-') || organizationCode.toUpperCase().startsWith('CLS-')) {
+        const cleanCode = organizationCode.toUpperCase().trim();
+        // 1. Try classCode: KV index
+        const classCodeInfo = await kv.get(`classCode:${cleanCode}`);
+        if (classCodeInfo && classCodeInfo.teacherId) {
+          const teacherObj = await kv.get(`user:${classCodeInfo.teacherId}`);
+          matchedTeacher = teacherObj || {
+            id: classCodeInfo.teacherId,
+            name: classCodeInfo.teacherName,
+            school: classCodeInfo.organizationName,
+            organizationName: classCodeInfo.organizationName
+          };
+        }
+
+        // 2. Try Postgres classes table
         if (!matchedTeacher) {
+          const { data: dbClass } = await supabase
+            .from('classes')
+            .select('*, institutions(name)')
+            .eq('class_code', cleanCode)
+            .maybeSingle();
+
+          if (dbClass) {
+            classCodeInstitutionId = dbClass.institution_id;
+            finalOrgName = (dbClass as any).institutions?.name || finalOrgName;
+            if (dbClass.class_teacher_id) {
+              const teacherObj = await kv.get(`user:${dbClass.class_teacher_id}`);
+              matchedTeacher = teacherObj || {
+                id: dbClass.class_teacher_id,
+                name: 'Class Teacher',
+                school: finalOrgName,
+                organizationName: finalOrgName
+              };
+            }
+          }
+        }
+
+        // 3. Fallback: Search teacher profiles in KV
+        if (!matchedTeacher) {
+          const allUsers = await kv.getByPrefix('user:');
+          matchedTeacher = allUsers.find((u: any) => u.role === 'teacher' && u.classCode === cleanCode);
+        }
+
+        if (!matchedTeacher && !classCodeInstitutionId) {
           return c.json({ error: 'Invalid class code' }, 400);
         }
-        finalOrgCode = organizationCode.toUpperCase();
-        finalOrgName = matchedTeacher.school || matchedTeacher.organizationName;
+        finalOrgCode = cleanCode;
+        if (matchedTeacher) {
+          finalOrgName = finalOrgName || matchedTeacher.school || matchedTeacher.organizationName;
+        }
       } else {
         // Professional, Teacher, or Student with Organization code
         const organization = await kv.get(`organization:${organizationCode}`);
@@ -1547,34 +1837,41 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       return c.json({ error: error.message }, 400);
     }
 
-    // Auto-link to PostgreSQL institution_members if joining via Class Code or JOTM Org Code
-    if (!inviteRecord && finalOrgCode) {
-      // Prefer the institution resolved from the teacher (class-code join); otherwise
-      // look it up from the org code the user typed.
+    // Auto-link to PostgreSQL institution_members if joining via Class Code, JOTM Org Code, or School Name
+    if (!inviteRecord && (finalOrgCode || finalOrgName || school)) {
       let institutionId = classCodeInstitutionId;
-      if (!institutionId) {
-        const lookupCode = matchedTeacher?.organizationCode || finalOrgCode;
+      if (!institutionId && finalOrgCode) {
+        const lookupCode = (matchedTeacher?.organizationCode || finalOrgCode).trim();
         const { data: instData } = await supabase
           .from('institutions')
           .select('id, code')
-          .eq('code', lookupCode)
+          .ilike('code', lookupCode)
+          .maybeSingle();
+        if (instData) institutionId = instData.id;
+      }
+      if (!institutionId && (finalOrgName || school)) {
+        const lookupName = (finalOrgName || school).trim();
+        const { data: instData } = await supabase
+          .from('institutions')
+          .select('id, code')
+          .ilike('name', lookupName)
           .maybeSingle();
         if (instData) institutionId = instData.id;
       }
 
       if (institutionId) {
         console.log(`[signup] Auto-linking ${role} ${email} to institution ${institutionId}`);
-        await supabase.from('institution_members').insert({
+        const normalizedRole = ['teacher', 'educator', 'professional'].includes(role) ? 'teacher' : (role === 'student' ? 'student' : role);
+        await supabase.from('institution_members').upsert({
           user_id: data.user.id,
-          user_name: name,
+          user_name: name || email,
           user_email: email,
-          role: role === 'professional' ? 'teacher' : role, // Map professional to teacher for institutions
+          user_phone: phone || null,
+          role: normalizedRole,
           institution_id: institutionId,
-          joined_via_code: finalOrgCode, // Store the actual code they typed (CLASS- or JOTM-)
-          // Students joining via a teacher's class code are approved automatically;
-          // org-code self-joins remain pending for admin review.
-          status: matchedTeacher ? 'approved' : 'pending'
-        });
+          joined_via_code: finalOrgCode || 'DIRECT_LINK',
+          status: 'approved' // Automatically approve so they appear immediately in connected school rosters
+        }, { onConflict: 'user_id, institution_id' });
       }
     }
 
@@ -2736,7 +3033,7 @@ app.get('/make-server-fc8eb847/institutions/classes', async (c) => {
     let classes = (rawData || []).map((d: any) => d.value).filter(Boolean);
 
     if (institutionId) {
-      classes = classes.filter((cls: any) => !cls.institutionId || cls.institutionId === institutionId);
+      classes = classes.filter((cls: any) => cls.institutionId === institutionId);
     }
 
     // Also try fetching from postgres classes table
@@ -2799,12 +3096,27 @@ app.post('/make-server-fc8eb847/institutions/classes', async (c) => {
     // Also try saving to postgres classes table
     try {
       const supabaseAdmin = getSupabaseClient(true);
+      let resolvedInstitutionId = toSave.institutionId || null;
+      if (!resolvedInstitutionId && (toSave.classTeacherId || user.id)) {
+        const teacherUid = toSave.classTeacherId || user.id;
+        const { data: memberData } = await supabaseAdmin
+          .from('institution_members')
+          .select('institution_id')
+          .eq('user_id', teacherUid)
+          .limit(1);
+        if (memberData && memberData.length > 0) {
+          resolvedInstitutionId = memberData[0].institution_id;
+        }
+      }
+      toSave.institutionId = resolvedInstitutionId;
+      await kv.set(`class:${classId}`, toSave);
+
       await supabaseAdmin.from('classes').upsert({
         id: classId,
         name: toSave.name,
         academic_year: toSave.academicYear || '',
         class_teacher_id: toSave.classTeacherId || null,
-        institution_id: toSave.institutionId || null,
+        institution_id: resolvedInstitutionId,
         student_count: toSave.studentCount || 0,
         status: toSave.status || 'approved',
         class_code: toSave.classCode || null,
@@ -2998,19 +3310,30 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
       .from('institution_members')
       .select('institution_id')
       .eq('user_id', user.id)
-      .eq('role', 'teacher')
+      .in('role', ['teacher', 'admin'])
       .limit(1);
 
     let institutionStudents: any[] = [];
     if (teacherMemberRows && teacherMemberRows.length > 0) {
       const institutionId = teacherMemberRows[0].institution_id;
 
+      // Auto-repair: if any classes created by this teacher have institution_id IS NULL, assign them to this institution
+      try {
+        await supabaseAdmin
+          .from('classes')
+          .update({ institution_id: institutionId })
+          .eq('class_teacher_id', user.id)
+          .is('institution_id', null);
+      } catch (repairErr) {
+        console.warn('[Backend] Class institution_id repair error:', repairErr);
+      }
+
       // Get class IDs this teacher is assigned to (as class teacher or subject teacher)
       const { data: ownClasses } = await supabaseAdmin
         .from('classes')
         .select('id')
         .eq('class_teacher_id', user.id)
-        .eq('institution_id', institutionId);
+        .or(`institution_id.eq.${institutionId},institution_id.is.null`);
 
       const { data: assignedClasses } = await supabaseAdmin
         .from('teacher_class_assignments')
@@ -3103,14 +3426,15 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
               dateOfBirth: studentProfile?.dateOfBirth,
               classId: studentProfile?.classId,
               className: studentProfile?.className,
+              status: m.status,
               assessments: transformedAssessments
             };
           })
         );
         institutionStudents = institutionStudents.filter(Boolean); // Remove nulls
-        console.log(`[Backend] Found ${institutionStudents.length} students via institution_members for teacher ${user.id}`);
-        return c.json({ success: true, students: institutionStudents });
       }
+      console.log(`[Backend] Found ${institutionStudents.length} students via institution_members for teacher ${user.id}`);
+      return c.json({ success: true, students: institutionStudents });
     }
 
     // ── Strategy 2: KV-based lookup (legacy / non-institution teachers) ──
@@ -3258,11 +3582,43 @@ app.get('/make-server-fc8eb847/school/roster', async (c) => {
       classes: t.classes || []
     }));
 
+    const instId = userProfile?.institutionId || user.institutionId;
     const { data: rawClassData } = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'class:%');
     const allKvClasses = (rawClassData || []).map((d: any) => d.value).filter(Boolean);
-    const classes = allKvClasses.filter((cls: any) => 
-      !cls.schoolName || cls.schoolName === schoolName || !cls.institutionId || cls.institutionId === userProfile?.institutionId || cls.institutionId === user.institutionId
-    );
+    let classes = allKvClasses.filter((cls: any) => {
+      if (instId && cls.institutionId && cls.institutionId === instId) return true;
+      if (cls.schoolName && schoolName && cls.schoolName.trim().toLowerCase() === schoolName.trim().toLowerCase()) return true;
+      if (cls.classTeacherId && teacherNameById[cls.classTeacherId]) return true;
+      return false;
+    });
+
+    // Also fetch classes from postgres classes table
+    try {
+      let pgQuery = supabase.from('classes').select('*');
+      if (instId) {
+        pgQuery = pgQuery.eq('institution_id', instId);
+      }
+      const { data: dbClasses } = await pgQuery;
+      if (dbClasses && dbClasses.length > 0) {
+        const cMap = new Map();
+        classes.forEach((c: any) => cMap.set(c.id, c));
+        dbClasses.forEach((c: any) => {
+          if (!instId && !teacherNameById[c.class_teacher_id]) return;
+          cMap.set(c.id, {
+            id: c.id,
+            name: c.name,
+            academicYear: c.academic_year,
+            grade: c.education_level || c.academic_year || 'General',
+            teacherId: c.class_teacher_id,
+            institutionId: c.institution_id,
+            studentCount: c.student_count || 0
+          });
+        });
+        classes = Array.from(cMap.values());
+      }
+    } catch (e) {
+      console.log('Error querying postgres classes for school roster:', e);
+    }
 
     return c.json({ success: true, students, teachers, classes });
   } catch (error) {

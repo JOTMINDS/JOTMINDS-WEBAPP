@@ -10,13 +10,14 @@ import { InstitutionMembers } from './InstitutionDashboard/InstitutionMembers';
 import { TeacherClassManagement } from './TeacherClassManagement';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
-import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap, Brain, Sparkles, School } from 'lucide-react';
+import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap, Brain, Sparkles, School, Target } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
 import { 
-  TeacherClassOverview 
+  TeacherClassOverview,
+  TeacherAnalyticsComparison
 } from './teacher';
 import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
 import { JTIAReport } from './JTIAReport';
@@ -48,7 +49,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'analytics' | 'lesson-planner' | 'jtia'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'manage-classes' | 'students' | 'analytics' | 'alignment' | 'lesson-planner' | 'jtia'>('overview');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -135,9 +136,9 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       if (impersonatedUser) {
         const allUsers = getAllUsers();
         const classes = getAllClasses();
-        const assignments = getAssignmentsForTeacher(user.id);
         const teacherClassIds = new Set<string>();
-        classes.filter(c => c.classTeacherId === user.id || c.classTeacherId === user.email || c.id === user.classId || c.name === user.className).forEach(c => teacherClassIds.add(c.id));
+        const assignments = getAssignmentsForTeacher(user.id);
+        classes.filter(c => c.classTeacherId === user.id || (user.email && c.classTeacherId === user.email) || (user.classId && c.id === user.classId) || (user.className && c.name && c.name.toLowerCase() === user.className.toLowerCase())).forEach(c => teacherClassIds.add(c.id));
         assignments.forEach(a => teacherClassIds.add(a.classId));
         
         studentUsers = allUsers.filter(u => isStudentConnectedToTeacher(u, user, teacherClassIds));
@@ -188,17 +189,15 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       } else {
         // Regular teacher viewing their own data
         
-        // 1. Fetch from server
-        let serverStudents: User[] = [];
-        let serverAssessments: any[] = [];
+        // Regular teacher viewing their own data
         try {
           const response = await getStudentsForTeacher();
           if (response.success && response.students) {
-            serverStudents = response.students;
-            serverAssessments = serverStudents.flatMap((s: any) => s.assessments || []);
+            studentUsers = response.students;
+            assessmentsForStats = studentUsers.flatMap((s: any) => s.assessments || []);
             
-            if (serverAssessments.length === 0 && serverStudents.length > 0) {
-              const studentIds = serverStudents.map(s => s.id);
+            if (assessmentsForStats.length === 0 && studentUsers.length > 0) {
+              const studentIds = studentUsers.map(s => s.id);
               const chunkSize = 50;
               for (let i = 0; i < studentIds.length; i += chunkSize) {
                 const chunk = studentIds.slice(i, i + chunkSize);
@@ -237,68 +236,53 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                       score: score
                     };
                   }).filter((a: any) => a.completedAt);
-                  serverAssessments.push(...normalized);
+                  assessmentsForStats.push(...normalized);
                 } catch (e) {
                   console.error('Failed to fetch assessments chunk:', e);
                 }
               }
             }
+          } else {
+            throw new Error('API unsuccessful');
           }
         } catch (err) {
-          console.log('[TeacherDashboardNew] Failed to fetch server students:', err);
-        }
-
-        // 2. Fetch from local storage
-        let localStudents: User[] = [];
-        const allUsers = getAllUsers();
-        const classes = getAllClasses();
-        const relatedTeachers = getRelatedTeacherAccounts(user);
-        
-        const teacherClassIds = new Set<string>();
-        relatedTeachers.forEach(rt => {
-          classes.filter(c => c.classTeacherId === rt.id || c.classTeacherId === rt.email || c.id === rt.classId || c.name === rt.className).forEach(c => teacherClassIds.add(c.id));
-          getAssignmentsForTeacher(rt.id).forEach(a => teacherClassIds.add(a.classId));
-        });
-        
-        localStudents = allUsers.filter(u => relatedTeachers.some(rt => isStudentConnectedToTeacher(u, rt, teacherClassIds)));
-        
-        // Scope local assessments to connected students by ID or Email
-        const localStudentKeys = new Set<string>();
-        localStudents.forEach(s => {
-          if (s.id) localStudentKeys.add(s.id.toLowerCase());
-          if (s.email) localStudentKeys.add(s.email.toLowerCase());
-        });
-        const localAssessments = getAllAssessments().filter((a: any) => {
-          if (!a) return false;
-          const aId = a.userId?.toLowerCase();
-          const aEmail = (a.userEmail || a.email)?.toLowerCase();
-          return (aId && localStudentKeys.has(aId)) || (aEmail && localStudentKeys.has(aEmail));
-        });
-
-        // 3. Merge avoiding duplicates (server takes precedence)
-        const mergedStudentsMap = new Map();
-        localStudents.forEach(stu => mergedStudentsMap.set(stu.email?.toLowerCase() || stu.id, stu));
-        serverStudents.forEach(stu => mergedStudentsMap.set(stu.email?.toLowerCase() || stu.id, stu));
-        
-        // Fallback: If no students matched strict filter, include all student users in the system
-        if (mergedStudentsMap.size === 0) {
-          allUsers.forEach((u: User) => {
-            if (u.id !== user.id && u.email?.toLowerCase() !== user.email?.toLowerCase()) {
-              if (!['teacher', 'head_teacher', 'admin', 'school_admin', 'super_admin', 'supervisor', 'parent'].includes(u.role || '')) {
-                mergedStudentsMap.set(u.email?.toLowerCase() || u.id, u);
+          console.log('[TeacherDashboardNew] Falling back to local storage for students:', err);
+          
+          // Fallback: Fetch from local storage only if backend request failed
+          const allUsers = getAllUsers();
+          const classes = getAllClasses();
+          const relatedTeachers = getRelatedTeacherAccounts(user);
+          
+          const teacherClassIds = new Set<string>();
+          const teacherInstId = user.institutionId || (user as any).organizationId;
+          relatedTeachers.forEach(rt => {
+            classes.filter(c => {
+              if (c.classTeacherId === rt.id || (rt.email && c.classTeacherId === rt.email)) return true;
+              if (teacherInstId && c.institutionId && c.institutionId !== teacherInstId) return false;
+              if (rt.classId && c.id === rt.classId) return true;
+              if (rt.className && c.name && c.name.toLowerCase() === rt.className.toLowerCase()) {
+                if (!c.institutionId || (teacherInstId && c.institutionId === teacherInstId)) return true;
               }
-            }
+              return false;
+            }).forEach(c => teacherClassIds.add(c.id));
+            getAssignmentsForTeacher(rt.id).forEach(a => teacherClassIds.add(a.classId));
+          });
+          
+          studentUsers = allUsers.filter(u => relatedTeachers.some(rt => isStudentConnectedToTeacher(u, rt, teacherClassIds)));
+          
+          // Scope local assessments to connected students by ID or Email
+          const localStudentKeys = new Set<string>();
+          studentUsers.forEach(s => {
+            if (s.id) localStudentKeys.add(s.id.toLowerCase());
+            if (s.email) localStudentKeys.add(s.email.toLowerCase());
+          });
+          assessmentsForStats = getAllAssessments().filter((a: any) => {
+            if (!a) return false;
+            const aId = a.userId?.toLowerCase();
+            const aEmail = (a.userEmail || a.email)?.toLowerCase();
+            return (aId && localStudentKeys.has(aId)) || (aEmail && localStudentKeys.has(aEmail));
           });
         }
-
-        studentUsers = Array.from(mergedStudentsMap.values());
-        
-        // 4. Merge assessments
-        const mergedAssessmentsMap = new Map();
-        localAssessments.forEach((a: any) => mergedAssessmentsMap.set(a.id, a));
-        serverAssessments.forEach((a: any) => mergedAssessmentsMap.set(a.id, a));
-        
-        assessmentsForStats = Array.from(mergedAssessmentsMap.values());
       }
 
       setStudents(studentUsers);
@@ -439,6 +423,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         { id: 'manage-classes', label: 'Manage Classes', icon: School },
         { id: 'students', label: 'Students', icon: Eye, badge: students.length },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'alignment', label: 'Alignment Analysis', icon: Target },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
         { id: 'jtia', label: 'Teaching Insights', icon: GraduationCap },
       ]
@@ -449,7 +434,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab.replace('-', ' ')}
+          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'alignment' ? 'Alignment Analysis' : activeTab.replace('-', ' ')}
         </h2>
         {user.school && (
           <Badge variant="outline" className="border-purple-600 text-purple-700">
@@ -492,7 +477,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       <div className="max-w-5xl mx-auto w-full space-y-6">
 
         {/* Students connected banner — visible on class-related tabs */}
-        {['overview', 'students', 'analytics'].includes(activeTab) && (
+        {['overview', 'students', 'analytics', 'alignment'].includes(activeTab) && (
           <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>
             <span className="text-xl" aria-hidden>👥</span>
             <div>
@@ -537,7 +522,18 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
         {(activeTab as string) === 'analytics' && (
           <div className="space-y-8">
-            <CentralAnalyticsHub students={students as any} assessments={allAssessments} user={user} />
+            <CentralAnalyticsHub students={students as any} assessments={[...allAssessments, ...allMyAssessments]} user={user} />
+          </div>
+        )}
+
+        {(activeTab as string) === 'alignment' && (
+          <div className="space-y-8">
+            <TeacherAnalyticsComparison 
+              teacherAssessments={allMyAssessments}
+              studentAssessments={allAssessments}
+              students={students as any}
+              teacherProfile={user}
+            />
           </div>
         )}
 

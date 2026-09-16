@@ -16,6 +16,7 @@ import {
   getMemberCounts,
   approveMember,
   rejectMember,
+  batchApproveMembers,
   removeMember,
   getInstitutionMembers,
   deleteInstitutionInvitation
@@ -152,8 +153,8 @@ export function InstitutionMembers({
     [filteredMembers]
   );
   const pendingMembers = useMemo(
-    () => filteredMembers.filter(m => m.status === 'pending'),
-    [filteredMembers]
+    () => members.filter(m => m.status === 'pending'),
+    [members]
   );
 
   const visibleInvitations = useMemo(
@@ -161,8 +162,12 @@ export function InstitutionMembers({
     [institutionInvitations, cancelledInvitationIds]
   );
 
-  const adminMembers = useMemo(() => approvedMembers.filter(m => m.role === 'admin'), [approvedMembers]);
-  const teacherMembers = useMemo(() => approvedMembers.filter(m => m.role === 'teacher'), [approvedMembers]);
+  const activeMembers = useMemo(
+    () => filteredMembers.filter(m => m.status !== 'rejected'),
+    [filteredMembers]
+  );
+  const adminMembers = useMemo(() => activeMembers.filter(m => m.role === 'admin'), [activeMembers]);
+  const teacherMembers = useMemo(() => activeMembers.filter(m => m.role === 'teacher'), [activeMembers]);
 
   const counts = getMemberCounts(members);
 
@@ -208,14 +213,12 @@ export function InstitutionMembers({
 
   const handleBatchApprove = async () => {
     try {
-      for (const userId of selectedPending) {
-        await approveMember(institution.id, userId);
-      }
+      await batchApproveMembers(institution.id, Array.from(selectedPending));
       await onRefresh();
       toast.success(`Approved ${selectedPending.size} members`);
       setSelectedPending(new Set());
     } catch (err) {
-      toast.error('Failed to approve some members');
+      toast.error('Failed to approve members');
     }
   };
 
@@ -324,10 +327,15 @@ export function InstitutionMembers({
                             {m.userName.charAt(0)}
                           </div>
                           <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <p className="text-sm font-medium text-gray-900 truncate">{m.userName}</p>
                               {m.role === 'admin' && institution.adminId === m.userId && (
                                 <Crown className="w-3 h-3 text-[#5B7DB1] shrink-0" />
+                              )}
+                              {m.status === 'pending' && (
+                                <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 py-0 px-1.5">
+                                  Pending Approval
+                                </Badge>
                               )}
                             </div>
                             {/* Show email on mobile since contact column is hidden */}
@@ -398,6 +406,19 @@ export function InstitutionMembers({
                       {/* Actions cell */}
                       <td className="px-3 py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {m.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600 border-green-200 bg-green-50 hover:bg-green-100 h-7 px-2 text-xs flex items-center gap-1"
+                              onClick={() => handleApprove(m.userId)}
+                              disabled={processingMemberId === m.userId}
+                              title="Approve Member"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Approve</span>
+                            </Button>
+                          )}
                           {/* Assign Class button */}
                           {(m.role === 'teacher' || m.role === 'admin') && (
                             <Button
@@ -761,9 +782,9 @@ export function InstitutionMembers({
         )}
       </div>
 
-      {approvedMembers.length > 0 && (
+      {activeMembers.length > 0 && (
         <div className="mt-6 mb-4 space-y-3">
-          <h3 className="text-md font-semibold text-gray-800">Members ({approvedMembers.length})</h3>
+          <h3 className="text-md font-semibold text-gray-800">Members ({activeMembers.length})</h3>
           
           {/* Admin group */}
           {adminMembers.length > 0 && renderRoleGroup(adminMembers, 'Admin', 'admin', ROLE_COLORS.admin)}

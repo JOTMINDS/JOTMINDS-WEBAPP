@@ -65,9 +65,43 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     const usersSource = allPlatformUsers.length > 0 ? allPlatformUsers : getAllUsers();
     
     if (memberIds.size > 0) {
-      // Only show teachers/students who are members of this institution
-      setTeachers(usersSource.filter((u: any) => u.role === 'teacher' && memberIds.has(u.id)));
-      setStudents(usersSource.filter((u: any) => u.role === 'student' && memberIds.has(u.id)));
+      // Map teachers and students directly from institutionMembers enriched with profile data
+      const mappedTeachers = institutionMembers
+        .filter(m => (m.role === 'teacher' || m.role === 'admin') && m.status !== 'rejected')
+        .map(m => {
+          const profile = usersSource.find((u: any) => u.id === m.userId);
+          return {
+            id: m.userId,
+            name: profile?.name || m.userName || (m.userEmail ? m.userEmail.split('@')[0] : 'Teacher'),
+            email: profile?.email || m.userEmail,
+            phone: profile?.phone || m.userPhone || '',
+            role: m.role as any,
+            school: profile?.school || '',
+            ...(profile || {})
+          };
+        });
+
+      const mappedStudents = institutionMembers
+        .filter(m => m.role === 'student' && m.status !== 'rejected')
+        .map(m => {
+          const profile = usersSource.find((u: any) => u.id === m.userId);
+          return {
+            id: m.userId,
+            name: profile?.name || m.userName || (m.userEmail ? m.userEmail.split('@')[0] : 'Student'),
+            email: profile?.email || m.userEmail,
+            phone: profile?.phone || m.userPhone || '',
+            role: 'student' as any,
+            classId: profile?.classId || profile?.class_id,
+            className: profile?.className,
+            dateOfBirth: profile?.dateOfBirth || profile?.date_of_birth,
+            studentCode: profile?.studentCode,
+            teacherId: profile?.teacherId || profile?.teacher_id,
+            ...(profile || {})
+          };
+        });
+
+      setTeachers(mappedTeachers);
+      setStudents(mappedStudents);
     } else {
       setTeachers([]);
       setStudents([]);

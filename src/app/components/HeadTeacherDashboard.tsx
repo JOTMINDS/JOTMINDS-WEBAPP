@@ -97,7 +97,10 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
           setTeachers(response.teachers || []);
           // Generate pseudo-classes if none exist from the backend
           if (!response.classes || response.classes.length === 0) {
-             const localClasses = getAllClasses();
+              const localClasses = getAllClasses().filter((c: any) => 
+                (schoolId && c.institutionId === schoolId) || 
+                (schoolName && c.schoolName && c.schoolName.toLowerCase() === schoolName.toLowerCase())
+              );
              if (localClasses.length > 0) {
                setClasses(localClasses.map((c: any) => ({
                  id: c.id,

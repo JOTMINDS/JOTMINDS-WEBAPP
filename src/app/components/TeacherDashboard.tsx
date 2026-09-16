@@ -21,7 +21,8 @@ import {
   TeacherAppHeader, 
   TeacherTabBar, 
   TeacherClassOverview, 
-  TeacherIndividualStudentView 
+  TeacherIndividualStudentView,
+  TeacherAnalyticsComparison
 } from './teacher';
 import { getInstitutionForMember } from '../utils/institution';
 import { TeacherManagementContent } from './InstitutionDashboard/TeacherManagementContent';
@@ -673,6 +674,18 @@ export function TeacherDashboard({
             assessments={allAssessments}
           />
         </div>
+        )}
+
+        {/* Alignment Analysis Tab */}
+        {activeTab === 'analytics-compare' && (
+          <div className="space-y-6">
+            <TeacherAnalyticsComparison
+              teacherAssessments={getAllAssessments().filter(a => a.userId === user.id)}
+              studentAssessments={allAssessments}
+              students={students}
+              teacherProfile={user}
+            />
+          </div>
         )}
 
         {/* General Teaching Resources */}

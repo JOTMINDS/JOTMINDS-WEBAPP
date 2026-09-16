@@ -25,7 +25,9 @@ import {
   createInstitution,
   promoteMember,
   demoteMember,
-  resolveSchoolLocation
+  resolveSchoolLocation,
+  getInstitutionBySchoolName,
+  getInstitutionByCode
 } from '../../utils/institution';
 import { getAllUsers } from '../../utils/storage';
 import { getAllAssessmentResults } from '../../utils/api';
@@ -108,6 +110,12 @@ export function InstitutionDashboard({
         let inst = await getInstitutionByAdminId(user.id);
         if (!inst) {
           inst = await getInstitutionForMember(user.id);
+        }
+        if (!inst && (user.organizationName || user.school)) {
+          inst = await getInstitutionBySchoolName(user.organizationName || user.school);
+        }
+        if (!inst && (user.organizationCode || user.jotsCode)) {
+          inst = await getInstitutionByCode(user.organizationCode || user.jotsCode);
         }
         if (!inst) {
           // Auto-create a stub institution with resolved location to avoid blocking the user
@@ -242,13 +250,18 @@ export function InstitutionDashboard({
       }
       setMemberAssessments(fetchedAssessments);
 
-      if (user.role === 'teacher') {
+      // Check if the user is an institution admin/co-admin before applying teacher-only filter
+      const isInstitutionAdmin = institution.adminId === user.id
+        || institution.coAdminIds?.includes(user.id)
+        || updatedMembers.some(m => m.userId === user.id && m.role === 'admin');
+
+      if (user.role === 'teacher' && !isInstitutionAdmin) {
         const teacherStudents = updatedMembers.filter(m => {
           if (m.role === 'teacher') {
             return m.userId === user.id;
           }
           if (m.role === 'student') {
-            const studentProfile = allUsers.find(u => u.id === m.userId);
+            const studentProfile = mergedUsers.find(u => u.id === m.userId);
             return studentProfile && (
               studentProfile.teacherId === user.id ||
               (studentProfile.linkedTeachers && studentProfile.linkedTeachers.includes(user.id))
@@ -502,20 +515,40 @@ export function InstitutionDashboard({
           />
         )}
 
-        {tab === 'manage_students' && (
-          <CentralStudentManagement 
-            teacher={user} 
-            assessments={memberAssessments}
-            students={allPlatformUsers.filter(u => u.role === 'student' && members.some(m => m.userId === u.id)).map(stu => {
-              // Add basic assessment status so CentralStudentManagement works
-              const stuAssessments = memberAssessments.filter(a => a.userId === stu.id && a.score);
-              return {
-                ...stu,
-                hasCompletedAssessment: stuAssessments.length > 0
-              };
-            })}
-          />
-        )}
+        {tab === 'manage_students' && (() => {
+          const studentMembers = members.filter(m => m.role === 'student' && m.status !== 'rejected');
+          const studentList = studentMembers.map(m => {
+            const stu = allPlatformUsers.find(u => u.id === m.userId);
+            const stuAssessments = memberAssessments.filter(a => a.userId === m.userId && a.score);
+            return {
+              id: m.userId,
+              name: stu?.name || m.userName || (m.userEmail ? m.userEmail.split('@')[0] : 'Student'),
+              email: stu?.email || m.userEmail,
+              phone: stu?.phone || m.userPhone || '',
+              role: 'student',
+              school: stu?.school || institution.name,
+              organizationName: stu?.organizationName || institution.name,
+              organizationCode: stu?.organizationCode || m.joinedViaCode || institution.code,
+              classId: stu?.classId || stu?.class_id,
+              className: stu?.className,
+              dateOfBirth: stu?.dateOfBirth || stu?.date_of_birth,
+              studentCode: stu?.studentCode,
+              teacherId: stu?.teacherId || stu?.teacher_id,
+              teacherName: stu?.teacherName || stu?.teacher_name,
+              hasCompletedAssessment: stuAssessments.length > 0,
+              ...(stu || {})
+            };
+          });
+
+          return (
+            <CentralStudentManagement 
+              teacher={user} 
+              assessments={memberAssessments}
+              students={studentList}
+              onRefresh={loadData}
+            />
+          );
+        })()}
 
 
 

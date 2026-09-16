@@ -1,0 +1,10 @@
+export { HomeHeader } from './HomeHeader';
+export { HeroSection } from './HeroSection';
+export { BrainManualBanner } from './BrainManualBanner';
+export { JourneySection } from './JourneySection';
+export { HowItWorksSection } from './HowItWorksSection';
+export { EnablesSection } from './EnablesSection';
+export { FrameworksStrip } from './FrameworksStrip';
+export { FAQSection } from './FAQSection';
+export { FinalCTA } from './FinalCTA';
+export { HomeFooter } from './HomeFooter';

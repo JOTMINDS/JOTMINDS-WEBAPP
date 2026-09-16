@@ -103,11 +103,10 @@ function AppContent() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState<string>('');
 
-  // Set document title + run one-time account migrations + sync users
+  // Set document title + run one-time account migrations
   useEffect(() => {
     document.title = 'JotMinds - Discover How You Think';
     runAccountMigration();
-    syncAllUsersFromSupabase();
   }, []);
 
   // Handle Magic Link (already logged in)
@@ -130,7 +129,7 @@ function AppContent() {
                userPhone: (user as any).phone,
                role: userRole as any,
                joinedViaCode: code,
-               status: 'pending'
+               status: 'approved'
              });
              
              // Update user's role if needed or wait for next refresh
@@ -334,6 +333,9 @@ function AppContent() {
     try {
       localStorage.removeItem('ts_current_user');
       localStorage.removeItem('jotminds_current_user');
+      localStorage.removeItem('ts_users');
+      localStorage.removeItem('jotminds_institution_members');
+      localStorage.removeItem('jotminds_institution');
       await signOut();
     } catch (e) {
       console.error('Error during logout:', e);

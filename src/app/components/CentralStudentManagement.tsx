@@ -12,6 +12,7 @@ import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { StudentDetailView } from './StudentDetailView';
 import { GenerateStudentCodesModal } from './InstitutionDashboard/GenerateStudentCodesModal';
 import { BulkUploadModal } from './InstitutionDashboard/BulkUploadModal';
+import { approveMember } from '../utils/institution';
 import { toast } from 'sonner';
 
 interface CentralStudentManagementProps {
@@ -28,6 +29,26 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
+  const [approvingStudentId, setApprovingStudentId] = useState<string | null>(null);
+
+  const handleApproveStudent = async (e: React.MouseEvent, studentId: string) => {
+    e.stopPropagation();
+    const instId = teacher?.institutionId || teacher?.organizationId;
+    if (!instId) {
+      toast.error('Institution ID not found');
+      return;
+    }
+    setApprovingStudentId(studentId);
+    try {
+      await approveMember(instId, studentId);
+      toast.success('Student approved successfully');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      toast.error('Failed to approve student');
+    } finally {
+      setApprovingStudentId(null);
+    }
+  };
 
   // Extract unique classes
   const uniqueClasses = Array.from(new Set(students.map(s => s.className).filter(Boolean)));
@@ -192,6 +213,18 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
         </CardContent>
       </Card>
 
+      {/* Pending Student Approvals Banner */}
+      {students.some(s => s.status === 'pending') && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span className="text-xs text-amber-900 dark:text-amber-200 font-medium">
+              {students.filter(s => s.status === 'pending').length} student(s) waiting for school approval.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Layout: Roster Table vs Detail Drawer */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Student Roster Table */}
@@ -239,6 +272,11 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
                                   {student.studentCode}
                                 </code>
                               )}
+                              {student.status === 'pending' && (
+                                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-[9px] px-1.5 py-0 font-semibold">
+                                  Pending Approval
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-[11px] text-gray-500 truncate mt-0.5">
                               {student.className || 'General'} {student.email ? `• ${student.email}` : ''}
@@ -247,7 +285,17 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          {assessments.some(a => a.userId === student.id && (a.completed || a.completedAt)) ? (
+                          {student.status === 'pending' ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={approvingStudentId === student.id}
+                              onClick={(e) => handleApproveStudent(e, student.id)}
+                              className="h-7 px-2.5 text-[10px] text-amber-700 hover:text-amber-800 hover:bg-amber-100 bg-amber-50 border-amber-300 font-semibold shadow-2xs"
+                            >
+                              {approvingStudentId === student.id ? 'Approving...' : 'Approve Student'}
+                            </Button>
+                          ) : assessments.some(a => a.userId === student.id && (a.completed || a.completedAt)) ? (
                             <>
                               <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] hidden sm:flex">
                                 <CheckCircle2 className="w-3 h-3 mr-1" /> Assessed

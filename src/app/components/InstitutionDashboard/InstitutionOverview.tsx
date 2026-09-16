@@ -205,7 +205,7 @@ export function InstitutionOverview({
       {/* School Summary KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Connected Students', value: statusCounts.students, subtitle: `${statusCounts.pending} pending approval`, color: '#1E8A6E' },
+          { label: 'Connected Students', value: statusCounts.students, subtitle: statusCounts.pending > 0 ? `${statusCounts.pending} pending review` : 'All verified', color: '#1E8A6E' },
           { label: 'Active Teachers', value: statusCounts.teachers, subtitle: 'Faculty & educators', color: '#6B4C9A' },
           { label: 'Total Approved Members', value: statusCounts.approved, subtitle: 'Verified school community', color: '#5B7DB1' },
           { label: 'School Status', value: institution.isActive ? 'Active' : 'Inactive', subtitle: `${daysLeft ?? 30} days left on code`, color: institution.isActive ? '#10B981' : '#EF4444' },

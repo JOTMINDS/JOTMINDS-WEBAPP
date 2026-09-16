@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Check } from 'lucide-react';
+import { Globe, Check, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +27,11 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'ha', name: 'Hausa', nativeName: 'Harshen Hausa', flag: '🇳🇬', gtCode: 'ha' },
 ];
 
-export function LanguageSelector() {
+interface LanguageSelectorProps {
+  variant?: 'default' | 'minimal';
+}
+
+export function LanguageSelector({ variant = 'default' }: LanguageSelectorProps) {
   const [currentLang, setCurrentLang] = useState<string>(() => {
     return localStorage.getItem('jm_selected_language') || 'en';
   });
@@ -135,16 +139,28 @@ export function LanguageSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 px-2.5 rounded-xl border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs flex items-center gap-1.5 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-2xs"
-          title="Change Interface Language"
-        >
-          <span className="text-sm">{selected.flag}</span>
-          <span className="hidden sm:inline text-slate-700 dark:text-slate-200">{selected.name}</span>
-          <Globe className="w-3.5 h-3.5 text-slate-400" />
-        </Button>
+        {variant === 'minimal' ? (
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-[13px] font-medium text-slate-700 hover:text-[#4E35DE] px-2 py-1.5 rounded-md hover:bg-slate-50 transition-colors cursor-pointer focus:outline-none"
+            title="Change Interface Language"
+          >
+            <Globe className="w-4 h-4 text-slate-600" />
+            <span>{selected.name}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          </button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 px-2.5 rounded-xl border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs flex items-center gap-1.5 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-2xs"
+            title="Change Interface Language"
+          >
+            <span className="text-sm">{selected.flag}</span>
+            <span className="hidden sm:inline text-slate-700 dark:text-slate-200">{selected.name}</span>
+            <Globe className="w-3.5 h-3.5 text-slate-400" />
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
         <div className="px-2.5 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">

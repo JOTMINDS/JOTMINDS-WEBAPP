@@ -121,8 +121,27 @@ export function mapDBInvitationToLocal(db: any): InstitutionInvitation {
 
 // Get Auth session token
 async function getAuthToken(): Promise<string> {
-  const session = (await (supabase as any).auth.getSession()).data.session;
-  return session?.access_token || '';
+  try {
+    const session = (await (supabase as any).auth.getSession())?.data?.session;
+    if (session?.access_token) return session.access_token;
+  } catch (e) {}
+
+  // Check localStorage for supabase token
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('sb-') && key.endsWith('-auth-token') || key === 'supabase.auth.token')) {
+        const item = localStorage.getItem(key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (parsed?.access_token) return parsed.access_token;
+          if (parsed?.currentSession?.access_token) return parsed.currentSession.access_token;
+        }
+      }
+    }
+  } catch (e) {}
+
+  return publicAnonKey;
 }
 
 // ─── Storage (Supabase Backend Integrations) ───────────────────────────────────
@@ -184,7 +203,7 @@ export async function getInstitutionByAdminId(adminId: string): Promise<Institut
   if (local) {
     try {
       const inst = JSON.parse(local);
-      if (inst && (inst.adminId === adminId || inst.id)) return inst;
+      if (inst && (inst.adminId === adminId || inst.coAdminIds?.includes(adminId))) return inst;
     } catch (e) {}
   }
   return null;
@@ -469,11 +488,12 @@ export async function addMember(institutionId: string, member: Omit<InstitutionM
 }
 
 export async function joinInstitution(code: string, member: { userId: string; userName: string; userEmail: string; userPhone?: string; role: 'teacher' | 'student' }): Promise<void> {
+  const token = await getAuthToken();
   const response = await fetch(`${BASE_URL}/institutions/join`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${publicAnonKey}`
+      'Authorization': `Bearer ${token || publicAnonKey}`
     },
     body: JSON.stringify({
       code,
@@ -496,6 +516,24 @@ export async function joinInstitution(code: string, member: { userId: string; us
 }
 
 export async function approveMember(institutionId: string, userId: string): Promise<void> {
+  const token = await getAuthToken();
+  try {
+    const res = await fetch(`${BASE_URL}/institutions/approve-member`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ institutionId, targetUserId: userId })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) return;
+    }
+  } catch (e) {
+    console.warn('[approveMember] Edge function error, falling back to direct DB:', e);
+  }
+
   const { error } = await (supabase as any)
     .from('institution_members')
     .update({ status: 'approved' } as any)
@@ -506,11 +544,58 @@ export async function approveMember(institutionId: string, userId: string): Prom
 }
 
 export async function rejectMember(institutionId: string, userId: string): Promise<void> {
+  const token = await getAuthToken();
+  try {
+    const res = await fetch(`${BASE_URL}/institutions/reject-member`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ institutionId, targetUserId: userId })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) return;
+    }
+  } catch (e) {
+    console.warn('[rejectMember] Edge function error, falling back to direct DB:', e);
+  }
+
   const { error } = await (supabase as any)
     .from('institution_members')
     .update({ status: 'rejected' } as any)
     .eq('institution_id', institutionId)
     .eq('user_id', userId);
+
+  if (error) throw error;
+}
+
+export async function batchApproveMembers(institutionId: string, userIds: string[]): Promise<void> {
+  if (!userIds.length) return;
+  const token = await getAuthToken();
+  try {
+    const res = await fetch(`${BASE_URL}/institutions/batch-approve-members`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ institutionId, targetUserIds: userIds })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) return;
+    }
+  } catch (e) {
+    console.warn('[batchApproveMembers] Edge function error, falling back to direct DB:', e);
+  }
+
+  const { error } = await (supabase as any)
+    .from('institution_members')
+    .update({ status: 'approved' } as any)
+    .eq('institution_id', institutionId)
+    .in('user_id', userIds);
 
   if (error) throw error;
 }
@@ -691,23 +776,26 @@ export async function deleteInstitutionInvitation(invitationId: string, email: s
 }
 
 export function getMemberCounts(members: InstitutionMember[]): { total: number; teachers: number; students: number; admins: number } {
-  const approved = members.filter(m => m.status === 'approved');
+  const nonRejected = members.filter(m => m.status !== 'rejected');
   return {
-    total: approved.length,
-    teachers: approved.filter(m => m.role === 'teacher').length,
-    students: approved.filter(m => m.role === 'student').length, admins: approved.filter(m => (m.role as any) === 'admin' || (m.role as any) === 'school_admin' || (m.role as any) === 'head_teacher').length,
+    total: nonRejected.length,
+    teachers: nonRejected.filter(m => m.role === 'teacher').length,
+    students: nonRejected.filter(m => m.role === 'student').length,
+    admins: nonRejected.filter(m => (m.role as any) === 'admin' || (m.role as any) === 'school_admin' || (m.role as any) === 'head_teacher').length,
   };
 }
 
 export function getMemberCountsByStatus(members: InstitutionMember[]): { total: number; approved: number; pending: number; rejected: number; teachers: number; students: number; admins: number } {
   const approved = members.filter(m => m.status === 'approved');
+  const nonRejected = members.filter(m => m.status !== 'rejected');
   return {
     total: members.length,
     approved: approved.length,
     pending: members.filter(m => m.status === 'pending' || !m.status).length,
     rejected: members.filter(m => m.status === 'rejected').length,
-    teachers: approved.filter(m => m.role === 'teacher').length,
-    students: approved.filter(m => m.role === 'student').length, admins: approved.filter(m => (m.role as any) === 'admin' || (m.role as any) === 'school_admin' || (m.role as any) === 'head_teacher').length,
+    teachers: nonRejected.filter(m => m.role === 'teacher').length,
+    students: nonRejected.filter(m => m.role === 'student').length,
+    admins: nonRejected.filter(m => (m.role as any) === 'admin' || (m.role as any) === 'school_admin' || (m.role as any) === 'head_teacher').length,
   };
 }
 
@@ -1039,10 +1127,17 @@ export async function getInstitutionClasses(institutionId: string, teacherIds?: 
 
   // 2. Also try fetching from Supabase Postgres table
   try {
-    const { data, error } = await (supabase as any)
-      .from('classes')
-      .select('*')
-      .or(`institution_id.eq.${institutionId},institution_id.is.null`);
+    let query = (supabase as any).from('classes').select('*');
+    if (institutionId) {
+      if (teacherIds && teacherIds.length > 0) {
+        query = query.or(`institution_id.eq.${institutionId},class_teacher_id.in.(${teacherIds.join(',')})`);
+      } else {
+        query = query.eq('institution_id', institutionId);
+      }
+    } else if (teacherIds && teacherIds.length > 0) {
+      query = query.in('class_teacher_id', teacherIds);
+    }
+    const { data, error } = await query;
 
     if (error) {
       console.warn('Error fetching classes from Supabase, falling back to local storage:', error);
@@ -1072,10 +1167,9 @@ export async function getInstitutionClasses(institutionId: string, teacherIds?: 
   // Merge with local storage classes (allow matching institutionId, teacherIds of school, or unscoped classes)
   const teacherIdSet = new Set(teacherIds || []);
   const localClasses = getAllClasses().filter(c => {
-    if (!institutionId) return true;
-    if (c.institutionId === institutionId) return true;
+    if (!institutionId && teacherIdSet.size === 0) return true;
+    if (institutionId && c.institutionId === institutionId) return true;
     if (c.classTeacherId && teacherIdSet.has(c.classTeacherId)) return true;
-    if (!c.institutionId && teacherIdSet.size > 0 && c.classTeacherId && teacherIdSet.has(c.classTeacherId)) return true;
     return false;
   });
   

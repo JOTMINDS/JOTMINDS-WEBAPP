@@ -102,53 +102,11 @@ export async function deleteUserFromSupabase(userId: string) {
 }
 
 /**
- * Asynchronously pulls down all relevant users from Supabase 
- * and merges them into the local storage.
- * Call this on app initialization.
+ * Deprecated: Unscoped global user sync causes cross-account data contamination.
+ * User data is fetched on-demand per authenticated user/institution context.
  */
 export async function syncAllUsersFromSupabase() {
-  try {
-    const supabase = createClient();
-    // For now, in our hybrid model, we pull all users to populate the local cache.
-    // In a fully scaled app, this would be scoped to the logged-in user's context.
-    const { data, error } = (await supabase
-      .from('users')
-      .select('*')) as { data: any[] | null, error: any };
-      
-    if (error) {
-      console.error('[Supabase Sync] Error fetching users from Supabase:', error);
-      return;
-    }
-    
-    if (data && data.length > 0) {
-      const localUsersStr = localStorage.getItem('ts_users');
-      const localUsers: User[] = localUsersStr ? JSON.parse(localUsersStr) : [];
-      
-      // Create a map for easy merging
-      const localUsersMap = new Map(localUsers.map(u => [u.id, u]));
-      
-      // Merge Supabase data into local data (Supabase wins on shared fields)
-      data.forEach(row => {
-        const mappedUser = mapSupabaseToUser(row);
-        const existingLocalUser = localUsersMap.get(row.id);
-        
-        if (existingLocalUser) {
-          // Preserve local-only fields like 'assessments' (the legacy full objects)
-          mappedUser.assessments = existingLocalUser.assessments;
-          mappedUser.reviews = existingLocalUser.reviews;
-        }
-        
-        localUsersMap.set(row.id, mappedUser);
-      });
-      
-      // Save back to local storage
-      const mergedUsers = Array.from(localUsersMap.values());
-      localStorage.setItem('ts_users', JSON.stringify(mergedUsers));
-      console.log('[Supabase Sync] Successfully merged', data.length, 'users from Supabase into local storage');
-    }
-  } catch (error) {
-    console.error('[Supabase Sync] Exception syncing users from Supabase:', error);
-  }
+  return;
 }
 
 /**
@@ -183,6 +141,17 @@ export async function syncAssessmentToSupabase(assessment: Assessment) {
 export async function syncClassToSupabase(cls: Class) {
   try {
     const supabase = createClient();
+    let institutionId = cls.institutionId || null;
+    if (!institutionId) {
+      try {
+        const currentUserStr = localStorage.getItem('jotminds_current_user') || localStorage.getItem('ts_current_user');
+        if (currentUserStr) {
+          const user = JSON.parse(currentUserStr);
+          institutionId = user.institutionId || user.organizationId || null;
+        }
+      } catch (e) {}
+    }
+
     const { error } = await supabase
       .from('classes')
       .upsert({
@@ -190,7 +159,7 @@ export async function syncClassToSupabase(cls: Class) {
         name: cls.name,
         academic_year: cls.academicYear,
         class_teacher_id: cls.classTeacherId || null,
-        institution_id: cls.institutionId || null,
+        institution_id: institutionId,
         student_count: cls.studentCount || 0,
         status: cls.status || 'approved', // Ensure status is synced, default to approved if missing
         created_at: cls.createdAt || new Date().toISOString()

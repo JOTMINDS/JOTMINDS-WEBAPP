@@ -4,6 +4,7 @@ import { Badge } from '../ui/badge';
 import { User, Assessment } from '../../types';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell } from 'recharts';
 import { calculateTeachingStyleScore } from '../../utils/teachingStyleScoring';
+import { getAllAssessments, getAssessmentsByUserId } from '../../utils/storage';
 import { Info, Target, LayoutTemplate } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
@@ -34,22 +35,84 @@ const DUAL_COLORS: Record<string, string> = {
 };
 
 export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessments, students, teacherProfile }: TeacherAnalyticsComparisonProps) {
+  // Merge teacher assessments from props and storage to guarantee complete data
+  const allTeacherAssessments = useMemo(() => {
+    const all = getAllAssessments();
+    const tId = teacherProfile?.id?.toLowerCase();
+    const tEmail = teacherProfile?.email?.toLowerCase();
+    const local = all.filter(a => {
+      if (!a) return false;
+      const aId = a.userId?.toLowerCase();
+      const aEmail = ((a as any).userEmail || (a as any).email)?.toLowerCase();
+      return (tId && aId === tId) || (tEmail && (aId === tEmail || aEmail === tEmail));
+    });
+
+    const mergedMap = new Map<string, Assessment>();
+    (local || []).forEach(a => { if (a && (a.id || a.type)) mergedMap.set(a.id || a.type, a); });
+    (teacherAssessments || []).forEach(a => { if (a && (a.id || a.type)) mergedMap.set(a.id || a.type, a); });
+    return Array.from(mergedMap.values());
+  }, [teacherAssessments, teacherProfile?.id, teacherProfile?.email]);
+
   const getLatestAssessment = (types: string[], sourceAssessments: Assessment[]) => {
-    const filtered = sourceAssessments.filter(a => types.includes(a.type));
+    const filtered = sourceAssessments.filter(a => a && types.includes(a.type));
     return filtered.sort((a, b) => new Date(b.completedAt || '').getTime() - new Date(a.completedAt || '').getTime())[0];
   };
 
   const getLatestForUser = (types: string[], userId: string, sourceAssessments: Assessment[]) => {
-    const filtered = sourceAssessments.filter(a => types.includes(a.type) && a.userId === userId);
+    const filtered = sourceAssessments.filter(a => a && types.includes(a.type) && a.userId === userId);
     return filtered.sort((a, b) => new Date(b.completedAt || '').getTime() - new Date(a.completedAt || '').getTime())[0];
   };
 
-  const tKolb = getLatestAssessment(['kolb', 'learning'], teacherAssessments);
-  const tThink = getLatestAssessment(['sternberg', 'adult-thinking', 'shs-thinking', 'jhs-thinking', 'child-thinking', 'thinking'], teacherAssessments);
-  const tDual = getLatestAssessment(['dual-process', 'decision'], teacherAssessments);
-  const tJtia = getLatestAssessment(['teaching-style', 'jtia'], teacherAssessments);
+  const extractKolbStyle = (assessment?: Assessment, user?: User): string => {
+    if (assessment?.score) {
+      const s = assessment.score;
+      const raw = s.kolb?.style || (s as any).learning?.style || (s as any).style || (s as any).primaryStyle;
+      if (raw && typeof raw === 'string') return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+    }
+    if ((user as any)?.learningStyle && typeof (user as any).learningStyle === 'string') {
+      const raw = (user as any).learningStyle;
+      return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+    }
+    return '';
+  };
 
-  const tJtiaReport = tJtia ? (tJtia.score as any || tJtia.score as any || (tJtia.score as any)?.jtia) : null;
+  const extractThinkStyle = (assessment?: Assessment, user?: User): string => {
+    if (assessment?.score) {
+      const s = assessment.score;
+      const scoreRaw = s.sternberg || s['jhs-thinking'] || s['shs-thinking'] || s['adult-thinking'] || s['child-thinking'] || (s as any).thinking;
+      const raw = scoreRaw?.style || scoreRaw?.primaryStyle || scoreRaw?.dominantStyle || (s as any).style || (s as any).primaryStyle;
+      if (raw && typeof raw === 'string') return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+    }
+    if ((user as any)?.thinkingStyle && typeof (user as any).thinkingStyle === 'string') {
+      const raw = (user as any).thinkingStyle;
+      return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+    }
+    return '';
+  };
+
+  const extractDualStyle = (assessment?: Assessment, user?: User): string => {
+    if (assessment?.score) {
+      const s = assessment.score;
+      const raw = s.dualProcess?.style || (s as any).decision?.style || s['dual-process']?.style || (s as any).style || (s as any).primaryStyle;
+      if (raw && typeof raw === 'string') return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+    }
+    if ((user as any)?.decisionStyle && typeof (user as any).decisionStyle === 'string') {
+      const raw = (user as any).decisionStyle;
+      return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+    }
+    return '';
+  };
+
+  const tKolb = getLatestAssessment(['kolb', 'learning'], allTeacherAssessments);
+  const tThink = getLatestAssessment(['sternberg', 'adult-thinking', 'shs-thinking', 'jhs-thinking', 'child-thinking', 'thinking'], allTeacherAssessments);
+  const tDual = getLatestAssessment(['dual-process', 'decision'], allTeacherAssessments);
+  const tJtia = getLatestAssessment(['teaching-style', 'jtia'], allTeacherAssessments);
+
+  const tJtiaReport = tJtia ? ((tJtia.score as any)?.jtia || tJtia.score) : null;
+
+  const tKolbStyle = extractKolbStyle(tKolb, teacherProfile);
+  const tThinkStyle = extractThinkStyle(tThink, teacherProfile);
+  const tDualStyle = extractDualStyle(tDual, teacherProfile);
 
   // Aggregate student data
   const studentData = useMemo(() => {
@@ -60,103 +123,66 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
     };
 
     students.forEach(student => {
-      const sKolb = getLatestForUser(['kolb', 'learning'], student.id, studentAssessments);
-      if (sKolb?.score) {
-        const styleRaw = sKolb.score.kolb?.style || (sKolb.score as any).learning?.style;
-        if (styleRaw) {
-          const style = styleRaw.charAt(0).toUpperCase() + styleRaw.slice(1);
-          counts.kolb[style] = (counts.kolb[style] || 0) + 1;
-          counts.kolb.Total++;
-        }
+      const userAssessments: Assessment[] = [
+        ...studentAssessments.filter(a => a && a.userId === student.id),
+        ...(Array.isArray((student as any).assessments) ? (student as any).assessments : [])
+      ];
+
+      // 1. Learning Style
+      const sKolb = getLatestForUser(['kolb', 'learning'], student.id, userAssessments);
+      const sKolbStyle = extractKolbStyle(sKolb, student);
+      if (sKolbStyle) {
+        counts.kolb[sKolbStyle] = (counts.kolb[sKolbStyle] || 0) + 1;
+        counts.kolb.Total++;
       }
 
-      const sThink = getLatestForUser(['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'], student.id, studentAssessments);
-      if (sThink?.score) {
-        const scoreRaw = sThink.score.sternberg || sThink.score['jhs-thinking'] || sThink.score['shs-thinking'] || sThink.score['adult-thinking'] || sThink.score['child-thinking'] || (sThink.score as any).thinking;
-        let styleStr = scoreRaw?.style || scoreRaw?.primaryStyle || scoreRaw?.dominantStyle;
-        if (styleStr) {
-          styleStr = styleStr.charAt(0).toUpperCase() + styleStr.slice(1);
-          counts.think[styleStr] = (counts.think[styleStr] || 0) + 1;
-          counts.think.Total++;
-        }
+      // 2. Thinking Style
+      const sThink = getLatestForUser(['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'], student.id, userAssessments);
+      const sThinkStyle = extractThinkStyle(sThink, student);
+      if (sThinkStyle) {
+        counts.think[sThinkStyle] = (counts.think[sThinkStyle] || 0) + 1;
+        counts.think.Total++;
       }
 
-      const sDual = getLatestForUser(['dual-process', 'decision'], student.id, studentAssessments);
-      if (sDual?.score) {
-        const styleRaw = sDual.score.dualProcess?.style || (sDual.score as any).decision?.style || sDual.score['dual-process']?.style;
-        if (styleRaw) {
-          let styleStr = styleRaw.charAt(0).toUpperCase() + styleRaw.slice(1);
-          counts.dual[styleStr] = (counts.dual[styleStr] || 0) + 1;
-          counts.dual.Total++;
-        }
+      // 3. Decision Style
+      const sDual = getLatestForUser(['dual-process', 'decision'], student.id, userAssessments);
+      const sDualStyle = extractDualStyle(sDual, student);
+      if (sDualStyle) {
+        counts.dual[sDualStyle] = (counts.dual[sDualStyle] || 0) + 1;
+        counts.dual.Total++;
       }
     });
 
     return counts;
   }, [students, studentAssessments]);
-  let tKolbStyle = '';
-  if (tKolb?.score) {
-    const rawStyle = tKolb.score.kolb?.style || (tKolb.score as any).learning?.style || '';
-    if (rawStyle) {
-      tKolbStyle = rawStyle.charAt(0).toUpperCase() + rawStyle.slice(1);
-    }
-  } else if ((teacherProfile as any)?.learningStyle) {
-    tKolbStyle = (teacherProfile as any).learningStyle;
-  } else {
-    tKolbStyle = 'Assimilating';
-  }
 
-  let tThinkStyle = '';
-  if (tThink?.score) {
-    const scoreRaw = tThink.score.sternberg || tThink.score['jhs-thinking'] || tThink.score['shs-thinking'] || tThink.score['adult-thinking'] || tThink.score['child-thinking'] || (tThink.score as any).thinking;
-    let styleStr = scoreRaw?.style || scoreRaw?.primaryStyle || scoreRaw?.dominantStyle || '';
-    if (styleStr) {
-      tThinkStyle = styleStr.charAt(0).toUpperCase() + styleStr.slice(1);
-    }
-  } else if ((teacherProfile as any)?.thinkingStyle) {
-    tThinkStyle = (teacherProfile as any).thinkingStyle;
-  } else {
-    tThinkStyle = 'Analytical';
-  }
-
-  let tDualStyle = '';
-  if (tDual?.score) {
-    const styleRaw = tDual.score.dualProcess?.style || (tDual.score as any).decision?.style || tDual.score['dual-process']?.style || '';
-    if (styleRaw) {
-      tDualStyle = styleRaw.charAt(0).toUpperCase() + styleRaw.slice(1);
-    }
-  } else if ((teacherProfile as any)?.decisionStyle) {
-    tDualStyle = (teacherProfile as any).decisionStyle;
-  } else {
-    tDualStyle = 'Reflective';
-  }
   // Transform data for charts
-  const kolbKeys = Array.from(new Set([...Object.keys(studentData.kolb).filter(k => k !== 'Total'), tKolbStyle, 'Assimilating', 'Diverging', 'Converging', 'Accommodating'].filter(Boolean)));
+  const kolbKeys = Array.from(new Set(['Assimilating', 'Diverging', 'Converging', 'Accommodating', tKolbStyle, ...Object.keys(studentData.kolb).filter(k => k !== 'Total')].filter(Boolean)));
   const kolbChartData = kolbKeys.map(key => ({
     name: key + (tKolbStyle === key ? ' (You)' : ''),
     originalName: key,
-    Students: studentData.kolb.Total ? Math.round(((studentData.kolb[key] || 0) / studentData.kolb.Total) * 100) : (key === 'Assimilating' ? 40 : key === 'Diverging' ? 30 : key === 'Converging' ? 20 : 10),
+    Students: studentData.kolb.Total ? Math.round(((studentData.kolb[key] || 0) / studentData.kolb.Total) * 100) : 0,
     isTeacher: tKolbStyle === key
   }));
 
-  const thinkKeys = Array.from(new Set([...Object.keys(studentData.think).filter(k => k !== 'Total'), tThinkStyle, 'Analytical', 'Creative', 'Practical'].filter(Boolean)));
+  const thinkKeys = Array.from(new Set(['Analytical', 'Creative', 'Practical', tThinkStyle, ...Object.keys(studentData.think).filter(k => k !== 'Total')].filter(Boolean)));
   const thinkChartData = thinkKeys.map(key => ({
     name: key + (tThinkStyle === key ? ' (You)' : ''),
     originalName: key,
-    Students: studentData.think.Total ? Math.round(((studentData.think[key] || 0) / studentData.think.Total) * 100) : (key === 'Analytical' ? 45 : key === 'Creative' ? 30 : 25),
+    Students: studentData.think.Total ? Math.round(((studentData.think[key] || 0) / studentData.think.Total) * 100) : 0,
     isTeacher: tThinkStyle === key
   }));
 
-  const dualKeys = Array.from(new Set([...Object.keys(studentData.dual).filter(k => k !== 'Total'), tDualStyle, 'Reflective', 'Intuitive', 'Balanced'].filter(Boolean)));
+  const dualKeys = Array.from(new Set(['Reflective', 'Intuitive', 'Balanced', tDualStyle, ...Object.keys(studentData.dual).filter(k => k !== 'Total')].filter(Boolean)));
   const dualChartData = dualKeys.map(key => ({
     name: key + (tDualStyle === key ? ' (You)' : ''),
     originalName: key,
-    Students: studentData.dual.Total ? Math.round(((studentData.dual[key] || 0) / studentData.dual.Total) * 100) : (key === 'Reflective' ? 50 : key === 'Intuitive' ? 35 : 15),
+    Students: studentData.dual.Total ? Math.round(((studentData.dual[key] || 0) / studentData.dual.Total) * 100) : 0,
     isTeacher: tDualStyle === key
   }));
 
   // Calculate Alignment Score
-  const calculateAlignmentScore = () => {
+  const calculateAlignmentScore = (): number | null => {
     let score = 0;
     let totalWeights = 0;
 
@@ -184,13 +210,16 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
       }
     }
 
-    return totalWeights > 0 ? Math.round(score / totalWeights) : 68;
+    return totalWeights > 0 ? Math.round(score / totalWeights) : null;
   };
 
   const alignmentScore = calculateAlignmentScore();
   const totalDataPoints = studentData.kolb.Total + studentData.think.Total + studentData.dual.Total;
 
   const getAlignmentInsight = () => {
+    if (alignmentScore === null) {
+      return "Complete your educator cognitive assessments and have your students complete theirs to calculate live classroom alignment.";
+    }
     if (alignmentScore >= 50) {
       return "Your cognitive profile naturally aligns with the majority of your students. This means your default communication style likely resonates well with the class.";
     } else if (alignmentScore >= 25) {
@@ -208,13 +237,35 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
           <p className="text-muted-foreground mt-1 text-lg">Compare your cognitive profile and teaching style against your class aggregate.</p>
         </div>
       </div>
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="md:col-span-1 bg-gradient-to-br from-indigo-50 to-purple-50 border-none shadow-md">
+
+      {totalDataPoints === 0 && (
+        <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+          <Info className="h-4 w-4 text-amber-600" />
+          <AlertTitle>Awaiting Student Assessment Data</AlertTitle>
+          <AlertDescription>
+            Your connected students have not completed their cognitive assessments yet. Once students take the Learning Style, Thinking Style, or Decision Making assessments, live classroom distributions and alignment percentages will automatically populate here.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!tKolbStyle && !tThinkStyle && !tDualStyle && (
+        <Alert className="border-indigo-200 bg-indigo-50 text-indigo-900">
+          <Info className="h-4 w-4 text-indigo-600" />
+          <AlertTitle>Educator Cognitive Assessments Pending</AlertTitle>
+          <AlertDescription>
+            Complete your educator cognitive assessments (Learning Style, Thinking Style, or Decision Making) to see your personal cognitive profile mapped alongside your classroom.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-1 bg-gradient-to-br from-indigo-50 to-purple-50 border-none shadow-md">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
                 <Target className="h-12 w-12 text-indigo-600 mb-4" />
                 <h3 className="text-xl font-semibold text-slate-800 mb-2">Overall Alignment</h3>
-                <div className="text-5xl font-extrabold text-indigo-600 mb-4">{alignmentScore}%</div>
+                <div className="text-5xl font-extrabold text-indigo-600 mb-4">
+                  {alignmentScore !== null ? `${alignmentScore}%` : 'Pending'}
+                </div>
                 <p className="text-sm text-slate-600">{getAlignmentInsight()}</p>
               </CardContent>
             </Card>
@@ -239,14 +290,16 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
                       <p className="text-sm text-slate-700 leading-relaxed">
                         Your highest synergy is in <strong>{tJtiaReport.topSynergyDomain || 'Teaching Adaptability'}</strong>.
-                        Combine this with your {alignmentScore}% alignment score to see where you might stretch your approach across the 5 Teaching Insights domains to reach students with different cognitive preferences.
+                        {alignmentScore !== null 
+                          ? ` Combine this with your ${alignmentScore}% alignment score to see where you might stretch your approach across the 5 Teaching Insights domains to reach students with different cognitive preferences.`
+                          : ' Complete classroom assessments to view your live pedagogical alignment breakdown across the 5 Teaching Insights domains.'}
                       </p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 text-slate-500 bg-slate-50 p-4 rounded-lg">
                     <Info className="h-5 w-5" />
-                    <p className="text-sm">Complete your Teaching Insights assessment to see insights here.</p>
+                    <p className="text-sm">Complete your Teaching Insights assessment to unlock educator-specific alignment recommendations.</p>
                   </div>
                 )}
               </CardContent>
@@ -380,7 +433,6 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
               </CardContent>
             </Card>
           </div>
-        </>
     </div>
   );
 }

@@ -77,6 +77,19 @@ export function getAllClasses(): Class[] {
 }
 
 export function saveClass(cls: Class) {
+  // If institutionId is missing on class, populate from current logged-in user if available
+  if (!cls.institutionId) {
+    try {
+      const currentUserStr = localStorage.getItem('jotminds_current_user') || localStorage.getItem('ts_current_user');
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr);
+        if (currentUser.institutionId || currentUser.organizationId) {
+          cls.institutionId = currentUser.institutionId || currentUser.organizationId;
+        }
+      }
+    } catch (e) {}
+  }
+
   const classes = getAllClasses();
   const index = classes.findIndex(c => c.id === cls.id);
   if (index >= 0) {
@@ -225,16 +238,38 @@ export function isStudentConnectedToTeacher(student: User, teacher: User, teache
     return false;
   }
 
-  // 1. Explicit Teacher ID match (teacher created this student)
-  if (student.teacherId === teacher.id || (teacher.email && student.teacherId === teacher.email)) return true;
-  if (Array.isArray(student.linkedTeachers) && (student.linkedTeachers.includes(teacher.id) || (teacher.email && student.linkedTeachers.includes(teacher.email)))) return true;
+  // 1. Strict School / Institution Isolation Check FIRST
+  const studentSchool = (student.school || student.organizationName || '').trim().toLowerCase();
+  const teacherSchool = (teacher.school || teacher.organizationName || '').trim().toLowerCase();
+  if (studentSchool && teacherSchool && studentSchool !== teacherSchool) {
+    return false;
+  }
+  const studentInst = (student.institutionId || (student as any).organizationId || '').trim();
+  const teacherInst = (teacher.institutionId || (teacher as any).organizationId || '').trim();
+  if (studentInst && teacherInst && studentInst !== teacherInst) {
+    return false;
+  }
 
-  // 2. Teacher Email match (school assigned this student to teacher)
-  if ((student as any).teacherEmail && teacher.email && (student as any).teacherEmail.trim().toLowerCase() === teacher.email.trim().toLowerCase()) return true;
+  const studentTeacherId = typeof student.teacherId === 'string' ? student.teacherId.trim() : '';
+  const teacherId = typeof teacher.id === 'string' ? teacher.id.trim() : '';
+  const teacherEmail = typeof teacher.email === 'string' ? teacher.email.trim().toLowerCase() : '';
 
-  // 3. Class ID match (student is in a class this teacher is assigned to)
+  // 2. Explicit Teacher ID match (require non-empty strings)
+  if (studentTeacherId && teacherId && studentTeacherId === teacherId) return true;
+  if (studentTeacherId && teacherEmail && studentTeacherId.toLowerCase() === teacherEmail) return true;
+
+  // 3. Linked Teachers array
+  if (Array.isArray(student.linkedTeachers)) {
+    if (teacherId && student.linkedTeachers.includes(teacherId)) return true;
+    if (teacherEmail && student.linkedTeachers.some(t => String(t).trim().toLowerCase() === teacherEmail)) return true;
+  }
+
+  // 4. Teacher Email match (school assigned this student to teacher)
+  const studentTeacherEmail = typeof (student as any).teacherEmail === 'string' ? (student as any).teacherEmail.trim().toLowerCase() : '';
+  if (studentTeacherEmail && teacherEmail && studentTeacherEmail === teacherEmail) return true;
+
+  // 5. Class ID match (student is in a class this teacher is assigned to)
   if (student.classId && teacherClassIds && teacherClassIds.has(student.classId)) return true;
-  if (student.className && teacherClassIds && teacherClassIds.has(student.className)) return true;
 
   return false;
 }
