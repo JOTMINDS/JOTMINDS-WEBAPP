@@ -234,6 +234,71 @@ export const getUserGrowth = async () => {
   return makeRequest('/admin/user-growth');
 };
 
+// Super Admin Portal APIs
+export const getPlatformSettings = async () => {
+  return makeRequest('/superadmin/settings');
+};
+
+export const updatePlatformSettings = async (updates: Record<string, any>) => {
+  return makeRequest('/superadmin/settings', { method: 'PUT', body: JSON.stringify(updates) });
+};
+
+export const listContent = async (type: 'career' | 'scholarship' | 'resource') => {
+  return makeRequest(`/superadmin/content?type=${type}`);
+};
+
+export const createContent = async (item: { type: string; title: string; category?: string; description?: string }) => {
+  return makeRequest('/superadmin/content', { method: 'POST', body: JSON.stringify(item) });
+};
+
+export const updateContent = async (type: string, id: string, updates: Record<string, any>) => {
+  return makeRequest(`/superadmin/content/${type}/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
+};
+
+export const deleteContent = async (type: string, id: string) => {
+  return makeRequest(`/superadmin/content/${type}/${id}`, { method: 'DELETE' });
+};
+
+export const getGamificationConfig = async () => {
+  return makeRequest('/superadmin/gamification-config');
+};
+
+export const updateGamificationConfig = async (updates: Record<string, any>) => {
+  return makeRequest('/superadmin/gamification-config', { method: 'PUT', body: JSON.stringify(updates) });
+};
+
+export const getAiUsage = async () => {
+  return makeRequest('/superadmin/ai-usage');
+};
+
+export const sendBroadcast = async (payload: { audience: string; subject: string; message: string }) => {
+  return makeRequest('/superadmin/broadcast', { method: 'POST', body: JSON.stringify(payload) });
+};
+
+export const listBroadcasts = async () => {
+  return makeRequest('/superadmin/broadcasts');
+};
+
+export const submitSupportTicket = async (payload: { subject: string; message: string }) => {
+  return makeRequest('/superadmin/tickets', { method: 'POST', body: JSON.stringify(payload) });
+};
+
+export const listSupportTickets = async () => {
+  return makeRequest('/superadmin/tickets');
+};
+
+export const updateSupportTicket = async (id: string, updates: { status?: string; reply?: string }) => {
+  return makeRequest(`/superadmin/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
+};
+
+export const listAuditLogs = async () => {
+  return makeRequest('/superadmin/audit-logs');
+};
+
+export const getSecurityOverview = async () => {
+  return makeRequest('/superadmin/security-overview');
+};
+
 // Organization APIs
 export const getOrganizationMembers = async () => {
   return makeRequest('/organization/members');

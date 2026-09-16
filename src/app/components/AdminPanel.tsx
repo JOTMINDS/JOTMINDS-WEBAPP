@@ -12,7 +12,17 @@ import { InstitutionsView } from './SuperAdminPortal/modules/InstitutionsView';
 import { OrganizationsView } from './SuperAdminPortal/modules/OrganizationsView';
 import { AssessmentEngineView } from './SuperAdminPortal/modules/AssessmentEngineView';
 import { AnalyticsView } from './SuperAdminPortal/modules/AnalyticsView';
-import { PlaceholderView } from './SuperAdminPortal/modules/PlaceholderView';
+import { AiManagementView } from './SuperAdminPortal/modules/AiManagementView';
+import { ContentManagementView } from './SuperAdminPortal/modules/ContentManagementView';
+import { GamificationView } from './SuperAdminPortal/modules/GamificationView';
+import { BillingView } from './SuperAdminPortal/modules/BillingView';
+import { CommunicationCenterView } from './SuperAdminPortal/modules/CommunicationCenterView';
+import { SupportCenterView } from './SuperAdminPortal/modules/SupportCenterView';
+import { SecurityCenterView } from './SuperAdminPortal/modules/SecurityCenterView';
+import { PlatformSettingsView } from './SuperAdminPortal/modules/PlatformSettingsView';
+import { AuditLogsView } from './SuperAdminPortal/modules/AuditLogsView';
+import { DeveloperConsoleView } from './SuperAdminPortal/modules/DeveloperConsoleView';
+import { BackupRecoveryView } from './SuperAdminPortal/modules/BackupRecoveryView';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -71,29 +81,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       case 'assessment':
         return <AssessmentEngineView />;
       case 'ai':
-        return <PlaceholderView title="AI Management" description="Monitor AI tokens, latency, cost tracking, and failures." />;
+        return <AiManagementView />;
       case 'content':
-        return <PlaceholderView title="Content Management" description="Manage career databases, scholarships, and resources." />;
+        return <ContentManagementView />;
       case 'gamification':
-        return <PlaceholderView title="Gamification" description="Configure levels, XP, and seasonal events." />;
+        return <GamificationView />;
       case 'analytics':
         return <AnalyticsView />;
       case 'billing':
-        return <PlaceholderView title="Billing" description="SaaS subscriptions, invoices, and MRR." />;
+        return <BillingView users={users} updateSubscription={updateSubscription} />;
       case 'communications':
-        return <PlaceholderView title="Communication Center" description="Send broadcast emails and notifications." />;
+        return <CommunicationCenterView />;
       case 'support':
-        return <PlaceholderView title="Support Center" description="View user feedback and support tickets." />;
+        return <SupportCenterView />;
       case 'security':
-        return <PlaceholderView title="Security Center" description="Monitor sessions, API keys, and rate limits." />;
+        return <SecurityCenterView />;
       case 'settings':
-        return <PlaceholderView title="Platform Settings" description="Global variables, branding, and localization." />;
+        return <PlatformSettingsView />;
       case 'audit-logs':
-        return <PlaceholderView title="Audit Logs" description="Review all actions performed by Super Admins." />;
+        return <AuditLogsView />;
       case 'developer':
-        return <PlaceholderView title="Developer Console" description="Database explorer and edge function logs." />;
+        return <DeveloperConsoleView />;
       case 'backup':
-        return <PlaceholderView title="Backup & Recovery" description="Database snapshots and disaster recovery." />;
+        return <BackupRecoveryView />;
       default:
         return <DashboardView stats={stats} />;
     }

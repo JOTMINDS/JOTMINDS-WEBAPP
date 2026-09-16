@@ -1,4 +1,5 @@
 import { Hono } from 'npm:hono';
+import { logAiUsage } from './superadmin-routes.tsx';
 
 const aiRoutes = new Hono();
 
@@ -24,6 +25,7 @@ Keep your answers structured, actionable, warm, and supportive. Use markdown for
     };
 
     if (OPENAI_API_KEY) {
+      const __start = Date.now();
       const response = await fetch(OPENAI_API_URL, {
         method: 'POST',
         headers: {
@@ -41,11 +43,17 @@ Keep your answers structured, actionable, warm, and supportive. Use markdown for
       if (!response.ok) {
         const errText = await response.text();
         console.error('OpenAI Chat API Error:', errText);
+        await logAiUsage({ endpoint: '/chat', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: errText });
         return c.json({ error: 'Failed to generate chat response from OpenAI' }, 500);
       }
 
       const data = await response.json();
       const reply = data.choices?.[0]?.message?.content || 'I could not generate a response right now. Please try again.';
+      await logAiUsage({
+        endpoint: '/chat', model: 'gpt-4o-mini',
+        promptTokens: data.usage?.prompt_tokens, completionTokens: data.usage?.completion_tokens, totalTokens: data.usage?.total_tokens,
+        latencyMs: Date.now() - __start, success: true,
+      });
       return c.json({ reply });
     } else {
       return c.json({ error: 'No AI Provider configured' }, 500);
@@ -105,6 +113,7 @@ You must respond with valid JSON matching exactly this structure:
 }
 `;
 
+    const __start = Date.now();
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
@@ -125,17 +134,24 @@ You must respond with valid JSON matching exactly this structure:
     if (!response.ok) {
       const err = await response.text();
       console.error('OpenAI API Error:', err);
+      await logAiUsage({ endpoint: '/generate-insights', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: err });
       return c.json({ error: 'Failed to generate insights from AI provider' }, 500);
     }
 
     const data = await response.json();
     const aiText = data.choices?.[0]?.message?.content;
-    
+
     if (!aiText) {
+       await logAiUsage({ endpoint: '/generate-insights', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: 'Empty AI response' });
        return c.json({ error: 'Invalid response from AI provider' }, 500);
     }
 
     const insightsJson = JSON.parse(aiText);
+    await logAiUsage({
+      endpoint: '/generate-insights', model: 'gpt-4o-mini',
+      promptTokens: data.usage?.prompt_tokens, completionTokens: data.usage?.completion_tokens, totalTokens: data.usage?.total_tokens,
+      latencyMs: Date.now() - __start, success: true,
+    });
     return c.json(insightsJson);
 
   } catch (error) {
@@ -180,6 +196,7 @@ COACHING GUIDELINES:
       { role: 'user', content: message }
     ];
 
+    const __start = Date.now();
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
@@ -196,6 +213,7 @@ COACHING GUIDELINES:
     if (!response.ok) {
       const err = await response.text();
       console.error('OpenAI Coach Chat Error:', err);
+      await logAiUsage({ endpoint: '/coach-chat', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: err });
       return c.json({ error: 'Failed to generate response from AI Learning Coach' }, 500);
     }
 
@@ -203,9 +221,15 @@ COACHING GUIDELINES:
     const reply = data.choices?.[0]?.message?.content;
 
     if (!reply) {
+      await logAiUsage({ endpoint: '/coach-chat', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: 'Empty AI response' });
       return c.json({ error: 'Invalid response from AI provider' }, 500);
     }
 
+    await logAiUsage({
+      endpoint: '/coach-chat', model: 'gpt-4o-mini',
+      promptTokens: data.usage?.prompt_tokens, completionTokens: data.usage?.completion_tokens, totalTokens: data.usage?.total_tokens,
+      latencyMs: Date.now() - __start, success: true,
+    });
     return c.json({ reply });
   } catch (error) {
     console.error('AI Coach Chat Error:', error);
@@ -248,6 +272,7 @@ Topic: ${topic}
 Duration: ${durationMinutes || 45} minutes
 Class Profile Summary: ${classSummary ? JSON.stringify(classSummary) : 'Standard mixed-ability classroom'}`;
 
+    const __start = Date.now();
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
@@ -268,16 +293,23 @@ Class Profile Summary: ${classSummary ? JSON.stringify(classSummary) : 'Standard
     if (!response.ok) {
       const err = await response.text();
       console.error('OpenAI Lesson Plan Error:', err);
+      await logAiUsage({ endpoint: '/generate-lesson-plan', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: err });
       return c.json({ error: 'Failed to generate lesson plan from AI provider' }, 500);
     }
 
     const data = await response.json();
     const aiText = data.choices?.[0]?.message?.content;
     if (!aiText) {
+      await logAiUsage({ endpoint: '/generate-lesson-plan', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: 'Empty AI response' });
       return c.json({ error: 'Invalid response from AI provider' }, 500);
     }
 
     const planJson = JSON.parse(aiText);
+    await logAiUsage({
+      endpoint: '/generate-lesson-plan', model: 'gpt-4o-mini',
+      promptTokens: data.usage?.prompt_tokens, completionTokens: data.usage?.completion_tokens, totalTokens: data.usage?.total_tokens,
+      latencyMs: Date.now() - __start, success: true,
+    });
     return c.json(planJson);
   } catch (error) {
     console.error('AI Lesson Plan Error:', error);
@@ -332,6 +364,7 @@ You must respond with valid JSON matching exactly this structure:
 }
 `;
 
+    const __start = Date.now();
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
@@ -352,17 +385,24 @@ You must respond with valid JSON matching exactly this structure:
     if (!response.ok) {
       const err = await response.text();
       console.error('OpenAI School Insights Error:', err);
+      await logAiUsage({ endpoint: '/generate-school-insights', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: err });
       return c.json({ error: 'Failed to generate school insights from AI provider' }, 500);
     }
 
     const data = await response.json();
     const aiText = data.choices?.[0]?.message?.content;
-    
+
     if (!aiText) {
+       await logAiUsage({ endpoint: '/generate-school-insights', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: 'Empty AI response' });
        return c.json({ error: 'Invalid response from AI provider' }, 500);
     }
 
     const insightsJson = JSON.parse(aiText);
+    await logAiUsage({
+      endpoint: '/generate-school-insights', model: 'gpt-4o-mini',
+      promptTokens: data.usage?.prompt_tokens, completionTokens: data.usage?.completion_tokens, totalTokens: data.usage?.total_tokens,
+      latencyMs: Date.now() - __start, success: true,
+    });
     return c.json(insightsJson);
 
   } catch (error) {
@@ -403,6 +443,7 @@ You must respond with valid JSON matching exactly this structure:
   "pathways": ["4 long-term leadership, action research, or curriculum innovation pathways"]
 }`;
 
+    const __start = Date.now();
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
@@ -423,17 +464,24 @@ You must respond with valid JSON matching exactly this structure:
     if (!response.ok) {
       const err = await response.text();
       console.error('OpenAI JTIA Insights Error:', err);
+      await logAiUsage({ endpoint: '/generate-jtia-insights', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: err });
       return c.json({ error: 'Failed to generate JTIA insights from AI provider' }, 500);
     }
 
     const data = await response.json();
     const aiText = data.choices?.[0]?.message?.content;
-    
+
     if (!aiText) {
+       await logAiUsage({ endpoint: '/generate-jtia-insights', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: 'Empty AI response' });
        return c.json({ error: 'Invalid response from AI provider' }, 500);
     }
 
     const insightsJson = JSON.parse(aiText);
+    await logAiUsage({
+      endpoint: '/generate-jtia-insights', model: 'gpt-4o-mini',
+      promptTokens: data.usage?.prompt_tokens, completionTokens: data.usage?.completion_tokens, totalTokens: data.usage?.total_tokens,
+      latencyMs: Date.now() - __start, success: true,
+    });
     return c.json(insightsJson);
 
   } catch (error) {
@@ -482,6 +530,7 @@ You must respond with valid JSON matching exactly this structure:
   ]
 }`;
 
+    const __start = Date.now();
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
@@ -502,17 +551,24 @@ You must respond with valid JSON matching exactly this structure:
     if (!response.ok) {
       const err = await response.text();
       console.error('OpenAI School JTIA Insights Error:', err);
+      await logAiUsage({ endpoint: '/generate-school-jtia-insights', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: err });
       return c.json({ error: 'Failed to generate school JTIA insights from AI provider' }, 500);
     }
 
     const data = await response.json();
     const aiText = data.choices?.[0]?.message?.content;
-    
+
     if (!aiText) {
+       await logAiUsage({ endpoint: '/generate-school-jtia-insights', model: 'gpt-4o-mini', latencyMs: Date.now() - __start, success: false, error: 'Empty AI response' });
        return c.json({ error: 'Invalid response from AI provider' }, 500);
     }
 
     const insightsJson = JSON.parse(aiText);
+    await logAiUsage({
+      endpoint: '/generate-school-jtia-insights', model: 'gpt-4o-mini',
+      promptTokens: data.usage?.prompt_tokens, completionTokens: data.usage?.completion_tokens, totalTokens: data.usage?.total_tokens,
+      latencyMs: Date.now() - __start, success: true,
+    });
     return c.json(insightsJson);
 
   } catch (error) {
