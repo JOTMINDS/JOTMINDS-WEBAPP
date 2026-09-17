@@ -152,34 +152,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             try {
               const res = await getAllAssessmentResults(chunk);
               const rawResults = res?.results || (Array.isArray(res) ? res : []);
-              const normalized = rawResults.map((r: any) => {
-                if (r.type && r.score) return r;
-                const assessmentType = r.assessmentType || r.type || 'unknown';
-                const rawScores = r.results || r.score || {};
-                let score: any = {};
-                if (assessmentType === 'kolb') {
-                  score.kolb = { style: rawScores.style || '', scores: rawScores };
-                } else if (assessmentType === 'sternberg') {
-                  score.sternberg = { style: rawScores.style || '', scores: rawScores };
-                } else if (assessmentType === 'dual-process') {
-                  score.dualProcess = { style: rawScores.style || '', scores: rawScores };
-                } else {
-                  score[assessmentType] = rawScores;
-                }
-                let userId = r.userId;
-                if (!userId && r.id) {
-                  const parts = r.id.split(':');
-                  if (parts.length >= 2) userId = parts[1];
-                }
-                return {
-                  id: r.id || `${assessmentType}-${userId}`,
-                  userId,
-                  type: assessmentType,
-                  completed: true,
-                  completedAt: r.completedAt,
-                  score
-                };
-              }).filter((a: any) => a.completedAt);
+              const normalized = normalizeServerResults(rawResults).filter((a: any) => a.completedAt);
               assessmentsForStats.push(...normalized);
             } catch (e) {
               console.error('Failed to fetch student assessments:', e);
@@ -205,37 +178,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                   const res = await getAllAssessmentResults(chunk);
                   const rawResults = res?.results || (Array.isArray(res) ? res : []);
                   // Normalize raw KV records into the shape the frontend expects
-                  const normalized = rawResults.map((r: any) => {
-                    // If already in the expected shape, pass through
-                    if (r.type && r.score) return r;
-                    // Otherwise transform from raw KV shape
-                    const assessmentType = r.assessmentType || r.type || 'unknown';
-                    const rawScores = r.results || r.score || {};
-                    let score: any = {};
-                    if (assessmentType === 'kolb') {
-                      score.kolb = { style: rawScores.style || '', scores: rawScores };
-                    } else if (assessmentType === 'sternberg') {
-                      score.sternberg = { style: rawScores.style || '', scores: rawScores };
-                    } else if (assessmentType === 'dual-process') {
-                      score.dualProcess = { style: rawScores.style || '', scores: rawScores };
-                    } else {
-                      score[assessmentType] = rawScores;
-                    }
-                    // Extract userId from the KV key if not present
-                    let userId = r.userId;
-                    if (!userId && r.id) {
-                      const parts = r.id.split(':');
-                      if (parts.length >= 2) userId = parts[1];
-                    }
-                    return {
-                      id: r.id || `${assessmentType}-${userId}`,
-                      userId: userId,
-                      type: assessmentType,
-                      completed: true,
-                      completedAt: r.completedAt,
-                      score: score
-                    };
-                  }).filter((a: any) => a.completedAt);
+                  const normalized = normalizeServerResults(rawResults).filter((a: any) => a.completedAt);
                   assessmentsForStats.push(...normalized);
                 } catch (e) {
                   console.error('Failed to fetch assessments chunk:', e);

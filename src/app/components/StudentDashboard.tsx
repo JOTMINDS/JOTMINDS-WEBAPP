@@ -150,7 +150,13 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
           else if (type === 'decision') type = 'dual-process';
 
           const rawResults = result.results || {};
-          const rawScores = rawResults.scores || rawResults || {};
+          // Scores are stored nested under the framework key (e.g. results.kolb.scores) by
+          // AssessmentTaking's submission format. Fall back to a flat shape for older/other data.
+          const nestedFrameworkResult =
+            rawResults?.kolb || rawResults?.sternberg || rawResults?.dualProcess ||
+            (typeof type === 'string' ? rawResults?.[type] : undefined);
+          const rawScores = nestedFrameworkResult?.scores || rawResults.scores || rawResults || {};
+          const nestedStyle = nestedFrameworkResult?.style;
           const scoreObj: any = {};
 
           const capitalize = (str: string) => {
@@ -159,7 +165,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
           };
 
           if (type === 'kolb') {
-            const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+            const style = capitalize(nestedStyle || rawResults.dominantStyle || rawResults.style || 'Unknown');
             
             // Reconstruct CE, RO, AC, AE from style scores if needed
             const totalQ = rawResults.totalQuestions || 12;
@@ -189,7 +195,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
               }
             };
           } else if (type === 'sternberg') {
-            const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+            const style = capitalize(nestedStyle || rawResults.dominantStyle || rawResults.style || 'Unknown');
             scoreObj.sternberg = {
               style,
               scores: {
@@ -199,7 +205,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
               }
             };
           } else if (type === 'dual-process') {
-            const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+            const style = capitalize(nestedStyle || rawResults.dominantStyle || rawResults.style || 'Unknown');
             scoreObj.dualProcess = {
               style,
               scores: {
@@ -208,7 +214,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
               }
             };
           } else if (type === 'jhs-thinking' || type === 'shs-thinking' || type === 'adult-thinking' || type === 'children-thinking') {
-            const style = capitalize(rawResults.dominantStyle || rawResults.style || 'Unknown');
+            const style = capitalize(nestedStyle || rawResults.personalityType || rawResults.dominantStyle || rawResults.style || 'Unknown');
             scoreObj[type] = {
               personalityType: rawResults.personalityType || style,
               dominantStyle: style,
