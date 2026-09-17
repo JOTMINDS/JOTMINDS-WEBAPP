@@ -5,6 +5,20 @@ import { Assessment } from '../types';
 import { Calendar, TrendingUp, Eye, BarChart3 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { formatDateTime, formatMonthYear, formatChartDate } from '../utils/dateFormat';
+import { getStyleDescription } from '../utils/scoring';
+import { getFrameworkExplanation } from '../utils/reportTextVariations';
+
+const DIMENSION_LABELS: Record<string, string> = {
+  CE: 'Concrete Experience',
+  RO: 'Reflective Observation',
+  AC: 'Abstract Conceptualization',
+  AE: 'Active Experimentation',
+  Analytical: 'Analytical Thinking',
+  Creative: 'Creative Thinking',
+  Practical: 'Practical Thinking',
+  Intuitive: 'Intuitive (System 1)',
+  Reflective: 'Reflective (System 2)',
+};
 
 interface AssessmentHistoryProps {
   assessments: Assessment[];
@@ -100,53 +114,60 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
           </h3>
           <Badge variant="secondary">{assessmentList.length} assessment{assessmentList.length > 1 ? 's' : ''}</Badge>
         </div>
+        <p className="text-sm text-muted-foreground -mt-2">
+          {getFrameworkExplanation(type)}
+        </p>
 
         {/* Progress Chart */}
         {assessmentList.length > 1 && (
           <div className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-lg p-4">
-            <h4 className="text-sm mb-3">Progress Over Time</h4>
+            <h4 className="text-sm mb-1">Progress Over Time</h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Each line tracks one dimension's score across every attempt you've made, so you can see which parts of your {getAssessmentTypeName(type).toLowerCase()} have shifted.
+            </p>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-                  <XAxis 
-                    dataKey="date" 
+                  <XAxis
+                    dataKey="date"
                     tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
                     stroke="var(--border)"
                   />
-                  <YAxis 
+                  <YAxis
                     tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
                     stroke="var(--border)"
+                    label={{ value: 'Score', angle: -90, position: 'insideLeft', fill: 'var(--muted-foreground)', fontSize: 12 }}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
+                  <Tooltip
+                    contentStyle={{
                       backgroundColor: 'var(--background)',
                       border: '1px solid var(--border)',
                       borderRadius: '8px'
                     }}
                   />
-                  <Legend 
+                  <Legend
                     wrapperStyle={{ fontSize: '12px' }}
                   />
                   {type === 'kolb' && (
                     <>
-                      <Line key="CE" type="monotone" dataKey="CE" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="RO" type="monotone" dataKey="RO" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="AC" type="monotone" dataKey="AC" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="AE" type="monotone" dataKey="AE" stroke="var(--chart-4)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="CE" type="monotone" dataKey="CE" name={DIMENSION_LABELS.CE} stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="RO" type="monotone" dataKey="RO" name={DIMENSION_LABELS.RO} stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="AC" type="monotone" dataKey="AC" name={DIMENSION_LABELS.AC} stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="AE" type="monotone" dataKey="AE" name={DIMENSION_LABELS.AE} stroke="var(--chart-4)" strokeWidth={2} dot={{ r: 4 }} />
                     </>
                   )}
                   {type === 'sternberg' && (
                     <>
-                      <Line key="Analytical" type="monotone" dataKey="Analytical" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="Creative" type="monotone" dataKey="Creative" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="Practical" type="monotone" dataKey="Practical" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Analytical" type="monotone" dataKey="Analytical" name={DIMENSION_LABELS.Analytical} stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Creative" type="monotone" dataKey="Creative" name={DIMENSION_LABELS.Creative} stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Practical" type="monotone" dataKey="Practical" name={DIMENSION_LABELS.Practical} stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 4 }} />
                     </>
                   )}
                   {type === 'dual-process' && (
                     <>
-                      <Line key="Intuitive" type="monotone" dataKey="Intuitive" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="Reflective" type="monotone" dataKey="Reflective" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Intuitive" type="monotone" dataKey="Intuitive" name={DIMENSION_LABELS.Intuitive} stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Reflective" type="monotone" dataKey="Reflective" name={DIMENSION_LABELS.Reflective} stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
                     </>
                   )}
                 </LineChart>
@@ -171,6 +192,11 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
                     <Badge variant="secondary" className="text-xs">Latest</Badge>
                   )}
                 </div>
+                {getStyleFromAssessment(assessment) && (
+                  <p className="text-xs text-muted-foreground mb-1 max-w-md">
+                    {getStyleDescription(type as any, getStyleFromAssessment(assessment))}
+                  </p>
+                )}
                 {/* Icon aligned with text baseline */}
                 <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5 inline-block align-text-bottom" />
@@ -201,7 +227,7 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
             Assessment Track Record
           </CardTitle>
           <CardDescription>
-            Your complete assessment history and progress over time
+            Every assessment you've completed, grouped by framework, so you can see your results and how they've changed if you've retaken one.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -230,12 +256,17 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
                 <div className="text-center">
                   {/* Consistent date format: Dec 2025 */}
                   <p className="text-3xl font-bold text-purple-600">
-                    {assessments.length > 0 
-                      ? formatMonthYear(assessments[assessments.length - 1].completedAt)
+                    {assessments.length > 0
+                      ? formatMonthYear(
+                          assessments.reduce((earliest, a) =>
+                            new Date(a.completedAt).getTime() < new Date(earliest).getTime() ? a.completedAt : earliest,
+                            assessments[0].completedAt
+                          )
+                        )
                       : 'N/A'
                     }
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">Member Since</p>
+                  <p className="text-sm text-muted-foreground mt-1">First Assessment</p>
                 </div>
               </CardContent>
             </Card>
