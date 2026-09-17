@@ -1,5 +1,6 @@
 import { Hono } from 'npm:hono';
 import { createClient } from 'npm:@supabase/supabase-js';
+import { scoreSession } from './scoring-engine.tsx';
 
 const app = new Hono();
 
@@ -289,9 +290,43 @@ app.post('/:id/complete', async (c) => {
   }
 
   await supabase.from('assessment_sessions').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', session.id);
-  // Scoring/profile generation is Sprint 4/6 - completion just marks the
-  // session done for now.
+
+  // Structured profile assembly and AI interpretation are Sprint 6 - this
+  // runs the scoring engine (signals -> construct/domain evidence +
+  // confidence) but does not publish anything narrative.
+  const scoringResult = await scoreSession(session.id);
+  if (!scoringResult.success) {
+    console.log(`[assessment-sessions] Scoring failed for session ${session.id}: ${scoringResult.error}`);
+    return c.json({ success: true, scoringError: scoringResult.error });
+  }
+
   return c.json({ success: true });
+});
+
+// ============= RESULTS (construct/domain evidence - Sprint 4 output) =============
+
+app.get('/:id/results', async (c) => {
+  const user = await verifyUser(c.req.raw);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const supabase = getSupabaseClient();
+  const { session, forbidden } = await loadSessionOwned(supabase, c.req.param('id'), user.id);
+  if (forbidden) return c.json({ error: 'Forbidden' }, 403);
+  if (!session) return c.json({ error: 'Session not found' }, 404);
+  if (session.status !== 'completed') return c.json({ error: 'Session is not completed yet' }, 400);
+
+  const { data: constructResults, error: crErr } = await supabase
+    .from('construct_results')
+    .select('*, assessment_constructs(name, construct_key, definition)')
+    .eq('session_id', session.id);
+  if (crErr) return c.json({ error: crErr.message }, 500);
+
+  const { data: domainResults, error: drErr } = await supabase
+    .from('domain_results')
+    .select('*, assessment_domains(name, domain_key)')
+    .eq('session_id', session.id);
+  if (drErr) return c.json({ error: drErr.message }, 500);
+
+  return c.json({ success: true, constructResults, domainResults });
 });
 
 // ============= BEHAVIOURAL EVENTS =============
