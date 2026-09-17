@@ -294,4 +294,72 @@ app.post('/:id/complete', async (c) => {
   return c.json({ success: true });
 });
 
+// ============= BEHAVIOURAL EVENTS =============
+//
+// Fine-grained interaction log (viewed/selected/changed/opened/ranked/
+// reallocated/simulation_stage), distinct from assessment_responses'
+// change_count aggregate. Batched because these are frequent, client-side
+// UI interactions (hovering, reordering, opening an information panel) -
+// one HTTP round-trip per event would be impractical. The client is
+// expected to buffer and flush periodically; malformed events in a batch
+// are skipped rather than failing the whole batch, since losing one stray
+// event matters far less than losing an entire flush over one bad row.
+
+const VALID_EVENT_TYPES = ['viewed', 'selected', 'changed', 'opened', 'ranked', 'reallocated', 'simulation_stage'];
+const MAX_EVENTS_PER_BATCH = 200;
+
+app.post('/:id/events', async (c) => {
+  const user = await verifyUser(c.req.raw);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const supabase = getSupabaseClient();
+  const { session, forbidden } = await loadSessionOwned(supabase, c.req.param('id'), user.id);
+  if (forbidden) return c.json({ error: 'Forbidden' }, 403);
+  if (!session) return c.json({ error: 'Session not found' }, 404);
+
+  try {
+    const { events } = await c.req.json();
+    if (!Array.isArray(events) || events.length === 0) {
+      return c.json({ error: 'events (non-empty array) is required' }, 400);
+    }
+    if (events.length > MAX_EVENTS_PER_BATCH) {
+      return c.json({ error: `Cannot submit more than ${MAX_EVENTS_PER_BATCH} events per batch` }, 400);
+    }
+
+    // Session items referenced must actually belong to this session, so a
+    // client can't attribute events to another user's session_item.
+    const { data: ownItems } = await supabase.from('session_items').select('id').eq('session_id', session.id);
+    const ownItemIds = new Set((ownItems || []).map((i: any) => i.id));
+
+    const rows: any[] = [];
+    const skipped: any[] = [];
+    for (const e of events) {
+      const valid =
+        e && VALID_EVENT_TYPES.includes(e.eventType) && e.clientTimestamp && Number.isInteger(e.clientSequence) &&
+        (e.sessionItemId === undefined || e.sessionItemId === null || ownItemIds.has(e.sessionItemId));
+      if (!valid) {
+        skipped.push(e);
+        continue;
+      }
+      rows.push({
+        session_id: session.id,
+        session_item_id: e.sessionItemId || null,
+        event_type: e.eventType,
+        event_value: e.eventValue || {},
+        client_timestamp: e.clientTimestamp,
+        client_sequence: e.clientSequence,
+      });
+    }
+
+    if (rows.length > 0) {
+      const { error } = await supabase.from('behavioural_events').insert(rows);
+      if (error) return c.json({ error: error.message }, 500);
+    }
+
+    return c.json({ success: true, accepted: rows.length, skipped: skipped.length });
+  } catch (error) {
+    console.log(`[assessment-sessions] Error recording events: ${error}`);
+    return c.json({ error: 'Failed to record events' }, 500);
+  }
+});
+
 export default app;
