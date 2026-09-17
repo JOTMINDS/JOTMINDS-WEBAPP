@@ -704,7 +704,15 @@ app.get('/assessment/results', async (c) => {
       // writable). user_metadata is intentionally NOT trusted here since it's
       // client-editable via supabase.auth.updateUser().
       const profile = await kv.get(`user:${user.id}`);
-      const role = (profile?.role || '').toLowerCase();
+      let role = (profile?.role || '').toLowerCase();
+      // The legacy KV profile may not exist for accounts created after the
+      // institution_members migration (they only live in Postgres). Fall
+      // back to the Postgres users table before denying access.
+      if (!role) {
+        const supabaseAdmin = getSupabaseClient(true);
+        const { data: pgProfile } = await supabaseAdmin.from('users').select('role').eq('id', user.id).maybeSingle();
+        role = (pgProfile?.role || '').toLowerCase();
+      }
       const isAdmin = (await isPlatformAdmin(user.id)) || role === 'admin';
 
       const allowedRoles = ['school_admin', 'teacher', 'organization', 'supervisor'];

@@ -3233,35 +3233,51 @@ app.post('/make-server-fc8eb847/institutions/members/assign-class', async (c) =>
       return c.json({ error: 'Missing required fields' }, 400);
     }
     
-    // Verify caller is admin/teacher
+    // Verify caller is a teacher, school admin, or platform admin.
     const callerProfile = await kv.get(`user:${user.id}`);
-    if (callerProfile?.role !== 'teacher' && callerProfile?.role !== 'admin' && user.id !== 'admin-001') {
+    let callerRole = (callerProfile?.role || '').toLowerCase();
+    // Accounts created after the institution_members migration may only
+    // exist in Postgres, so fall back there before denying access.
+    if (!callerRole) {
+      const supabaseAdmin = getSupabaseClient(true);
+      const { data: pgCaller } = await supabaseAdmin.from('users').select('role').eq('id', user.id).maybeSingle();
+      callerRole = (pgCaller?.role || '').toLowerCase();
+    }
+    const allowedCallerRoles = ['teacher', 'admin', 'school_admin'];
+    if (!allowedCallerRoles.includes(callerRole) && user.id !== 'admin-001' && !(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
-    // Update target user profile in KV store
+    // Update target user profile in KV store, if a legacy record exists.
+    // Many users created after the institution_members migration only exist
+    // in Postgres, so a missing KV record must not block the assignment.
     const targetProfile = await kv.get(`user:${userId}`);
-    if (!targetProfile) {
-      return c.json({ error: 'User not found in KV' }, 404);
-    }
+    if (targetProfile) {
+      // Assign or remove classId
+      if (classId === null || classId === '') {
+        delete targetProfile.classId;
+        delete targetProfile.className;
+      } else {
+        targetProfile.classId = classId;
+        targetProfile.className = className;
+      }
 
-    // Assign or remove classId
-    if (classId === null || classId === '') {
-      delete targetProfile.classId;
-      delete targetProfile.className;
-    } else {
-      targetProfile.classId = classId;
-      targetProfile.className = className;
+      if (teacherId && targetProfile.role === 'student') {
+        targetProfile.teacherId = teacherId;
+      }
+      await kv.set(`user:${userId}`, targetProfile);
     }
-    
-    if (teacherId && targetProfile.role === 'student') {
-      targetProfile.teacherId = teacherId;
-    }
-    await kv.set(`user:${userId}`, targetProfile);
 
     // Also try updating the postgres users table
     const supabaseAdmin = getSupabaseClient(true);
-    await supabaseAdmin.from('users').update({ class_id: classId }).eq('id', userId);
+    const { error: pgError, count } = await supabaseAdmin
+      .from('users')
+      .update({ class_id: classId }, { count: 'exact' })
+      .eq('id', userId);
+
+    if (!targetProfile && (pgError || !count)) {
+      return c.json({ error: 'User not found' }, 404);
+    }
 
     return c.json({ success: true });
   } catch (error) {

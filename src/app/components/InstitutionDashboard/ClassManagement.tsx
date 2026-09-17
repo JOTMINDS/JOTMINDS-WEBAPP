@@ -111,11 +111,14 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   };
 
   const handleSaveClass = async () => {
-    if (!currentClass.name || !currentClass.academicYear) return;
-    
+    if (!currentClass.name || !currentClass.academicYear) {
+      toast.error('Please provide a class name and academic year.');
+      return;
+    }
+
     const isNew = !currentClass.id;
     const previousClass = !isNew ? classes.find(c => c.id === currentClass.id) : null;
-    
+
     const classToSave: Class = {
       id: currentClass.id || `cls_${Date.now()}`,
       name: currentClass.name,
@@ -125,39 +128,49 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       institutionId: institutionId || '',
       createdAt: currentClass.createdAt || new Date().toISOString(),
     };
-    
+
     try {
       await createInstitutionClass(classToSave);
       // Save locally to storage immediately
       saveClass(classToSave);
-      
-      // If a class teacher was assigned (and it changed from previous)
+
+      // If a class teacher was assigned (and it changed from previous).
+      // This is a non-critical follow-up step — the class itself is already
+      // saved, so a failure here (e.g. teacher email delivery) must not
+      // block closing the modal or hide that the class was created.
       if (classToSave.classTeacherId && classToSave.classTeacherId !== previousClass?.classTeacherId) {
-        // Sync to backend KV store
-        await assignMemberToClass({
-          userId: classToSave.classTeacherId,
-          classId: classToSave.id,
-          className: classToSave.name,
-          role: 'teacher',
-          institutionId
-        });
-        
-        // Send email
-        const teacher = teachers.find(t => t.id === classToSave.classTeacherId);
-        if (teacher && teacher.email) {
-          await sendClassAssignmentEmail({
-            email: teacher.email,
+        try {
+          // Sync to backend KV store
+          await assignMemberToClass({
+            userId: classToSave.classTeacherId,
+            classId: classToSave.id,
             className: classToSave.name,
-            role: 'Class Teacher',
-            inviterName: 'Your School Administrator'
+            role: 'teacher',
+            institutionId
           });
+
+          // Send email
+          const teacher = teachers.find(t => t.id === classToSave.classTeacherId);
+          if (teacher && teacher.email) {
+            await sendClassAssignmentEmail({
+              email: teacher.email,
+              className: classToSave.name,
+              role: 'Class Teacher',
+              inviterName: 'Your School Administrator'
+            });
+          }
+        } catch (assignErr) {
+          console.error("Failed to assign class teacher", assignErr);
+          toast.warning('Class saved, but assigning the class teacher failed. Please try assigning them again.');
         }
       }
-      
+
+      toast.success(isNew ? 'Class created successfully!' : 'Class updated successfully!');
       setIsModalOpen(false);
       await loadData();
     } catch (err) {
       console.error("Failed to save class", err);
+      toast.error('Failed to save class. Please try again.');
     }
   };
 
