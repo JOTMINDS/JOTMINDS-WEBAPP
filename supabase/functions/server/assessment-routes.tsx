@@ -2,6 +2,7 @@ import { Hono } from 'npm:hono';
 import { createClient } from 'npm:@supabase/supabase-js';
 import * as kv from './kv_store.tsx';
 import { kolbQuestions, sternbergQuestions, dualProcessQuestions } from './full-question-bank.tsx';
+import { isPlatformAdmin } from './platform-admin.tsx';
 
 // VERSION 2.1.1 - Fixed AutoPlan percentages calculation + naming mismatches + enhanced logging
 const moduleLoadTime = new Date().toISOString();
@@ -150,7 +151,7 @@ app.get('/admin/assessment-modules', async (c) => {
   try {
     const user = await verifyAuth(c.req.raw);
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
-    if (user.app_metadata?.role !== 'admin') {
+    if (!(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -704,7 +705,7 @@ app.get('/assessment/results', async (c) => {
       // client-editable via supabase.auth.updateUser().
       const profile = await kv.get(`user:${user.id}`);
       const role = (profile?.role || '').toLowerCase();
-      const isAdmin = user.app_metadata?.role === 'admin' || role === 'admin';
+      const isAdmin = (await isPlatformAdmin(user.id)) || role === 'admin';
 
       const allowedRoles = ['school_admin', 'teacher', 'organization', 'supervisor'];
       if (!isAdmin && !allowedRoles.includes(role) && user.id !== 'admin-001') {

@@ -20,6 +20,7 @@ import accountRoutes from './account-routes.tsx';
 import leaderboardRoutes from './leaderboard-routes.tsx';
 import superadminRoutes from './superadmin-routes.tsx';
 import featureFlagsRoutes from './feature-flags-routes.tsx';
+import { isPlatformAdmin } from './platform-admin.tsx';
 
 import { rateLimiter } from 'npm:hono-rate-limiter';
 
@@ -1218,9 +1219,9 @@ app.post('/make-server-fc8eb847/institutions/promote-member', async (c) => {
     const isHeadAdmin = adminId === user.id;
     const isCoAdmin = false; // Disabled until db migration is run
     const isMemberAdmin = callerMember?.role === 'admin';
-    const isPlatformAdmin = user.id === 'admin-001';
+    const isAdmin001 = user.id === 'admin-001';
     
-    if (!inst || (!isHeadAdmin && !isCoAdmin && !isMemberAdmin && !isPlatformAdmin)) {
+    if (!inst || (!isHeadAdmin && !isCoAdmin && !isMemberAdmin && !isAdmin001)) {
       return c.json({ error: `Forbidden: Only admins can promote members. (Debug - Admin: ${adminId}, Caller: ${user.id}, InstErr: ${instError?.message || 'none'}, InstId: ${institutionId})` }, 403);
     }
     
@@ -1290,9 +1291,9 @@ app.post('/make-server-fc8eb847/institutions/demote-member', async (c) => {
     const isHeadAdmin = adminId === user.id;
     const isCoAdmin = ((inst as any)?.co_admin_ids || []).includes(user.id);
     const isMemberAdmin = callerMember?.role === 'admin';
-    const isPlatformAdmin = user.id === 'admin-001';
+    const isAdmin001 = user.id === 'admin-001';
     
-    if (!inst || (!isHeadAdmin && !isCoAdmin && !isMemberAdmin && !isPlatformAdmin)) {
+    if (!inst || (!isHeadAdmin && !isCoAdmin && !isMemberAdmin && !isAdmin001)) {
       return c.json({ error: `Forbidden: Only admins can demote members. (Debug - Admin: ${adminId}, Caller: ${user.id})` }, 403);
     }
     
@@ -2067,7 +2068,7 @@ app.post('/make-server-fc8eb847/signin', async (c) => {
       ...profile
     };
     
-    if (data.user.app_metadata?.role === 'admin') {
+    if ((await isPlatformAdmin(data.user.id))) {
       userData.role = 'admin';
     }
 
@@ -2119,7 +2120,7 @@ app.get('/make-server-fc8eb847/session', async (c) => {
     };
     
     // Admin role in user_metadata should always take precedence
-    if (user.app_metadata?.role === 'admin') {
+    if ((await isPlatformAdmin(user.id))) {
       userData.role = 'admin';
     }
     
@@ -2497,7 +2498,7 @@ app.get('/make-server-fc8eb847/admin/user/:userId/reflections', async (c) => {
     }
 
     // Verify admin access
-    if (user.id !== 'admin-001' && user.app_metadata?.role !== 'admin') {
+    if (user.id !== 'admin-001' && !(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -2527,7 +2528,7 @@ app.get('/make-server-fc8eb847/admin/users', async (c) => {
     }
 
     // Check if user is admin
-    if (user.app_metadata?.role !== 'admin') {
+    if (!(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -2549,7 +2550,7 @@ app.get('/make-server-fc8eb847/admin/stats', async (c) => {
     }
 
     // Check if user is admin
-    if (user.app_metadata?.role !== 'admin') {
+    if (!(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -2608,7 +2609,7 @@ app.get('/make-server-fc8eb847/admin/user-growth', async (c) => {
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
-    if (user.app_metadata?.role !== 'admin') {
+    if (!(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -2643,7 +2644,7 @@ app.get('/make-server-fc8eb847/admin/user/:userId', async (c) => {
     }
 
     // Check if user is admin
-    if (user.app_metadata?.role !== 'admin') {
+    if (!(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -3328,9 +3329,9 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
 
     // The KV profile's role can only be set at signup time (PATCH /user/profile
     // allowlists its fields and excludes role), so it's a trustworthy signal. Admin
-    // access is verified separately via app_metadata, which only the Admin API can set.
+    // access is verified separately via the platform_admins table.
     const isTeacherProfile = teacherProfile?.role === 'teacher';
-    const isAdmin = user.id === 'admin-001' || user.app_metadata?.role === 'admin' || teacherProfile?.role === 'admin';
+    const isAdmin = user.id === 'admin-001' || (await isPlatformAdmin(user.id));
     if (!isTeacherProfile && !isAdmin) {
       return c.json({ error: 'Forbidden - Teacher access required' }, 403);
     }
@@ -4356,7 +4357,7 @@ app.get('/make-server-fc8eb847/supervisor/employees', async (c) => {
         supervisorId = user.id;
       }
       // Only allow admin to specify a DIFFERENT supervisor ID
-      else if (user.id === 'admin-001' || user.app_metadata?.role === 'admin') {
+      else if (user.id === 'admin-001' || (await isPlatformAdmin(user.id))) {
         console.log('[supervisor/employees] Admin requesting data for supervisor:', targetSupervisorId);
         supervisorId = targetSupervisorId;
       } else {
@@ -4714,7 +4715,7 @@ app.post('/make-server-fc8eb847/admin/fix-professional-org-code', async (c) => {
     }
 
     // Check if user is admin
-    if (user.app_metadata?.role !== 'admin') {
+    if (!(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -5035,7 +5036,7 @@ app.get('/make-server-fc8eb847/observation/parent/:parentId', async (c) => {
     const parentId = c.req.param('parentId');
     
     // Security: Only allow users to access their own observations or admin access
-    if (user.id !== parentId && user.app_metadata?.role !== 'admin') {
+    if (user.id !== parentId && !(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -5097,7 +5098,7 @@ app.post('/make-server-fc8eb847/consent', async (c) => {
     }
 
     // Security: Only the child can grant/revoke consent for themselves
-    if (user.id !== consent.childId && user.app_metadata?.role !== 'admin') {
+    if (user.id !== consent.childId && !(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Only the child can manage consent' }, 403);
     }
 
@@ -5190,7 +5191,7 @@ app.get('/make-server-fc8eb847/consent/child/:childId', async (c) => {
     const childId = c.req.param('childId');
     
     // Security: Only the child or admin can view their consents
-    if (user.id !== childId && user.app_metadata?.role !== 'admin') {
+    if (user.id !== childId && !(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -5252,7 +5253,7 @@ app.get('/make-server-fc8eb847/review/professional/:professionalId', async (c) =
     const professionalId = c.req.param('professionalId');
     
     // Security: Only the professional themselves or admin can view reviews
-    if (user.id !== professionalId && user.app_metadata?.role !== 'admin') {
+    if (user.id !== professionalId && !(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -5282,7 +5283,7 @@ app.get('/make-server-fc8eb847/review/supervisor/:supervisorId', async (c) => {
     const supervisorId = c.req.param('supervisorId');
     
     // Security: Only the supervisor themselves or admin can view their submitted reviews
-    if (user.id !== supervisorId && user.app_metadata?.role !== 'admin') {
+    if (user.id !== supervisorId && !(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
@@ -5312,7 +5313,7 @@ app.post('/make-server-fc8eb847/admin/create-organization', async (c) => {
     }
 
     // Check if user is admin
-    if (user.app_metadata?.role !== 'admin') {
+    if (!(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -5553,7 +5554,7 @@ app.get('/make-server-fc8eb847/admin/list-organizations', async (c) => {
     }
 
     // Check if user is admin
-    if (user.app_metadata?.role !== 'admin') {
+    if (!(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -5582,7 +5583,7 @@ app.delete('/make-server-fc8eb847/admin/delete-organization/:code', async (c) =>
     }
 
     // Check if user is admin
-    if (user.app_metadata?.role !== 'admin') {
+    if (!(await isPlatformAdmin(user.id))) {
       return c.json({ error: 'Forbidden - Admin access required' }, 403);
     }
 
@@ -5914,7 +5915,7 @@ app.get('/make-server-fc8eb847/gamification/:userId', async (c) => {
     
     const targetUserId = c.req.param('userId');
     // Basic auth check
-    if (user.id !== targetUserId && user.id !== 'admin-001' && (user as any).app_metadata?.role !== 'admin') {
+    if (user.id !== targetUserId && user.id !== 'admin-001' && !(await isPlatformAdmin(user.id))) {
       const userProfile = await kv.get(`user:${user.id}`);
       let isAuthorized = false;
       if (userProfile?.role === 'parent' && userProfile.linkedChildren?.includes(targetUserId)) {

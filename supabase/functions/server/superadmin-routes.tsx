@@ -2,6 +2,7 @@ import { Hono } from 'npm:hono';
 import { createClient } from 'npm:@supabase/supabase-js';
 import * as kv from './kv_store.tsx';
 import { CAREER_DATABASE } from './career-database.tsx';
+import { verifyPlatformAdmin } from './platform-admin.tsx';
 
 const app = new Hono();
 
@@ -12,24 +13,9 @@ const getSupabaseClient = (serviceRole = false) => {
   );
 };
 
-// Verifies the caller is authenticated AND flagged as admin in app_metadata.
-// app_metadata is only writable via the Admin API (service role) - unlike
-// user_metadata, a client can never set this on themselves via
-// supabase.auth.updateUser(), so this is an actual security boundary.
-export async function verifyAdmin(request: Request) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader) return null;
-  const token = authHeader.replace('Bearer ', '');
-  const supabase = getSupabaseClient(true);
-  try {
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data.user) return null;
-    if (data.user.app_metadata?.role !== 'admin') return null;
-    return data.user;
-  } catch {
-    return null;
-  }
-}
+// Verifies the caller is authenticated AND a platform admin (platform_admins
+// table - see platform-admin.tsx for why this replaced app_metadata).
+export const verifyAdmin = verifyPlatformAdmin;
 
 // Any authenticated user (not just admin) - used for ticket submission
 async function verifyUser(request: Request) {
@@ -501,36 +487,24 @@ app.get('/security-overview', async (c) => {
 
 // ============= ADMIN MANAGEMENT =============
 
-// List everyone currently flagged as admin via app_metadata (the hardened source
-// of truth - see verifyAdmin above).
+// List everyone currently in the platform_admins table (the durable source of
+// truth - see verifyAdmin/platform-admin.tsx).
 app.get('/admins', async (c) => {
   const admin = await verifyAdmin(c.req.raw);
   if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
   try {
     const supabaseAdmin = getSupabaseClient(true);
-    const admins: { id: string; email: string }[] = [];
-    let page = 1;
-    const perPage = 1000;
-    while (true) {
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
-      if (error) throw error;
-      const users = data?.users || [];
-      users.forEach((u: any) => {
-        if (u.app_metadata?.role === 'admin') admins.push({ id: u.id, email: u.email });
-      });
-      if (users.length < perPage) break;
-      page++;
-    }
-    return c.json({ success: true, admins });
+    const { data, error } = await supabaseAdmin.from('platform_admins').select('user_id, email').order('email');
+    if (error) throw error;
+    return c.json({ success: true, admins: (data || []).map((a: any) => ({ id: a.user_id, email: a.email })) });
   } catch (error) {
     console.log(`[superadmin/admins] Error: ${error}`);
     return c.json({ error: 'Failed to list admins' }, 500);
   }
 });
 
-// Grant or revoke admin access. Only an existing verified admin (app_metadata,
-// Admin-API-only writable) can call this, and it writes app_metadata via the
-// Admin API - never user_metadata, which a client could set on themselves.
+// Grant or revoke admin access via the platform_admins table. Only an
+// existing verified admin can call this.
 app.post('/admins/set', async (c) => {
   const admin = await verifyAdmin(c.req.raw);
   if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
@@ -546,15 +520,15 @@ app.post('/admins/set', async (c) => {
       return c.json({ error: 'Target user not found' }, 404);
     }
 
-    const nextAppMetadata = { ...(targetData.user.app_metadata || {}) };
     if (isAdmin) {
-      nextAppMetadata.role = 'admin';
+      const { error: upsertError } = await supabaseAdmin
+        .from('platform_admins')
+        .upsert({ user_id: targetUserId, email: targetData.user.email, granted_by: admin.id }, { onConflict: 'user_id' });
+      if (upsertError) throw upsertError;
     } else {
-      delete nextAppMetadata.role;
+      const { error: deleteError } = await supabaseAdmin.from('platform_admins').delete().eq('user_id', targetUserId);
+      if (deleteError) throw deleteError;
     }
-
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, { app_metadata: nextAppMetadata });
-    if (updateError) throw updateError;
 
     await logAudit(admin.id, admin.email || '', isAdmin ? 'grant_admin' : 'revoke_admin', { targetUserId, targetEmail: targetData.user.email });
     return c.json({ success: true });

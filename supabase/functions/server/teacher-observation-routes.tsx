@@ -1,6 +1,7 @@
 import { Hono } from 'npm:hono';
 import * as kv from './kv_store.tsx';
 import { verifyAuth } from './auth-helpers.tsx';
+import { isPlatformAdmin } from './platform-admin.tsx';
 
 /**
  * Teacher Observation routes.
@@ -47,7 +48,7 @@ app.post('/', async (c) => {
     // allowlist) and app_metadata for admin (Admin-API-only writable). user_metadata
     // is intentionally not trusted here since it's client-editable.
     const role = profile?.role || '';
-    const isAdmin = user.app_metadata?.role === 'admin' || role === 'admin';
+    const isAdmin = (await isPlatformAdmin(user.id)) || role === 'admin';
     if (role !== 'teacher' && !isAdmin) {
       return c.json({ error: 'Forbidden - Teacher access required' }, 403);
     }
@@ -111,7 +112,7 @@ app.get('/teacher/:teacherId', async (c) => {
 
     const teacherId = c.req.param('teacherId');
     const profile = await kv.get(`user:${user.id}`);
-    const isAdmin = user.app_metadata?.role === 'admin' || profile?.role === 'admin';
+    const isAdmin = (await isPlatformAdmin(user.id)) || profile?.role === 'admin';
     if (user.id !== teacherId && !isAdmin) {
       return c.json({ error: 'Forbidden' }, 403);
     }
@@ -134,7 +135,7 @@ app.get('/child/:childId', async (c) => {
     const childId = c.req.param('childId');
     const profile = await kv.get(`user:${user.id}`);
     const role = profile?.role || '';
-    const isAdmin = user.app_metadata?.role === 'admin' || role === 'admin';
+    const isAdmin = (await isPlatformAdmin(user.id)) || role === 'admin';
 
     const all = await kv.getByPrefix(PREFIX);
     const forChild = all.filter((o: any) => o.studentId === childId);
@@ -175,7 +176,7 @@ app.delete('/:id', async (c) => {
     if (!existing) return c.json({ success: true }); // already gone
 
     const profile = await kv.get(`user:${user.id}`);
-    const isAdmin = user.app_metadata?.role === 'admin' || profile?.role === 'admin';
+    const isAdmin = (await isPlatformAdmin(user.id)) || profile?.role === 'admin';
     if (existing.teacherId !== user.id && !isAdmin) {
       return c.json({ error: 'Forbidden' }, 403);
     }

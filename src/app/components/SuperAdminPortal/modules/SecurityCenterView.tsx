@@ -123,9 +123,9 @@ export function SecurityCenterView({ users }: SecurityCenterViewProps) {
         <CardHeader><CardTitle className="flex items-center gap-2"><UserCog className="w-4 h-4 text-indigo-600" /> Admin Access</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-slate-500">
-            Grants are written to <code className="px-1 bg-slate-100 dark:bg-slate-900 rounded text-xs">app_metadata</code> via
-            the Admin API - not <code className="px-1 bg-slate-100 dark:bg-slate-900 rounded text-xs">user_metadata</code>,
-            which a user could set on themselves.
+            Grants live in a dedicated <code className="px-1 bg-slate-100 dark:bg-slate-900 rounded text-xs">platform_admins</code> table
+            that only this app's server code writes to - not Supabase Auth's own metadata fields, which either a user could
+            set on themselves or Supabase's own sign-in lifecycle can silently reset.
           </p>
           <div className="flex gap-2 max-w-md">
             <Input placeholder="user@email.com" value={grantEmail} onChange={(e) => setGrantEmail(e.target.value)} />

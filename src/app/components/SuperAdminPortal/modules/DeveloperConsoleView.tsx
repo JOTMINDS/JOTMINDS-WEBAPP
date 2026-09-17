@@ -16,10 +16,9 @@ export function DeveloperConsoleView() {
 
       <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900">
         <CardContent className="p-4 text-sm text-amber-800 dark:text-amber-300">
-          Live SQL execution isn't built into this panel on purpose - the admin role check this app uses
-          (<code className="px-1 bg-amber-100 dark:bg-amber-900/40 rounded">user_metadata.role</code>) is client-editable, so
-          exposing a query console here would let any user who self-promotes to admin run arbitrary SQL against production.
-          Use Supabase's own dashboard tools below instead - they're properly access-controlled.
+          Live SQL execution isn't built into this panel on purpose - an arbitrary-query surface is too high-blast-radius
+          for a client-facing web app regardless of how the admin check is gated (one compromised session becomes full
+          database access). Use Supabase's own dashboard tools below instead - they're properly access-controlled.
         </CardContent>
       </Card>
 

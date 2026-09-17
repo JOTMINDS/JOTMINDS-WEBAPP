@@ -16,10 +16,9 @@ export function BackupRecoveryView() {
 
       <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900">
         <CardContent className="p-4 text-sm text-amber-800 dark:text-amber-300">
-          One-click restore/snapshot triggers aren't built into this panel on purpose. This app's admin role check
-          (<code className="px-1 bg-amber-100 dark:bg-amber-900/40 rounded">user_metadata.role</code>) is client-editable, so a
-          destructive action wired up here could be triggered by anyone who self-promotes to admin. Backups and point-in-time
-          recovery are managed safely through Supabase's own dashboard, linked below.
+          One-click restore/snapshot triggers aren't built into this panel on purpose - a destructive action like a database
+          restore is too high-blast-radius for a client-facing web app, regardless of how well the admin check is gated.
+          Backups and point-in-time recovery are managed safely through Supabase's own dashboard, linked below.
         </CardContent>
       </Card>
 

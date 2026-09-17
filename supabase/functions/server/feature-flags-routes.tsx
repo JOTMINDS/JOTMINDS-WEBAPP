@@ -2,6 +2,7 @@ import { Hono } from 'npm:hono';
 import { createClient } from 'npm:@supabase/supabase-js';
 import * as kv from './kv_store.tsx';
 import { logAudit } from './superadmin-routes.tsx';
+import { verifyPlatformAdmin } from './platform-admin.tsx';
 
 const app = new Hono();
 
@@ -12,20 +13,7 @@ const getSupabaseClient = (serviceRole = false) => {
   );
 };
 
-async function verifyAdmin(request: Request) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader) return null;
-  const token = authHeader.replace('Bearer ', '');
-  const supabase = getSupabaseClient(true);
-  try {
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data.user) return null;
-    if (data.user.app_metadata?.role !== 'admin') return null;
-    return data.user;
-  } catch {
-    return null;
-  }
-}
+const verifyAdmin = verifyPlatformAdmin;
 
 async function verifyUser(request: Request) {
   const authHeader = request.headers.get('Authorization');
