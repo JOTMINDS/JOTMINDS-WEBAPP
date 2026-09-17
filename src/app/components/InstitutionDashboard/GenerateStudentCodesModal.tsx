@@ -5,8 +5,8 @@ import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Plus, X, Copy, CheckCircle2, UserPlus, RefreshCw, Upload, Download, School, ArrowRight, ArrowLeft } from 'lucide-react';
-import { Class, EducationLevel, StudentCode, User } from '../../types';
-import { generateId, getAllClasses, saveClass, saveUser } from '../../utils/storage';
+import { Class, EducationLevel, StudentCode } from '../../types';
+import { generateId, getAllClasses, saveClass } from '../../utils/storage';
 import { enrollStudent, saveInstitutionClassAPI } from '../../utils/api';
 import { toast } from 'sonner';
 
@@ -57,7 +57,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
 
   const loadTeacherClasses = () => {
     const allClasses = getAllClasses();
-    const filtered = allClasses.filter(c => c.classTeacherId === teacherId);
+    const filtered = allClasses.filter(c => c.classTeacherId === teacherId || (institutionId && c.institutionId === institutionId));
     setTeacherClasses(filtered);
   };
 
@@ -243,8 +243,10 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
       const targetClassName = selectedClassId === 'individual' ? 'Individual Learner' : (selectedClass?.name || 'Unassigned');
       const targetLevel = selectedClassId === 'individual' ? individualEducationLevel : (selectedClass?.educationLevel || 'JHS');
 
+      let failureCount = 0;
       for (const student of validStudents) {
         let code = '';
+        let failed = false;
         try {
           const response = await enrollStudent({
             studentName: student.name.trim(),
@@ -255,56 +257,45 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
             institutionId,
             educationLevel: targetLevel
           });
-          
+
           if (response && response.success && response.code) {
             code = response.code;
           } else if (response && response.duplicate && response.existingStudent?.code) {
             code = response.existingStudent.code;
             toast.info(`Active code found for ${student.name.trim()}`);
+          } else {
+            failed = true;
           }
         } catch (err) {
-          console.warn(`Enrollment API fallback for ${student.name}:`, err);
+          console.error(`Failed to enroll ${student.name}:`, err);
+          failed = true;
         }
 
-        // Guaranteed secure code generation fallback if API is unavailable or offline
-        if (!code) {
-          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-          let c = 'JM-';
-          for (let i = 0; i < 4; i++) c += chars.charAt(Math.floor(Math.random() * chars.length));
-          c += '-';
-          for (let i = 0; i < 4; i++) c += chars.charAt(Math.floor(Math.random() * chars.length));
-          code = c;
-
-          // Save student locally
-          const localStudent: User = {
-            id: `stu_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            name: student.name.trim(),
-            email: `${code.toLowerCase().replace(/-/g, '')}@student.jotminds.app`,
-            role: 'student',
-            dateOfBirth: student.dob.trim(),
-            classId: targetClassId,
-            institutionId,
-            studentCode: code,
-            createdAt: new Date().toISOString()
-          };
-          saveUser(localStudent);
+        if (failed) {
+          failureCount++;
         }
 
         results.push({
           id: generateId(),
           studentName: student.name.trim(),
           studentDOB: student.dob.trim(),
-          code
+          code,
+          failed
         });
       }
 
       setGeneratedCodes(results);
       setStep('results');
-      if (results.length > 0) {
-        toast.success(`Successfully generated ${results.length} student codes!`);
+      const successCount = results.length - failureCount;
+      if (successCount > 0) {
+        toast.success(`Successfully generated ${successCount} student code${successCount === 1 ? '' : 's'}!`);
+      }
+      if (failureCount > 0) {
+        toast.error(`Failed to enroll ${failureCount} student${failureCount === 1 ? '' : 's'}. Please try again for them.`);
       }
     } catch (err) {
       console.error('Failed to generate codes', err);
+      toast.error('Failed to generate student codes. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -641,10 +632,18 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
         {/* STEP 3: Results */}
         {step === 'results' && (
           <div className="space-y-4 py-4">
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-sm font-medium flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              Successfully generated {generatedCodes.length} {generatedCodes.length === 1 ? 'code' : 'codes'} for {selectedClass?.name || `${individualEducationLevel} Individual Students`}!
-            </div>
+            {generatedCodes.some(c => !c.failed) && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-sm font-medium flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                Successfully generated {generatedCodes.filter(c => !c.failed).length} {generatedCodes.filter(c => !c.failed).length === 1 ? 'code' : 'codes'} for {selectedClass?.name || `${individualEducationLevel} Individual Students`}!
+              </div>
+            )}
+            {generatedCodes.some(c => c.failed) && (
+              <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-xl text-sm font-medium flex items-center gap-2">
+                <X className="w-5 h-5 text-red-600" />
+                Failed to enroll {generatedCodes.filter(c => c.failed).length} student{generatedCodes.filter(c => c.failed).length === 1 ? '' : 's'}. Try again below.
+              </div>
+            )}
 
             <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded-lg">
               All students have been assigned the <span className="font-bold">{selectedClass?.educationLevel || individualEducationLevel}</span> education level.
@@ -659,21 +658,29 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                       {code.studentDOB && <p className="text-xs text-gray-500">{code.studentDOB}</p>}
                     </div>
                     <div className="flex items-center gap-3">
-                      <code className="bg-slate-100 text-slate-800 px-3 py-1.5 rounded-lg text-sm font-bold tracking-widest border border-slate-200">
-                        {code.code}
-                      </code>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => copyCode(code.id, code.code)}
-                        className="h-8 px-2"
-                      >
-                        {copiedId === code.id ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-4 h-4 text-gray-500" />
-                        )}
-                      </Button>
+                      {code.failed ? (
+                        <span className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg">
+                          Failed - retry
+                        </span>
+                      ) : (
+                        <>
+                          <code className="bg-slate-100 text-slate-800 px-3 py-1.5 rounded-lg text-sm font-bold tracking-widest border border-slate-200">
+                            {code.code}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copyCode(code.id, code.code)}
+                            className="h-8 px-2"
+                          >
+                            {copiedId === code.id ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-4 h-4 text-gray-500" />
+                            )}
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

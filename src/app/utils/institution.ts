@@ -220,7 +220,7 @@ export async function getInstitutionBySchoolName(name: string): Promise<Institut
   return mapDBInstitutionToLocal(data);
 }
 
-export async function saveInstitution(institution: Institution): Promise<void> {
+export async function saveInstitution(institution: Institution): Promise<boolean> {
   // Always persist to localStorage first so UI reflects updates immediately
   try {
     localStorage.setItem('jotminds_institution', JSON.stringify(institution));
@@ -260,9 +260,12 @@ export async function saveInstitution(institution: Institution): Promise<void> {
 
     if (error) {
       console.warn('saveInstitution remote update warning (persisted locally):', error);
+      return false;
     }
+    return true;
   } catch (err) {
     console.warn('saveInstitution remote exception (persisted locally):', err);
+    return false;
   }
 }
 
@@ -745,11 +748,14 @@ export async function cancelInvitation(inviteToken: string): Promise<void> {
 export async function deleteInstitutionInvitation(invitationId: string, email: string): Promise<boolean> {
   try {
     // 1. Remove from Supabase: match by id, token, or email
+    let remoteDeleted = false;
     try {
-      await (supabase as any)
+      const { error } = await (supabase as any)
         .from('institution_invitations')
         .delete()
         .or(`id.eq.${invitationId},token.eq.${invitationId},email.eq.${email}`);
+      remoteDeleted = !error;
+      if (error) console.warn('Supabase delete invitation error:', error);
     } catch (supaErr) {
       console.warn('Supabase delete invitation fallback:', supaErr);
     }
@@ -762,13 +768,16 @@ export async function deleteInstitutionInvitation(invitationId: string, email: s
         invitationsArr = JSON.parse(localInvitationsStr);
       } catch (e) {}
     }
-    const filtered = invitationsArr.filter((inv: any) => 
-      inv.id !== invitationId && 
-      inv.token !== invitationId && 
+    const filtered = invitationsArr.filter((inv: any) =>
+      inv.id !== invitationId &&
+      inv.token !== invitationId &&
       inv.email?.toLowerCase() !== email?.toLowerCase()
     );
     localStorage.setItem('jm_institution_invitations', JSON.stringify(filtered));
-    return true;
+
+    // Report failure if the remote delete didn't actually succeed, so the
+    // caller can warn the admin the invite may reappear on other devices.
+    return remoteDeleted;
   } catch (err) {
     console.error('Error deleting invitation:', err);
     return false;
@@ -1069,7 +1078,7 @@ export function resolveSchoolLocation(inst?: Partial<Institution> | null, school
 // -----------------------------------------
 
 import { Class } from '../types';
-import { getAllClasses, saveClass } from './storage';
+import { getAllClasses, saveClass, deleteClass } from './storage';
 import { fetchInstitutionClassesAPI, saveInstitutionClassAPI, deleteInstitutionClassAPI } from './api';
 
 export async function getInstitutionClasses(institutionId: string, teacherIds?: string[]): Promise<Class[]> {
@@ -1229,6 +1238,10 @@ export async function deleteInstitutionClass(classId: string): Promise<void> {
     .eq('id', classId);
 
   if (error) console.warn("Failed deleting from Supabase:", error);
+
+  // Also remove from local storage, otherwise getInstitutionClasses() merges
+  // it straight back in on the very next load.
+  deleteClass(classId);
 }
 
 export async function generateNewClassCode(classId: string): Promise<string> {

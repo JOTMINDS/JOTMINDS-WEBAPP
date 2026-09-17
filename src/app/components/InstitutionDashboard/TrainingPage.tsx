@@ -298,10 +298,10 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-indigo-950">
                 <Target className="w-4 h-4 text-indigo-600" />
-                Institutional Staffing & Recruitment Advisory Engine
+                Institutional Staffing & Recruitment Advisory
               </CardTitle>
               <CardDescription className="text-xs">
-                Derived from cross-referencing student cognitive distribution with active faculty profiles.
+                General best-practice guidance for staffing decisions - not yet personalized to this school's data.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
@@ -583,40 +583,27 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
 
             {/* Video Viewport */}
             <div className="relative aspect-video bg-black flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-950/80 via-slate-900 to-black">
-                <div className="text-center p-6 max-w-md">
-                  <div className="w-16 h-16 rounded-full bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center mx-auto mb-3">
-                    {isPlaying ? <Video className="w-8 h-8 animate-pulse" /> : <Play className="w-8 h-8 ml-1" />}
-                  </div>
-                  <h4 className="font-bold text-base mb-1">{selectedVideoModal.title}</h4>
-                  <p className="text-xs text-slate-400 mb-4">{selectedVideoModal.description}</p>
-                  <Button
-                    size="sm"
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
-                  >
-                    {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
-                    {isPlaying ? 'Pause Video' : 'Resume Playback'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Player Controls Bar */}
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-4 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setIsPlaying(!isPlaying)} className="hover:text-indigo-400 transition-colors">
-                    {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
-                  </button>
-                  <Volume2 className="w-4 h-4 text-slate-400" />
-                  <span className="font-mono text-slate-300">01:45 / 06:12</span>
-                </div>
-                <div className="flex-1 mx-4">
-                  <div className="w-full bg-slate-700 rounded-full h-1.5 cursor-pointer">
-                    <div className="bg-indigo-500 h-1.5 rounded-full w-[28%]" />
+              {selectedVideoModal.videoUrl ? (
+                <video
+                  key={selectedVideoModal.videoUrl}
+                  src={selectedVideoModal.videoUrl}
+                  controls
+                  autoPlay
+                  className="w-full h-full"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-950/80 via-slate-900 to-black">
+                  <div className="text-center p-6 max-w-md">
+                    <div className="w-16 h-16 rounded-full bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center mx-auto mb-3">
+                      <Video className="w-8 h-8" />
+                    </div>
+                    <h4 className="font-bold text-base mb-1">{selectedVideoModal.title}</h4>
+                    <p className="text-xs text-slate-400">This video is not available yet. Check back soon.</p>
                   </div>
                 </div>
-                <span className="text-[10px] text-slate-400 font-semibold uppercase">1080p HD</span>
-              </div>
+              )}
             </div>
 
             {/* Video Transcript / Notes */}

@@ -136,11 +136,15 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
 
   const performSave = async (data: Institution) => {
     try {
-      await saveInstitution(data);
+      const synced = await saveInstitution(data);
       onInstitutionUpdate(data);
       setError('');
       setSaveSuccess(true);
-      toast.success('Settings saved successfully.');
+      if (synced) {
+        toast.success('Settings saved successfully.');
+      } else {
+        toast.warning('Settings saved on this device, but syncing to the server failed. Please try again.');
+      }
       setTimeout(() => setSaveSuccess(false), 2500);
     } catch (err) {
       setError('Failed to save settings.');

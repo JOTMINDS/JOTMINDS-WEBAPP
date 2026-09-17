@@ -44,30 +44,16 @@ export const initialMockClassSummary: ClassCognitiveSummary = {
 
 export const initialMockLessonPlans: LessonPlan[] = [];
 
+// No curriculum topics have been tracked yet - this starts empty rather
+// than showing fabricated sample topics/percentages.
 export const initialCurriculumTrack: CurriculumTrack = {
   frameworkName: 'National Curriculum (NaCCA / GES)',
-  subject: 'Sample Subject',
-  grade: 'Grade Level',
-  totalTopics: 15,
-  coveredTopicsCount: 10,
-  completionPercentage: 66,
-  topics: [
-    { id: 'curr-math-01', code: 'MATH-JHS2-01', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-02', code: 'MATH-JHS2-02', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-03', code: 'MATH-JHS2-03', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-04', code: 'MATH-JHS2-04', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-05', code: 'MATH-JHS2-05', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'in_progress', mappedLessonId: 'lp-001' },
-    { id: 'curr-math-06', code: 'MATH-JHS2-06', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'outstanding' },
-    { id: 'curr-math-07', code: 'MATH-JHS2-07', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-08', code: 'MATH-JHS2-08', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-09', code: 'MATH-JHS2-09', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-10', code: 'MATH-JHS2-10', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-11', code: 'MATH-JHS2-11', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-12', code: 'MATH-JHS2-12', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'covered' },
-    { id: 'curr-math-13', code: 'MATH-JHS2-13', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'outstanding' },
-    { id: 'curr-math-14', code: 'MATH-JHS2-14', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'outstanding' },
-    { id: 'curr-math-15', code: 'MATH-JHS2-15', title: 'Topic placeholder', subject: 'Sample Subject', grade: 'Grade Level', status: 'outstanding' }
-  ]
+  subject: '',
+  grade: '',
+  totalTopics: 0,
+  coveredTopicsCount: 0,
+  completionPercentage: 0,
+  topics: []
 };
 
 export const initialPerformanceMetric: TeacherPerformanceMetric = {

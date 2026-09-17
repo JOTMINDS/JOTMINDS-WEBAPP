@@ -5,7 +5,6 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Loader } from 'lucide-react';
 import { inviteMember } from '../../utils/institution';
-import { sendEmail } from '../../utils/api';
 
 interface InviteMemberModalProps {
   isOpen: boolean;

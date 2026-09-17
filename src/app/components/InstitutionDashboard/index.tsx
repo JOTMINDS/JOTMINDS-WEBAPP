@@ -15,8 +15,6 @@ import {
   getInstitutionByAdminId,
   getInstitutionMembers,
   getAllInvitations,
-  addMember,
-  generateInstitutionCode,
   saveInstitution,
   isCodeExpired,
   getDaysUntilExpiry,
@@ -50,9 +48,7 @@ import { LessonCopilotDrawer } from '../lessonPlanner/LessonCopilotDrawer';
 // Shared siblings
 import { SchoolAnalyticsDashboard } from '../SchoolAnalyticsDashboard';
 import { InstitutionReporting } from '../InstitutionReporting';
-import { ProfileSettingsModal } from '../ProfileSettingsModal';
 import { SchoolTeacherStylesView } from '../SchoolTeacherStylesView';
-import { TeacherDashboardNew } from '../TeacherDashboardNew';
 
 interface InstitutionDashboardProps {
   user: User;
@@ -541,8 +537,8 @@ export function InstitutionDashboard({
           });
 
           return (
-            <CentralStudentManagement 
-              teacher={user} 
+            <CentralStudentManagement
+              teacher={{ ...user, institutionId: institution.id, schoolCode: institution.code }}
               assessments={memberAssessments}
               students={studentList}
               onRefresh={loadData}

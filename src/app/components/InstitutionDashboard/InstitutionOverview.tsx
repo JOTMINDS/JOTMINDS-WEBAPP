@@ -73,14 +73,19 @@ export function InstitutionOverview({
       address: editAddress.trim(),
       updatedAt: new Date().toISOString(),
     };
+    let synced = false;
     try {
-      await saveInstitution(updated);
+      synced = await saveInstitution(updated);
     } catch (err) {
       console.warn('Remote sync error (persisting locally):', err);
     } finally {
       localStorage.setItem('jotminds_institution', JSON.stringify(updated));
       onInstitutionUpdate?.(updated);
-      toast.success('School campus location updated successfully');
+      if (synced) {
+        toast.success('School campus location updated successfully');
+      } else {
+        toast.warning('Location saved on this device, but syncing to the server failed. Please try again.');
+      }
       setIsEditLocationOpen(false);
       setSavingLocation(false);
     }
@@ -99,7 +104,7 @@ export function InstitutionOverview({
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            This institution account is <strong>deactivated</strong>. Teachers and students cannot join using the institution code. Reactivate in Settings.
+            This institution account is <strong>deactivated</strong>. Teachers and students cannot join using the institution code. Reactivate from the Manage Codes panel.
           </AlertDescription>
         </Alert>
       )}

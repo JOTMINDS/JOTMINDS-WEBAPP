@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -95,8 +96,11 @@ export function InstitutionCodeManager({
   const handleSaveExpirySetting = async () => {
     // update codeExpiryDays on local and save
     const updatedInst = { ...institution, codeExpiryDays: expiryDays };
-    await saveInstitution(updatedInst);
+    const synced = await saveInstitution(updatedInst);
     onInstitutionUpdate(updatedInst);
+    if (!synced) {
+      toast.warning('Expiry setting saved on this device, but syncing to the server failed. Please try again.');
+    }
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
   };
@@ -167,7 +171,7 @@ export function InstitutionCodeManager({
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-gray-500">Members joined via code</span>
-            <span className="text-gray-700">{totalMembersCount - 1}</span>
+            <span className="text-gray-700">{Math.max(0, totalMembersCount - 1)}</span>
           </div>
         </CardContent>
       </Card>
@@ -224,7 +228,7 @@ export function InstitutionCodeManager({
             <Alert className="mb-3 border-amber-300 bg-amber-50">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-800">
-                <strong>Warning:</strong> The current code <code className="font-mono">{institution.code}</code> will become invalid immediately. All {totalMembersCount - 1} linked members will keep their accounts, but new members will need the new code.
+                <strong>Warning:</strong> The current code <code className="font-mono">{institution.code}</code> will become invalid immediately. All {Math.max(0, totalMembersCount - 1)} linked members will keep their accounts, but new members will need the new code.
               </AlertDescription>
             </Alert>
           )}

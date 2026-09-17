@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { saveUser, saveCurrentUser } from '../../utils/storage';
+import { createClient } from '../../utils/supabase/client';
 
 interface AdministratorSettingsViewProps {
   user: User;
@@ -29,10 +30,19 @@ export function AdministratorSettingsView({
   const [phone, setPhone] = useState((user as any).phone || institution?.phone || '');
   const [title, setTitle] = useState((user as any).title || 'Head of Institution / Administrator');
   
-  // Notification Preferences
-  const [notifyOnTeacherRequest, setNotifyOnTeacherRequest] = useState(true);
-  const [notifyOnClassSubmitted, setNotifyOnClassSubmitted] = useState(true);
-  const [notifyWeeklyDigest, setNotifyWeeklyDigest] = useState(true);
+  // Notification Preferences - persisted onto the user profile so they
+  // survive a tab switch/reload instead of resetting to their defaults.
+  const savedNotificationPrefs = (user as any).notificationPreferences || {};
+  const [notifyOnTeacherRequest, setNotifyOnTeacherRequest] = useState(savedNotificationPrefs.teacherRequest ?? true);
+  const [notifyOnClassSubmitted, setNotifyOnClassSubmitted] = useState(savedNotificationPrefs.classSubmitted ?? true);
+  const [notifyWeeklyDigest, setNotifyWeeklyDigest] = useState(savedNotificationPrefs.weeklyDigest ?? true);
+
+  const persistNotificationPrefs = (prefs: { teacherRequest: boolean; classSubmitted: boolean; weeklyDigest: boolean }) => {
+    const updated: User = { ...user, notificationPreferences: prefs } as any;
+    saveUser(updated);
+    saveCurrentUser(updated);
+    onProfileUpdate(updated);
+  };
 
   // Password Change
   const [showPasswordSection, setShowPasswordSection] = useState(false);
@@ -40,16 +50,35 @@ export function AdministratorSettingsView({
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!name.trim()) {
       toast.error('Name cannot be empty.');
       return;
     }
 
+    const trimmedEmail = email.trim();
+    const emailChanged = trimmedEmail && trimmedEmail !== user.email;
+
+    if (emailChanged) {
+      try {
+        const supabase = createClient();
+        const { error } = await supabase.auth.updateUser({ email: trimmedEmail });
+        if (error) {
+          toast.error(`Could not update login email: ${error.message}`);
+          return;
+        }
+        toast.info('Check your new email address to confirm the change.');
+      } catch (err) {
+        console.error('Failed to update auth email:', err);
+        toast.error('Could not update login email. Please try again.');
+        return;
+      }
+    }
+
     const updated: User = {
       ...user,
       name: name.trim(),
-      email: email.trim(),
+      email: trimmedEmail,
       phone: phone.trim(),
       title: title.trim()
     } as any;
@@ -60,7 +89,9 @@ export function AdministratorSettingsView({
     toast.success('Administrator profile updated successfully!');
   };
 
-  const handlePasswordUpdate = () => {
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const handlePasswordUpdate = async () => {
     if (!currentPassword) {
       toast.error('Please enter your current password.');
       return;
@@ -74,12 +105,37 @@ export function AdministratorSettingsView({
       return;
     }
 
-    // In local storage / auth mock:
-    toast.success('Security password updated successfully!');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setShowPasswordSection(false);
+    setIsUpdatingPassword(true);
+    try {
+      const supabase = createClient();
+
+      // Verify the current password is correct before changing it.
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      });
+      if (verifyError) {
+        toast.error('Current password is incorrect.');
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) {
+        toast.error(updateError.message || 'Failed to update password. Please try again.');
+        return;
+      }
+
+      toast.success('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordSection(false);
+    } catch (err) {
+      console.error('Failed to update password:', err);
+      toast.error('Failed to update password. Please try again.');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   return (
@@ -230,17 +286,14 @@ export function AdministratorSettingsView({
                     <Button variant="ghost" size="sm" onClick={() => setShowPasswordSection(false)} className="text-xs">
                       Cancel
                     </Button>
-                    <Button size="sm" onClick={handlePasswordUpdate} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs">
-                      Update Password
+                    <Button size="sm" onClick={handlePasswordUpdate} disabled={isUpdatingPassword} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs">
+                      {isUpdatingPassword ? 'Updating...' : 'Update Password'}
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-between text-xs text-gray-600 py-1">
-                  <span>Password Last Updated: <b>30 days ago</b></span>
-                  <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> 2FA Security Protected
-                  </span>
+                  <span>Keep your password up to date to protect your account.</span>
                 </div>
               )}
             </CardContent>
@@ -299,7 +352,10 @@ export function AdministratorSettingsView({
                 <input
                   type="checkbox"
                   checked={notifyOnTeacherRequest}
-                  onChange={e => setNotifyOnTeacherRequest(e.target.checked)}
+                  onChange={e => {
+                    setNotifyOnTeacherRequest(e.target.checked);
+                    persistNotificationPrefs({ teacherRequest: e.target.checked, classSubmitted: notifyOnClassSubmitted, weeklyDigest: notifyWeeklyDigest });
+                  }}
                   className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
                 />
                 <div>
@@ -312,7 +368,10 @@ export function AdministratorSettingsView({
                 <input
                   type="checkbox"
                   checked={notifyOnClassSubmitted}
-                  onChange={e => setNotifyOnClassSubmitted(e.target.checked)}
+                  onChange={e => {
+                    setNotifyOnClassSubmitted(e.target.checked);
+                    persistNotificationPrefs({ teacherRequest: notifyOnTeacherRequest, classSubmitted: e.target.checked, weeklyDigest: notifyWeeklyDigest });
+                  }}
                   className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
                 />
                 <div>
@@ -325,7 +384,10 @@ export function AdministratorSettingsView({
                 <input
                   type="checkbox"
                   checked={notifyWeeklyDigest}
-                  onChange={e => setNotifyWeeklyDigest(e.target.checked)}
+                  onChange={e => {
+                    setNotifyWeeklyDigest(e.target.checked);
+                    persistNotificationPrefs({ teacherRequest: notifyOnTeacherRequest, classSubmitted: notifyOnClassSubmitted, weeklyDigest: e.target.checked });
+                  }}
                   className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
                 />
                 <div>

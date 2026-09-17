@@ -45,6 +45,13 @@ export function BulkUploadModal({
           return;
         }
 
+        const MAX_ROWS = 500;
+        if (lines.length - 1 > MAX_ROWS) {
+          toast.error(`This file has ${lines.length - 1} rows, which exceeds the maximum of ${MAX_ROWS}. Please split it into smaller files.`);
+          setIsUploading(false);
+          return;
+        }
+
         const parseLine = (line: string) => {
           let parts = [];
           let current = '';

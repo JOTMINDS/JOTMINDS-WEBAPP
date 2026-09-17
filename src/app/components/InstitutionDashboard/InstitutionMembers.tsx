@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
+import { assignMemberToClass, sendClassAssignmentEmail } from '../../utils/api';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -92,7 +93,7 @@ export function InstitutionMembers({
   const [selectedAssignRole, setSelectedAssignRole] = useState<'class_teacher' | 'subject_teacher' | 'substitute' | 'assistant'>('class_teacher');
   const [selectedAssignSubject, setSelectedAssignSubject] = useState<string>('');
 
-  const handleSaveClassAssignment = () => {
+  const handleSaveClassAssignment = async () => {
     if (!assignClassTeacher || !selectedAssignClassId) {
       toast.error('Please select a class');
       return;
@@ -117,6 +118,30 @@ export function InstitutionMembers({
     if (selectedAssignRole === 'class_teacher') {
       targetClass.classTeacherId = assignClassTeacher.userId;
       saveClass(targetClass);
+    }
+
+    // Sync to backend and notify the teacher - mirrors ClassManagement's flow
+    try {
+      await assignMemberToClass({
+        userId: assignClassTeacher.userId,
+        classId: targetClass.id,
+        className: targetClass.name,
+        role: 'teacher',
+        institutionId: institution.id
+      });
+
+      const teacherProfile = allPlatformUsers.find(u => u.id === assignClassTeacher.userId);
+      if (teacherProfile?.email) {
+        await sendClassAssignmentEmail({
+          email: teacherProfile.email,
+          className: targetClass.name,
+          role: selectedAssignRole.replace('_', ' '),
+          inviterName: 'Your School Administrator'
+        });
+      }
+    } catch (err) {
+      console.error('Failed to sync class assignment to backend:', err);
+      toast.warning('Assignment saved, but syncing it to the server failed. It may not appear on other devices yet.');
     }
 
     toast.success(`Assigned ${assignClassTeacher.userName} to ${targetClass.name} (${selectedAssignRole.replace('_', ' ')})`);
@@ -438,7 +463,8 @@ export function InstitutionMembers({
                           )}
                           {/* Export Report button */}
                           {(() => {
-                            const completedAssessments = getAssessmentsByUserId(m.userId).filter((a: any) => a.completedAt);
+                            const serverAssessments = assessments.length > 0 ? assessments.filter((a: any) => a.userId === m.userId) : getAssessmentsByUserId(m.userId);
+                            const completedAssessments = serverAssessments.filter((a: any) => a.completedAt || a.completed || a.status === 'completed');
                             if (completedAssessments.length === 0) return null;
                             return (
                               <Button
@@ -507,11 +533,29 @@ export function InstitutionMembers({
                               size="sm"
                               variant="ghost"
                               className="text-[#5B7DB1] hover:bg-[#5B7DB1]/10 h-7 px-2 text-xs"
-                              onClick={() => onOpenTeacherManagement(m.userId)}
+                              onClick={() => {
+                                if (!allPlatformUsers.some(u => u.id === m.userId)) {
+                                  toast.error("Couldn't load this teacher's profile. Try refreshing the page.");
+                                  return;
+                                }
+                                onOpenTeacherManagement(m.userId);
+                              }}
                               disabled={processingMemberId === m.userId}
                               title="Manage"
                             >
                               <Users className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          {(m.role === 'teacher' || m.role === 'student') && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-gray-500 hover:bg-gray-100 h-7 px-2 text-xs"
+                              onClick={() => onOpenTransferModal(m.userId, m.role as 'teacher' | 'student', m.userName)}
+                              disabled={processingMemberId === m.userId}
+                              title="Transfer to Another Institution"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
                             </Button>
                           )}
                           {m.role !== 'admin' && (
@@ -577,6 +621,9 @@ export function InstitutionMembers({
               <Brain className="w-4 h-4 mr-2" /> Teacher Analytics
             </Button>
           )}
+          <Button variant="secondary" onClick={onOpenBulkUploadModal} className="bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200">
+            <Upload className="w-4 h-4 mr-2" /> Bulk Upload
+          </Button>
           <Button style={{ backgroundColor: '#6B4C9A' }} onClick={() => onOpenInviteModal()}>
             <UserPlus className="w-4 h-4 mr-2" /> Invite Member
           </Button>
@@ -755,7 +802,7 @@ export function InstitutionMembers({
                           className="text-blue-600 hover:text-blue-700"
                           onClick={() => onOpenInviteModal(inv.email, inv.role)}
                         >
-                          <RefreshCw className="w-3.5 h-3.5 mr-1" /> Resend
+                          <RefreshCw className="w-3.5 h-3.5 mr-1" /> Re-invite
                         </Button>
                         <Button
                           size="sm"
@@ -764,8 +811,12 @@ export function InstitutionMembers({
                           onClick={async () => {
                             if (window.confirm(`Are you sure you want to cancel the invitation for ${inv.email}?`)) {
                               setCancelledInvitationIds(prev => new Set([...prev, inv.id]));
-                              await deleteInstitutionInvitation(inv.id, inv.email);
-                              toast.success(`Invitation for ${inv.email} cancelled.`);
+                              const cancelled = await deleteInstitutionInvitation(inv.id, inv.email);
+                              if (cancelled) {
+                                toast.success(`Invitation for ${inv.email} cancelled.`);
+                              } else {
+                                toast.warning(`Could not confirm the invitation for ${inv.email} was cancelled on the server. It may reappear.`);
+                              }
                               if (onRefresh) onRefresh();
                             }
                           }}
