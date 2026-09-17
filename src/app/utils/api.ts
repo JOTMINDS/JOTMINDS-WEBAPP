@@ -19,13 +19,13 @@ export const getAuthToken = () => {
   return authToken;
 };
 
-const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
+const makeRequest = async (endpoint: string, options: RequestInit = {}, _isRetry = false): Promise<any> => {
   const token = authToken || publicAnonKey;
-  
+
   console.log(`[API] Making request to ${endpoint}`);
   console.log(`[API] Current authToken variable:`, authToken ? authToken.substring(0, 30) + '...' : 'NULL');
   console.log(`[API] Token to use:`, token?.substring(0, 30) + '...');
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
@@ -39,11 +39,19 @@ const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
       // 401 on /session endpoint is expected for logged out users - don't log as error
       if (endpoint === '/session' && response.status === 401) {
         console.log(`[API] Session endpoint returned 401 (no active session - expected for logged out users)`);
+      } else if (response.status === 401 && !authToken && !_isRetry) {
+        // Right after login, the auth token can lag behind the first API
+        // calls firing (setAuthToken hasn't run yet), so this request went
+        // out with the anon key and was rejected. Retry once shortly after,
+        // by which point the token is almost always set.
+        console.warn(`[API] 401 on ${endpoint} with no auth token set yet - retrying shortly`);
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        return makeRequest(endpoint, options, true);
       } else if (response.status >= 400 && response.status < 500) {
         // 4xx errors are client errors (validation, unauthorized, etc) - log as warning
         console.warn(`[API] Client error on ${endpoint}:`, data);
@@ -55,7 +63,7 @@ const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
       }
       throw new Error(data.error || 'API request failed');
     }
-    
+
     console.log(`[API] Success on ${endpoint}`);
     return data;
   } catch (error: any) {

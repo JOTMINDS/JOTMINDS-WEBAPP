@@ -424,7 +424,7 @@ export async function validateInviteToken(token: string): Promise<any> {
 
 // ─── Member Management ────────────────────────────────────────────────────────
 
-export async function getInstitutionMembers(institutionId: string): Promise<{ members: InstitutionMember[], profiles: any[] }> {
+export async function getInstitutionMembers(institutionId: string, _isRetry = false): Promise<{ members: InstitutionMember[], profiles: any[] }> {
   try {
     const token = await getAuthToken();
     const response = await fetch(`${BASE_URL}/institutions/members?id=${institutionId}`, {
@@ -434,6 +434,13 @@ export async function getInstitutionMembers(institutionId: string): Promise<{ me
     });
 
     if (!response.ok) {
+      // Right after login, the auth token can lag behind the first data
+      // fetch firing, causing a spurious 401. Retry once after a short
+      // delay before falling back to an empty/local result.
+      if (response.status === 401 && !_isRetry) {
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        return getInstitutionMembers(institutionId, true);
+      }
       console.error('Failed to fetch institution members', await response.text());
       const local = localStorage.getItem(`jotminds_institution_members_${institutionId}`) || localStorage.getItem('jotminds_institution_members');
       if (local) {
