@@ -217,28 +217,28 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           name: 'Concrete Experience', 
           shortName: 'CE',
           value: assessment.score.kolb.scores.CE || 0,
-          color: 'hsl(var(--chart-1))',
+          color: 'var(--chart-1)',
           description: 'Learning through feeling and experience'
         },
         { 
           name: 'Reflective Observation', 
           shortName: 'RO',
           value: assessment.score.kolb.scores.RO || 0,
-          color: 'hsl(var(--chart-2))',
+          color: 'var(--chart-2)',
           description: 'Learning through watching and reflecting'
         },
         { 
           name: 'Abstract Conceptualization', 
           shortName: 'AC',
           value: assessment.score.kolb.scores.AC || 0,
-          color: 'hsl(var(--chart-3))',
+          color: 'var(--chart-3)',
           description: 'Learning through thinking and analyzing'
         },
         { 
           name: 'Active Experimentation', 
           shortName: 'AE',
           value: assessment.score.kolb.scores.AE || 0,
-          color: 'hsl(var(--chart-4))',
+          color: 'var(--chart-4)',
           description: 'Learning through doing and testing'
         },
       ];
@@ -247,19 +247,19 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
         { 
           name: 'Analytical', 
           value: assessment.score.sternberg.scores.analytical || 0,
-          color: 'hsl(var(--chart-1))',
+          color: 'var(--chart-1)',
           description: 'Critical thinking and problem analysis'
         },
         { 
           name: 'Creative', 
           value: assessment.score.sternberg.scores.creative || 0,
-          color: 'hsl(var(--chart-2))',
+          color: 'var(--chart-2)',
           description: 'Innovation and imaginative thinking'
         },
         { 
           name: 'Practical', 
           value: assessment.score.sternberg.scores.practical || 0,
-          color: 'hsl(var(--chart-3))',
+          color: 'var(--chart-3)',
           description: 'Real-world application and common sense'
         },
       ];
@@ -278,13 +278,13 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
         { 
           name: 'Intuitive (System 1)', 
           value: system1Score,
-          color: 'hsl(var(--chart-1))',
+          color: 'var(--chart-1)',
           description: 'Fast, automatic, intuitive decisions'
         },
         { 
           name: 'Reflective (System 2)', 
           value: system2Score,
-          color: 'hsl(var(--chart-2))',
+          color: 'var(--chart-2)',
           description: 'Slow, deliberate, analytical decisions'
         },
       ];
@@ -308,10 +308,10 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
       }
 
       return [
-        { name: 'Creative', value: actualScores.creative || actualScores.Creative || 0, color: 'hsl(var(--chart-1))' },
-        { name: 'Analytical', value: actualScores.analytical || actualScores.Analytical || 0, color: 'hsl(var(--chart-2))' },
-        { name: 'Practical', value: actualScores.practical || actualScores.Practical || 0, color: 'hsl(var(--chart-3))' },
-        { name: 'Reflective', value: actualScores.reflective || actualScores.Reflective || 0, color: 'hsl(var(--chart-4))' }
+        { name: 'Creative', value: actualScores.creative || actualScores.Creative || 0, color: 'var(--chart-1)' },
+        { name: 'Analytical', value: actualScores.analytical || actualScores.Analytical || 0, color: 'var(--chart-2)' },
+        { name: 'Practical', value: actualScores.practical || actualScores.Practical || 0, color: 'var(--chart-3)' },
+        { name: 'Reflective', value: actualScores.reflective || actualScores.Reflective || 0, color: 'var(--chart-4)' }
       ].filter(item => item.value > 0);
     }
     return [];
@@ -366,7 +366,8 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
       const generated = await generateAIInsights({
         scores: assessment.score,
         role: assessment.type || 'individual',
-        algorithmicGuidance: fallbackInsights
+        algorithmicGuidance: fallbackInsights,
+        context: { isOrganizational, userRole }
       });
       if (generated) {
         setAiInsights(generated);
@@ -427,7 +428,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
       <text 
         x={x} 
         y={y} 
-        fill="hsl(var(--foreground))"
+        fill="var(--foreground)"
         textAnchor={x > cx ? 'start' : 'end'} 
         dominantBaseline="central"
         className="text-sm font-medium"
@@ -531,7 +532,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                           <CartesianGrid
                             key="kolb-grid"
                             strokeDasharray="3 3"
-                            stroke="hsl(var(--border))"
+                            stroke="var(--border)"
                             strokeOpacity={0.3}
                             horizontal={false}
                           />
@@ -539,16 +540,16 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                             key="kolb-x-axis"
                             type="number"
                             domain={[0, Math.ceil(maxValue * 1.2)]}
-                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                            stroke="hsl(var(--border))"
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                            stroke="var(--border)"
                           />
                           <YAxis
                             key="kolb-y-axis-desktop"
                             type="category"
                             dataKey="shortName"
                             width={40}
-                            tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
-                            stroke="hsl(var(--border))"
+                            tick={{ fill: 'var(--foreground)', fontSize: 11 }}
+                            stroke="var(--border)"
                             className="hidden sm:block"
                           />
                           <YAxis
@@ -556,11 +557,11 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                             type="category"
                             dataKey="shortName"
                             width={35}
-                            tick={{ fill: 'hsl(var(--foreground))', fontSize: 10 }}
-                            stroke="hsl(var(--border))"
+                            tick={{ fill: 'var(--foreground)', fontSize: 10 }}
+                            stroke="var(--border)"
                             className="block sm:hidden"
                           />
-                          <RechartsTooltip key="kolb-tooltip" content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.2 }} />
+                          <RechartsTooltip key="kolb-tooltip" content={<CustomTooltip />} cursor={{ fill: 'var(--muted)', opacity: 0.2 }} />
                           <Bar
                             key="kolb-bar"
                             dataKey="value"
@@ -575,7 +576,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                               key="kolb-label-list"
                               dataKey="value"
                               position="right"
-                              style={{ fill: 'hsl(var(--foreground))', fontWeight: 'bold', fontSize: 11 }}
+                              style={{ fill: 'var(--foreground)', fontWeight: 'bold', fontSize: 11 }}
                             />
                           </Bar>
                         </BarChart>
@@ -599,7 +600,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                                 className="absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out"
                                 style={{
                                   width: `${percentage}%`,
-                                  background: `linear-gradient(to right, ${item.color}, ${item.color}dd)`,
+                                  backgroundColor: item.color,
                                 }}
                               />
                             </div>
@@ -629,7 +630,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                           <CartesianGrid
                             key="other-grid"
                             strokeDasharray="3 3"
-                            stroke="hsl(var(--border))"
+                            stroke="var(--border)"
                             strokeOpacity={0.3}
                             horizontal={false}
                           />
@@ -637,18 +638,18 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                             key="other-x-axis"
                             type="number"
                             domain={[0, Math.ceil(maxValue * 1.2)]}
-                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                            stroke="hsl(var(--border))"
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                            stroke="var(--border)"
                           />
                           <YAxis
                             key="other-y-axis"
                             type="category"
                             dataKey="name"
                             width={110}
-                            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-                            stroke="hsl(var(--border))"
+                            tick={{ fill: 'var(--foreground)', fontSize: 12 }}
+                            stroke="var(--border)"
                           />
-                          <RechartsTooltip key="other-tooltip" content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.2 }} />
+                          <RechartsTooltip key="other-tooltip" content={<CustomTooltip />} cursor={{ fill: 'var(--muted)', opacity: 0.2 }} />
                           <Bar
                             key="other-bar"
                             dataKey="value"
@@ -663,7 +664,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                               key="other-label-list"
                               dataKey="value"
                               position="right"
-                              style={{ fill: 'hsl(var(--foreground))', fontWeight: 'bold', fontSize: 12 }}
+                              style={{ fill: 'var(--foreground)', fontWeight: 'bold', fontSize: 12 }}
                             />
                           </Bar>
                         </BarChart>
@@ -693,7 +694,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                                 <div
                                   className="h-full rounded-full transition-all duration-1000"
                                   style={{
-                                    width: `${(item.value / 100) * 100}%`,
+                                    width: `${(item.value / maxValue) * 100}%`,
                                     backgroundColor: item.color,
                                   }}
                                 />
@@ -829,9 +830,9 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     Overall Assessment
                   </h4>
                   <p className="text-sm opacity-95">
-                    {getOrganizationalAssessmentText(
-                      assessment.type, 
-                      mainStyle, 
+                    {aiInsights?.summary || getOrganizationalAssessmentText(
+                      assessment.type,
+                      mainStyle,
                       (Array.isArray((insights as any)?.organizationalFit) ? (insights as any)?.organizationalFit[0] : (insights as any)?.organizationalFit?.details?.[0])?.split?.(':')[1]?.trim() || ''
                     )}
                   </p>
@@ -846,7 +847,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                   Your Development Path
                 </h4>
                 <p className="text-sm opacity-95">
-                  {getPersonalDevelopmentText(mainStyle, insights.improvements[0] || '')}
+                  {aiInsights?.summary || getPersonalDevelopmentText(mainStyle, insights.improvements[0] || '')}
                 </p>
               </div>
             )}
@@ -1223,24 +1224,19 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               gap: `${componentSpacing.results.sectionGap}px` 
             }}>
               <div>
-                <h4 className="mb-2">Learning Agility Applications</h4>
+                <h4 className="mb-2">Applications for Your Role</h4>
                 <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Apply your learning style to team collaboration and project management</li>
-                  <li>Leverage your strengths when adapting to organizational changes</li>
-                  <li>Develop strategies for continuous professional development</li>
+                  {(aiInsights?.organizationalApplications || [
+                    'Apply your cognitive style to team collaboration and project management',
+                    'Leverage your strengths when adapting to organizational changes',
+                    'Develop strategies for continuous professional development'
+                  ]).map((application, index) => (
+                    <li key={index}>{application}</li>
+                  ))}
                 </ul>
               </div>
 
-              <div>
-                <h4 className="mb-2">Thinking Diversity Strengths</h4>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Use your cognitive profile to contribute unique perspectives</li>
-                  <li>Balance analytical, creative, and practical approaches in decision-making</li>
-                  <li>Build complementary teams based on cognitive diversity</li>
-                </ul>
-              </div>
-
-              <div className="rounded-lg" style={{ 
+              <div className="rounded-lg" style={{
                 background: colors.info.bg,
                 padding: `${componentSpacing.cardPadding}px`
               }}>
@@ -1249,8 +1245,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                   Professional Development Tip
                 </h4>
                 <p className="text-sm" style={{ color: colors.neutral.gray600 }}>
-                  Understanding your cognitive profile can help you communicate more effectively with colleagues who think differently, 
-                  make better decisions under pressure, and create more innovative solutions to organizational challenges.
+                  {aiInsights?.professionalDevelopmentTip || 'Understanding your cognitive profile can help you communicate more effectively with colleagues who think differently, make better decisions under pressure, and create more innovative solutions to organizational challenges.'}
                 </p>
               </div>
             </CardContent>

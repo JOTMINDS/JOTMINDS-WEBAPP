@@ -78,6 +78,10 @@ export interface AIInsightsResponse {
     tagline: string;
   };
   summary?: string;
+  organizationalFit?: string[];
+  continuousReview?: string[];
+  organizationalApplications?: string[];
+  professionalDevelopmentTip?: string;
 }
 
 /**
@@ -129,12 +133,15 @@ export async function generateAIInsights(
       ? { ...scoresOrRequest, scientificPositioning: getScientificPositioningContext((scoresOrRequest as any).type) }
       : { scores: scoresOrRequest as AssessmentScore, scientificPositioning: getScientificPositioningContext(options?.type), ...options };
 
+    const isOrganizational = !!(payload as any).context?.isOrganizational;
+
     const prompt = `Analyze this cognitive assessment data and generate professional insights:
 Scores and Profile: ${JSON.stringify({
     scores: payload.scores || (payload as any).scoresOrRequest,
     type: payload.type,
     role: payload.role,
-    age: (payload as any).age
+    age: (payload as any).age,
+    context: (payload as any).context
   })}
 
 Return strictly valid JSON matching this schema:
@@ -146,13 +153,17 @@ Return strictly valid JSON matching this schema:
     "name": "E.g. The Analytical Architect",
     "tagline": "A short inspiring tagline"
   },
-  "summary": "A 2-sentence professional summary."
+  "summary": "A 2-sentence professional summary."${isOrganizational ? `,
+  "organizationalFit": ["Ideal for: <specific roles/functions>", "Team contribution: <specific contribution>", "Leadership style: <specific style>"],
+  "continuousReview": ["Monitor: <specific thing to track>", "Develop: <specific skill/area>", "Leverage: <specific strength to apply>"],
+  "organizationalApplications": ["<specific workplace application 1 tailored to this exact framework and style>", "<application 2>", "<application 3>"],
+  "professionalDevelopmentTip": "A 2-3 sentence tailored professional development tip specific to this person's cognitive profile and workplace context."` : ''}
 }`;
 
     const res = await callOpenAI([
-      { role: 'system', content: 'You are an expert cognitive psychologist. Always provide highly unique, creative phrasing. Vary your vocabulary and avoid repetitive or generic insights.' },
+      { role: 'system', content: `You are an expert cognitive psychologist${isOrganizational ? ' and organizational development consultant' : ''}. Always provide highly unique, creative phrasing tailored to the exact scores and framework given. Vary your vocabulary and avoid repetitive or generic insights. Never reuse boilerplate phrasing across different profiles.` },
       { role: 'user', content: prompt }
-    ], true, 800);
+    ], true, isOrganizational ? 1200 : 800);
 
     if (res) return JSON.parse(res);
   } catch (error) {
