@@ -706,3 +706,38 @@ export async function getStudentCodesForTeacher(teacherId: string): Promise<any[
   });
   return res.json();
 }
+
+// Professional V2 Item Bank Studio
+export const listItemBankDomains = async () => makeRequest('/item-bank/domains');
+export const createItemBankDomain = async (payload: { domain_key: string; name: string; description?: string }) =>
+  makeRequest('/item-bank/domains', { method: 'POST', body: JSON.stringify(payload) });
+export const updateItemBankDomain = async (id: string, payload: Record<string, any>) =>
+  makeRequest(`/item-bank/domains/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+
+export const listItemBankConstructs = async (domainId?: string) => makeRequest(`/item-bank/constructs${domainId ? `?domainId=${domainId}` : ''}`);
+export const createItemBankConstruct = async (payload: { construct_key: string; domain_id: string; name: string; definition: string; construct_type: string }) =>
+  makeRequest('/item-bank/constructs', { method: 'POST', body: JSON.stringify(payload) });
+export const updateItemBankConstruct = async (id: string, payload: Record<string, any>) =>
+  makeRequest(`/item-bank/constructs/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+
+export const listItemBankAssessments = async () => makeRequest('/item-bank/assessments');
+export const createItemBankAssessment = async (payload: { assessment_key: string; name: string; min_items?: number; max_items?: number; expected_duration_minutes?: number }) =>
+  makeRequest('/item-bank/assessments', { method: 'POST', body: JSON.stringify(payload) });
+export const updateItemBankAssessment = async (id: string, payload: Record<string, any>) =>
+  makeRequest(`/item-bank/assessments/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+export const getAssessmentPool = async (assessmentId: string) => makeRequest(`/item-bank/assessments/${assessmentId}/items`);
+export const attachItemToAssessment = async (assessmentId: string, itemId: string) =>
+  makeRequest(`/item-bank/assessments/${assessmentId}/items`, { method: 'POST', body: JSON.stringify({ itemId }) });
+export const detachItemFromAssessment = async (assessmentId: string, itemId: string) =>
+  makeRequest(`/item-bank/assessments/${assessmentId}/items/${itemId}`, { method: 'DELETE' });
+
+export const listItemBankItems = async (status?: string) => makeRequest(`/item-bank/items${status ? `?status=${status}` : ''}`);
+export const createItemBankItem = async (payload: Record<string, any>) =>
+  makeRequest('/item-bank/items', { method: 'POST', body: JSON.stringify(payload) });
+export const updateItemBankItem = async (id: string, payload: Record<string, any>) =>
+  makeRequest(`/item-bank/items/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+export const setItemBankItemStatus = async (id: string, status: string) =>
+  makeRequest(`/item-bank/items/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+
+export const getPilotAnalytics = async (assessmentId?: string) => makeRequest(`/item-bank/analytics${assessmentId ? `?assessmentId=${assessmentId}` : ''}`);
+export const exportPilotData = async (assessmentId?: string) => makeRequest(`/item-bank/export${assessmentId ? `?assessmentId=${assessmentId}` : ''}`);

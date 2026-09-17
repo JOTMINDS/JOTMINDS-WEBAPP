@@ -456,4 +456,150 @@ app.delete('/assessments/:assessmentId/items/:itemId', async (c) => {
   }
 });
 
+// ============= PILOT ANALYTICS =============
+//
+// Completion, duration, drop-off, option distribution, response time and
+// quality flags, per the spec's Pilot Analytics epic.
+
+app.get('/analytics', async (c) => {
+  const admin = await verifyPlatformAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const assessmentId = c.req.query('assessmentId');
+    const supabase = getSupabaseClient();
+
+    let sessionQuery = supabase.from('assessment_sessions').select('*');
+    if (assessmentId) sessionQuery = sessionQuery.eq('assessment_id', assessmentId);
+    const { data: sessions, error: sErr } = await sessionQuery;
+    if (sErr) return c.json({ error: sErr.message }, 500);
+
+    const total = sessions?.length || 0;
+    const completed = (sessions || []).filter((s: any) => s.status === 'completed');
+    const inProgress = (sessions || []).filter((s: any) => s.status === 'in_progress').length;
+    const paused = (sessions || []).filter((s: any) => s.status === 'paused').length;
+    const abandoned = (sessions || []).filter((s: any) => s.status === 'abandoned').length;
+    const durations = completed
+      .filter((s: any) => s.completed_at)
+      .map((s: any) => new Date(s.completed_at).getTime() - new Date(s.started_at).getTime());
+    const avgDurationMs = durations.length > 0 ? Math.round(durations.reduce((a: number, b: number) => a + b, 0) / durations.length) : null;
+
+    const sessionIds = (sessions || []).map((s: any) => s.id);
+    const { data: sessionItems } = sessionIds.length > 0
+      ? await supabase.from('session_items').select('*, assessment_items(item_key)').in('session_id', sessionIds)
+      : { data: [] as any[] };
+
+    const { data: responses } = sessionIds.length > 0
+      ? await supabase.from('assessment_responses').select('*').in('session_id', sessionIds)
+      : { data: [] as any[] };
+    const responseBySessionItem = new Map((responses || []).map((r: any) => [r.session_item_id, r]));
+
+    const byItemKey = new Map<string, { served: number; completed: number; responseTimes: number[]; options: Record<string, number> }>();
+    (sessionItems || []).forEach((si: any) => {
+      const key = si.assessment_items?.item_key;
+      if (!key) return;
+      if (!byItemKey.has(key)) byItemKey.set(key, { served: 0, completed: 0, responseTimes: [], options: {} });
+      const stat = byItemKey.get(key)!;
+      if (si.served_at) stat.served++;
+      if (si.status === 'completed') {
+        stat.completed++;
+        const response = responseBySessionItem.get(si.id);
+        if (response?.response_time_ms) stat.responseTimes.push(response.response_time_ms);
+        const optionCode = response?.final_response?.optionCode;
+        if (optionCode) stat.options[optionCode] = (stat.options[optionCode] || 0) + 1;
+      }
+    });
+
+    const itemStats = Array.from(byItemKey.entries()).map(([itemKey, stat]) => ({
+      itemKey,
+      servedCount: stat.served,
+      completedCount: stat.completed,
+      dropOffRate: stat.served > 0 ? Math.round(((stat.served - stat.completed) / stat.served) * 100) : 0,
+      avgResponseTimeMs: stat.responseTimes.length > 0 ? Math.round(stat.responseTimes.reduce((a, b) => a + b, 0) / stat.responseTimes.length) : null,
+      optionDistribution: stat.options,
+    }));
+
+    // Quality flags - captured but not automatically scored, per Part V:
+    // "unusually fast response" as a coarse illustrative threshold.
+    const veryFastResponses = (responses || []).filter((r: any) => r.response_time_ms !== null && r.response_time_ms < 2000).length;
+    const heavilyRevisedResponses = (responses || []).filter((r: any) => r.change_count > 2).length;
+
+    return c.json({
+      success: true,
+      sessionStats: {
+        total, completedCount: completed.length, inProgress, paused, abandoned,
+        completionRate: total > 0 ? Math.round((completed.length / total) * 100) : 0,
+        avgDurationMs,
+      },
+      itemStats,
+      qualityFlags: { veryFastResponses, heavilyRevisedResponses },
+    });
+  } catch (error) {
+    console.log(`[item-bank/analytics] Error: ${error}`);
+    return c.json({ error: 'Failed to compute analytics' }, 500);
+  }
+});
+
+// ============= PSYCHOMETRIC DATA EXPORT =============
+//
+// De-identified pilot export without direct production DB access, per the
+// spec's Psychometric Data Export epic. Participant IDs are sequential and
+// generated fresh per export - session_id/user_id never appear in the
+// output, so the export can't be joined back to a real identity even by
+// someone who also has admin access to the rest of the system.
+
+app.get('/export', async (c) => {
+  const admin = await verifyPlatformAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const assessmentId = c.req.query('assessmentId');
+    const supabase = getSupabaseClient();
+
+    let sessionQuery = supabase.from('assessment_sessions').select('id, completed_at, started_at').eq('status', 'completed');
+    if (assessmentId) sessionQuery = sessionQuery.eq('assessment_id', assessmentId);
+    const { data: sessions, error: sErr } = await sessionQuery;
+    if (sErr) return c.json({ error: sErr.message }, 500);
+    if (!sessions || sessions.length === 0) return c.json({ success: true, participants: [] });
+
+    const sessionIds = sessions.map((s: any) => s.id);
+
+    const { data: sessionItems } = await supabase.from('session_items').select('id, session_id, item_id, assessment_items(item_key)').in('session_id', sessionIds);
+    const { data: responses } = await supabase.from('assessment_responses').select('*').in('session_id', sessionIds);
+    const responseBySessionItem = new Map((responses || []).map((r: any) => [r.session_item_id, r]));
+    const { data: constructResults } = await supabase.from('construct_results').select('*, assessment_constructs(construct_key)').in('session_id', sessionIds);
+
+    const participants = sessions.map((session: any, i: number) => {
+      const items = (sessionItems || []).filter((si: any) => si.session_id === session.id);
+      const responsesForSession = items.map((si: any) => {
+        const r = responseBySessionItem.get(si.id);
+        return r ? {
+          itemKey: si.assessment_items?.item_key,
+          response: r.final_response, changeCount: r.change_count, responseTimeMs: r.response_time_ms,
+        } : null;
+      }).filter(Boolean);
+
+      const constructsForSession = (constructResults || [])
+        .filter((cr: any) => cr.session_id === session.id)
+        .map((cr: any) => ({
+          constructKey: cr.assessment_constructs?.construct_key, constructType: cr.construct_type,
+          preferenceSignalKey: cr.preference_signal_key, capabilityLevel: cr.capability_level, metaValue: cr.meta_value,
+          confidence: cr.confidence, evidenceCount: cr.evidence_count,
+          supportingCount: cr.supporting_count, contradictingCount: cr.contradicting_count,
+        }));
+
+      return {
+        participantId: `P${i + 1}`,
+        durationMs: session.completed_at ? new Date(session.completed_at).getTime() - new Date(session.started_at).getTime() : null,
+        responses: responsesForSession,
+        constructResults: constructsForSession,
+      };
+    });
+
+    await logAudit(admin.id, admin.email || '', 'export_pilot_data', { assessmentId: assessmentId || 'all', participantCount: participants.length });
+    return c.json({ success: true, participants });
+  } catch (error) {
+    console.log(`[item-bank/export] Error: ${error}`);
+    return c.json({ error: 'Failed to export pilot data' }, 500);
+  }
+});
+
 export default app;

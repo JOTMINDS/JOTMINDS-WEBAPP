@@ -17,7 +17,9 @@ import {
   ScrollText,
   TerminalSquare,
   DatabaseBackup,
-  ToggleLeft
+  ToggleLeft,
+  FlaskConical,
+  LineChart
 } from 'lucide-react';
 import { cn } from "../ui/utils";
 
@@ -26,8 +28,10 @@ export type SuperAdminTab =
   | 'users' 
   | 'institutions' 
   | 'organizations' 
-  | 'assessment' 
-  | 'ai' 
+  | 'assessment'
+  | 'item-bank-studio'
+  | 'pilot-analytics'
+  | 'ai'
   | 'content' 
   | 'gamification' 
   | 'analytics' 
@@ -52,6 +56,8 @@ const navItems = [
   { id: 'institutions', label: 'Institutions', icon: School },
   { id: 'organizations', label: 'Organizations', icon: Building2 },
   { id: 'assessment', label: 'Assessment Engine', icon: BrainCircuit },
+  { id: 'item-bank-studio', label: 'Assessment Studio (V2)', icon: FlaskConical },
+  { id: 'pilot-analytics', label: 'Pilot Analytics', icon: LineChart },
   { id: 'ai', label: 'AI Management', icon: Bot },
   { id: 'content', label: 'Content Management', icon: FileText },
   { id: 'gamification', label: 'Gamification', icon: Gamepad2 },

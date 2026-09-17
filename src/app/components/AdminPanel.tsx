@@ -11,6 +11,8 @@ import { UsersView } from './SuperAdminPortal/modules/UsersView';
 import { InstitutionsView } from './SuperAdminPortal/modules/InstitutionsView';
 import { OrganizationsView } from './SuperAdminPortal/modules/OrganizationsView';
 import { AssessmentEngineView } from './SuperAdminPortal/modules/AssessmentEngineView';
+import { ItemBankStudioView } from './SuperAdminPortal/modules/ItemBankStudioView';
+import { PilotAnalyticsView } from './SuperAdminPortal/modules/PilotAnalyticsView';
 import { AnalyticsView } from './SuperAdminPortal/modules/AnalyticsView';
 import { AiManagementView } from './SuperAdminPortal/modules/AiManagementView';
 import { ContentManagementView } from './SuperAdminPortal/modules/ContentManagementView';
@@ -81,6 +83,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         return <OrganizationsView />;
       case 'assessment':
         return <AssessmentEngineView />;
+      case 'item-bank-studio':
+        return <ItemBankStudioView />;
+      case 'pilot-analytics':
+        return <PilotAnalyticsView />;
       case 'ai':
         return <AiManagementView />;
       case 'content':
