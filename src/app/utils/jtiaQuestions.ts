@@ -909,7 +909,7 @@ export const jtiaDomainDescriptions: Record<JTIADomain, {
   "Cognitive Intelligence": {
     title: "Cognitive Intelligence",
     description: "Measures how teachers think, analyse information, solve problems, adapt to changing situations, and make professional decisions.",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
     subCompetencies: [
       "Critical Thinking",
       "Decision Making",
@@ -922,7 +922,7 @@ export const jtiaDomainDescriptions: Record<JTIADomain, {
   "Instructional Intelligence": {
     title: "Instructional Intelligence",
     description: "Measures the ability to design, deliver and assess effective learning experiences.",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
     subCompetencies: [
       "Differentiated Instruction",
       "Formative Assessment",
@@ -935,7 +935,7 @@ export const jtiaDomainDescriptions: Record<JTIADomain, {
   "Classroom Leadership": {
     title: "Classroom Leadership",
     description: "Measures how teachers create productive, safe and engaging learning environments.",
-    color: "hsl(var(--chart-3))",
+    color: "var(--chart-3)",
     subCompetencies: [
       "Classroom Management",
       "Behaviour Management",
@@ -948,7 +948,7 @@ export const jtiaDomainDescriptions: Record<JTIADomain, {
   "Relationship Intelligence": {
     title: "Relationship Intelligence",
     description: "Measures interpersonal effectiveness and the ability to build trust, collaboration and belonging.",
-    color: "hsl(var(--chart-4))",
+    color: "var(--chart-4)",
     subCompetencies: [
       "Empathy",
       "Inclusive Communication",
@@ -961,7 +961,7 @@ export const jtiaDomainDescriptions: Record<JTIADomain, {
   "Professional Intelligence": {
     title: "Professional Intelligence",
     description: "Measures professional behaviours that influence long-term effectiveness and leadership.",
-    color: "hsl(var(--chart-5))",
+    color: "var(--chart-5)",
     subCompetencies: [
       "Professional Ethics",
       "Continuous Learning",

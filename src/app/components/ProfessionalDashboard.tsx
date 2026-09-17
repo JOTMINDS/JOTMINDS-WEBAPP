@@ -786,7 +786,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                           <PolarGrid stroke="#E5E7EB" />
                           <PolarAngleAxis 
                             dataKey="dimension" 
-                            tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
+                            tick={{ fontSize: 10, fill: 'var(--foreground)' }}
                           />
                           <PolarRadiusAxis 
                             angle={90} 

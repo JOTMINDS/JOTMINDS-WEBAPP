@@ -256,15 +256,15 @@ export function ProfessionalCognitiveResults({
                     <div className="h-64 sm:h-72 w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <RadarChart data={learningRadarData} margin={{ top: 20, right: 35, bottom: 20, left: 35 }}>
-                          <PolarGrid stroke="hsl(var(--border))" />
+                          <PolarGrid stroke="var(--border)" />
                           <PolarAngleAxis 
                             dataKey="dimension" 
-                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
                           />
                           <PolarRadiusAxis 
                             angle={90} 
                             domain={[0, 100]}
-                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }}
                           />
                           <Radar 
                             dataKey="value" 
@@ -372,13 +372,13 @@ export function ProfessionalCognitiveResults({
                     <div className="h-64 sm:h-72 w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={decisionBarData} layout="horizontal" margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                          <XAxis type="number" domain={[0, 100]} tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} />
                           <YAxis 
                             dataKey="factor" 
                             type="category" 
                             width={110} 
-                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
                           />
                           <Tooltip 
                             contentStyle={{ 

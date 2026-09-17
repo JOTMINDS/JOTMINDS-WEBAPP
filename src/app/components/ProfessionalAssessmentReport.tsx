@@ -435,16 +435,16 @@ export function ProfessionalAssessmentReport({
                       <div className="h-64 -mx-2 mx-[-16px] my-[19px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                            <PolarGrid stroke="hsl(var(--border))" />
+                            <PolarGrid stroke="var(--border)" />
                             <PolarAngleAxis 
                               dataKey="name" 
-                              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                              stroke="hsl(var(--border))"
+                              tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                              stroke="var(--border)"
                             />
                             <PolarRadiusAxis 
                               angle={90} 
                               domain={[0, 40]}
-                              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                              tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
                             />
                             <Radar 
                               dataKey="value" 

@@ -535,15 +535,15 @@ export function ParentChildCognitiveReport({ child, assessments, onBack }: Paren
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
               <RadarChart data={radarData}>
-                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarGrid stroke="var(--border)" />
                 <PolarAngleAxis 
                   dataKey="dimension" 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }}
+                  tick={{ fontSize: 11, fill: 'var(--foreground)' }}
                 />
                 <PolarRadiusAxis 
                   angle={90} 
                   domain={[0, 40]} 
-                  stroke="hsl(var(--border))"
+                  stroke="var(--border)"
                 />
                 <Radar 
                   name={`${child.name}'s Profile`}

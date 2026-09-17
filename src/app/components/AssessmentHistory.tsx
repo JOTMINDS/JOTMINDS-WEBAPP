@@ -108,20 +108,20 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
                   <XAxis 
                     dataKey="date" 
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                    stroke="var(--border)"
                   />
                   <YAxis 
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                    stroke="var(--border)"
                   />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
+                      backgroundColor: 'var(--background)',
+                      border: '1px solid var(--border)',
                       borderRadius: '8px'
                     }}
                   />
@@ -130,23 +130,23 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
                   />
                   {type === 'kolb' && (
                     <>
-                      <Line key="CE" type="monotone" dataKey="CE" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="RO" type="monotone" dataKey="RO" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="AC" type="monotone" dataKey="AC" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="AE" type="monotone" dataKey="AE" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="CE" type="monotone" dataKey="CE" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="RO" type="monotone" dataKey="RO" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="AC" type="monotone" dataKey="AC" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="AE" type="monotone" dataKey="AE" stroke="var(--chart-4)" strokeWidth={2} dot={{ r: 4 }} />
                     </>
                   )}
                   {type === 'sternberg' && (
                     <>
-                      <Line key="Analytical" type="monotone" dataKey="Analytical" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="Creative" type="monotone" dataKey="Creative" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="Practical" type="monotone" dataKey="Practical" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Analytical" type="monotone" dataKey="Analytical" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Creative" type="monotone" dataKey="Creative" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Practical" type="monotone" dataKey="Practical" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 4 }} />
                     </>
                   )}
                   {type === 'dual-process' && (
                     <>
-                      <Line key="Intuitive" type="monotone" dataKey="Intuitive" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="Reflective" type="monotone" dataKey="Reflective" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Intuitive" type="monotone" dataKey="Intuitive" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Reflective" type="monotone" dataKey="Reflective" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
                     </>
                   )}
                 </LineChart>

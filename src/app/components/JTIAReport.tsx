@@ -107,31 +107,31 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
       domain: "Cognitive",
       full: "Cognitive Intelligence",
       score: domainScores.cognitive,
-      color: "hsl(var(--chart-1))",
+      color: "var(--chart-1)",
     },
     {
       domain: "Instructional",
       full: "Instructional Intelligence",
       score: domainScores.instructional,
-      color: "hsl(var(--chart-2))",
+      color: "var(--chart-2)",
     },
     {
       domain: "Leadership",
       full: "Classroom Leadership",
       score: domainScores.leadership,
-      color: "hsl(var(--chart-3))",
+      color: "var(--chart-3)",
     },
     {
       domain: "Relationship",
       full: "Relationship Intelligence",
       score: domainScores.relationship,
-      color: "hsl(var(--chart-4))",
+      color: "var(--chart-4)",
     },
     {
       domain: "Professional",
       full: "Professional Intelligence",
       score: domainScores.professional,
-      color: "hsl(var(--chart-5))",
+      color: "var(--chart-5)",
     },
   ];
 
