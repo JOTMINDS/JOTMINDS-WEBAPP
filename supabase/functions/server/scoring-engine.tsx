@@ -272,7 +272,7 @@ export async function scoreSession(sessionId: string): Promise<{ success: boolea
   if (constructResultRows.length > 0) {
     const { error: crErr } = await supabase
       .from('construct_results')
-      .upsert(constructResultRows, { onConflict: 'session_id, construct_id' });
+      .upsert(constructResultRows, { onConflict: 'session_id, construct_id, scoring_version' });
     if (crErr) return { success: false, error: crErr.message };
   }
 
@@ -303,7 +303,7 @@ export async function scoreSession(sessionId: string): Promise<{ success: boolea
   if (domainResultRows.length > 0) {
     const { error: drErr } = await supabase
       .from('domain_results')
-      .upsert(domainResultRows, { onConflict: 'session_id, domain_id' });
+      .upsert(domainResultRows, { onConflict: 'session_id, domain_id, scoring_version' });
     if (drErr) return { success: false, error: drErr.message };
   }
 

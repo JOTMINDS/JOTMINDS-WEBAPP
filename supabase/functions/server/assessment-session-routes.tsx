@@ -1,6 +1,9 @@
 import { Hono } from 'npm:hono';
 import { createClient } from 'npm:@supabase/supabase-js';
 import { scoreSession } from './scoring-engine.tsx';
+import { logAudit } from './superadmin-routes.tsx';
+
+const CONSENT_VERSION = 'professional-v2-pilot-2026-09';
 
 const app = new Hono();
 
@@ -60,8 +63,11 @@ app.post('/', async (c) => {
   const user = await verifyUser(c.req.raw);
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
   try {
-    const { assessmentKey } = await c.req.json();
+    const { assessmentKey, consentGiven } = await c.req.json();
     if (!assessmentKey) return c.json({ error: 'assessmentKey is required' }, 400);
+    if (consentGiven !== true) {
+      return c.json({ error: 'Consent is required before starting an assessment' }, 400);
+    }
 
     const supabase = getSupabaseClient();
     const { data: assessment, error: aErr } = await supabase
@@ -75,6 +81,21 @@ app.post('/', async (c) => {
     if (aErr) return c.json({ error: aErr.message }, 500);
     if (!assessment) return c.json({ error: 'No pilot or active assessment found for that key' }, 404);
 
+    // Idempotency: a network retry (or a client re-issuing "start" after a
+    // dropped response) must not spawn a second session. If this user
+    // already has a non-terminal session for this exact assessment version,
+    // hand that one back instead of materializing a duplicate item sequence.
+    const { data: existingSession } = await supabase
+      .from('assessment_sessions')
+      .select('id, total_items')
+      .eq('assessment_id', assessment.id)
+      .eq('user_id', user.id)
+      .in('status', ['in_progress', 'paused'])
+      .maybeSingle();
+    if (existingSession) {
+      return c.json({ success: true, sessionId: existingSession.id, totalItems: existingSession.total_items, resumed: true });
+    }
+
     const { data: pool, error: pErr } = await supabase
       .from('assessment_item_pools')
       .select('item_id, assessment_items!inner(id, status)')
@@ -87,7 +108,10 @@ app.post('/', async (c) => {
 
     const { data: session, error: sErr } = await supabase
       .from('assessment_sessions')
-      .insert({ assessment_id: assessment.id, user_id: user.id, total_items: itemIds.length })
+      .insert({
+        assessment_id: assessment.id, user_id: user.id, total_items: itemIds.length,
+        consent_given: true, consent_version: CONSENT_VERSION,
+      })
       .select()
       .single();
     if (sErr) return c.json({ error: sErr.message }, 500);
@@ -135,6 +159,29 @@ app.get('/:id', async (c) => {
       startedAt: session.started_at, completedAt: session.completed_at,
     },
   });
+});
+
+// ============= DELETE (WITHDRAWAL / RIGHT TO DELETION) =============
+//
+// A test-taker can withdraw and erase their own attempt at any time, in or
+// out of progress. ON DELETE CASCADE on assessment_sessions' dependents
+// (session_items, assessment_responses, behavioural_events,
+// simulation state/responses, professional_profiles -> profile_insights)
+// means this one delete removes everything derived from the session too.
+
+app.delete('/:id', async (c) => {
+  const user = await verifyUser(c.req.raw);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const supabase = getSupabaseClient();
+  const { session, forbidden } = await loadSessionOwned(supabase, c.req.param('id'), user.id);
+  if (forbidden) return c.json({ error: 'Forbidden' }, 403);
+  if (!session) return c.json({ error: 'Session not found' }, 404);
+
+  const { error } = await supabase.from('assessment_sessions').delete().eq('id', session.id);
+  if (error) return c.json({ error: error.message }, 500);
+
+  await logAudit(user.id, user.email || '', 'delete_own_assessment_session', { sessionId: session.id, assessmentId: session.assessment_id });
+  return c.json({ success: true });
 });
 
 // ============= NEXT ITEM =============
