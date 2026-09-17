@@ -163,6 +163,18 @@ app.get('/:id/next', async (c) => {
       await supabase.from('session_items').update({ served_at: new Date().toISOString(), status: 'served' }).eq('id', sessionItem.id);
     }
 
+    // Simulations have no top-level options of their own - their content
+    // lives in simulation_stages, delivered via the /simulation sub-routes
+    // below. The client should treat isSimulation as a signal to switch
+    // into the stage-by-stage flow instead of rendering options directly.
+    if (sessionItem.assessment_items.item_type === 'simulation') {
+      return c.json({
+        success: true, done: false, isSimulation: true,
+        sessionItemId: sessionItem.id, position: session.current_position, totalItems: session.total_items,
+        item: { itemType: 'simulation', promptText: sessionItem.assessment_items.prompt_text },
+      });
+    }
+
     const optionIds: string[] = sessionItem.option_order || [];
     let optionsInOrder: any[] = [];
     if (optionIds.length > 0) {
@@ -204,7 +216,7 @@ app.post('/:id/responses', async (c) => {
 
     const { data: sessionItem, error: siErr } = await supabase
       .from('session_items')
-      .select('*')
+      .select('*, assessment_items(item_type)')
       .eq('id', sessionItemId)
       .eq('session_id', session.id)
       .maybeSingle();
@@ -212,6 +224,9 @@ app.post('/:id/responses', async (c) => {
     if (!sessionItem) return c.json({ error: 'Session item not found' }, 404);
     if (sessionItem.presentation_order !== session.current_position) {
       return c.json({ error: 'This is not the current item in the session' }, 400);
+    }
+    if (sessionItem.assessment_items?.item_type === 'simulation') {
+      return c.json({ error: 'This item is a simulation - use the /simulation stage endpoints instead' }, 400);
     }
 
     const now = new Date();
@@ -242,6 +257,133 @@ app.post('/:id/responses', async (c) => {
   } catch (error) {
     console.log(`[assessment-sessions] Error submitting response: ${error}`);
     return c.json({ error: 'Failed to submit response' }, 500);
+  }
+});
+
+// ============= SIMULATIONS (multi-stage session items) =============
+
+function sanitizeStageForDelivery(stage: any, optionsInOrder: any[]) {
+  return {
+    stageType: stage.stage_type,
+    promptText: stage.prompt_text,
+    config: stage.config && Object.keys(stage.config).length > 0 ? stage.config : undefined,
+    options: optionsInOrder.map((o) => ({ optionId: o.id, code: o.option_code, text: o.text })),
+  };
+}
+
+async function loadSimSessionItem(supabase: any, session: any, sessionItemId: string) {
+  const { data: sessionItem, error } = await supabase
+    .from('session_items')
+    .select('*, assessment_items(item_type)')
+    .eq('id', sessionItemId)
+    .eq('session_id', session.id)
+    .maybeSingle();
+  if (error || !sessionItem) return { sessionItem: null, error: 'Session item not found' };
+  if (sessionItem.assessment_items?.item_type !== 'simulation') return { sessionItem: null, error: 'This session item is not a simulation' };
+  if (sessionItem.presentation_order !== session.current_position) return { sessionItem: null, error: 'This is not the current item in the session' };
+  return { sessionItem, error: null };
+}
+
+app.get('/:id/simulation/:sessionItemId/stage', async (c) => {
+  const user = await verifyUser(c.req.raw);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const supabase = getSupabaseClient();
+  const { session, forbidden } = await loadSessionOwned(supabase, c.req.param('id'), user.id);
+  if (forbidden) return c.json({ error: 'Forbidden' }, 403);
+  if (!session) return c.json({ error: 'Session not found' }, 404);
+
+  const { sessionItem, error: loadErr } = await loadSimSessionItem(supabase, session, c.req.param('sessionItemId'));
+  if (loadErr) return c.json({ error: loadErr }, 400);
+
+  try {
+    let { data: simState } = await supabase.from('session_simulation_state').select('*').eq('session_item_id', sessionItem.id).maybeSingle();
+    if (!simState) {
+      const { data: firstStage } = await supabase
+        .from('simulation_stages').select('id').eq('item_id', sessionItem.item_id).order('stage_order', { ascending: true }).limit(1).maybeSingle();
+      if (!firstStage) return c.json({ error: 'Simulation has no stages defined' }, 500);
+      const { data: created } = await supabase
+        .from('session_simulation_state')
+        .insert({ session_item_id: sessionItem.id, current_stage_id: firstStage.id })
+        .select().single();
+      simState = created;
+    }
+
+    if (simState.status === 'completed') return c.json({ success: true, done: true });
+
+    const { data: stage } = await supabase.from('simulation_stages').select('*').eq('id', simState.current_stage_id).single();
+    const { data: options } = await supabase.from('simulation_stage_options').select('*').eq('stage_id', stage.id).order('display_order');
+
+    return c.json({
+      success: true, done: false, stageId: stage.id,
+      stage: sanitizeStageForDelivery(stage, options || []),
+    });
+  } catch (error) {
+    console.log(`[assessment-sessions] Error fetching simulation stage: ${error}`);
+    return c.json({ error: 'Failed to fetch simulation stage' }, 500);
+  }
+});
+
+app.post('/:id/simulation/:sessionItemId/stage-response', async (c) => {
+  const user = await verifyUser(c.req.raw);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const supabase = getSupabaseClient();
+  const { session, forbidden } = await loadSessionOwned(supabase, c.req.param('id'), user.id);
+  if (forbidden) return c.json({ error: 'Forbidden' }, 403);
+  if (!session) return c.json({ error: 'Session not found' }, 404);
+
+  const { sessionItem, error: loadErr } = await loadSimSessionItem(supabase, session, c.req.param('sessionItemId'));
+  if (loadErr) return c.json({ error: loadErr }, 400);
+
+  try {
+    const { stageId, response } = await c.req.json();
+    if (!stageId || response === undefined) return c.json({ error: 'stageId and response are required' }, 400);
+
+    const { data: simState } = await supabase.from('session_simulation_state').select('*').eq('session_item_id', sessionItem.id).maybeSingle();
+    if (!simState) return c.json({ error: 'Simulation has not been started' }, 400);
+    if (simState.current_stage_id !== stageId) return c.json({ error: 'This is not the current stage' }, 400);
+
+    const { data: stage } = await supabase.from('simulation_stages').select('*').eq('id', stageId).single();
+    const now = new Date();
+
+    await supabase.from('simulation_stage_responses').upsert(
+      { session_item_id: sessionItem.id, stage_id: stageId, response, submitted_at: now.toISOString() },
+      { onConflict: 'session_item_id, stage_id' }
+    );
+
+    // Resolve the next stage: the chosen option's next_stage_key overrides
+    // the default stage_order progression, if set.
+    const { data: options } = await supabase.from('simulation_stage_options').select('*').eq('stage_id', stageId);
+    const chosen = (options || []).find((o: any) => o.option_code === response.optionCode);
+    let nextStage: any = null;
+
+    if (chosen?.next_stage_key) {
+      const { data } = await supabase.from('simulation_stages').select('*').eq('item_id', stage.item_id).eq('stage_key', chosen.next_stage_key).maybeSingle();
+      nextStage = data;
+    } else {
+      const { data } = await supabase
+        .from('simulation_stages').select('*').eq('item_id', stage.item_id)
+        .gt('stage_order', stage.stage_order).order('stage_order', { ascending: true }).limit(1).maybeSingle();
+      nextStage = data;
+    }
+
+    if (nextStage) {
+      await supabase.from('session_simulation_state').update({ current_stage_id: nextStage.id }).eq('id', simState.id);
+      return c.json({ success: true, done: false });
+    }
+
+    // No next stage: the simulation itself is complete, which completes the
+    // top-level session_item and advances the outer session - same
+    // bookkeeping as a plain item's POST /:id/responses.
+    await supabase.from('session_simulation_state').update({ status: 'completed', completed_at: now.toISOString() }).eq('id', simState.id);
+    await supabase.from('session_items').update({ status: 'completed', completed_at: now.toISOString() }).eq('id', sessionItem.id);
+    const nextPosition = session.current_position + 1;
+    const isLast = nextPosition >= session.total_items;
+    await supabase.from('assessment_sessions').update({ current_position: nextPosition, updated_at: now.toISOString() }).eq('id', session.id);
+
+    return c.json({ success: true, done: true, sessionDone: isLast });
+  } catch (error) {
+    console.log(`[assessment-sessions] Error submitting stage response: ${error}`);
+    return c.json({ error: 'Failed to submit stage response' }, 500);
   }
 });
 

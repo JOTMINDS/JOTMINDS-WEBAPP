@@ -38,13 +38,20 @@ function computeCapabilityLevel(totalEvidenceValue: number, evidenceCount: numbe
 }
 
 interface ItemResponseMatch {
-  itemId: string;
+  sourceType: 'item' | 'stage';
   constructIds: string[];
   validationGroup: string | null;
-  responseId: string;
-  matchedSignalId: string | null;  // dominant/matched signal for this item, if any
+  responseId: string;               // assessment_responses.id or simulation_stage_responses.id, per sourceType
+  matchedSignalId: string | null;  // dominant/matched signal for this item/stage, if any
   matchedSignalKey: string | null;
+  matchedEvidenceValue: number | null;
   rawValue: any;                    // e.g. slider value, for meta constructs
+}
+
+function matchCondition(cond: any, resp: any): { isMatch: boolean; rawValue: any } {
+  if (cond.sliderIdentity === true) return { isMatch: true, rawValue: resp.value ?? null };
+  if (cond.optionCode !== undefined) return { isMatch: resp.optionCode === cond.optionCode, rawValue: null };
+  return { isMatch: false, rawValue: null };
 }
 
 export async function scoreSession(sessionId: string): Promise<{ success: boolean; error?: string }> {
@@ -52,15 +59,21 @@ export async function scoreSession(sessionId: string): Promise<{ success: boolea
 
   const { data: sessionItems, error: siErr } = await supabase
     .from('session_items')
-    .select('id, item_id, assessment_items(id, construct_ids, validation_group)')
+    .select('id, item_id, assessment_items(id, item_type, construct_ids, validation_group)')
     .eq('session_id', sessionId);
   if (siErr) return { success: false, error: siErr.message };
   if (!sessionItems || sessionItems.length === 0) return { success: false, error: 'No session items found' };
 
+  const matches: ItemResponseMatch[] = [];
+  const responseSignalRows: any[] = [];
+
+  // ── Plain items ──
+  const plainSessionItemIds = sessionItems.filter((si: any) => si.assessment_items?.item_type !== 'simulation').map((si: any) => si.id);
   const { data: responses, error: rErr } = await supabase
     .from('assessment_responses')
     .select('id, session_item_id, final_response')
-    .eq('session_id', sessionId);
+    .eq('session_id', sessionId)
+    .in('session_item_id', plainSessionItemIds.length > 0 ? plainSessionItemIds : ['00000000-0000-0000-0000-000000000000']);
   if (rErr) return { success: false, error: rErr.message };
   const responseBySessionItem = new Map((responses || []).map((r: any) => [r.session_item_id, r]));
 
@@ -78,49 +91,104 @@ export async function scoreSession(sessionId: string): Promise<{ success: boolea
     mappingsByItem.set(m.item_id, list);
   });
 
-  const matches: ItemResponseMatch[] = [];
-  const responseSignalRows: any[] = [];
-
   for (const si of sessionItems) {
     const item = (si as any).assessment_items;
+    if (!item || item.item_type === 'simulation') continue;
     const response = responseBySessionItem.get(si.id);
-    if (!item || !response) continue;
+    if (!response) continue;
 
     const itemMappings = mappingsByItem.get(item.id) || [];
     let matchedSignalId: string | null = null;
     let matchedSignalKey: string | null = null;
+    let matchedEvidenceValue: number | null = null;
     let rawValue: any = null;
 
     for (const mapping of itemMappings) {
-      const cond = mapping.response_condition || {};
-      const resp = response.final_response || {};
-      let isMatch = false;
-      if (cond.sliderIdentity === true) {
-        isMatch = true;
-        rawValue = resp.value ?? null;
-      } else if (cond.optionCode !== undefined) {
-        isMatch = resp.optionCode === cond.optionCode;
-      }
+      const { isMatch, rawValue: rv } = matchCondition(mapping.response_condition || {}, response.final_response || {});
       if (isMatch) {
         matchedSignalId = mapping.signal_id;
         matchedSignalKey = mapping.assessment_signals?.signal_key || null;
+        matchedEvidenceValue = mapping.evidence_value;
+        rawValue = rv;
         responseSignalRows.push({
           response_id: response.id, signal_id: mapping.signal_id,
           evidence_value: mapping.evidence_value, scoring_version: SCORING_VERSION,
         });
-        break; // one condition should match per response for these item types
+        break;
       }
     }
 
     matches.push({
-      itemId: item.id, constructIds: item.construct_ids || [],
+      sourceType: 'item', constructIds: item.construct_ids || [],
       validationGroup: item.validation_group || null,
-      responseId: response.id, matchedSignalId, matchedSignalKey, rawValue,
+      responseId: response.id, matchedSignalId, matchedSignalKey, matchedEvidenceValue, rawValue,
     });
   }
 
+  // ── Simulation stages ──
+  const simSessionItemIds = sessionItems.filter((si: any) => si.assessment_items?.item_type === 'simulation').map((si: any) => si.id);
+  if (simSessionItemIds.length > 0) {
+    const { data: stageResponses, error: srErr } = await supabase
+      .from('simulation_stage_responses')
+      .select('id, session_item_id, stage_id, response')
+      .in('session_item_id', simSessionItemIds);
+    if (srErr) return { success: false, error: srErr.message };
+
+    const stageIds = (stageResponses || []).map((r: any) => r.stage_id);
+    const { data: stages } = stageIds.length > 0
+      ? await supabase.from('simulation_stages').select('id, construct_ids').in('id', stageIds)
+      : { data: [] as any[] };
+    const stageById = new Map((stages || []).map((s: any) => [s.id, s]));
+
+    const { data: stageMappings, error: smErr } = stageIds.length > 0
+      ? await supabase.from('item_signal_mappings').select('*, assessment_signals(id, signal_key, construct_id, signal_type)').in('stage_id', stageIds)
+      : { data: [] as any[], error: null };
+    if (smErr) return { success: false, error: smErr.message };
+
+    const mappingsByStage = new Map<string, any[]>();
+    (stageMappings || []).forEach((m: any) => {
+      const list = mappingsByStage.get(m.stage_id) || [];
+      list.push(m);
+      mappingsByStage.set(m.stage_id, list);
+    });
+
+    for (const sr of stageResponses || []) {
+      const stage = stageById.get(sr.stage_id);
+      if (!stage) continue;
+      const stageMaps = mappingsByStage.get(sr.stage_id) || [];
+      let matchedSignalId: string | null = null;
+      let matchedSignalKey: string | null = null;
+      let matchedEvidenceValue: number | null = null;
+      let rawValue: any = null;
+
+      for (const mapping of stageMaps) {
+        const { isMatch, rawValue: rv } = matchCondition(mapping.response_condition || {}, sr.response || {});
+        if (isMatch) {
+          matchedSignalId = mapping.signal_id;
+          matchedSignalKey = mapping.assessment_signals?.signal_key || null;
+          matchedEvidenceValue = mapping.evidence_value;
+          rawValue = rv;
+          responseSignalRows.push({
+            stage_response_id: sr.id, signal_id: mapping.signal_id,
+            evidence_value: mapping.evidence_value, scoring_version: SCORING_VERSION,
+          });
+          break;
+        }
+      }
+
+      matches.push({
+        sourceType: 'stage', constructIds: stage.construct_ids || [],
+        validationGroup: null, // simulation stages don't carry a validation_group in this sprint
+        responseId: sr.id, matchedSignalId, matchedSignalKey, matchedEvidenceValue, rawValue,
+      });
+    }
+  }
+
   if (responseSignalRows.length > 0) {
-    await supabase.from('response_signals').delete().in('response_id', responseSignalRows.map((r) => r.response_id));
+    const itemResponseIds = responseSignalRows.filter((r) => r.response_id).map((r) => r.response_id);
+    const stageResponseIds = responseSignalRows.filter((r) => r.stage_response_id).map((r) => r.stage_response_id);
+    if (itemResponseIds.length > 0) await supabase.from('response_signals').delete().in('response_id', itemResponseIds);
+    if (stageResponseIds.length > 0) await supabase.from('response_signals').delete().in('stage_response_id', stageResponseIds);
     const { error: insErr } = await supabase.from('response_signals').insert(responseSignalRows);
     if (insErr) return { success: false, error: insErr.message };
   }
@@ -176,7 +244,7 @@ export async function scoreSession(sessionId: string): Promise<{ success: boolea
         confidence, scoring_version: SCORING_VERSION,
       });
     } else if (construct.construct_type === 'capability') {
-      const totalValue = constructMatches.reduce((sum, m) => sum + (m.matchedSignalId ? 1 : 0), 0);
+      const totalValue = constructMatches.reduce((sum, m) => sum + (m.matchedEvidenceValue ?? 0), 0);
       constructResultRows.push({
         session_id: sessionId, construct_id: constructId, construct_type: construct.construct_type,
         capability_level: computeCapabilityLevel(totalValue, evidenceCount), evidence_count: evidenceCount,
