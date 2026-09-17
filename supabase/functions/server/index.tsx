@@ -22,6 +22,7 @@ import superadminRoutes from './superadmin-routes.tsx';
 import featureFlagsRoutes from './feature-flags-routes.tsx';
 import { isPlatformAdmin } from './platform-admin.tsx';
 import itemBankRoutes from './item-bank-routes.tsx';
+import assessmentSessionRoutes from './assessment-session-routes.tsx';
 
 import { rateLimiter } from 'npm:hono-rate-limiter';
 
@@ -58,6 +59,7 @@ app.route('/make-server-fc8eb847/leaderboard', leaderboardRoutes);
 app.route('/make-server-fc8eb847/superadmin', superadminRoutes);
 app.route('/make-server-fc8eb847/feature-flags', featureFlagsRoutes);
 app.route('/make-server-fc8eb847/item-bank', itemBankRoutes);
+app.route('/make-server-fc8eb847/assessment-sessions', assessmentSessionRoutes);
 
 // Health check and diagnostics endpoint
 app.get('/make-server-fc8eb847/health', async (c) => {
