@@ -37,7 +37,7 @@ export function UsersView({ users, toggleUserActivation }: UsersViewProps) {
   const handleRequestAccess = async (user: any) => {
     const reason = window.prompt(`Enter reason for requesting temporary access to ${user.name}'s account:`);
     if (reason) {
-      const success = await requestSupportAccess(user.email, user.name, user.id, reason);
+      const success = await requestSupportAccess('user', user.email, user.name, user.id, reason);
       if (success) {
         toast.success(`Access request sent to ${user.email}`);
       } else {
@@ -203,11 +203,14 @@ export function UsersView({ users, toggleUserActivation }: UsersViewProps) {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleRequestAccess(user)}
-                            disabled={supportMode.pendingRequests.includes(user.id)}
+                            disabled={supportMode.statusByTarget[user.id] === 'pending'}
                           >
                             <UserCheck className="mr-2 h-4 w-4 text-indigo-600" />
                             <span className="text-indigo-600">
-                              {supportMode.pendingRequests.includes(user.id) ? 'Access Requested' : 'Request Audited Access'}
+                              {supportMode.statusByTarget[user.id] === 'pending' ? 'Access Requested'
+                                : supportMode.statusByTarget[user.id] === 'approved' ? 'Access Approved'
+                                : supportMode.statusByTarget[user.id] === 'denied' ? 'Access Denied'
+                                : 'Request Audited Access'}
                             </span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />

@@ -352,6 +352,20 @@ export const setOrganizationSuspended = async (code: string, isActive: boolean) 
   return makeRequest(`/superadmin/organizations/${code}/suspend`, { method: 'POST', body: JSON.stringify({ isActive }) });
 };
 
+export const requestSupportAccess = async (payload: {
+  targetType: 'institution' | 'organization' | 'user';
+  targetId: string;
+  targetEmail: string;
+  targetName?: string;
+  reason: string;
+}) => {
+  return makeRequest('/superadmin/support-access/request', { method: 'POST', body: JSON.stringify(payload) });
+};
+
+export const getSupportAccessRequests = async () => {
+  return makeRequest('/superadmin/support-access');
+};
+
 export const getAssessmentModuleAnalytics = async (framework: string) => {
   return makeRequest(`/superadmin/assessment-modules/${framework}/analytics`);
 };

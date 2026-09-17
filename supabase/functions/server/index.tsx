@@ -5866,9 +5866,21 @@ app.post('/make-server-fc8eb847/oauth/consent/deny', async (c) => {
   }
 });
 
-// Send transactional email route via Titan Mail
+// Send transactional email route via Resend. Admin-only: this sends
+// arbitrary HTML to any address using the app's Resend account, and the
+// only legitimate caller is the Super Admin Portal's support-access flow -
+// leaving it open let anyone use the app as an anonymous email relay.
 app.post('/make-server-fc8eb847/send-email', async (c) => {
   try {
+    const authHeader = c.req.header('Authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    if (!token) return c.json({ error: 'Unauthorized' }, 401);
+    const supabaseAuth = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: authData, error: authErr } = await supabaseAuth.auth.getUser(token);
+    if (authErr || !authData.user || !(await isPlatformAdmin(authData.user.id))) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
     const { recipientEmail, subject, htmlContent, textContent } = await c.req.json();
 
     if (!recipientEmail || !subject || (!htmlContent && !textContent)) {
@@ -5910,6 +5922,48 @@ app.post('/make-server-fc8eb847/send-email', async (c) => {
       error: 'Failed to send email', 
       details: error instanceof Error ? error.message : String(error) 
     }, 500);
+  }
+});
+
+// Public decision link for the audited support-access flow (see
+// superadmin-routes.tsx). The account owner clicks this straight from the
+// email - there is no session to authenticate against, so the token itself
+// (unguessable, single-use once decided, expiring) is the credential.
+app.get('/make-server-fc8eb847/support-access/confirm', async (c) => {
+  const token = c.req.query('token');
+  const decision = c.req.query('decision');
+  const page = (title: string, message: string) => c.html(`
+    <html><body style="font-family: Arial, sans-serif; max-width: 480px; margin: 80px auto; text-align: center; color: #1e293b;">
+      <h2>${title}</h2><p>${message}</p>
+    </body></html>
+  `);
+
+  if (!token || !decision || !['approve', 'deny'].includes(decision)) {
+    return page('Invalid Link', 'This support access link is missing required information.');
+  }
+
+  try {
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: request, error } = await supabase.from('support_access_requests').select('*').eq('decision_token', token).maybeSingle();
+    if (error || !request) return page('Link Not Found', 'This support access link is invalid.');
+    if (request.status !== 'pending') return page('Already Decided', `This request was already ${request.status}.`);
+    if (new Date(request.expires_at) < new Date()) {
+      await supabase.from('support_access_requests').update({ status: 'expired' }).eq('id', request.id);
+      return page('Link Expired', 'This support access request has expired.');
+    }
+
+    const newStatus = decision === 'approve' ? 'approved' : 'denied';
+    await supabase.from('support_access_requests').update({ status: newStatus, decided_at: new Date().toISOString() }).eq('id', request.id);
+
+    return page(
+      decision === 'approve' ? 'Access Approved' : 'Access Denied',
+      decision === 'approve'
+        ? 'You have approved temporary, audited support access. You can revoke it at any time by contacting support.'
+        : 'You have denied this support access request. No access was granted.'
+    );
+  } catch (error) {
+    console.error('[support-access/confirm] Error:', error);
+    return page('Something Went Wrong', 'Please try again or contact support.');
   }
 });
 

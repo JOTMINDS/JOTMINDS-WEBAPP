@@ -29,7 +29,7 @@ export function OrganizationsView() {
     const reason = window.prompt(`Enter reason for requesting temporary access to ${org.name}'s tenant:`);
     if (reason) {
       const email = org.contact_email || org.admin_email || 'admin@' + (org.domain || 'example.com');
-      const success = await requestSupportAccess(email, org.name, org.id, reason);
+      const success = await requestSupportAccess('organization', email, org.name, org.id, reason);
       if (success) {
         toast.success(`Access request sent to organization admin at ${email}`);
       } else {
@@ -176,11 +176,14 @@ export function OrganizationsView() {
                             <DropdownMenuItem onClick={() => openDetails(org)}>View Details & Employees</DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleRequestAccess(org)}
-                              disabled={supportMode.pendingRequests.includes(org.id)}
+                              disabled={supportMode.statusByTarget[org.id] === 'pending'}
                             >
                               <UserCheck className="mr-2 h-4 w-4 text-indigo-600" />
                               <span className="text-indigo-600">
-                                {supportMode.pendingRequests.includes(org.id) ? 'Access Requested' : 'Request Audited Access'}
+                                {supportMode.statusByTarget[org.id] === 'pending' ? 'Access Requested'
+                                  : supportMode.statusByTarget[org.id] === 'approved' ? 'Access Approved'
+                                  : supportMode.statusByTarget[org.id] === 'denied' ? 'Access Denied'
+                                  : 'Request Audited Access'}
                               </span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />

@@ -45,7 +45,7 @@ export function InstitutionsView() {
     if (reason) {
       // Assuming inst.admin_email or similar exists. Using contact_email or a placeholder
       const email = inst.contact_email || inst.admin_email || 'admin@' + (inst.domain || 'example.com');
-      const success = await requestSupportAccess(email, inst.name, inst.id, reason);
+      const success = await requestSupportAccess('institution', email, inst.name, inst.id, reason);
       if (success) {
         toast.success(`Access request sent to institution admin at ${email}`);
       } else {
@@ -155,11 +155,14 @@ export function InstitutionsView() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => handleRequestAccess(inst)}
-                              disabled={supportMode.pendingRequests.includes(inst.id)}
+                              disabled={supportMode.statusByTarget[inst.id] === 'pending'}
                             >
                               <UserCheck className="mr-2 h-4 w-4 text-indigo-600" />
                               <span className="text-indigo-600">
-                                {supportMode.pendingRequests.includes(inst.id) ? 'Access Requested' : 'Request Audited Access'}
+                                {supportMode.statusByTarget[inst.id] === 'pending' ? 'Access Requested'
+                                  : supportMode.statusByTarget[inst.id] === 'approved' ? 'Access Approved'
+                                  : supportMode.statusByTarget[inst.id] === 'denied' ? 'Access Denied'
+                                  : 'Request Audited Access'}
                               </span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>

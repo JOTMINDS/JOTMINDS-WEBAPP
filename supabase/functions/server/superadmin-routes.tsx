@@ -677,4 +677,96 @@ app.post('/users/:userId/send-email', async (c) => {
   }
 });
 
+// ============= AUDITED SUPPORT ACCESS REQUESTS =============
+//
+// Real backing for the Portal's "Request Audited Access" button. Previously
+// this only sent an email with dead href="#" approve/deny links and tracked
+// "pending" purely in local React state - nothing was persisted, and the
+// account owner's decision went nowhere. Now the request, the token in the
+// email links, and the account owner's decision are all real and durable.
+
+async function sendResendEmail(to: string, subject: string, html: string) {
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendApiKey) throw new Error('RESEND_API_KEY is not configured');
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendApiKey}` },
+    body: JSON.stringify({ from: 'JotMinds <noreply@jotminds.com>', to, subject, html }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Resend API error: ${err.message || JSON.stringify(err)}`);
+  }
+}
+
+app.post('/support-access/request', async (c) => {
+  const admin = await verifyAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const { targetType, targetId, targetEmail, targetName, reason } = await c.req.json();
+    if (!targetType || !targetId || !targetEmail || !reason) {
+      return c.json({ error: 'targetType, targetId, targetEmail and reason are required' }, 400);
+    }
+    if (!['institution', 'organization', 'user'].includes(targetType)) {
+      return c.json({ error: 'targetType must be institution, organization, or user' }, 400);
+    }
+
+    const supabase = getSupabaseClient(true);
+    const decisionToken = crypto.randomUUID();
+    const { data: request, error } = await supabase
+      .from('support_access_requests')
+      .insert({
+        requested_by: admin.id, requested_by_email: admin.email || '',
+        target_type: targetType, target_id: String(targetId), target_email: targetEmail, target_name: targetName || null,
+        reason, decision_token: decisionToken,
+      })
+      .select()
+      .single();
+    if (error) return c.json({ error: error.message }, 500);
+
+    const confirmBase = `${Deno.env.get('SUPABASE_URL')}/functions/v1/server/make-server-fc8eb847/support-access/confirm`;
+    const approveUrl = `${confirmBase}?token=${decisionToken}&decision=approve`;
+    const denyUrl = `${confirmBase}?token=${decisionToken}&decision=deny`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>Support Access Request</h2>
+        <p>Hello ${targetName || ''},</p>
+        <p>A JOTMinds Super Admin has requested temporary audited support access to your account/tenant to assist you.</p>
+        <p><strong>Reason:</strong> ${reason}</p>
+        <p>If you approve this request, the admin will have temporary access to view and manage your data. All actions will be strictly audited. This request expires in 7 days.</p>
+        <div style="margin: 30px 0;">
+          <a href="${approveUrl}" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Approve Access</a>
+          <a href="${denyUrl}" style="margin-left: 10px; color: #dc2626; text-decoration: underline;">Deny</a>
+        </div>
+        <p style="font-size: 12px; color: #666;">If you did not request support, click Deny or ignore this email.</p>
+      </div>
+    `;
+    await sendResendEmail(targetEmail, 'JOTMinds Support Access Request', html);
+    await logAudit(admin.id, admin.email || '', 'request_support_access', { targetType, targetId, targetEmail, reason });
+
+    return c.json({ success: true, requestId: request.id });
+  } catch (error) {
+    console.log(`[superadmin/support-access] Error requesting access: ${error}`);
+    return c.json({ error: error instanceof Error ? error.message : 'Failed to request support access' }, 500);
+  }
+});
+
+app.get('/support-access', async (c) => {
+  const admin = await verifyAdmin(c.req.raw);
+  if (!admin) return c.json({ error: 'Forbidden - Admin access required' }, 403);
+  try {
+    const supabase = getSupabaseClient(true);
+    // Auto-expire anything past its window before reporting status, so the
+    // Portal never shows a stale "pending" for a request nobody will answer.
+    await supabase.from('support_access_requests').update({ status: 'expired' }).eq('status', 'pending').lt('expires_at', new Date().toISOString());
+    const { data: requests, error } = await supabase.from('support_access_requests').select('*').order('created_at', { ascending: false }).limit(200);
+    if (error) return c.json({ error: error.message }, 500);
+    return c.json({ success: true, requests });
+  } catch (error) {
+    console.log(`[superadmin/support-access] Error listing requests: ${error}`);
+    return c.json({ error: 'Failed to fetch support access requests' }, 500);
+  }
+});
+
 export default app;

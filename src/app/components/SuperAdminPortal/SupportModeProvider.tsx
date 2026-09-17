@@ -1,19 +1,29 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { sendEmail } from '../../utils/api';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { requestSupportAccess as requestSupportAccessApi, getSupportAccessRequests } from '../../utils/api';
+
+export type SupportAccessStatus = 'pending' | 'approved' | 'denied' | 'expired';
 
 export interface SupportModeState {
   isActive: boolean;
   ticketNumber: string | null;
   reason: string | null;
   expiresAt: Date | null;
-  pendingRequests: string[]; // Store target IDs that we are waiting for approval from
+  pendingRequests: string[]; // target IDs with a request still awaiting the account owner's decision
+  statusByTarget: Record<string, SupportAccessStatus>; // most recent decision per target ID
 }
 
 interface SupportModeContextType {
   supportMode: SupportModeState;
   activateSupportMode: (ticketNumber: string, reason: string, durationMinutes: number) => void;
   deactivateSupportMode: () => void;
-  requestSupportAccess: (targetEmail: string, targetName: string, targetId: string, reason: string) => Promise<boolean>;
+  requestSupportAccess: (
+    targetType: 'institution' | 'organization' | 'user',
+    targetEmail: string,
+    targetName: string,
+    targetId: string,
+    reason: string
+  ) => Promise<boolean>;
+  refreshSupportAccessRequests: () => Promise<void>;
 }
 
 const defaultState: SupportModeState = {
@@ -22,12 +32,30 @@ const defaultState: SupportModeState = {
   reason: null,
   expiresAt: null,
   pendingRequests: [],
+  statusByTarget: {},
 };
 
 const SupportModeContext = createContext<SupportModeContextType | undefined>(undefined);
 
 export function SupportModeProvider({ children }: { children: ReactNode }) {
   const [supportMode, setSupportMode] = useState<SupportModeState>(defaultState);
+
+  // The account owner's decision happens outside the app (they click a link
+  // in an email), so this view can only ever be as fresh as its last fetch -
+  // pull real status from the backend instead of trusting local state alone.
+  const refreshSupportAccessRequests = useCallback(async () => {
+    try {
+      const { requests } = await getSupportAccessRequests();
+      const statusByTarget: Record<string, SupportAccessStatus> = {};
+      (requests || []).forEach((r: any) => { statusByTarget[r.target_id] = r.status; });
+      const pendingRequests = Object.entries(statusByTarget).filter(([, s]) => s === 'pending').map(([id]) => id);
+      setSupportMode(prev => ({ ...prev, pendingRequests, statusByTarget }));
+    } catch (err) {
+      console.error('Failed to load support access requests:', err);
+    }
+  }, []);
+
+  useEffect(() => { refreshSupportAccessRequests(); }, [refreshSupportAccessRequests]);
 
   const activateSupportMode = (ticketNumber: string, reason: string, durationMinutes: number) => {
     const expiresAt = new Date();
@@ -50,42 +78,30 @@ export function SupportModeProvider({ children }: { children: ReactNode }) {
     console.log(`[Audit Log] Support Mode Deactivated.`);
   };
 
-  const requestSupportAccess = async (targetEmail: string, targetName: string, targetId: string, reason: string) => {
+  const requestSupportAccess = async (
+    targetType: 'institution' | 'organization' | 'user',
+    targetEmail: string,
+    targetName: string,
+    targetId: string,
+    reason: string
+  ) => {
     try {
       console.log(`[Audit Log] Requesting Support Access for ${targetEmail}`);
-      
-      const subject = "JOTMinds Support Access Request";
-      const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2>Support Access Request</h2>
-          <p>Hello ${targetName},</p>
-          <p>A JOTMinds Super Admin has requested temporary audited support access to your account/tenant to assist you.</p>
-          <p><strong>Reason:</strong> ${reason}</p>
-          <p>If you approve this request, the admin will have temporary access to view and manage your data. All actions will be strictly audited.</p>
-          <div style="margin: 30px 0;">
-            <a href="#" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Approve Access</a>
-            <a href="#" style="margin-left: 10px; color: #dc2626; text-decoration: underline;">Deny</a>
-          </div>
-          <p style="font-size: 12px; color: #666;">If you did not request support, you can safely ignore this email.</p>
-        </div>
-      `;
-
-      await sendEmail(targetEmail, subject, htmlContent);
-      
+      await requestSupportAccessApi({ targetType, targetId, targetEmail, targetName, reason });
       setSupportMode(prev => ({
         ...prev,
-        pendingRequests: [...prev.pendingRequests, targetId]
+        pendingRequests: [...prev.pendingRequests, targetId],
+        statusByTarget: { ...prev.statusByTarget, [targetId]: 'pending' },
       }));
-
       return true;
     } catch (err) {
-      console.error("Failed to send support access request email:", err);
+      console.error('Failed to request support access:', err);
       return false;
     }
   };
 
   return (
-    <SupportModeContext.Provider value={{ supportMode, activateSupportMode, deactivateSupportMode, requestSupportAccess }}>
+    <SupportModeContext.Provider value={{ supportMode, activateSupportMode, deactivateSupportMode, requestSupportAccess, refreshSupportAccessRequests }}>
       {children}
     </SupportModeContext.Provider>
   );
