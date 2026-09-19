@@ -555,27 +555,71 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
         {tab === 'overview' && (<>
-          <div className="mb-6 bg-blue-50/50 text-blue-900 p-5 rounded-xl border border-blue-100 shadow-sm text-sm">
-            <h3 className="font-semibold mb-2 flex items-center gap-1.5 text-base"><Info className="w-5 h-5 text-blue-600" /> Understanding Your Dashboard</h3>
-            <p className="text-blue-800/80 leading-relaxed">
-              Welcome to the Assessment Analytics overview. This dashboard aggregates the cognitive and engagement data of all students in your school. 
-              Use these insights to identify students who may need additional support, track completion rates for our core cognitive assessments (Learning Style, Thinking Style, and Decision Style), 
-              and discover the dominant cognitive traits across your student body.
-            </p>
+          <div className="mb-6 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 text-blue-900 p-5 rounded-xl border border-blue-100 shadow-sm text-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold flex items-center gap-1.5 text-base">
+                <Sparkles className="w-5 h-5 text-indigo-600" />
+                {aiSchoolReport ? 'Live Institutional AI Executive Overview' : 'Understanding Your Dashboard'}
+              </h3>
+              <Badge variant="outline" className="bg-indigo-100/70 text-indigo-800 border-indigo-200 text-xs">
+                {aiSchoolReport ? 'Dynamic AI Analysis' : 'Aggregated Analytics'}
+              </Badge>
+            </div>
+            {isGeneratingAiReport ? (
+              <p className="text-indigo-700 animate-pulse text-sm">
+                Analyzing whole-school cognitive distributions & synthesizing institutional guidance...
+              </p>
+            ) : aiSchoolReport ? (
+              <p className="text-blue-950 leading-relaxed font-medium text-sm">
+                {aiSchoolReport.executiveSummary}
+              </p>
+            ) : (
+              <p className="text-blue-800/80 leading-relaxed">
+                Welcome to the Assessment Analytics overview. This dashboard aggregates the cognitive and engagement data of all students in your school. 
+                Use these insights to identify students who may need additional support, track completion rates for our core cognitive assessments (Learning Style, Thinking Style, and Decision Style), 
+                and discover the dominant cognitive traits across your student body.
+              </p>
+            )}
           </div>
 
-          {insights.length > 0 && (
+          {(aiSchoolReport?.actionableInterventions?.length || insights.length > 0) && (
             <div className="mb-8">
-              <h3 className="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wider flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" /> Actionable Insights
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" /> Actionable Institutional Insights
+                </h3>
+                {aiSchoolReport?.actionableInterventions?.length && (
+                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                    AI Prioritized
+                  </span>
+                )}
+              </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {insights.map((ins, i) => (
-                  <div key={i} className={`p-4 rounded-lg border text-sm ${ins.type === 'warning' ? 'bg-red-50 border-red-100 text-red-900' : ins.type === 'success' ? 'bg-green-50 border-green-100 text-green-900' : 'bg-gray-50 border-gray-100 text-gray-900'}`}>
-                    <div className="font-semibold mb-1">{ins.title}</div>
-                    <div className="opacity-90">{ins.body}</div>
-                  </div>
-                ))}
+                {aiSchoolReport?.actionableInterventions?.length ? (
+                  aiSchoolReport.actionableInterventions.map((item, i) => (
+                    <div key={i} className="p-4 rounded-lg border text-sm bg-white shadow-xs border-indigo-100 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-gray-900">{item.area}</span>
+                          <Badge className={`text-[10px] ${item.priority === 'urgent' ? 'bg-red-100 text-red-800' : item.priority === 'high' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                            {item.priority}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-gray-700">{item.strategy}</div>
+                      </div>
+                      <div className="text-[10px] font-medium text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded self-start mt-2">
+                        Target: {item.targetGroup}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  insights.map((ins, i) => (
+                    <div key={i} className={`p-4 rounded-lg border text-sm ${ins.type === 'warning' ? 'bg-red-50 border-red-100 text-red-900' : ins.type === 'success' ? 'bg-green-50 border-green-100 text-green-900' : 'bg-gray-50 border-gray-100 text-gray-900'}`}>
+                      <div className="font-semibold mb-1">{ins.title}</div>
+                      <div className="opacity-90">{ins.body}</div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

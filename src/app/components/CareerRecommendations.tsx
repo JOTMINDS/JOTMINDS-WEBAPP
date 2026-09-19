@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Briefcase, ExternalLink, BookOpen, Target, Sparkles, TrendingUp, Clock, Lightbulb, Calendar, Link as LinkIcon, Search, Filter, Heart, X, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -58,9 +58,6 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
       const res = await generateAICareerInsights(cognitiveStyle, [cognitiveStyle, assessmentType]);
       if (res) {
         setAiAnalysis(res);
-        toast.success('Career Insights generated successfully!');
-      } else {
-        toast.error('Could not generate AI career insights.');
       }
     } catch (e) {
       console.error(e);
@@ -68,6 +65,10 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
       setLoadingAi(false);
     }
   };
+
+  useEffect(() => {
+    handleFetchAICareers();
+  }, [cognitiveStyle, assessmentType]);
 
   const getCareers = (): Career[] => {
     // Kolb Learning Styles

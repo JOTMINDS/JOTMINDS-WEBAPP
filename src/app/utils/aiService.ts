@@ -88,17 +88,18 @@ export interface AIInsightsResponse {
  * Helper to call our Cloudflare Pages proxy
  */
 async function callOpenAI(messages: any[], isJson = false, maxTokens = 1200) {
-  try {
-    const body: any = {
-      model: 'gpt-4o-mini',
-      messages,
-      temperature: 0.9,
-      max_tokens: maxTokens
-    };
-    if (isJson) {
-      body.response_format = { type: 'json_object' };
-    }
-    const res = await fetch(`${getBaseUrl()}/openai`, {
+  const body: any = {
+    model: 'gpt-4o-mini',
+    messages,
+    temperature: 0.9,
+    max_tokens: maxTokens
+  };
+  if (isJson) {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const makeCall = async (url: string) => {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -106,14 +107,32 @@ async function callOpenAI(messages: any[], isJson = false, maxTokens = 1200) {
       body: JSON.stringify(body),
       cache: 'no-store'
     });
+
     if (!res.ok) {
-      console.error('OpenAI proxy error:', res.statusText);
-      return null;
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(`OpenAI proxy error (${res.status}): ${errText}`);
     }
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error(`Expected JSON response but received ${contentType}`);
+    }
+
     const data = await res.json();
     return data.choices?.[0]?.message?.content || null;
-  } catch (e) {
-    console.error('OpenAI proxy call error:', e);
+  };
+
+  try {
+    return await makeCall(`${getBaseUrl()}/openai`);
+  } catch (primaryErr) {
+    console.warn('Primary OpenAI proxy call failed, attempting fallback:', primaryErr);
+    if (typeof window !== 'undefined' && !window.location.hostname.includes('jotminds.pages.dev')) {
+      try {
+        return await makeCall('https://jotminds.pages.dev/api/openai');
+      } catch (fallbackErr) {
+        console.error('OpenAI fallback proxy also failed:', fallbackErr);
+      }
+    }
     return null;
   }
 }
@@ -458,14 +477,36 @@ Crucial Instructions:
   return fallback;
 }
 
+function getLocalExecutiveSummaryFallback(userProfile: any): {
+  narrativeSummary: string;
+  keyTakeaway: string;
+  personalizedMantra: string;
+} {
+  const name = userProfile?.name || 'This professional';
+  const role = userProfile?.position || userProfile?.organization || 'educator and professional';
+  
+  const learning = userProfile?.learning || userProfile?.results?.learning?.style || 'Adaptive';
+  const thinking = userProfile?.thinking || userProfile?.results?.thinking?.style || 'Strategic';
+  const decision = userProfile?.decision || userProfile?.results?.decision?.style || 'Balanced';
+  const motivation = userProfile?.motivation || 'Intrinsic';
+
+  return {
+    narrativeSummary: `${name} exhibits a distinguished cognitive profile combining ${learning} learning preferences with strong ${thinking} problem-solving capabilities. Approaching complex scenarios with a ${decision} mindset and anchored by ${motivation.toLowerCase()} drivers, they synthesize insights systematically and excel at translating conceptual models into practical outcomes in their role as an ${role}.`,
+    keyTakeaway: `Thrives when provided autonomy to apply ${thinking.toLowerCase()} problem-solving techniques aligned with ${learning.toLowerCase()} experiential learning cycles.`,
+    personalizedMantra: `Transform cognitive insight into practical excellence through purposeful inquiry and continuous growth.`
+  };
+}
+
 export async function generateAICognitiveExecutiveSummary(
   userProfile: any
 ): Promise<{
   narrativeSummary: string;
   keyTakeaway: string;
   personalizedMantra: string;
-} | null> {
-  const prompt = `Generate a rich executive summary for this user cognitive profile:
+}> {
+  const fallback = getLocalExecutiveSummaryFallback(userProfile);
+  try {
+    const prompt = `Generate a rich executive summary for this user cognitive profile:
 Profile Data: ${JSON.stringify(userProfile)}
 
 Return JSON format:
@@ -475,16 +516,20 @@ Return JSON format:
   "personalizedMantra": "A motivating 1-line quote tailored to their cognitive strengths"
 }`;
 
-  const res = await callOpenAI([
-    { role: 'system', content: 'You are a master cognitive psychologist synthesizing assessment results into professional narrative summaries. Be extremely creative and vary your vocabulary significantly to ensure each summary feels totally unique.' },
-    { role: 'user', content: prompt }
-  ], true, 700);
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are a master cognitive psychologist synthesizing assessment results into professional narrative summaries. Be extremely creative and vary your vocabulary significantly to ensure each summary feels totally unique.' },
+      { role: 'user', content: prompt }
+    ], true, 700);
 
-  if (!res) return null;
-  try {
-    return JSON.parse(res);
-  } catch {
-    return null;
+    if (!res) return fallback;
+    const parsed = JSON.parse(res);
+    if (parsed.narrativeSummary && parsed.keyTakeaway && parsed.personalizedMantra) {
+      return parsed;
+    }
+    return fallback;
+  } catch (error) {
+    console.warn('Using local executive summary fallback:', error);
+    return fallback;
   }
 }
 
@@ -492,30 +537,57 @@ export async function generateSchoolJTIAAIInsights(
   schoolInsights: any,
   schoolName?: string
 ): Promise<JTIASchoolAggregatedInsights['pdPriorities'] | null> {
+  const cacheKey = `school_jtia_${schoolName || 'school'}_${schoolInsights?.totalTeachersAssessed || 0}`;
+  const cached = getCachedAIResult<JTIASchoolAggregatedInsights['pdPriorities']>(cacheKey);
+  if (cached) return cached;
+
   try {
-    const prompt = `Generate school-wide Teaching Insights Professional Development Priorities based on this data:
+    const prompt = `Generate school-wide Teaching Insights Professional Development Priorities based on this assessment data:
 School Name: ${schoolName || 'The School'}
 Data: ${JSON.stringify(schoolInsights)}
 
 Crucial Instructions:
 1. Ensure your phrasing is highly encouraging and acknowledges the collective strengths of the teaching staff.
-2. Provide PD formats and themes that use local context suited for the Ghanaian/African education market (e.g. INSET trainings, GES curriculum alignment, low-cost scalable workshops).
+2. Provide PD formats and themes that use practical context suited for modern educational excellence (e.g., INSET workshops, collaborative peer-learning cycles, low-cost scalable interventions).
 3. Return strictly a JSON array of objects representing pdPriorities, each containing:
-- theme (string)
-- description (string)
-- priority (number, 1-3)
-- recommendedFormat (string)
+- title (string): Clear thematic title of the priority
+- domain (string): One of the 5 JTIA domains (e.g. Cognitive Intelligence, Instructional Intelligence, Classroom Leadership, Relationship Intelligence, Professional Intelligence)
+- averageScore (number): Current estimated score benchmark between 2.0 and 4.5
+- recommendedProgram (string): Actionable program name and format (e.g. "INSET Workshop: Differentiated Pedagogy & Active Learning")
+- impactArea (string): Concrete expected classroom impact and student learning outcome
 
-Example: { "pdPriorities": [ { "theme": "...", "description": "...", "priority": 1, "recommendedFormat": "INSET Workshop" } ] }`;
+Example:
+{
+  "pdPriorities": [
+    {
+      "title": "Differentiated Instruction Mastery",
+      "domain": "Instructional Intelligence",
+      "averageScore": 3.2,
+      "recommendedProgram": "INSET Workshop: Multi-tiered Adaptive Learning Strategies",
+      "impactArea": "Accelerates engagement and comprehension across diverse cognitive cohorts"
+    }
+  ]
+}`;
 
     const res = await callOpenAI([
-      { role: 'system', content: 'You are an expert educational consultant planning professional development. Ensure your phrasing is unique, creative, and avoids repetitive generic templates.' },
+      { role: 'system', content: 'You are an expert educational consultant and school leadership strategist. Ensure your phrasing is unique, creative, and actionable.' },
       { role: 'user', content: prompt }
     ], true, 1000);
 
     if (res) {
       const parsed = JSON.parse(res);
-      return parsed.pdPriorities || parsed;
+      const rawList = parsed.pdPriorities || (Array.isArray(parsed) ? parsed : null);
+      if (Array.isArray(rawList) && rawList.length > 0) {
+        const normalized: JTIASchoolAggregatedInsights['pdPriorities'] = rawList.map((item: any, idx: number) => ({
+          title: item.title || item.theme || `PD Priority ${idx + 1}`,
+          domain: item.domain || 'Instructional Intelligence',
+          averageScore: typeof item.averageScore === 'number' ? item.averageScore : 3.4,
+          recommendedProgram: item.recommendedProgram || item.recommendedFormat || item.theme || 'INSET Collaborative Workshop',
+          impactArea: item.impactArea || item.description || 'Targeted capability uplift across teacher cohort'
+        }));
+        setCachedAIResult(cacheKey, normalized);
+        return normalized;
+      }
     }
   } catch (error) {
     console.error('Failed to generate School JTIA AI insights:', error);
@@ -842,3 +914,491 @@ Example: [ { "title": "Introduction to Photosynthesis", "status": "outstanding",
   }
   return null;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Caching Helpers
+// ─────────────────────────────────────────────────────────────
+
+export function getCachedAIResult<T>(key: string): T | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const item = sessionStorage.getItem(`jm_ai_${key}`);
+    if (!item) return null;
+    const parsed = JSON.parse(item);
+    return parsed.data as T;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedAIResult<T>(key: string, data: T): void {
+  try {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(`jm_ai_${key}`, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch {
+    // Ignore storage quota
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Student Account: Live AI Study & Exam Recommendations
+// ─────────────────────────────────────────────────────────────
+
+export interface AIStudentRecommendationItem {
+  id: number;
+  category: 'learning' | 'exam' | 'career';
+  title: string;
+  description: string;
+  tag: string;
+}
+
+export async function generateAIStudentRecommendations(params: {
+  userId?: string;
+  name?: string;
+  learningStyle: string;
+  thinkingStyle: string;
+  decisionStyle: string;
+  educationLevel?: string;
+}): Promise<AIStudentRecommendationItem[]> {
+  const cacheKey = `student_recs_${params.userId || ''}_${params.learningStyle}_${params.thinkingStyle}_${params.decisionStyle}`;
+  const cached = getCachedAIResult<AIStudentRecommendationItem[]>(cacheKey);
+  if (cached && cached.length > 0) return cached;
+
+  const fallback: AIStudentRecommendationItem[] = [
+    {
+      id: 1,
+      category: 'learning',
+      title: 'Active Concept Synthesis',
+      description: `Based on your ${params.learningStyle} learning style, convert theoretical reading into structured visual mind maps or flowcharts to maximize retention.`,
+      tag: 'Study Strategy'
+    },
+    {
+      id: 2,
+      category: 'exam',
+      title: 'Timed Revision Sprints',
+      description: `Leverage your ${params.thinkingStyle} thinking preference by practicing problem-solving under timed 25-minute Pomodoro intervals.`,
+      tag: 'Exam Prep'
+    },
+    {
+      id: 3,
+      category: 'learning',
+      title: 'Peer Teaching & Discussion',
+      description: `Explain difficult concepts to a study partner in your own words to solidify comprehension and reveal subtle gaps.`,
+      tag: 'Collaboration'
+    },
+    {
+      id: 4,
+      category: 'exam',
+      title: 'Reflective Decision Pause',
+      description: `With your ${params.decisionStyle} decision style, avoid rushing multiple-choice questions. Re-read the question stems carefully and eliminate two obviously incorrect choices first.`,
+      tag: 'Exam Technique'
+    },
+    {
+      id: 5,
+      category: 'career',
+      title: 'Subject & Career Alignment',
+      description: `Your combination of ${params.thinkingStyle} thinking and ${params.learningStyle} learning thrives in technical and creative problem-solving fields.`,
+      tag: 'Future Readiness'
+    },
+    {
+      id: 6,
+      category: 'learning',
+      title: 'Interleaved Practice Sessions',
+      description: `Switch between related subjects during a single study session rather than spending hours on one subject to keep your cognitive pathways agile.`,
+      tag: 'Brain Efficiency'
+    }
+  ];
+
+  try {
+    const prompt = `Generate 6 highly personalized, creative, and actionable study and exam preparation recommendations for a student:
+Student: ${params.name || 'Student'}
+Learning Style: ${params.learningStyle}
+Thinking Style: ${params.thinkingStyle}
+Decision Style: ${params.decisionStyle}
+Education Level: ${params.educationLevel || 'General'}
+
+Return strictly JSON in this format:
+{
+  "recommendations": [
+    {
+      "id": 1,
+      "category": "learning",
+      "title": "Specific Strategy Name",
+      "description": "2-sentence practical technique tailored to their exact style.",
+      "tag": "Study Strategy"
+    },
+    {
+      "id": 2,
+      "category": "exam",
+      "title": "Specific Technique Name",
+      "description": "2-sentence practical exam technique tailored to their decision & thinking styles.",
+      "tag": "Exam Prep"
+    },
+    {
+      "id": 3,
+      "category": "learning",
+      "title": "Specific Strategy Name",
+      "description": "2-sentence practical collaboration or memory tip.",
+      "tag": "Collaboration"
+    },
+    {
+      "id": 4,
+      "category": "exam",
+      "title": "Specific Technique Name",
+      "description": "2-sentence practical decision-making strategy under exam pressure.",
+      "tag": "Exam Technique"
+    },
+    {
+      "id": 5,
+      "category": "career",
+      "title": "Specific Alignment Name",
+      "description": "2-sentence future skills or subject alignment suggestion.",
+      "tag": "Future Readiness"
+    },
+    {
+      "id": 6,
+      "category": "learning",
+      "title": "Specific Habit Name",
+      "description": "2-sentence mental agility or deep focus habit.",
+      "tag": "Brain Efficiency"
+    }
+  ]
+}`;
+
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an elite cognitive learning specialist for young minds. Generate encouraging, non-repetitive, evidence-based study guidance.' },
+      { role: 'user', content: prompt }
+    ], true, 850);
+
+    if (res) {
+      const parsed = JSON.parse(res);
+      if (Array.isArray(parsed.recommendations) && parsed.recommendations.length > 0) {
+        setCachedAIResult(cacheKey, parsed.recommendations);
+        return parsed.recommendations;
+      }
+    }
+  } catch (err) {
+    console.warn('Using local fallback for student recommendations:', err);
+  }
+
+  return fallback;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Professional Account: Live AI Insights & Career Archetype
+// ─────────────────────────────────────────────────────────────
+
+export interface AIProfessionalProfileInsights {
+  strengths: string[];
+  developmentAreas: string[];
+  recommendations: string[];
+  idealRoles: string[];
+  leadershipInsight: string;
+}
+
+export async function generateAIProfessionalProfile(profile: any): Promise<AIProfessionalProfileInsights> {
+  const cacheKey = `prof_profile_${JSON.stringify(profile)}`;
+  const cached = getCachedAIResult<AIProfessionalProfileInsights>(cacheKey);
+  if (cached) return cached;
+
+  const learning = profile?.learning?.style || 'Analytical Learner';
+  const thinking = profile?.thinking?.style || 'Creative-Analytical';
+  const decision = profile?.decisionMaking?.style || 'Balanced Decision Maker';
+
+  const fallback: AIProfessionalProfileInsights = {
+    strengths: [
+      `High adaptability through ${learning.toLowerCase()} approach`,
+      `Synthesizes complexity with ${thinking.toLowerCase()} methodology`,
+      `Contextual precision driven by ${decision.toLowerCase()} framework`
+    ],
+    developmentAreas: [
+      'Expand cross-functional experimentation across contrasting cognitive modes',
+      'Codify intuitive insights into repeatable operational frameworks'
+    ],
+    recommendations: [
+      'Pair with contrasting cognitive profiles for high-stakes strategic reviews',
+      'Document decision patterns to continually refine mental models and intuition'
+    ],
+    idealRoles: [
+      'Strategic Operations Lead',
+      'Product & Innovation Manager',
+      'Organizational Development Consultant'
+    ],
+    leadershipInsight: `As a professional combining ${learning.toLowerCase()} and ${thinking.toLowerCase()} competencies, your ${decision.toLowerCase()} approach empowers strategic adaptability, constructive cross-functional alignment, and contextual problem-solving across complex team challenges.`
+  };
+
+  try {
+    const prompt = `Analyze this professional's cognitive assessment profile and generate executive career insights:
+Profile Data: ${JSON.stringify(profile)}
+
+Return strictly JSON in this format:
+{
+  "strengths": [
+    "Compelling strength 1 grounded in their cognitive styles",
+    "Compelling strength 2 grounded in their cognitive styles",
+    "Compelling strength 3 grounded in their cognitive styles"
+  ],
+  "developmentAreas": [
+    "Targeted growth area 1",
+    "Targeted growth area 2"
+  ],
+  "recommendations": [
+    "Actionable executive recommendation 1",
+    "Actionable executive recommendation 2"
+  ],
+  "idealRoles": [
+    "High-impact organizational role 1",
+    "High-impact organizational role 2",
+    "High-impact organizational role 3",
+    "High-impact organizational role 4"
+  ],
+  "leadershipInsight": "A 2-3 sentence executive synthesis explaining how their cognitive balance drives educational, organizational, and team leadership."
+}`;
+
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an executive talent strategist and industrial psychologist. Provide insightful, non-generic, high-caliber professional feedback.' },
+      { role: 'user', content: prompt }
+    ], true, 900);
+
+    if (res) {
+      const parsed = JSON.parse(res);
+      if (parsed.strengths && parsed.recommendations && parsed.idealRoles) {
+        const result: AIProfessionalProfileInsights = {
+          strengths: parsed.strengths,
+          developmentAreas: parsed.developmentAreas || fallback.developmentAreas,
+          recommendations: parsed.recommendations,
+          idealRoles: parsed.idealRoles,
+          leadershipInsight: parsed.leadershipInsight || fallback.leadershipInsight
+        };
+        setCachedAIResult(cacheKey, result);
+        return result;
+      }
+    }
+  } catch (err) {
+    console.warn('Using local fallback for professional profile insights:', err);
+  }
+
+  return fallback;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Teacher Account: Live AI Classroom Overview & Pedagogical Banner
+// ─────────────────────────────────────────────────────────────
+
+export interface AIClassroomOverviewInsights {
+  learningInsight: string;
+  thinkingInsight: string;
+  decisionInsight: string;
+  synergySummary: string;
+}
+
+export async function generateAIClassroomOverview(params: {
+  className: string;
+  studentCount: number;
+  dominantLearning: string;
+  dominantThinking: string;
+  dominantDecision?: string;
+}): Promise<AIClassroomOverviewInsights> {
+  const cacheKey = `class_overview_${params.className}_${params.dominantLearning}_${params.dominantThinking}`;
+  const cached = getCachedAIResult<AIClassroomOverviewInsights>(cacheKey);
+  if (cached) return cached;
+
+  const fallback: AIClassroomOverviewInsights = {
+    learningInsight: `With ${params.dominantLearning} learning dominating, organize multi-sensory lessons that balance visual models with experiential peer problem-solving.`,
+    thinkingInsight: `Leverage their ${params.dominantThinking} orientation by presenting open inquiry challenges supported by clear evaluative criteria.`,
+    decisionInsight: `Support student decisions by allowing a 2-minute reflective pause before group presentations and tests.`,
+    synergySummary: `A versatile cohort that excels when theoretical concepts are linked directly to real-world Ghanaian and global applications.`
+  };
+
+  try {
+    const prompt = `Generate tailored pedagogical classroom strategies for a teacher managing this class:
+Class: ${params.className}
+Student Count: ${params.studentCount}
+Dominant Learning Style: ${params.dominantLearning}
+Dominant Thinking Style: ${params.dominantThinking}
+Dominant Decision Style: ${params.dominantDecision || 'Balanced'}
+
+Return strictly JSON:
+{
+  "learningInsight": "2-sentence practical instructional strategy tailored to their dominant learning style.",
+  "thinkingInsight": "2-sentence practical thinking exercise tailored to their dominant thinking style.",
+  "decisionInsight": "2-sentence practical decision-making and test-taking technique.",
+  "synergySummary": "1-sentence overarching classroom synergy takeaway."
+}`;
+
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are a master pedagogical coach helping teachers differentiate instruction in diverse classrooms.' },
+      { role: 'user', content: prompt }
+    ], true, 600);
+
+    if (res) {
+      const parsed = JSON.parse(res);
+      if (parsed.learningInsight && parsed.thinkingInsight) {
+        setCachedAIResult(cacheKey, parsed);
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('Using fallback for classroom overview insights:', err);
+  }
+
+  return fallback;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Teacher Account: Live AI Student Intervention Generator
+// ─────────────────────────────────────────────────────────────
+
+export interface AITeacherInterventionPlan {
+  priority: 'urgent' | 'normal' | 'optional';
+  focus: string;
+  suggestions: string[];
+}
+
+export async function generateAITeacherIntervention(params: {
+  studentName: string;
+  riskLevel: string;
+  strengths: string[];
+  gaps: string[];
+  dominantStyle: string;
+}): Promise<AITeacherInterventionPlan> {
+  const cacheKey = `intervention_${params.studentName}_${params.riskLevel}_${params.dominantStyle}`;
+  const cached = getCachedAIResult<AITeacherInterventionPlan>(cacheKey);
+  if (cached) return cached;
+
+  const fallback: AITeacherInterventionPlan = {
+    priority: params.riskLevel === 'high' ? 'urgent' : params.riskLevel === 'medium' ? 'normal' : 'optional',
+    focus: params.riskLevel === 'high' ? `Targeted support for ${params.gaps[0] || 'foundational skills'}` : `Extending ${params.strengths[0] || 'cognitive strengths'}`,
+    suggestions: [
+      `Use concrete, hands-on activities to ground challenging concepts in ${params.dominantStyle} style`,
+      `Pair with a supportive peer partner strong in ${params.strengths[0] || 'complementary areas'}`,
+      `Offer multi-modal check-ins to monitor understanding before summative tests`
+    ]
+  };
+
+  try {
+    const prompt = `Generate a 3-step targeted instructional intervention plan for a teacher working with this student:
+Student: ${params.studentName}
+Academic/Cognitive Risk: ${params.riskLevel}
+Cognitive Strengths: ${params.strengths.join(', ') || 'Emerging'}
+Identified Gaps: ${params.gaps.join(', ') || 'General support needed'}
+Dominant Learning Style: ${params.dominantStyle}
+
+Return strictly JSON:
+{
+  "priority": "${params.riskLevel === 'high' ? 'urgent' : params.riskLevel === 'medium' ? 'normal' : 'optional'}",
+  "focus": "Brief 1-sentence targeted focal goal",
+  "suggestions": [
+    "Specific differentiated teaching action 1",
+    "Specific differentiated teaching action 2",
+    "Specific differentiated teaching action 3"
+  ]
+}`;
+
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an educational intervention specialist. Generate practical, highly specific classroom differentiation tips.' },
+      { role: 'user', content: prompt }
+    ], true, 500);
+
+    if (res) {
+      const parsed = JSON.parse(res);
+      if (parsed.suggestions && parsed.suggestions.length > 0) {
+        setCachedAIResult(cacheKey, parsed);
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('Using local fallback for teacher intervention:', err);
+  }
+
+  return fallback;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Student Account: Unified Tri-Framework Combined Profile Insights
+// ─────────────────────────────────────────────────────────────
+
+export interface AICombinedProfileInsights {
+  strengths: string[];
+  growthAreas: string[];
+  recommendations: string[];
+}
+
+export async function generateAICombinedProfileInsights(params: {
+  userName?: string;
+  kolbStyle?: string;
+  sternbergStyle?: string;
+  dualProcessStyle?: string;
+  scores?: any;
+}): Promise<AICombinedProfileInsights> {
+  const cacheKey = `combined_profile_${params.kolbStyle || ''}_${params.sternbergStyle || ''}_${params.dualProcessStyle || ''}`;
+  const cached = getCachedAIResult<AICombinedProfileInsights>(cacheKey);
+  if (cached) return cached;
+
+  const fallback: AICombinedProfileInsights = {
+    strengths: [
+      `Synthesizes concepts quickly leveraging ${params.kolbStyle || 'experiential'} learning strategies.`,
+      `Demonstrates strong ${params.sternbergStyle || 'analytical'} thinking when diagnosing complex problems.`,
+      `Maintains dynamic cognitive agility across both intuitive and systematic decision domains.`
+    ],
+    growthAreas: [
+      'Balance fast intuitive assessments with rigorous evidence cross-checks in high-stakes settings.',
+      'Actively cultivate reflective learning intervals between active project sprints.'
+    ],
+    recommendations: [
+      'Adopt interleaved learning blocks to connect theoretical insights with active experimentation.',
+      'Maintain an active decision journal to calibrate intuition with measurable outcomes.',
+      'Engage in peer discussion to articulate reasoning pathways and reinforce memory consolidation.'
+    ]
+  };
+
+  try {
+    const prompt = `Synthesize a unified tri-framework cognitive analysis for this student:
+Student: ${params.userName || 'Student'}
+Learning Style (Kolb): ${params.kolbStyle || 'Adaptive'}
+Thinking Style (Sternberg): ${params.sternbergStyle || 'Analytical-Creative'}
+Decision-Making Style (Dual Process): ${params.dualProcessStyle || 'Balanced System 1 & 2'}
+Detailed Scores: ${JSON.stringify(params.scores || {})}
+
+Return strictly a JSON object with:
+{
+  "strengths": [
+    "Compelling strength 1 grounded in their 3 styles",
+    "Compelling strength 2 grounded in their 3 styles",
+    "Compelling strength 3 grounded in their 3 styles"
+  ],
+  "growthAreas": [
+    "Constructive growth focus area 1",
+    "Constructive growth focus area 2"
+  ],
+  "recommendations": [
+    "Practical, actionable study recommendation 1",
+    "Practical, actionable study recommendation 2",
+    "Practical, actionable study recommendation 3"
+  ]
+}`;
+
+    const res = await callOpenAI([
+      { role: 'system', content: 'You are an elite educational neuroscientist and student cognitive advisor. Provide inspiring, non-generic, high-utility feedback.' },
+      { role: 'user', content: prompt }
+    ], true, 800);
+
+    if (res) {
+      const parsed = JSON.parse(res);
+      if (parsed.strengths && parsed.recommendations) {
+        const result: AICombinedProfileInsights = {
+          strengths: parsed.strengths,
+          growthAreas: parsed.growthAreas || fallback.growthAreas,
+          recommendations: parsed.recommendations
+        };
+        setCachedAIResult(cacheKey, result);
+        return result;
+      }
+    }
+  } catch (err) {
+    console.warn('Using local fallback for combined profile insights:', err);
+  }
+
+  return fallback;
+}
+

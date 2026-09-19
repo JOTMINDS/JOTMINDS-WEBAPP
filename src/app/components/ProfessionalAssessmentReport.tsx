@@ -8,7 +8,7 @@ import { getStyleDescription } from '../utils/scoring';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { Download, ArrowLeft, CheckCircle2, AlertCircle, Settings, MessageSquare, ExternalLink, Brain } from 'lucide-react';
 import { generatePDF } from '../utils/pdfGenerator';
-import { generateAICognitiveExecutiveSummary } from '../utils/aiService';
+import { generateAICognitiveExecutiveSummary, generateAIProfessionalProfile, AIProfessionalProfileInsights } from '../utils/aiService';
 import { getAssessmentInsights } from '../utils/insights';
 import { formatDate } from '../utils/dateFormat';
 
@@ -34,23 +34,50 @@ export function ProfessionalAssessmentReport({
   onBack 
 }: ProfessionalAssessmentReportProps) {
   const [aiSummary, setAiSummary] = useState<any>(null);
+  const [aiProfile, setAiProfile] = useState<AIProfessionalProfileInsights | null>(null);
   const [isGeneratingAI, setIsGeneratingAI] = useState(true);
+  const [isLoadingAIProfile, setIsLoadingAIProfile] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchAI() {
       setIsGeneratingAI(true);
-      const summary = await generateAICognitiveExecutiveSummary({
-        name: userName,
-        position: userPosition,
-        organization: userOrganization,
-        learning: assessment?.score?.kolb?.style,
-        thinking: assessment?.score?.sternberg?.style,
-        decision: assessment?.score?.dualProcess?.style
-      });
-      if (summary) setAiSummary(summary);
-      setIsGeneratingAI(false);
+      setIsLoadingAIProfile(true);
+      try {
+        const [summary, profInsights] = await Promise.all([
+          generateAICognitiveExecutiveSummary({
+            name: userName,
+            position: userPosition,
+            organization: userOrganization,
+            learning: assessment?.score?.kolb?.style,
+            thinking: assessment?.score?.sternberg?.style,
+            decision: assessment?.score?.dualProcess?.style
+          }),
+          generateAIProfessionalProfile({
+            learning: assessment?.score?.kolb,
+            thinking: assessment?.score?.sternberg,
+            decisionMaking: assessment?.score?.dualProcess,
+            name: userName,
+            position: userPosition,
+            organization: userOrganization
+          })
+        ]);
+
+        if (isMounted) {
+          if (summary) setAiSummary(summary);
+          if (profInsights) setAiProfile(profInsights);
+        }
+      } catch (err) {
+        console.error('Failed to generate AI assessment profile:', err);
+      } finally {
+        if (isMounted) {
+          setIsGeneratingAI(false);
+          setIsLoadingAIProfile(false);
+        }
+      }
     }
     fetchAI();
+    return () => { isMounted = false; };
   }, [assessment?.score, userName, userPosition, userOrganization]);
 
   
@@ -301,9 +328,9 @@ export function ProfessionalAssessmentReport({
 
   const radarData = getRadarData();
   const competencies = getCompetencyMapping();
-  const keyInsights = getKeyInsights();
-  const developmentNeeds = getDevelopmentNeeds();
-  const developmentRecommendations = getDevelopmentRecommendations();
+  const keyInsights = aiProfile?.strengths?.length ? aiProfile.strengths : getKeyInsights();
+  const developmentNeeds = aiProfile?.developmentAreas?.length ? aiProfile.developmentAreas : getDevelopmentNeeds();
+  const developmentRecommendations = aiProfile?.recommendations?.length ? aiProfile.recommendations : getDevelopmentRecommendations();
 
   const getFitIcon = (fit: CompetencyFit['fit']) => {
     switch (fit) {
@@ -577,12 +604,22 @@ export function ProfessionalAssessmentReport({
             </div>
 
             {/* Key Insights */}
-            {keyInsights.length > 0 && (
-              <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50/30 to-white">
-                <CardHeader>
-                  <CardTitle className="text-xl text-blue-900">Key Insights</CardTitle>
-                </CardHeader>
-                <CardContent>
+            <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50/30 to-white">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl text-blue-900">Key Insights & Cognitive Strengths</CardTitle>
+                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
+                    {aiProfile ? 'Live AI Analysis' : 'Cognitive Baseline'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoadingAIProfile ? (
+                  <div className="space-y-2 py-2">
+                    <div className="h-4 bg-blue-100 animate-pulse rounded w-3/4" />
+                    <div className="h-4 bg-blue-100 animate-pulse rounded w-5/6" />
+                  </div>
+                ) : (
                   <ul className="space-y-2">
                     {keyInsights.map((insight, index) => (
                       <li key={index} className="flex items-start gap-2">
@@ -594,14 +631,14 @@ export function ProfessionalAssessmentReport({
                       <li className="flex items-start gap-2">
                         <span className="text-orange-600 mt-1">•</span>
                         <span className="text-gray-700">
-                          Development areas: {Array.isArray(developmentNeeds) ? developmentNeeds.join('; ').toLowerCase() : ""}
+                          Target growth priorities: {Array.isArray(developmentNeeds) ? developmentNeeds.join('; ') : ''}
                         </span>
                       </li>
                     )}
                   </ul>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
 
             {/* Competency Fit Summary */}
             {competencies.length > 0 && (
@@ -636,13 +673,23 @@ export function ProfessionalAssessmentReport({
             )}
 
             {/* Development Recommendations */}
-            {developmentRecommendations.length > 0 && (
-              <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50/30 to-white">
-                <CardHeader>
+            <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50/30 to-white">
+              <CardHeader>
+                <div className="flex items-center justify-between">
                   <CardTitle className="text-xl text-green-900">Development Recommendations</CardTitle>
-                  <CardDescription>Personalized strategies for continuous growth</CardDescription>
-                </CardHeader>
-                <CardContent>
+                  <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs">
+                    {aiProfile ? 'AI Strategies' : 'Recommendations'}
+                  </Badge>
+                </div>
+                <CardDescription>Personalized strategies for continuous professional growth</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingAIProfile ? (
+                  <div className="space-y-2 py-2">
+                    <div className="h-4 bg-green-100 animate-pulse rounded w-4/5" />
+                    <div className="h-4 bg-green-100 animate-pulse rounded w-2/3" />
+                  </div>
+                ) : (
                   <ul className="space-y-3">
                     {developmentRecommendations.map((rec, index) => (
                       <li key={index} className="flex items-start gap-3">
@@ -651,9 +698,9 @@ export function ProfessionalAssessmentReport({
                       </li>
                     ))}
                   </ul>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
           </CardContent>
         </Card>
 

@@ -1,12 +1,14 @@
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Assessment } from '../types';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
-import { Brain, TrendingUp, Target, Lightbulb, BookOpen, Zap, ArrowLeft, Download, Sparkles } from 'lucide-react';
+import { Brain, TrendingUp, Target, Lightbulb, BookOpen, Zap, ArrowLeft, Download, Sparkles, Loader2 } from 'lucide-react';
 import { generatePDF } from '../utils/pdfGenerator';
 import { FeedbackPrompt } from './FeedbackPrompt';
 import { formatDate } from '../utils/dateFormat';
+import { generateAICombinedProfileInsights, AICombinedProfileInsights } from '../utils/aiService';
 
 interface CombinedCognitiveProfileProps {
   assessments: Assessment[];
@@ -350,7 +352,35 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
     return insights;
   };
 
-  const insights = generateInsights();
+  const [aiInsights, setAiInsights] = useState<AICombinedProfileInsights | null>(null);
+  const [isLoadingAi, setIsLoadingAi] = useState<boolean>(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingAi(true);
+    generateAICombinedProfileInsights({
+      userName,
+      kolbStyle: latestKolb?.score?.kolb?.style,
+      sternbergStyle: latestSternberg?.score?.sternberg?.style || (latestSternberg?.score as any)?.thinking?.style,
+      dualProcessStyle: latestDualProcess?.score?.dualProcess?.style || (latestDualProcess?.score as any)?.decision?.style,
+      scores: {
+        kolb: latestKolb?.score?.kolb?.scores,
+        thinking: normalizedThinkingScores,
+        decision: normalizedDualProcessScores
+      }
+    }).then(res => {
+      if (isMounted && res) {
+        setAiInsights(res);
+      }
+    }).catch(err => {
+      console.error('Failed to generate combined profile AI insights:', err);
+    }).finally(() => {
+      if (isMounted) setIsLoadingAi(false);
+    });
+    return () => { isMounted = false; };
+  }, [userName, latestKolb, latestSternberg, latestDualProcess]);
+
+  const displayedInsights = aiInsights || generateInsights();
 
   const handleDownloadPDF = async () => {
     const combinedAssessment: Assessment = {
@@ -804,74 +834,109 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
           {/* Strengths */}
           <Card className="border-2 border-green-200 bg-gradient-to-br from-white to-green-50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-900">
-                <Target className="h-5 w-5 text-green-600" />
-                Your Cognitive Strengths
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-green-900">
+                  <Target className="h-5 w-5 text-green-600" />
+                  Your Cognitive Strengths
+                </CardTitle>
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs">
+                  {aiInsights ? 'Live AI Analysis' : 'Cognitive Baseline'}
+                </Badge>
+              </div>
               <CardDescription>
-                Areas where you naturally excel
+                Areas where you naturally excel across all three assessment frameworks
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3">
-                {insights.strengths.map((strength, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="text-green-600 mt-1">✓</span>
-                    <span className="text-sm text-gray-700">{strength}</span>
-                  </li>
-                ))}
-              </ul>
+              {isLoadingAi ? (
+                <div className="space-y-2 py-2">
+                  <div className="h-4 bg-green-100 animate-pulse rounded w-3/4" />
+                  <div className="h-4 bg-green-100 animate-pulse rounded w-5/6" />
+                  <div className="h-4 bg-green-100 animate-pulse rounded w-2/3" />
+                </div>
+              ) : (
+                <ul className="space-y-3">
+                  {displayedInsights.strengths.map((strength, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <span className="text-green-600 mt-1">✓</span>
+                      <span className="text-sm text-gray-700">{strength}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
 
           {/* Growth Areas */}
-          {insights.growthAreas.length > 0 && (
-            <Card className="border-2 border-blue-200 bg-gradient-to-br from-white to-blue-50">
-              <CardHeader>
+          <Card className="border-2 border-blue-200 bg-gradient-to-br from-white to-blue-50">
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-blue-900">
                   <TrendingUp className="h-5 w-5 text-blue-600" />
                   Areas for Growth
                 </CardTitle>
-                <CardDescription>
-                  Opportunities to develop new skills
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
+                  {aiInsights ? 'AI Focal Points' : 'Growth Opportunities'}
+                </Badge>
+              </div>
+              <CardDescription>
+                Opportunities to develop balanced cognitive flexibility
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingAi ? (
+                <div className="space-y-2 py-2">
+                  <div className="h-4 bg-blue-100 animate-pulse rounded w-4/5" />
+                  <div className="h-4 bg-blue-100 animate-pulse rounded w-3/4" />
+                </div>
+              ) : (
                 <ul className="space-y-3">
-                  {insights.growthAreas.map((area, index) => (
+                  {displayedInsights.growthAreas.map((area, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <span className="text-blue-600 mt-1">→</span>
                       <span className="text-sm text-gray-700">{area}</span>
                     </li>
                   ))}
                 </ul>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Recommendations */}
         <Card className="border-2 border-[#6B4C9A] bg-gradient-to-br from-white to-cyan-50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-[#6B4C9A]" />
-              Personalized Recommendations
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-[#6B4C9A]" />
+                Personalized Recommendations
+              </CardTitle>
+              <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
+                {aiInsights ? 'Live AI Strategies' : 'Recommendations'}
+              </Badge>
+            </div>
             <CardDescription>
-              Actionable steps to enhance your learning and thinking
+              Actionable steps to enhance your learning, thinking, and decision styles
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              {insights.recommendations.map((recommendation, index) => (
-                <div key={index} className="flex items-start gap-3 p-4 bg-white rounded-lg border border-cyan-200">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#6B4C9A] to-[#5B7DB1] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">
-                    {index + 1}
+            {isLoadingAi ? (
+              <div className="grid gap-4 md:grid-cols-2 py-2">
+                <div className="h-20 bg-purple-100/50 animate-pulse rounded-lg" />
+                <div className="h-20 bg-purple-100/50 animate-pulse rounded-lg" />
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {displayedInsights.recommendations.map((recommendation, index) => (
+                  <div key={index} className="flex items-start gap-3 p-4 bg-white rounded-lg border border-cyan-200 shadow-2xs">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#6B4C9A] to-[#5B7DB1] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">
+                      {index + 1}
+                    </div>
+                    <p className="text-sm text-gray-700">{recommendation}</p>
                   </div>
-                  <p className="text-sm text-gray-700">{recommendation}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

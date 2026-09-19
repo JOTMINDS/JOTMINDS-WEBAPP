@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -8,10 +8,11 @@ import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Assessment } from '../types';
-import { UserCheck, Target, TrendingUp, MessageSquare, CheckCircle2, AlertCircle, Star } from 'lucide-react';
+import { UserCheck, Target, TrendingUp, MessageSquare, CheckCircle2, AlertCircle, Star, Sparkles, Loader2 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { saveReview } from '../utils/storage';
 import { formatDate } from '../utils/dateFormat';
+import { generateAIProfessionalProfile } from '../utils/aiService';
 
 interface SupervisorReviewProps {
   employeeName: string;
@@ -53,6 +54,9 @@ export function SupervisorReview({
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [aiRoles, setAiRoles] = useState<string[]>([]);
+  const [aiProfileData, setAiProfileData] = useState<any>(null);
+  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
 
   const latestLearning = assessments
     .filter(a => a.type === 'kolb' && a.completedAt)
@@ -65,6 +69,42 @@ export function SupervisorReview({
   const latestDecision = assessments
     .filter(a => a.type === 'dual-process' && a.completedAt)
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+
+  useEffect(() => {
+    let isMounted = true;
+    if (latestLearning || latestThinking || latestDecision) {
+      setIsGeneratingAi(true);
+      generateAIProfessionalProfile({
+        learning: latestLearning?.score?.kolb,
+        thinking: latestThinking?.score?.sternberg,
+        decisionMaking: latestDecision?.score?.dualProcess,
+        name: employeeName
+      }).then(res => {
+        if (isMounted && res) {
+          setAiProfileData(res);
+          if (res.idealRoles?.length) {
+            setAiRoles(res.idealRoles);
+          }
+        }
+      }).catch(err => {
+        console.error('Failed to generate AI supervisor review insights:', err);
+      }).finally(() => {
+        if (isMounted) setIsGeneratingAi(false);
+      });
+    }
+    return () => { isMounted = false; };
+  }, [employeeName, latestLearning, latestThinking, latestDecision]);
+
+  const autoDraftWithAI = () => {
+    if (!aiProfileData) return;
+    setReviewData(prev => ({
+      ...prev,
+      strengths: prev.strengths || (aiProfileData.strengths || []).map((s: string) => `• ${s}`).join('\n'),
+      developmentAreas: prev.developmentAreas || (aiProfileData.developmentAreas || []).map((d: string) => `• ${d}`).join('\n'),
+      recommendedActions: prev.recommendedActions || (aiProfileData.recommendations || []).map((r: string) => `• ${r}`).join('\n'),
+      goals: prev.goals || `Align cognitive workflows with quarterly milestones and leverage ${latestThinking?.score?.sternberg?.style || 'analytical'} strengths.`
+    }));
+  };
 
   const handleSubmit = () => {
     if (supervisorId && professionalId) {
@@ -207,12 +247,21 @@ export function SupervisorReview({
       </Card>
 
       {/* Suggested Roles */}
-      {suggestedRoles && suggestedRoles.length > 0 && (
-        <Alert>
-          <Star className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Suggested Roles Based on Cognitive Profile:</strong>{' '}
-            {(suggestedRoles || []).join(', ')}
+      {((aiRoles.length > 0 ? aiRoles : suggestedRoles).length > 0) && (
+        <Alert className="border-purple-200 bg-purple-50/50 dark:bg-purple-950/20">
+          <Star className="h-4 w-4 text-purple-600" />
+          <AlertDescription className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <strong className="text-purple-950 dark:text-purple-200">
+                {aiRoles.length > 0 ? 'AI-Recommended Organizational Roles:' : 'Suggested Roles Based on Cognitive Profile:'}
+              </strong>{' '}
+              <span className="text-purple-800 dark:text-purple-300">{((aiRoles.length > 0 ? aiRoles : suggestedRoles) || []).join(', ')}</span>
+            </div>
+            {aiRoles.length > 0 && (
+              <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-[10px] shrink-0 self-start sm:self-auto">
+                Live AI Match
+              </Badge>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -220,10 +269,29 @@ export function SupervisorReview({
       {/* Review Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Supervisor Evaluation Form</CardTitle>
-          <CardDescription>
-            Complete this assessment to provide structured feedback and support professional development
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle>Supervisor Evaluation Form</CardTitle>
+              <CardDescription>
+                Complete this assessment to provide structured feedback and support professional development
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={autoDraftWithAI}
+              disabled={isGeneratingAi || !aiProfileData}
+              className="gap-2 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50 shrink-0"
+            >
+              {isGeneratingAi ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+              )}
+              {isGeneratingAi ? 'Synthesizing AI...' : 'Auto-Draft Feedback with AI'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Role Alignment */}

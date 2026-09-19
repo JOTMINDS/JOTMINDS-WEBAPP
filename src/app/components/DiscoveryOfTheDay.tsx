@@ -50,12 +50,6 @@ export function DiscoveryOfTheDay({ userId, userName, showAsWidget = false }: Di
   const [brainSparks, setBrainSparks] = useState(0);
   const [weekProgress, setWeekProgress] = useState(0);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    selectTodayDiscovery();
-    loadProgress();
-  }, [userId]);
-
   const [aiDiscovery, setAiDiscovery] = useState<{
     title: string;
     fact: string;
@@ -79,6 +73,12 @@ export function DiscoveryOfTheDay({ userId, userName, showAsWidget = false }: Di
       setLoadingAi(false);
     }
   };
+
+  useEffect(() => {
+    selectTodayDiscovery();
+    loadProgress();
+    handleFetchAiDiscovery();
+  }, [userId]);
 
   const selectTodayDiscovery = () => {
     // Use date as seed for consistent daily discovery

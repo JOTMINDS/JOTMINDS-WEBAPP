@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
+import { generateAIParentSupportTips, getCachedAIResult, setCachedAIResult } from '../utils/aiService';
 
 interface ParentDashboardProps {
   user: User;
@@ -65,6 +66,39 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const [aiSupportTips, setAiSupportTips] = useState<Record<string, string[]>>({});
+  const [loadingAiTips, setLoadingAiTips] = useState<Record<string, boolean>>({});
+
+  const loadAITipsForChild = async (childId: string, assessmentList: Assessment[]) => {
+    if (aiSupportTips[childId] || loadingAiTips[childId] || !assessmentList || assessmentList.length === 0) return;
+    const latest = assessmentList[0];
+    if (!latest) return;
+
+    const cacheKey = `parent_tips_${childId}_${latest.id || latest.completedAt || 'latest'}`;
+    const cached = getCachedAIResult<string[]>(cacheKey);
+    if (cached && cached.length > 0) {
+      setAiSupportTips(prev => ({ ...prev, [childId]: cached }));
+      return;
+    }
+
+    setLoadingAiTips(prev => ({ ...prev, [childId]: true }));
+    try {
+      const tips = await generateAIParentSupportTips({
+        childId,
+        score: latest.score,
+        type: latest.type
+      });
+      if (tips && tips.length > 0) {
+        setCachedAIResult(cacheKey, tips);
+        setAiSupportTips(prev => ({ ...prev, [childId]: tips }));
+      }
+    } catch (e) {
+      console.error('Failed to generate AI parent support tips:', e);
+    } finally {
+      setLoadingAiTips(prev => ({ ...prev, [childId]: false }));
+    }
+  };
 
   useEffect(() => {
     loadChildrenData();
@@ -100,6 +134,9 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
           totalAssessments += assessmentCount;
           console.log(`[ParentDashboard] Child ${item.child.name} has ${assessmentCount} assessments`);
           dataMap.set(item.child.id, item.assessments || []);
+          if (item.assessments && item.assessments.length > 0) {
+            loadAITipsForChild(item.child.id, item.assessments);
+          }
         });
         
         setChildrenData(dataMap);
@@ -913,6 +950,34 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
+                            {loadingAiTips[child.id] && (
+                              <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-200 animate-pulse space-y-2 mb-4">
+                                <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-1/3" />
+                                <div className="h-3 bg-purple-100 dark:bg-purple-900 rounded w-5/6" />
+                                <div className="h-3 bg-purple-100 dark:bg-purple-900 rounded w-4/6" />
+                              </div>
+                            )}
+
+                            {aiSupportTips[child.id] && (
+                              <div className="p-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-emerald-50 dark:from-purple-950/40 dark:to-indigo-950/40 rounded-xl border border-purple-200 dark:border-purple-800 space-y-3 mb-4 shadow-xs">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-2 text-sm">
+                                    <Sparkles className="h-4 w-4 text-purple-600" />
+                                    AI Personalized Home Guidance for {child.name}
+                                  </h4>
+                                  <Badge className="bg-purple-600 text-white text-[10px]">✨ Live AI</Badge>
+                                </div>
+                                <ul className="space-y-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                                  {aiSupportTips[child.id].map((tip, idx) => (
+                                    <li key={idx} className="flex items-start gap-2 bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-lg border border-purple-100/60 dark:border-purple-900/40">
+                                      <span className="text-purple-600 font-bold shrink-0 mt-0.5">💡</span>
+                                      <span className="leading-relaxed">{tip}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
                             {kolbAssessment || sternbergAssessment || dualProcessAssessment || otherAssessments.length > 0 ? (
                               <div className="space-y-4">
                                 {kolbAssessment && (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BookOpen, Clock, FileText, Brain, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -31,9 +31,6 @@ export function StudyStrategyGenerator({ cognitiveStyle, assessmentType }: Study
       const res = await generateAIStudyStrategy('General Academics', cognitiveStyle);
       if (res) {
         setAiCustomStrategy(res);
-        toast.success('Custom Study Strategy generated successfully!');
-      } else {
-        toast.error('Could not generate study strategy.');
       }
     } catch (e) {
       console.error(e);
@@ -41,6 +38,10 @@ export function StudyStrategyGenerator({ cognitiveStyle, assessmentType }: Study
       setLoadingAi(false);
     }
   };
+
+  useEffect(() => {
+    handleGenerateAiStrategy();
+  }, [cognitiveStyle, assessmentType]);
 
   const getStrategy = (): StudyStrategy => {
     // Kolb Learning Styles

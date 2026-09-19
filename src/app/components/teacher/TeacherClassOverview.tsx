@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { User, Assessment } from '../../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { generateAIClassroomOverview, AIClassroomOverviewInsights } from '../../utils/aiService';
 import { 
   Users, 
   TrendingUp, 
@@ -205,6 +206,28 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
   const dominantLearning = learningStyleData.filter(d => d.name !== 'Unknown')[0]?.name || 'Diverse';
   const dominantThinking = thinkingStyleData.filter(d => d.name !== 'Unknown')[0]?.name || 'Balanced';
 
+  const [aiClassroomInsights, setAiClassroomInsights] = useState<AIClassroomOverviewInsights | null>(null);
+  const [loadingClassAi, setLoadingClassAi] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadClassInsights() {
+      setLoadingClassAi(true);
+      const res = await generateAIClassroomOverview({
+        className: selectedClass === 'ALL' ? 'Entire Cohort' : selectedClass,
+        studentCount: students.length,
+        dominantLearning,
+        dominantThinking
+      });
+      if (isMounted) {
+        setAiClassroomInsights(res);
+        setLoadingClassAi(false);
+      }
+    }
+    loadClassInsights();
+    return () => { isMounted = false; };
+  }, [selectedClass, dominantLearning, dominantThinking, students.length]);
+
   return (
     <div className="min-h-screen bg-[#F5F7FF] pb-12">
       <div className="px-4 lg:px-6 py-4 space-y-6 max-w-[1020px] mx-auto">
@@ -356,41 +379,54 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             </CardDescription>
           </CardHeader>
           <CardContent className="p-5 pt-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
-                <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider block flex items-center gap-1">
-                  <Lightbulb className="w-3.5 h-3.5" /> Dominant Learning Style: {dominantLearning}
-                </span>
-                <p className="text-xs text-slate-200 leading-relaxed">
-                  {dominantLearning === 'Diverging' ? 'Students learn best through open brainstorms, roleplays, and collaborative group discussions.' :
-                   dominantLearning === 'Assimilating' ? 'Emphasize concise theoretical frameworks, structured readings, and systematic logical lectures.' :
-                   dominantLearning === 'Converging' ? 'Provide hands-on problem-solving exercises, laboratory experiments, and direct technical challenges.' :
-                   dominantLearning === 'Accommodating' ? 'Encourage active experimentation, field exploration, and real-world project trials.' :
-                   'Employ differentiated multi-modal lessons balancing visual diagrams and practical problems.'}
-                </p>
+            {loadingClassAi ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-pulse">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="p-3.5 bg-white/10 rounded-xl space-y-2">
+                    <div className="h-3 bg-white/20 rounded w-1/2" />
+                    <div className="h-10 bg-white/10 rounded" />
+                  </div>
+                ))}
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
+                  <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider block flex items-center gap-1">
+                    <Lightbulb className="w-3.5 h-3.5" /> Dominant Learning Style: {dominantLearning}
+                  </span>
+                  <p className="text-xs text-slate-200 leading-relaxed">
+                    {aiClassroomInsights?.learningInsight || (
+                      dominantLearning === 'Diverging' ? 'Students learn best through open brainstorms, roleplays, and collaborative group discussions.' :
+                      dominantLearning === 'Assimilating' ? 'Emphasize concise theoretical frameworks, structured readings, and systematic logical lectures.' :
+                      dominantLearning === 'Converging' ? 'Provide hands-on problem-solving exercises, laboratory experiments, and direct technical challenges.' :
+                      'Employ differentiated multi-modal lessons balancing visual diagrams and practical problems.'
+                    )}
+                  </p>
+                </div>
 
-              <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
-                <span className="text-[11px] font-bold text-purple-300 uppercase tracking-wider block flex items-center gap-1">
-                  <Brain className="w-3.5 h-3.5" /> Thinking Orientation: {dominantThinking}
-                </span>
-                <p className="text-xs text-slate-200 leading-relaxed">
-                  {dominantThinking === 'Analytical' ? 'Incorporate comparison matrices, data interpretation tasks, and critical evaluation rubrics.' :
-                   dominantThinking === 'Creative' ? 'Invite divergent thinking questions, design challenges, and open-ended synthesis projects.' :
-                   dominantThinking === 'Practical' ? 'Ground each concept in everyday applications, local Ghanaian case studies, and career links.' :
-                   'Utilize mixed problem formats that exercise analysis, invention, and real-life execution.'}
-                </p>
-              </div>
+                <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
+                  <span className="text-[11px] font-bold text-purple-300 uppercase tracking-wider block flex items-center gap-1">
+                    <Brain className="w-3.5 h-3.5" /> Thinking Orientation: {dominantThinking}
+                  </span>
+                  <p className="text-xs text-slate-200 leading-relaxed">
+                    {aiClassroomInsights?.thinkingInsight || (
+                      dominantThinking === 'Analytical' ? 'Incorporate comparison matrices, data interpretation tasks, and critical evaluation rubrics.' :
+                      dominantThinking === 'Creative' ? 'Invite divergent thinking questions, design challenges, and open-ended synthesis projects.' :
+                      'Ground each concept in everyday applications, local Ghanaian case studies, and career links.'
+                    )}
+                  </p>
+                </div>
 
-              <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
-                <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider block flex items-center gap-1">
-                  <Target className="w-3.5 h-3.5" /> Recommended Lesson Flow
-                </span>
-                <p className="text-xs text-slate-200 leading-relaxed">
-                  Start with a 5-min concrete hook, transition into 15-min guided application, and reserve 15 mins for differentiated peer practice.
-                </p>
+                <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
+                  <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider block flex items-center gap-1">
+                    <Target className="w-3.5 h-3.5" /> AI Pedagogical Synergy
+                  </span>
+                  <p className="text-xs text-slate-200 leading-relaxed">
+                    {aiClassroomInsights?.synergySummary || 'Design multi-sensory lessons with a 5-min experiential hook and 15 mins for differentiated peer application.'}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 

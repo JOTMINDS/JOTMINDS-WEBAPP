@@ -5,9 +5,10 @@ import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
   BarChart3, PieChart as PieChartIcon, Target, Sparkles, Brain, Layers, 
-  Users, CheckCircle2, TrendingUp, Lightbulb, FileText, LayoutGrid, Table, Activity, ChevronDown, ChevronUp, BookOpen
+  Users, CheckCircle2, TrendingUp, Lightbulb, FileText, LayoutGrid, Table, Activity, ChevronDown, ChevronUp, BookOpen, Loader2
 } from 'lucide-react';
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
+import { generateAITeacherIntervention, AITeacherInterventionPlan } from '../utils/aiService';
 import { 
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, 
   CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -66,6 +67,28 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
   const [overviewViewMode, setOverviewViewMode] = useState<ViewMode>('charts');
   const [heatmapGroup, setHeatmapGroup] = useState<string>('Learning');
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
+  const [aiInterventions, setAiInterventions] = useState<Record<string, AITeacherInterventionPlan>>({});
+  const [loadingInterventions, setLoadingInterventions] = useState<Record<string, boolean>>({});
+
+  const handleExpandStudent = (student: any, riskLevel: string, strengths: string[], gaps: string[], dominantStyle: string) => {
+    const nextId = expandedStudent === student.id ? null : student.id;
+    setExpandedStudent(nextId);
+    if (nextId && !aiInterventions[student.id]) {
+      setLoadingInterventions(prev => ({ ...prev, [student.id]: true }));
+      generateAITeacherIntervention({
+        studentName: student.name,
+        riskLevel,
+        strengths,
+        gaps,
+        dominantStyle
+      }).then(plan => {
+        if (plan) {
+          setAiInterventions(prev => ({ ...prev, [student.id]: plan }));
+        }
+      }).catch(console.error)
+        .finally(() => setLoadingInterventions(prev => ({ ...prev, [student.id]: false })));
+    }
+  };
 
   // Compute Distributions
   const computeDistributions = () => {
@@ -646,24 +669,46 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
             {profiles.map(({ user: pUser, intervention: inv, riskLevel, strengths, gaps }) => (
               <Card key={pUser.id} className={`border-l-4 ${inv.priority === 'urgent' ? 'border-l-red-500' : inv.priority === 'normal' ? 'border-l-amber-400' : 'border-l-green-400'}`}>
                 <CardContent className="pt-4">
-                  <button className="w-full flex justify-between items-start text-left" onClick={() => setExpandedStudent(expandedStudent === pUser.id ? null : pUser.id)}>
+                  <button className="w-full flex justify-between items-start text-left" onClick={() => handleExpandStudent(pUser, riskLevel, strengths, gaps, (pUser as any).learningStyle || 'Adaptive')}>
                     <div>
                       <p className="text-sm font-bold text-gray-900">{pUser.name}</p>
-                      <p className="text-xs text-gray-600 mt-0.5">{inv.focus}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{aiInterventions[pUser.id]?.focus || inv.focus}</p>
                       <div className="flex gap-2 mt-2">
                         <Badge style={{ backgroundColor: RISK_COLORS[riskLevel] + '20', color: RISK_COLORS[riskLevel] }} className="text-[10px]">{RISK_LABELS[riskLevel]}</Badge>
                         {strengths.slice(0, 1).map(s => <Badge key={s} className="bg-green-50 text-green-700 text-[10px]">💪 {s}</Badge>)}
                         {gaps.slice(0, 1).map(g => <Badge key={g} className="bg-red-50 text-red-700 text-[10px]">⚠️ {g}</Badge>)}
+                        {aiInterventions[pUser.id] && <Badge className="bg-purple-100 text-purple-700 text-[10px]">✨ Live AI</Badge>}
                       </div>
                     </div>
                     {expandedStudent === pUser.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                   </button>
                   {expandedStudent === pUser.id && (
                     <div className="mt-4 pt-4 border-t space-y-2">
-                      <p className="text-xs font-semibold text-gray-600">Recommended Actions:</p>
-                      {inv.suggestions.map((s, i) => (
-                        <div key={i} className="flex gap-2"><span className="text-xs text-gray-400">{i + 1}.</span><p className="text-xs text-gray-700">{s}</p></div>
-                      ))}
+                      {loadingInterventions[pUser.id] ? (
+                        <div className="flex items-center gap-2 py-3 text-xs text-indigo-600 animate-pulse">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Generating AI targeted intervention strategies...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold text-gray-700">
+                              {aiInterventions[pUser.id] ? 'AI Targeted Instructional Strategies:' : 'Recommended Actions:'}
+                            </p>
+                            {aiInterventions[pUser.id] && (
+                              <Badge variant="outline" className="text-[10px] text-purple-700 border-purple-200">
+                                AI Differentiated Model
+                              </Badge>
+                            )}
+                          </div>
+                          {(aiInterventions[pUser.id]?.suggestions || inv.suggestions).map((s, i) => (
+                            <div key={i} className="flex gap-2">
+                              <span className="text-xs text-indigo-500 font-bold">{i + 1}.</span>
+                              <p className="text-xs text-gray-700">{s}</p>
+                            </div>
+                          ))}
+                        </>
+                      )}
                     </div>
                   )}
                 </CardContent>

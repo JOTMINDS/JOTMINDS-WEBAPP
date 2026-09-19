@@ -9,7 +9,7 @@ import {
 } from 'recharts';
 import { Download, ArrowLeft, CheckCircle2, Target, TrendingUp, Briefcase, MessageSquare, ExternalLink, Brain, Lightbulb, Scale, Users, ArrowUp, ArrowDown } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
-import { generateAICognitiveExecutiveSummary } from '../utils/aiService';
+import { generateAICognitiveExecutiveSummary, generateAIProfessionalProfile, AIProfessionalProfileInsights } from '../utils/aiService';
 import { getRoleProfiles } from '../utils/api';
 
 interface ProfessionalCognitiveResultsProps {
@@ -30,26 +30,48 @@ export function ProfessionalCognitiveResults({
   onBack 
 }: ProfessionalCognitiveResultsProps) {
   
-  const insights = getProfessionalInsights(profile);
+  const [aiInsights, setAiInsights] = React.useState<AIProfessionalProfileInsights | null>(null);
+  const [isLoadingInsights, setIsLoadingInsights] = React.useState<boolean>(true);
   const [aiSummary, setAiSummary] = React.useState<any>(null);
-  const [isGeneratingAI, setIsGeneratingAI] = React.useState(true);
+  const [isGeneratingAI, setIsGeneratingAI] = React.useState<boolean>(true);
 
   React.useEffect(() => {
+    let isMounted = true;
     async function fetchAI() {
       setIsGeneratingAI(true);
-      const summary = await generateAICognitiveExecutiveSummary({
-        name: userName,
-        position: userPosition,
-        learning: profile.learning.style,
-        thinking: profile.thinking.style,
-        decision: profile.decisionMaking.style,
-        motivation: profile.motivation.style
-      });
-      if (summary) setAiSummary(summary);
-      setIsGeneratingAI(false);
+      setIsLoadingInsights(true);
+
+      try {
+        const [summary, profProfile] = await Promise.all([
+          generateAICognitiveExecutiveSummary({
+            name: userName,
+            position: userPosition,
+            learning: profile.learning.style,
+            thinking: profile.thinking.style,
+            decision: profile.decisionMaking.style,
+            motivation: profile.motivation.style
+          }),
+          generateAIProfessionalProfile(profile)
+        ]);
+
+        if (isMounted) {
+          if (summary) setAiSummary(summary);
+          if (profProfile) setAiInsights(profProfile);
+        }
+      } catch (err) {
+        console.error('Failed to fetch AI professional insights:', err);
+      } finally {
+        if (isMounted) {
+          setIsGeneratingAI(false);
+          setIsLoadingInsights(false);
+        }
+      }
     }
     fetchAI();
+    return () => { isMounted = false; };
   }, [profile, userName, userPosition]);
+
+  const displayedInsights = aiInsights || getProfessionalInsights(profile);
 
   const [roleProfiles, setRoleProfiles] = React.useState<any[]>([]);
   const [selectedRoleId, setSelectedRoleId] = React.useState<string>('none');
@@ -403,41 +425,63 @@ export function ProfessionalCognitiveResults({
             </div>
 
             {/* Key Insights */}
-            {insights.strengths.length > 0 && (
-              <Card className="border-2 border-green-200 dark:border-green-700 bg-gradient-to-br from-green-50/30 to-white dark:from-green-900/10 dark:to-gray-800">
-                <CardHeader>
+            <Card className="border-2 border-green-200 dark:border-green-700 bg-gradient-to-br from-green-50/30 to-white dark:from-green-900/10 dark:to-gray-800">
+              <CardHeader>
+                <div className="flex items-center justify-between">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    Key Insights
+                    Key Insights & Strengths
                   </CardTitle>
-                  <CardDescription>Your cognitive strengths and advantages</CardDescription>
-                </CardHeader>
-                <CardContent>
+                  <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300 text-xs">
+                    {aiInsights ? 'Live AI Analysis' : 'Cognitive Synthesis'}
+                  </Badge>
+                </div>
+                <CardDescription>Your executive cognitive strengths and natural advantages</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingInsights ? (
+                  <div className="space-y-2 py-2">
+                    <div className="h-4 bg-green-100 dark:bg-green-950/40 animate-pulse rounded w-3/4" />
+                    <div className="h-4 bg-green-100 dark:bg-green-950/40 animate-pulse rounded w-5/6" />
+                    <div className="h-4 bg-green-100 dark:bg-green-950/40 animate-pulse rounded w-2/3" />
+                  </div>
+                ) : (
                   <ul className="space-y-3">
-                    {insights.strengths.map((strength, index) => (
+                    {displayedInsights.strengths.map((strength, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                         <span className="text-gray-700 dark:text-gray-300">{strength}</span>
                       </li>
                     ))}
                   </ul>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
 
             {/* Classroom Leadership Insights */}
             <Card className="border-2 border-orange-200 dark:border-orange-700 bg-gradient-to-br from-orange-50/30 to-white dark:from-orange-900/10 dark:to-gray-800">
               <CardHeader>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                  Classroom Leadership Insights
-                </CardTitle>
-                <CardDescription>How your cognitive profile translates to educational leadership</CardDescription>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    Classroom & Organizational Leadership Insights
+                  </CardTitle>
+                  <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-300 text-xs">
+                    {aiInsights ? 'AI Generated' : 'Synthesis'}
+                  </Badge>
+                </div>
+                <CardDescription>How your cognitive profile translates to high-impact leadership</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                  As a leader with {profile.learning.style.toLowerCase()} and {profile.thinking.style.toLowerCase()} tendencies, you naturally create environments that value {profile.thinking.style.includes('Creative') ? 'innovation and exploration' : 'structure and clarity'}. Your {profile.decisionMaking.style.toLowerCase()} approach means you handle classroom challenges by {profile.decisionMaking.style.includes('Intuitive') ? 'adapting quickly to student needs' : 'carefully evaluating the best course of action'}.
-                </p>
+                {isLoadingInsights ? (
+                  <div className="h-14 bg-orange-100/50 dark:bg-orange-950/30 rounded-lg animate-pulse flex items-center justify-center text-xs text-orange-700">
+                    Generating dynamic leadership synthesis...
+                  </div>
+                ) : (
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-normal">
+                    {displayedInsights.leadershipInsight || `As a leader with ${profile.learning.style.toLowerCase()} and ${profile.thinking.style.toLowerCase()} competencies, your ${profile.decisionMaking.style.toLowerCase()} approach drives thoughtful execution, team empowerment, and contextual problem-solving.`}
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -475,18 +519,28 @@ export function ProfessionalCognitiveResults({
             </Card>
 
             {/* Development Tips */}
-            {insights.recommendations.length > 0 && (
-              <Card className="border-2 border-blue-200 dark:border-blue-700 bg-gradient-to-br from-blue-50/30 to-white dark:from-blue-900/10 dark:to-gray-800">
-                <CardHeader>
+            <Card className="border-2 border-blue-200 dark:border-blue-700 bg-gradient-to-br from-blue-50/30 to-white dark:from-blue-900/10 dark:to-gray-800">
+              <CardHeader>
+                <div className="flex items-center justify-between">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    Development Tips
+                    Development Tips & Growth Actions
                   </CardTitle>
-                  <CardDescription>Personalized recommendations for continuous growth</CardDescription>
-                </CardHeader>
-                <CardContent>
+                  <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-300 text-xs">
+                    {aiInsights ? 'Live AI Strategies' : 'Recommendations'}
+                  </Badge>
+                </div>
+                <CardDescription>Personalized recommendations for continuous growth</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingInsights ? (
+                  <div className="space-y-2 py-2">
+                    <div className="h-4 bg-blue-100 dark:bg-blue-950/40 animate-pulse rounded w-4/5" />
+                    <div className="h-4 bg-blue-100 dark:bg-blue-950/40 animate-pulse rounded w-3/4" />
+                  </div>
+                ) : (
                   <ul className="space-y-3">
-                    {insights.recommendations.map((rec, index) => (
+                    {displayedInsights.recommendations.map((rec, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <div className="h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
                           <span className="text-blue-600 dark:text-blue-400 text-sm font-semibold">{index + 1}</span>
@@ -495,23 +549,34 @@ export function ProfessionalCognitiveResults({
                       </li>
                     ))}
                   </ul>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
 
             {/* Ideal Roles */}
-            {insights.idealRoles.length > 0 && (
-              <Card className="border-2 border-purple-200 dark:border-purple-700 bg-gradient-to-br from-purple-50/30 to-white dark:from-purple-900/10 dark:to-gray-800">
-                <CardHeader>
+            <Card className="border-2 border-purple-200 dark:border-purple-700 bg-gradient-to-br from-purple-50/30 to-white dark:from-purple-900/10 dark:to-gray-800">
+              <CardHeader>
+                <div className="flex items-center justify-between">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Briefcase className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                     Ideal Roles & Career Paths
                   </CardTitle>
-                  <CardDescription>Positions that align with your cognitive profile</CardDescription>
-                </CardHeader>
-                <CardContent>
+                  <Badge variant="outline" className="bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300 text-xs">
+                    {aiInsights ? 'AI Career Archetype' : 'Mapped Roles'}
+                  </Badge>
+                </div>
+                <CardDescription>Positions that align with your cognitive profile</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingInsights ? (
+                  <div className="flex gap-2 py-2">
+                    <div className="h-8 w-28 bg-purple-100 dark:bg-purple-950/40 animate-pulse rounded-md" />
+                    <div className="h-8 w-32 bg-purple-100 dark:bg-purple-950/40 animate-pulse rounded-md" />
+                    <div className="h-8 w-36 bg-purple-100 dark:bg-purple-950/40 animate-pulse rounded-md" />
+                  </div>
+                ) : (
                   <div className="flex flex-wrap gap-2">
-                    {insights.idealRoles.map((role, index) => (
+                    {displayedInsights.idealRoles.map((role, index) => (
                       <Badge 
                         key={index} 
                         variant="secondary" 
@@ -521,9 +586,9 @@ export function ProfessionalCognitiveResults({
                       </Badge>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
 
             {/* Job Role Fit Analysis */}
             {roleProfiles.length > 0 && (
