@@ -1,7 +1,11 @@
 import { Hono } from 'npm:hono';
 import { logAiUsage } from './superadmin-routes.tsx';
+import { requireUser } from './require-auth.tsx';
 
 const aiRoutes = new Hono();
+
+// Every /ai/* route calls OpenAI with the platform key, so require a signed-in user.
+aiRoutes.use('*', requireUser());
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
