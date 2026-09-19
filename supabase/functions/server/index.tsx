@@ -21,6 +21,7 @@ import leaderboardRoutes from './leaderboard-routes.tsx';
 import superadminRoutes from './superadmin-routes.tsx';
 import featureFlagsRoutes from './feature-flags-routes.tsx';
 import { isPlatformAdmin } from './platform-admin.tsx';
+import { secretStripper, stripSecrets } from './sanitize.tsx';
 import itemBankRoutes from './item-bank-routes.tsx';
 import assessmentSessionRoutes from './assessment-session-routes.tsx';
 import professionalProfileRoutes from './professional-profile-routes.tsx';
@@ -38,6 +39,8 @@ const globalLimiter = rateLimiter({
 });
 
 // Middleware
+// Outermost: guarantees server-only profile secrets (_internalAuth) never leave in a JSON response.
+app.use('*', secretStripper());
 app.use('*', cors());
 app.use('*', logger(console.log));
 app.use('*', globalLimiter);
@@ -6320,7 +6323,7 @@ app.post('/make-server-fc8eb847/student-code/signin', async (c) => {
       id: authData.user.id,
       email: authData.user.email,
       ...authData.user.user_metadata,
-      ...userProfile
+      ...stripSecrets(userProfile)
     };
     
     return c.json({ 

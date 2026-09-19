@@ -9,11 +9,16 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 aiRoutes.post('/chat', async (c) => {
   try {
-    const { messages, userProfile } = await c.req.json();
+    const { messages, userProfile, maxTokens, json } = await c.req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return c.json({ error: 'Messages array is required' }, 400);
     }
+
+    // Optional, clamped knobs so clients can request structured (JSON) output
+    // that doesn't fit the default chat budget. Defaults are unchanged.
+    const requestedTokens = Number(maxTokens);
+    const tokenBudget = Number.isFinite(requestedTokens) && requestedTokens > 0 ? Math.min(Math.floor(requestedTokens), 1500) : 600;
 
     const systemMessage = {
       role: 'system',
@@ -36,7 +41,8 @@ Keep your answers structured, actionable, warm, and supportive. Use markdown for
           model: 'gpt-4o-mini',
           messages: [systemMessage, ...messages],
           temperature: 0.7,
-          max_tokens: 600
+          max_tokens: tokenBudget,
+          ...(json === true ? { response_format: { type: 'json_object' } } : {})
         })
       });
 
