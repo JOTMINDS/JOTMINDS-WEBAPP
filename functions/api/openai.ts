@@ -7,7 +7,10 @@ export async function onRequestPost(context) {
     if (!env.OPENAI_API_KEY) {
       return new Response(JSON.stringify({ error: "Server missing OPENAI_API_KEY environment variable" }), {
         status: 500,
-        headers: { "Content-Type": "application/json" }
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
       });
     }
 
@@ -23,15 +26,19 @@ export async function onRequestPost(context) {
     const data = await response.json();
 
     return new Response(JSON.stringify(data), {
+      status: response.status,
       headers: { 
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*"
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
     });
   }
 }
