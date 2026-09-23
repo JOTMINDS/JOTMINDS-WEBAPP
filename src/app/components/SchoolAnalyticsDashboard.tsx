@@ -49,6 +49,40 @@ interface StudentSummary {
 const RISK_COLORS = { high: '#DC2626', medium: '#E0A020', low: '#1E8A6E', unassessed: '#9ca3af' };
 const RISK_LABELS = { high: 'At Risk', medium: 'Needs Support', low: 'On Track', unassessed: 'Not Started' };
 
+export const determinePrimaryStyle = (scores: any, type: string): string => {
+  if (!scores || typeof scores !== 'object') return 'Unknown';
+  if (scores.style && typeof scores.style === 'string') return scores.style;
+
+  if (type === 'kolb' || type === 'learning') {
+    const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores as any;
+    const acCE = AC - CE;
+    const aeRO = AE - RO;
+    
+    if (acCE > 0 && aeRO > 0) return 'Converging';
+    if (acCE > 0 && aeRO < 0) return 'Assimilating';
+    if (acCE < 0 && aeRO < 0) return 'Diverging';
+    return 'Accommodating';
+  } else if (type === 'sternberg') {
+    const { analytical = 0, creative = 0, practical = 0 } = scores as any;
+    if (analytical >= creative && analytical >= practical) return 'Analytical';
+    if (creative >= analytical && creative >= practical) return 'Creative';
+    return 'Practical';
+  } else if (type === 'dual-process' || type === 'decision') {
+    const sys1 = scores.system1 ?? scores.intuitive ?? scores.Intuitive;
+    const sys2 = scores.system2 ?? scores.reflective ?? scores.Reflective;
+    if (sys1 != null && sys2 != null) {
+      return sys1 > sys2 ? 'Intuitive' : 'Reflective';
+    }
+    const validEntries = Object.entries(scores).filter(([k, v]) => typeof v === 'number' && k !== 'total');
+    if (validEntries.length > 0) {
+      validEntries.sort((a, b) => (b[1] as number) - (a[1] as number));
+      return validEntries[0][0];
+    }
+    return 'Balanced';
+  }
+  return 'Unknown';
+};
+
 export function getStudentCognitiveStyles(assessments: Assessment[]) {
   let learningStyle = 'Pending';
   let thinkingStyle = 'Pending';
@@ -59,13 +93,19 @@ export function getStudentCognitiveStyles(assessments: Assessment[]) {
     const aScore = a.score as any;
     if (aType === 'kolb' || aType === 'learning') {
       const s = aScore?.kolb?.style || aScore?.learning?.style;
-      if (s) learningStyle = s;
+      if (s && s !== 'Unknown') learningStyle = s;
     } else if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(aType)) {
       const s = aScore?.sternberg?.style || aScore?.thinking?.style || aScore?.style;
-      if (s) thinkingStyle = s;
+      if (s && s !== 'Unknown') thinkingStyle = s;
     } else if (aType === 'dual-process' || aType === 'decision') {
       const s = aScore?.dualProcess?.style || aScore?.decision?.style || aScore?.style;
-      if (s) decisionStyle = s;
+      if (s && s !== 'Unknown') {
+        decisionStyle = s;
+      } else {
+        const raw = aScore?.decision?.scores || aScore?.dualProcess?.scores || aScore?.decision || aScore?.dualProcess || aScore;
+        const fallback = determinePrimaryStyle(raw, 'decision');
+        if (fallback !== 'Unknown') decisionStyle = fallback;
+      }
     }
   });
 
@@ -84,6 +124,84 @@ function getGradeLabel(u: User): string {
   return 'General';
 }
 
+export function calculateStudentEngagementAndRisk(
+  user: User,
+  assessments: Assessment[],
+  completedTypes: string[],
+  normalizedAvgScore: number,
+  localEng?: any,
+  gamProfile?: any
+): { engagementScore: number; risk: 'high' | 'medium' | 'low' | 'unassessed' } {
+  if (assessments.length === 0) {
+    return {
+      engagementScore: localEng && localEng.engagementScore > 0 ? localEng.engagementScore : 0,
+      risk: 'unassessed'
+    };
+  }
+
+  // Calculate recency
+  let daysSince = 999;
+  const timestamps = assessments
+    .map(a => a.completedAt ? new Date(a.completedAt).getTime() : 0)
+    .filter(t => !isNaN(t) && t > 0);
+  if (timestamps.length > 0) {
+    const latestTime = Math.max(...timestamps);
+    daysSince = (Date.now() - latestTime) / (1000 * 60 * 60 * 24);
+  }
+
+  // 1. Engagement Score Calculation
+  let engScore = 0;
+  if (localEng && localEng.engagementScore > 0) {
+    engScore = localEng.engagementScore;
+  } else {
+    // Platform-derived engagement: completing assessments represents direct cognitive engagement
+    const baseByTypes = completedTypes.length >= 3 ? 80 : completedTypes.length === 2 ? 65 : 45;
+    
+    let recencyBonus = 0;
+    if (timestamps.length > 0) {
+      if (daysSince <= 14) {
+        recencyBonus = 10;
+      } else if (daysSince <= 35) {
+        recencyBonus = 5;
+      } else if (daysSince >= 45 && completedTypes.length === 1) {
+        recencyBonus = -18;
+      } else if (daysSince >= 60) {
+        recencyBonus = -20;
+      }
+    }
+
+    const xpBonus = gamProfile?.xp ? Math.min(10, Math.floor(gamProfile.xp / 100)) : 0;
+    const streakBonus = gamProfile?.currentStreak ? Math.min(5, gamProfile.currentStreak * 2) : 0;
+
+    engScore = Math.max(15, Math.min(100, baseByTypes + recencyBonus + xpBonus + streakBonus));
+  }
+
+  // 2. Normalized Dimension Gaps
+  const dimensionScores: number[] = [];
+  assessments.forEach(a => {
+    extractDimensionScores(a).forEach(({ name, score }) => {
+      const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(name);
+      const max = isKolb ? 48 : (score <= 30 ? 30 : 100);
+      const pct = Math.min(100, Math.round((score / max) * 100));
+      dimensionScores.push(pct);
+    });
+  });
+
+  const criticalGaps = dimensionScores.filter(pct => pct < 35).length;
+
+  // 3. Multi-Factor Risk Classification
+  let risk: 'high' | 'medium' | 'low' = 'low';
+  if (engScore < 30 || criticalGaps >= 3 || (normalizedAvgScore > 0 && normalizedAvgScore < 30) || (assessments.length > 0 && daysSince >= 60)) {
+    risk = 'high';
+  } else if (completedTypes.length < 2 || engScore < 65 || criticalGaps > 0 || (normalizedAvgScore > 0 && normalizedAvgScore < 50)) {
+    risk = 'medium';
+  } else {
+    risk = 'low';
+  }
+
+  return { engagementScore: engScore, risk };
+}
+
 function buildSummary(u: User): StudentSummary {
   const assessments = getAssessmentsByUserId(u.id).filter((a: Assessment) => a.completedAt && a.score);
   const eng = getEngagementMetrics(u.id);
@@ -96,20 +214,34 @@ function buildSummary(u: User): StudentSummary {
     return a.type;
   }))];
 
-  const allScores = assessments.flatMap((a: Assessment) => extractDimensionScores(a).map((d: { name: string; score: number }) => d.score));
-  const avgScore = allScores.length ? Math.round(allScores.reduce((s: number, v: number) => s + v, 0) / allScores.length) : 0;
-  const engScore = eng?.engagementScore ?? 0;
+  const allNormalizedScores = assessments.flatMap((a: Assessment) => {
+    return extractDimensionScores(a).map((d: { name: string; score: number }) => {
+      const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(d.name);
+      const max = isKolb ? 48 : (d.score <= 30 ? 30 : 100);
+      return Math.min(100, Math.round((d.score / max) * 100));
+    });
+  });
+  const avgScore = allNormalizedScores.length 
+    ? Math.round(allNormalizedScores.reduce((s: number, v: number) => s + v, 0) / allNormalizedScores.length) 
+    : 0;
+
+  const { engagementScore, risk } = calculateStudentEngagementAndRisk(u, assessments, completedTypes, avgScore, eng, gam);
   const streak = gam?.currentStreak ?? 0;
   const xp = gam?.xp ?? 0;
 
-  let risk: StudentSummary['risk'] = 'unassessed';
-  if (assessments.length > 0) {
-    if (engScore < 25 || (avgScore > 0 && avgScore < 20)) risk = 'high';
-    else if (engScore < 50 || completedTypes.length < 2) risk = 'medium';
-    else risk = 'low';
-  }
-
-  return { user: u, assessmentCount: assessments.length, completedTypes, avgScore, engagementScore: engScore, streak, xp, risk, gradeLevel: getGradeLabel(u), assessments };
+  return {
+    user: u,
+    assessmentCount: assessments.length,
+    completedTypes,
+    avgScore,
+    engagementScore,
+    streak,
+    xp,
+    risk,
+    gradeLevel: getGradeLabel(u),
+    assessments,
+    styles: getStudentCognitiveStyles(assessments)
+  };
 }
 
 export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMembers }: SchoolAnalyticsDashboardProps) {
@@ -127,6 +259,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
   const [classAId, setClassAId] = useState<string>('');
   const [classBId, setClassBId] = useState<string>('');
   const [selectedStudentForModal, setSelectedStudentForModal] = useState<StudentSummary | null>(null);
+  const [modalInitialTab, setModalInitialTab] = useState<'profile' | 'diagnostic' | 'strategies' | 'progress'>('profile');
 
   const students = useMemo(() => {
     const localUsers = getAllUsers();
@@ -213,28 +346,6 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
           rawAssessments = response;
         }
         
-        const determinePrimaryStyle = (scores: AssessmentScore, type: string) => {
-          if (type === 'kolb' || type === 'learning') {
-            const { CE = 0, RO = 0, AC = 0, AE = 0 } = scores as any;
-            const acCE = AC - CE;
-            const aeRO = AE - RO;
-            
-            if (acCE > 0 && aeRO > 0) return 'Converging';
-            if (acCE > 0 && aeRO < 0) return 'Assimilating';
-            if (acCE < 0 && aeRO < 0) return 'Diverging';
-            return 'Accommodating';
-          } else if (type === 'sternberg') {
-            const { analytical = 0, creative = 0, practical = 0 } = scores as any;
-            if (analytical >= creative && analytical >= practical) return 'Analytical';
-            if (creative >= analytical && creative >= practical) return 'Creative';
-            return 'Practical';
-          } else if (type === 'dual-process') {
-            const { system1 = 0, system2 = 0 } = scores as any;
-            return system1 > system2 ? 'Intuitive' : 'Reflective';
-          }
-          return 'Unknown';
-        };
-
         const grouped: Record<string, Assessment[]> = {};
         
         rawAssessments.forEach((assessment: any) => {
@@ -250,9 +361,10 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
           } else if (assessmentType === 'sternberg') {
             const style = determinePrimaryStyle(results, 'sternberg');
             score.sternberg = { style, scores: results };
-          } else if (assessmentType === 'dual-process') {
-            const style = determinePrimaryStyle(results, 'dual-process');
+          } else if (assessmentType === 'dual-process' || assessmentType === 'decision') {
+            const style = determinePrimaryStyle(results, assessmentType);
             score.dualProcess = { style, scores: results };
+            score.decision = { style, scores: results };
           } else {
             score[assessmentType] = results;
           }
@@ -304,25 +416,27 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         return a.type;
       }))];
 
-      const allScores = assessments.flatMap((a: Assessment) => extractDimensionScores(a).map((d: { name: string; score: number }) => d.score));
-      const avgScore = allScores.length ? Math.round(allScores.reduce((s: number, v: number) => s + v, 0) / allScores.length) : 0;
-      const engScore = eng?.engagementScore ?? 0;
+      const allNormalizedScores = assessments.flatMap((a: Assessment) => {
+        return extractDimensionScores(a).map((d: { name: string; score: number }) => {
+          const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(d.name);
+          const max = isKolb ? 48 : (d.score <= 30 ? 30 : 100);
+          return Math.min(100, Math.round((d.score / max) * 100));
+        });
+      });
+      const avgScore = allNormalizedScores.length 
+        ? Math.round(allNormalizedScores.reduce((s: number, v: number) => s + v, 0) / allNormalizedScores.length) 
+        : 0;
+
+      const { engagementScore, risk } = calculateStudentEngagementAndRisk(u, assessments, completedTypes, avgScore, eng, gam);
       const streak = gam?.currentStreak ?? 0;
       const xp = gam?.xp ?? 0;
-
-      let risk: StudentSummary['risk'] = 'unassessed';
-      if (assessments.length > 0) {
-        if (engScore < 25 || (avgScore > 0 && avgScore < 20)) risk = 'high';
-        else if (engScore < 50 || completedTypes.length < 2) risk = 'medium';
-        else risk = 'low';
-      }
 
       return {
         user: u,
         assessmentCount: assessments.length,
         completedTypes,
         avgScore,
-        engagementScore: engScore,
+        engagementScore,
         streak,
         xp,
         risk,
@@ -462,7 +576,19 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
   const insights = useMemo(() => {
     const list: { type: 'warning' | 'success' | 'info'; title: string; body: string }[] = [];
-    if (stats.riskCounts.high > 0) list.push({ type: 'warning', title: `${stats.riskCounts.high} students at high risk`, body: `${pct(stats.riskCounts.high)} of students have low engagement. Schedule individual check-ins.` });
+    if (stats.riskCounts.high > 0) {
+      list.push({
+        type: 'warning',
+        title: `${stats.riskCounts.high} student${stats.riskCounts.high > 1 ? 's' : ''} at high risk`,
+        body: `${pct(stats.riskCounts.high)} of students have low engagement or severe cognitive gaps. Schedule individual check-ins.`
+      });
+    } else if (stats.riskCounts.low > 0) {
+      list.push({
+        type: 'success',
+        title: `${stats.riskCounts.low} student${stats.riskCounts.low > 1 ? 's' : ''} on track`,
+        body: `${pct(stats.riskCounts.low)} of students demonstrate consistent engagement and balanced cognitive profiles.`
+      });
+    }
     if (stats.assessed / Math.max(stats.total, 1) < 0.5) list.push({ type: 'warning', title: 'Low assessment uptake', body: `Only ${pct(stats.assessed)} of students have completed at least one assessment.` });
     if (stats.typeCompletion.decision < stats.total * 0.3) list.push({ type: 'info', title: 'Decision assessment underused', body: `Only ${stats.typeCompletion.decision} students completed the Decision Style assessment.` });
     if (stats.avgEng >= 60) list.push({ type: 'success', title: 'Strong engagement', body: `Average engagement score of ${stats.avgEng}/100 across assessed students.` });
@@ -491,7 +617,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       }
     }).then(res => {
       if (res) setAiSchoolReport(res);
-    }).catch(err => console.error('School AI report error:', err))
+    }).catch(err => console.error('School report error:', err))
       .finally(() => setIsGeneratingAiReport(false));
   };
 
@@ -838,14 +964,32 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                         <Badge style={{ backgroundColor: RISK_COLORS[s.risk] + '20', color: RISK_COLORS[s.risk] }} className="text-[10px] font-medium">{RISK_LABELS[s.risk]}</Badge>
                       </td>
                       <td className="px-4 py-2.5 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedStudentForModal(s)}
-                          className="h-7 px-2.5 text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 border-indigo-200 font-medium"
-                        >
-                          <Eye className="w-3 h-3 mr-1" /> Profile
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {s.risk !== 'low' && s.risk !== 'unassessed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedStudentForModal(s);
+                                setModalInitialTab('diagnostic');
+                              }}
+                              className="h-7 px-2 text-[11px] text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200 font-semibold"
+                            >
+                              <Zap className="w-3 h-3 mr-1 text-amber-600" /> Diagnose
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedStudentForModal(s);
+                              setModalInitialTab('profile');
+                            }}
+                            className="h-7 px-2.5 text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 border-indigo-200 font-medium"
+                          >
+                            <Eye className="w-3 h-3 mr-1" /> Profile
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -862,7 +1006,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                 <div className="flex justify-between items-center pb-4 border-b mb-4">
                   <div className="flex items-center gap-2">
                     <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold text-xs">
-                      Student Cognitive Profile
+                      Student Cognitive Profile & Diagnostic
                     </Badge>
                     <span className="font-bold text-gray-900">{selectedStudentForModal.user.name}</span>
                   </div>
@@ -873,6 +1017,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                 <StudentDetailView
                   student={selectedStudentForModal.user}
                   assessments={selectedStudentForModal.assessments}
+                  initialTab={modalInitialTab}
                   onBack={() => setSelectedStudentForModal(null)}
                 />
               </div>
@@ -1557,9 +1702,13 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   <div className="flex gap-3">
                     <div className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs mt-0.5">4</div>
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-900">Review "At Risk" Students</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">Review "At Risk" & Needs Support Students</h4>
                       <p className="text-xs text-gray-600 mt-1">
-                        You have {stats.riskCounts.high} students in the "At Risk" category (Engagement &lt; 25). Assign targeted interventions to these students to quickly bring up the school average of {stats.avgEng}/100.
+                        {stats.riskCounts.high > 0 ? (
+                          <>You have {stats.riskCounts.high} student{stats.riskCounts.high > 1 ? 's' : ''} in the "At Risk" category (severe engagement drop or persistent cognitive gaps). Assign targeted interventions to these students to quickly bring up the school average of {stats.avgEng}/100.</>
+                        ) : (
+                          <>No students are currently flagged as high risk. Focus on encouraging the {stats.riskCounts.medium} student{stats.riskCounts.medium === 1 ? '' : 's'} who need support to achieve full assessment completion and maintain strong engagement.</>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -1570,7 +1719,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         </>)}
 
         {tab === 'insights' && (<>
-          {/* AI School Executive Advisor Card */}
+          {/* School Executive Advisor Card */}
           <Card className="border-2 border-indigo-200 bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-blue-50/80 shadow-md mb-6">
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1685,16 +1834,39 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             </Card>
           ))}
           {summaries.filter(s => s.risk === 'high').length > 0 && (
-            <Card className="border-l-4 border-l-red-500">
-              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-500" />Priority Interventions</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                {summaries.filter(s => s.risk === 'high').slice(0, 5).map(s => (
-                  <div key={s.user.id} className="flex items-center justify-between p-2 bg-red-50 rounded-lg">
+            <Card className="border-l-4 border-l-red-500 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  Priority Interventions & Risk Diagnostics
+                </CardTitle>
+                <Badge variant="outline" className="text-xs text-red-700 bg-red-50 border-red-200 font-semibold">
+                  {summaries.filter(s => s.risk === 'high').length} Students Need Action
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-2.5">
+                {summaries.filter(s => s.risk === 'high').slice(0, 6).map(s => (
+                  <div key={s.user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-red-50/70 border border-red-100 rounded-xl gap-2">
                     <div>
-                      <p className="text-sm text-red-900">{s.user.name}</p>
-                      <p className="text-[10px] text-red-600">Engagement: {s.engagementScore}/100 · {s.assessmentCount} assessments</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-red-950">{s.user.name}</p>
+                        <Badge className="bg-red-200 text-red-900 text-[10px] font-semibold">Priority Support</Badge>
+                      </div>
+                      <p className="text-xs text-red-700 mt-0.5">
+                        Engagement: {s.engagementScore}/100 · {s.assessmentCount}/3 completed · {s.user.className || s.gradeLevel || 'Class N/A'}
+                      </p>
                     </div>
-                    <Badge className="bg-red-100 text-red-800 text-[10px]">Action needed</Badge>
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        setSelectedStudentForModal(s);
+                        setModalInitialTab('diagnostic');
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 self-start sm:self-auto h-8 px-3"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-300" />
+                      Run Diagnostic
+                    </Button>
                   </div>
                 ))}
               </CardContent>

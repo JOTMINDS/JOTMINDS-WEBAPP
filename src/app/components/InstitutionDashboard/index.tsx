@@ -648,7 +648,7 @@ export function InstitutionDashboard({
             className="relative flex items-center justify-center gap-2 h-12 px-5 rounded-full shadow-xl bg-gradient-to-r from-[#6B4C9A] to-[#5B7DB1] text-white hover:opacity-95 transition-transform hover:scale-105"
           >
             <Sparkles className="h-4 w-4 text-amber-300" />
-            <span className="font-semibold text-xs tracking-wide">Ask Jotti AI</span>
+            <span className="font-semibold text-xs tracking-wide">Ask Jotti</span>
           </button>
         </div>
       </div>

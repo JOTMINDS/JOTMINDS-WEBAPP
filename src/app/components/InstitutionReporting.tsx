@@ -11,8 +11,9 @@ import { getAllAssessmentResults } from '../utils/api';
 import { getAllUsers, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { InstitutionMember } from '../utils/institution';
 import { generateSchoolSummaryPDF } from '../utils/pdfGenerator';
-import { getStudentCognitiveStyles } from './SchoolAnalyticsDashboard';
+import { getStudentCognitiveStyles, calculateStudentEngagementAndRisk } from './SchoolAnalyticsDashboard';
 import { getEngagementMetrics } from '../utils/engagementTracking';
+import { extractDimensionScores } from '../utils/cognitiveXP';
 
 export const formatAssessmentType = (type: string) => {
   if (!type || type === 'unknown') return 'Assessment';
@@ -140,11 +141,26 @@ export function InstitutionReporting({
       const teacher = studentClass?.classTeacherId ? teachers.find(t => t.userId === studentClass.classTeacherId) : null;
       const eng = getEngagementMetrics(stu.id);
 
-      const isAssessed = stuAssessments.length > 0;
-      let riskStatus = 'On Track';
-      if (!isAssessed) riskStatus = 'Unassessed';
-      else if (eng && eng.engagementScore < 30) riskStatus = 'Priority Support';
-      else if (eng && eng.engagementScore < 60) riskStatus = 'Needs Support';
+      const completedTypes = [...new Set(stuAssessments.map((a: Assessment) => {
+        if (['kolb', 'vark', 'learning'].includes(a.type)) return 'learning';
+        if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(a.type)) return 'thinking';
+        if (a.type === 'dual-process' || (a.type as any) === 'decision') return 'decision';
+        return a.type;
+      }))];
+
+      const allNormalizedScores = stuAssessments.flatMap((a: Assessment) => {
+        return extractDimensionScores(a).map((d: { name: string; score: number }) => {
+          const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(d.name);
+          const max = isKolb ? 48 : (d.score <= 30 ? 30 : 100);
+          return Math.min(100, Math.round((d.score / max) * 100));
+        });
+      });
+      const avgScore = allNormalizedScores.length 
+        ? Math.round(allNormalizedScores.reduce((s: number, v: number) => s + v, 0) / allNormalizedScores.length) 
+        : 0;
+
+      const { engagementScore, risk } = calculateStudentEngagementAndRisk(stu, stuAssessments, completedTypes, avgScore, eng);
+      const riskStatus = risk === 'unassessed' ? 'Unassessed' : risk === 'high' ? 'Priority Support' : risk === 'medium' ? 'Needs Support' : 'On Track';
 
       const latestCompleted = stuAssessments
         .filter(a => a.completedAt)
@@ -158,7 +174,7 @@ export function InstitutionReporting({
         teacherId: studentClass?.classTeacherId,
         assessments: stuAssessments,
         styles,
-        engagementScore: eng?.engagementScore ?? 75,
+        engagementScore,
         riskStatus,
         lastCompletedDate: latestCompleted?.completedAt ? new Date(latestCompleted.completedAt).toLocaleDateString() : '—'
       };

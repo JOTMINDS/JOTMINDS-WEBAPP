@@ -410,11 +410,11 @@ export function ProfessionalAssessmentReport({
               </p>
             </div>
             
-            {/* AI Executive Summary */}
+            {/* Cognitive Executive Summary */}
             <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
               <div className="flex items-center gap-2 mb-3">
                 <Brain className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-semibold text-indigo-900">JotMinds AI Analysis</h3>
+                <h3 className="font-semibold text-indigo-900">JotMinds Cognitive Analysis</h3>
               </div>
               {isGeneratingAI ? (
                 <div className="flex flex-col items-center justify-center py-4 space-y-3 animate-pulse">
@@ -435,7 +435,7 @@ export function ProfessionalAssessmentReport({
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 italic">AI analysis unavailable.</p>
+                <p className="text-sm text-gray-500 italic">Cognitive analysis unavailable.</p>
               )}
             </div>
           </CardHeader>

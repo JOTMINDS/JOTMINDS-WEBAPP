@@ -900,7 +900,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     {isGeneratingAI ? (
                       <div className="flex flex-col items-center justify-center p-8 space-y-4 animate-pulse">
                         <Brain className="w-12 h-12 text-primary/50 animate-bounce" />
-                        <p className="text-muted-foreground font-medium">JotMinds AI is analyzing your profile...</p>
+                        <p className="text-muted-foreground font-medium">JotMinds is analyzing your cognitive profile...</p>
                         <div className="w-full max-w-sm bg-muted rounded-full h-2 overflow-hidden">
                           <div className="bg-primary h-full rounded-full w-2/3 animate-pulse"></div>
                         </div>

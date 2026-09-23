@@ -221,11 +221,11 @@ export function ProfessionalCognitiveResults({
               </p>
             </div>
             
-            {/* AI Executive Summary */}
+            {/* Cognitive Executive Summary */}
             <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-5 border border-blue-100 dark:border-blue-800">
               <div className="flex items-center gap-2 mb-3">
                 <Brain className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="font-semibold text-indigo-900 dark:text-indigo-300">JotMinds AI Analysis</h3>
+                <h3 className="font-semibold text-indigo-900 dark:text-indigo-300">JotMinds Cognitive Analysis</h3>
               </div>
               {isGeneratingAI ? (
                 <div className="flex flex-col items-center justify-center py-4 space-y-3 animate-pulse">
@@ -246,7 +246,7 @@ export function ProfessionalCognitiveResults({
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 italic">AI analysis unavailable.</p>
+                <p className="text-sm text-gray-500 italic">Cognitive analysis unavailable.</p>
               )}
             </div>
           </CardHeader>
@@ -467,7 +467,7 @@ export function ProfessionalCognitiveResults({
                     Classroom & Organizational Leadership Insights
                   </CardTitle>
                   <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-300 text-xs">
-                    {aiInsights ? 'AI Generated' : 'Synthesis'}
+                    {aiInsights ? 'Dynamic Synthesis' : 'Synthesis'}
                   </Badge>
                 </div>
                 <CardDescription>How your cognitive profile translates to high-impact leadership</CardDescription>
@@ -479,7 +479,7 @@ export function ProfessionalCognitiveResults({
                   </div>
                 ) : (
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-normal">
-                    {displayedInsights.leadershipInsight || `As a leader with ${profile.learning.style.toLowerCase()} and ${profile.thinking.style.toLowerCase()} competencies, your ${profile.decisionMaking.style.toLowerCase()} approach drives thoughtful execution, team empowerment, and contextual problem-solving.`}
+                    {(displayedInsights as any).leadershipInsight || `As a leader with ${profile.learning.style.toLowerCase()} and ${profile.thinking.style.toLowerCase()} competencies, your ${profile.decisionMaking.style.toLowerCase()} approach drives thoughtful execution, team empowerment, and contextual problem-solving.`}
                   </p>
                 )}
               </CardContent>

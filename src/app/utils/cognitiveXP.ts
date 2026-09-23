@@ -50,7 +50,7 @@ export const COGNITIVE_LEVELS: CognitiveLevel[] = [
   { level: 2, title: 'Curious Thinker', subtitle: 'Questions everything', minXP: 500, maxXP: 1200, color: '#3b82f6', icon: '🔍', perks: ['Brain Gym', 'Profile sharing'] },
   { level: 3, title: 'Pattern Seeker', subtitle: 'Connects the dots', minXP: 1200, maxXP: 2200, color: '#8b5cf6', icon: '🧩', perks: ['Advanced profile', 'Skill builder'] },
   { level: 4, title: 'Mind Mapper', subtitle: 'Charts new territory', minXP: 2200, maxXP: 3500, color: '#f59e0b', icon: '🗺️', perks: ['Weekly challenges', 'Career recs'] },
-  { level: 5, title: 'Strategy Builder', subtitle: 'Plans with precision', minXP: 3500, maxXP: 5000, color: '#ef4444', icon: '⚡', perks: ['AI Coach', 'Study planner'] },
+  { level: 5, title: 'Strategy Builder', subtitle: 'Plans with precision', minXP: 3500, maxXP: 5000, color: '#ef4444', icon: '⚡', perks: ['Cognitive Coach', 'Study planner'] },
   { level: 6, title: 'Insight Architect', subtitle: 'Designs understanding', minXP: 5000, maxXP: 7000, color: '#06b6d4', icon: '🏛️', perks: ['Analytics', 'Peer compare'] },
   { level: 7, title: 'Neural Navigator', subtitle: 'Masters complexity', minXP: 7000, maxXP: 9500, color: '#ec4899', icon: '🧭', perks: ['Expert challenges', 'Mentor match'] },
   { level: 8, title: 'Cognitive Catalyst', subtitle: 'Sparks transformation', minXP: 9500, maxXP: 12500, color: '#f97316', icon: '💎', perks: ['Leaderboard', 'Teacher insights'] },
@@ -143,7 +143,7 @@ const ACTIVITY_LABELS: Record<XPActivityType, string> = {
   weekly_challenge: 'Weekly challenge',
   badge_earned: 'Earned a badge',
   profile_view: 'Viewed cognitive profile',
-  ai_coach_session: 'AI Coach session',
+  ai_coach_session: 'Cognitive Coach session',
   milestone_achieved: 'Milestone unlocked!',
 };
 
@@ -214,10 +214,22 @@ export function extractDimensionScores(assessment: any): { name: string; score: 
   if (s.dualProcess?.scores) {
     const d = s.dualProcess.scores;
     // Handle both naming conventions
-    const intuitiveScore = d.system1 ?? d.intuitive;
-    const reflectiveScore = d.system2 ?? d.reflective;
+    const intuitiveScore = d.system1 ?? d.intuitive ?? d.Intuitive;
+    const reflectiveScore = d.system2 ?? d.reflective ?? d.Reflective;
     if (intuitiveScore != null) result.push({ name: 'Intuitive', score: intuitiveScore });
     if (reflectiveScore != null) result.push({ name: 'Reflective', score: reflectiveScore });
+  }
+
+  // Decision assessment (stores styles like Data-Driven, Collaborative, Intuitive, Spontaneous)
+  if (s.decision?.scores || s.decision) {
+    const dec = s.decision?.scores || s.decision;
+    if (dec && typeof dec === 'object') {
+      ['Data-Driven', 'Collaborative', 'Intuitive', 'Spontaneous', 'Deliberate', 'Reflective'].forEach(k => {
+        if (typeof dec[k] === 'number') {
+          result.push({ name: k, score: dec[k] });
+        }
+      });
+    }
   }
 
   // JHS thinking style
