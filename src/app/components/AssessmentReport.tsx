@@ -217,28 +217,28 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           name: 'Concrete Experience', 
           shortName: 'CE',
           value: assessment.score.kolb.scores.CE || 0,
-          color: 'var(--chart-1)',
+          color: '#1FC8E1',
           description: 'Learning through feeling and experience'
         },
         { 
           name: 'Reflective Observation', 
           shortName: 'RO',
           value: assessment.score.kolb.scores.RO || 0,
-          color: 'var(--chart-2)',
+          color: '#7B61FF',
           description: 'Learning through watching and reflecting'
         },
         { 
           name: 'Abstract Conceptualization', 
           shortName: 'AC',
           value: assessment.score.kolb.scores.AC || 0,
-          color: 'var(--chart-3)',
+          color: '#FF715B',
           description: 'Learning through thinking and analyzing'
         },
         { 
           name: 'Active Experimentation', 
           shortName: 'AE',
           value: assessment.score.kolb.scores.AE || 0,
-          color: 'var(--chart-4)',
+          color: '#2C2E83',
           description: 'Learning through doing and testing'
         },
       ];
@@ -247,19 +247,19 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
         { 
           name: 'Analytical', 
           value: assessment.score.sternberg.scores.analytical || 0,
-          color: 'var(--chart-1)',
+          color: '#1FC8E1',
           description: 'Critical thinking and problem analysis'
         },
         { 
           name: 'Creative', 
           value: assessment.score.sternberg.scores.creative || 0,
-          color: 'var(--chart-2)',
+          color: '#7B61FF',
           description: 'Innovation and imaginative thinking'
         },
         { 
           name: 'Practical', 
           value: assessment.score.sternberg.scores.practical || 0,
-          color: 'var(--chart-3)',
+          color: '#FF715B',
           description: 'Real-world application and common sense'
         },
       ];
@@ -278,13 +278,13 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
         { 
           name: 'Intuitive (System 1)', 
           value: system1Score,
-          color: 'var(--chart-1)',
+          color: '#1FC8E1',
           description: 'Fast, automatic, intuitive decisions'
         },
         { 
           name: 'Reflective (System 2)', 
           value: system2Score,
-          color: 'var(--chart-2)',
+          color: '#7B61FF',
           description: 'Slow, deliberate, analytical decisions'
         },
       ];
@@ -308,10 +308,10 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
       }
 
       return [
-        { name: 'Creative', value: actualScores.creative || actualScores.Creative || 0, color: 'var(--chart-1)' },
-        { name: 'Analytical', value: actualScores.analytical || actualScores.Analytical || 0, color: 'var(--chart-2)' },
-        { name: 'Practical', value: actualScores.practical || actualScores.Practical || 0, color: 'var(--chart-3)' },
-        { name: 'Reflective', value: actualScores.reflective || actualScores.Reflective || 0, color: 'var(--chart-4)' }
+        { name: 'Creative', value: actualScores.creative || actualScores.Creative || 0, color: '#1FC8E1' },
+        { name: 'Analytical', value: actualScores.analytical || actualScores.Analytical || 0, color: '#7B61FF' },
+        { name: 'Practical', value: actualScores.practical || actualScores.Practical || 0, color: '#FF715B' },
+        { name: 'Reflective', value: actualScores.reflective || actualScores.Reflective || 0, color: '#2C2E83' }
       ].filter(item => item.value > 0);
     }
     return [];
@@ -524,8 +524,8 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                           <defs>
                             {chartData.map((item: any, index: number) => (
                               <linearGradient key={`kolb-gradient-def-${index}`} id={`kolb-gradient-${index}`} x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor={item.color} stopOpacity={0.8} />
-                                <stop offset="100%" stopColor={item.color} stopOpacity={0.4} />
+                                <stop offset="0%" stopColor={item.color} stopOpacity={0.85} style={{ stopColor: item.color }} />
+                                <stop offset="100%" stopColor={item.color} stopOpacity={0.45} style={{ stopColor: item.color }} />
                               </linearGradient>
                             ))}
                           </defs>
@@ -622,8 +622,8 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                           <defs>
                             {chartData.map((item: any, index: number) => (
                               <linearGradient key={`other-gradient-def-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor={item.color} stopOpacity={0.9} />
-                                <stop offset="100%" stopColor={item.color} stopOpacity={0.6} />
+                                <stop offset="0%" stopColor={item.color} stopOpacity={0.9} style={{ stopColor: item.color }} />
+                                <stop offset="100%" stopColor={item.color} stopOpacity={0.6} style={{ stopColor: item.color }} />
                               </linearGradient>
                             ))}
                           </defs>

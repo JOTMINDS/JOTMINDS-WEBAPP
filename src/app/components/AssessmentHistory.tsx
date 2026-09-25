@@ -151,23 +151,23 @@ export function AssessmentHistory({ assessments, onViewReport }: AssessmentHisto
                   />
                   {type === 'kolb' && (
                     <>
-                      <Line key="CE" type="monotone" dataKey="CE" name={DIMENSION_LABELS.CE} stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="RO" type="monotone" dataKey="RO" name={DIMENSION_LABELS.RO} stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="AC" type="monotone" dataKey="AC" name={DIMENSION_LABELS.AC} stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="AE" type="monotone" dataKey="AE" name={DIMENSION_LABELS.AE} stroke="var(--chart-4)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="CE" type="monotone" dataKey="CE" name={DIMENSION_LABELS.CE} stroke="#1FC8E1" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="RO" type="monotone" dataKey="RO" name={DIMENSION_LABELS.RO} stroke="#7B61FF" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="AC" type="monotone" dataKey="AC" name={DIMENSION_LABELS.AC} stroke="#FF715B" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="AE" type="monotone" dataKey="AE" name={DIMENSION_LABELS.AE} stroke="#2C2E83" strokeWidth={2} dot={{ r: 4 }} />
                     </>
                   )}
                   {type === 'sternberg' && (
                     <>
-                      <Line key="Analytical" type="monotone" dataKey="Analytical" name={DIMENSION_LABELS.Analytical} stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="Creative" type="monotone" dataKey="Creative" name={DIMENSION_LABELS.Creative} stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="Practical" type="monotone" dataKey="Practical" name={DIMENSION_LABELS.Practical} stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Analytical" type="monotone" dataKey="Analytical" name={DIMENSION_LABELS.Analytical} stroke="#1FC8E1" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Creative" type="monotone" dataKey="Creative" name={DIMENSION_LABELS.Creative} stroke="#7B61FF" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Practical" type="monotone" dataKey="Practical" name={DIMENSION_LABELS.Practical} stroke="#FF715B" strokeWidth={2} dot={{ r: 4 }} />
                     </>
                   )}
                   {type === 'dual-process' && (
                     <>
-                      <Line key="Intuitive" type="monotone" dataKey="Intuitive" name={DIMENSION_LABELS.Intuitive} stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line key="Reflective" type="monotone" dataKey="Reflective" name={DIMENSION_LABELS.Reflective} stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Intuitive" type="monotone" dataKey="Intuitive" name={DIMENSION_LABELS.Intuitive} stroke="#1FC8E1" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line key="Reflective" type="monotone" dataKey="Reflective" name={DIMENSION_LABELS.Reflective} stroke="#7B61FF" strokeWidth={2} dot={{ r: 4 }} />
                     </>
                   )}
                 </LineChart>
