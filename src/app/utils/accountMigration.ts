@@ -72,7 +72,8 @@ function migrateEducationLevel(users: User[]): User[] {
       ? Math.floor((Date.now() - new Date(u.dateOfBirth).getTime()) / (365.25 * 24 * 3600 * 1000))
       : undefined);
     if (age !== undefined) {
-      if (age <= 10) level = 'Elementary';
+      if (age <= 6) level = 'Pre-school';
+      else if (age <= 10) level = 'Elementary';
       else if (age <= 14) level = 'JHS';
       else if (age <= 18) level = 'SHS';
       else level = 'Tertiary';

@@ -3,7 +3,7 @@ import { projectId, publicAnonKey } from './supabase/info';
 
 const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
 
-export type InstitutionType = 'Primary' | 'JHS' | 'SHS' | 'Primary-JHS' | 'Primary-SHS' | 'Tertiary' | 'Vocational' | 'Other';
+export type InstitutionType = 'Pre-school' | 'Primary' | 'JHS' | 'SHS' | 'Primary-JHS' | 'Primary-SHS' | 'Tertiary' | 'Vocational' | 'Other';
 
 export interface Institution {
   id: string;

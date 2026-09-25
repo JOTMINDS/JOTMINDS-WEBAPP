@@ -205,7 +205,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
                     <SelectValue placeholder="Select level..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Early Years">Early Years (Kindergarten / Nursery)</SelectItem>
+                    <SelectItem value="Early Years">Pre-school / Early Years (Crèche, Nursery, KG)</SelectItem>
                     <SelectItem value="Primary">Primary / Elementary (Basic 1-6)</SelectItem>
                     <SelectItem value="JHS">Junior High School (JHS 1-3)</SelectItem>
                     <SelectItem value="SHS">Senior High School (SHS 1-3)</SelectItem>
@@ -235,7 +235,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
           <div className="flex flex-wrap gap-1.5 pb-1">
             {[
               { id: 'all', label: 'All Levels' },
-              { id: 'Early Years', label: 'Early Years', aliases: ['Early Years', 'Nursery', 'Kindergarten'] },
+              { id: 'Early Years', label: 'Pre-school / Early Years', aliases: ['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'] },
               { id: 'Primary', label: 'Primary / Elementary', aliases: ['Primary', 'Elementary'] },
               { id: 'JHS', label: 'Junior High (JHS)', aliases: ['JHS'] },
               { id: 'SHS', label: 'Senior High (SHS)', aliases: ['SHS'] },
@@ -299,7 +299,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
               filteredClasses.forEach(c => {
                 let groupKey = 'Primary / Elementary';
                 const lvl = c.educationLevel || '';
-                if (['Early Years', 'Nursery', 'Kindergarten'].includes(lvl)) groupKey = 'Early Years';
+                if (['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'].includes(lvl)) groupKey = 'Early Years';
                 else if (['Primary', 'Elementary'].includes(lvl)) groupKey = 'Primary / Elementary';
                 else if (lvl === 'JHS') groupKey = 'Junior High School (JHS)';
                 else if (lvl === 'SHS') groupKey = 'Senior High School (SHS)';

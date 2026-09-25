@@ -82,7 +82,8 @@ const dualProcessInsightTemplates = {
 const getEducationalContext = (educationLevel?: string, age?: number, role?: string): string => {
   // Determine educational stage from multiple sources
   if (educationLevel) {
-    if (educationLevel.includes('Primary') || educationLevel.includes('JHS')) return 'secondary';
+    if (educationLevel.includes('Pre-school') || educationLevel.includes('Early Years') || educationLevel.includes('Preschool')) return 'early-years';
+    if (educationLevel.includes('Primary') || educationLevel.includes('JHS') || educationLevel.includes('Elementary')) return 'secondary';
     if (educationLevel.includes('SHS')) return 'high-school';
     if (educationLevel.includes('University') || educationLevel.includes('Tertiary')) return 'university';
   }

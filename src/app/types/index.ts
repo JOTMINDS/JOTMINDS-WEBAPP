@@ -1,6 +1,6 @@
 export type UserRole = 'student' | 'child' | 'teacher' | 'parent' | 'professional' | 'organization' | 'school_admin' | 'admin';
 
-export type EducationLevel = 'Early Years' | 'Elementary' | 'Primary' | 'JHS' | 'SHS' | 'Tertiary';
+export type EducationLevel = 'Pre-school' | 'Early Years' | 'Elementary' | 'Primary' | 'JHS' | 'SHS' | 'Tertiary';
 
 export type OrganizationType = 'Corporate' | 'NGO' | 'Government' | 'Startup' | 'Educational Institution' | 'Other';
 
