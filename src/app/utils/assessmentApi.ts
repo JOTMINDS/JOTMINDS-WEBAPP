@@ -320,6 +320,7 @@ export const normalizeServerResults = (rawResults: any[]): any[] => {
     if (type === 'learning') type = 'kolb';
     else if (type === 'thinking') type = 'sternberg';
     else if (type === 'decision') type = 'dual-process';
+    else if (type === 'teaching-style' || type === 'teaching') type = 'jtia';
 
     let res = r.results || {};
     if (typeof res === 'string') {
@@ -334,12 +335,18 @@ export const normalizeServerResults = (rawResults: any[]): any[] => {
     const canonicalKey = type === 'dual-process' ? 'dualProcess' : type;
     if (res && typeof res === 'object' && res[canonicalKey]) {
       scoreObj[canonicalKey] = res[canonicalKey];
+      if (type === 'jtia') {
+        scoreObj['teaching-style'] = res['teaching-style'] || res[canonicalKey];
+        scoreObj.teaching = res[canonicalKey];
+      }
       return {
         id: r.id || r.resultKey || `server-${type}-${r.completedAt}`,
         userId: r.userId,
         type,
-        responses: [],
+        responses: r.answers ? r.answers.map((a: any) => a.value ?? a) : (r.responses || []),
         score: scoreObj,
+        report: res[canonicalKey] || res,
+        results: res,
         completedAt: r.completedAt,
         completed: true,
         fromServer: true,
@@ -390,8 +397,71 @@ export const normalizeServerResults = (rawResults: any[]): any[] => {
           system2: rawScores.system2 !== undefined ? rawScores.system2 : (rawScores.System2 !== undefined ? rawScores.System2 : sys2Fallback),
         },
       };
+    } else if (type === 'jtia') {
+      const jtiaData = res.jtia || (res.domainScores ? res : null);
+      if (jtiaData) {
+        scoreObj.jtia = jtiaData;
+        scoreObj.teaching = jtiaData;
+
+        const d = jtiaData.domainScores || {};
+        const axisAuth = d.leadership ?? 70;
+        const axisKnow = d.instructional ?? 70;
+        const axisMotiv = Math.round(((d.relationship ?? 70) + (d.leadership ?? 70)) / 2);
+        const axisAssess = d.instructional ?? 70;
+        const axisAdapt = d.cognitive ?? 70;
+        const axisClim = d.relationship ?? 75;
+
+        const getFit = (actual: number, target: number, isMin: boolean) => {
+          if (isMin) return actual >= target ? 100 : (actual / target) * 100;
+          return actual <= target ? 100 : Math.max(0, (1 - (actual - target) / (100 - target)) * 100);
+        };
+
+        const profileScores = [
+          { name: "Authoritative Instructor", fit: (getFit(axisAuth, 40, false) + getFit(axisAdapt, 40, false)) / 2 },
+          { name: "Structured Educator", fit: (getFit(axisAuth, 40, false) + getFit(axisAssess, 60, true)) / 2 },
+          { name: "Facilitator Coach", fit: (getFit(axisAuth, 60, true) + getFit(axisClim, 60, true)) / 2 },
+          { name: "Engagement Driver", fit: getFit(axisMotiv, 70, true) },
+          { name: "Learning Architect", fit: (getFit(axisKnow, 60, true) + getFit(axisAssess, 60, true)) / 2 },
+          { name: "Innovation Leader", fit: (getFit(axisAdapt, 60, true) + getFit(d.cognitive ?? 50, 60, true)) / 2 },
+          { name: "Traditionalist", fit: (getFit(axisKnow, 40, false) + getFit(axisAssess, 40, false)) / 2 },
+          { name: "Student-Centered Mentor", fit: (getFit(axisClim, 60, true) + getFit(axisKnow, 60, true)) / 2 },
+        ].sort((a, b) => b.fit - a.fit);
+
+        scoreObj['teaching-style'] = {
+          primaryStyle: jtiaData.primaryStyle || profileScores[0]?.name || 'Facilitator Coach',
+          secondaryStyle: jtiaData.secondaryStyle || profileScores[1]?.name || `${jtiaData.overallScore || 70}/100 Overall`,
+          scores: {
+            axisAuthority: axisAuth,
+            axisKnowledge: axisKnow,
+            axisMotivation: axisMotiv,
+            axisAssessment: axisAssess,
+            axisAdaptability: axisAdapt,
+            axisClimate: axisClim,
+          }
+        };
+      } else {
+        scoreObj['teaching-style'] = res;
+        const scores = res.scores || {};
+        const overall = Math.round(((scores.axisAuthority ?? 70) + (scores.axisKnowledge ?? 70) + (scores.axisMotivation ?? 70) + (scores.axisAssessment ?? 70) + (scores.axisAdaptability ?? 70) + (scores.axisClimate ?? 70)) / 6);
+        scoreObj.jtia = {
+          overallScore: overall,
+          domainScores: {
+            leadership: scores.axisAuthority ?? 70,
+            instructional: scores.axisKnowledge ?? 70,
+            relationship: scores.axisClimate ?? 75,
+            cognitive: scores.axisAdaptability ?? 70,
+            professional: scores.axisAssessment ?? 70,
+          },
+          subCompetencies: {},
+          strengths: [],
+          growthOpportunities: [],
+          recommendations: { resources: [], activities: [], coaching: [], pathways: [] },
+          completedAt: r.completedAt,
+        };
+        scoreObj.teaching = scoreObj.jtia;
+      }
     } else {
-      // teaching-style and any other type: pass results through under its own key
+      // Any other type: pass results through under its own key
       scoreObj[type] = res;
     }
 
@@ -399,8 +469,10 @@ export const normalizeServerResults = (rawResults: any[]): any[] => {
       id: r.id || r.resultKey || `server-${type}-${r.completedAt}`,
       userId: r.userId,
       type,
-      responses: [],
+      responses: r.answers ? r.answers.map((a: any) => a.value ?? a) : (r.responses || []),
       score: scoreObj,
+      report: scoreObj.jtia || scoreObj['teaching-style'] || res.report || res.results || res,
+      results: res,
       completedAt: r.completedAt,
       completed: true,
       fromServer: true,

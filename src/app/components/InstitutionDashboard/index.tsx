@@ -530,7 +530,7 @@ export function InstitutionDashboard({
         )}
 
         {tab === 'training' && (
-          <TrainingPage institutionId={institution.id} members={members} allPlatformUsers={allPlatformUsers} />
+          <TrainingPage institutionId={institution.id} members={members} allPlatformUsers={allPlatformUsers} assessments={memberAssessments} />
         )}
 
         {tab === 'reports' && (

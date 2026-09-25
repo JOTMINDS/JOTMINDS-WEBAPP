@@ -354,13 +354,13 @@ export function generateSchoolJTIAInsights(reports: JTIAReportData[] = []): JTIA
     };
   }
 
-  const count = reports.length;
+  const count = reports.length || 1;
   const domainAverages = {
-    cognitive: Math.round(reports.reduce((s, r) => s + r.domainScores.cognitive, 0) / count),
-    instructional: Math.round(reports.reduce((s, r) => s + r.domainScores.instructional, 0) / count),
-    leadership: Math.round(reports.reduce((s, r) => s + r.domainScores.leadership, 0) / count),
-    relationship: Math.round(reports.reduce((s, r) => s + r.domainScores.relationship, 0) / count),
-    professional: Math.round(reports.reduce((s, r) => s + r.domainScores.professional, 0) / count)
+    cognitive: Math.round(reports.reduce((s, r) => s + (r.domainScores?.cognitive ?? 70), 0) / count),
+    instructional: Math.round(reports.reduce((s, r) => s + (r.domainScores?.instructional ?? 70), 0) / count),
+    leadership: Math.round(reports.reduce((s, r) => s + (r.domainScores?.leadership ?? 70), 0) / count),
+    relationship: Math.round(reports.reduce((s, r) => s + (r.domainScores?.relationship ?? 75), 0) / count),
+    professional: Math.round(reports.reduce((s, r) => s + (r.domainScores?.professional ?? 70), 0) / count)
   };
 
   const overallSchoolIntelligence = Math.round(
@@ -374,12 +374,12 @@ export function generateSchoolJTIAInsights(reports: JTIAReportData[] = []): JTIA
   // Aggregate subcompetency averages
   const subSums: Record<string, { sum: number; count: number; domain: JTIADomain }> = {};
   reports.forEach(r => {
-    Object.entries(r.subCompetencies).forEach(([sub, val]) => {
+    Object.entries(r.subCompetencies || {}).forEach(([sub, val]) => {
       if (!subSums[sub]) {
         const domain = jtiaQuestions.find(q => q.subCompetency === sub)?.domain || "Cognitive Intelligence";
         subSums[sub] = { sum: 0, count: 0, domain };
       }
-      subSums[sub].sum += val;
+      subSums[sub].sum += (val ?? 70);
       subSums[sub].count += 1;
     });
   });

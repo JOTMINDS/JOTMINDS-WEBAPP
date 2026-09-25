@@ -139,9 +139,10 @@ interface TrainingPageProps {
   institutionId?: string;
   members?: InstitutionMember[];
   allPlatformUsers?: any[];
+  assessments?: any[];
 }
 
-export function TrainingPage({ institutionId, members = [], allPlatformUsers = [] }: TrainingPageProps) {
+export function TrainingPage({ institutionId, members = [], allPlatformUsers = [], assessments = [] }: TrainingPageProps) {
   const [activeTab, setActiveTab] = useState<'risk-gaps' | 'resources'>('risk-gaps');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -161,7 +162,9 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
   // Compute Faculty Pedagogical Gap & Risk Detection
   const facultyGaps = useMemo(() => {
     return teacherMembers.map(teacher => {
-      const teacherAssessments = getAssessmentsByUserId(teacher.userId);
+      const localAssessments = getAssessmentsByUserId(teacher.userId) || [];
+      const serverAssessments = assessments.filter(a => a.userId === teacher.userId);
+      const teacherAssessments = [...localAssessments, ...serverAssessments];
       const hasAssessments = teacherAssessments.length > 0;
       
       const assignments = getAssignmentsForTeacher(teacher.userId);

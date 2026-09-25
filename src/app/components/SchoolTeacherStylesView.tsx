@@ -46,7 +46,7 @@ function styleColor(s: string): string {
     'Learning Architect': '#6B4C9A', 'Innovation Leader': '#ec4899',
     'Traditionalist': '#9ca3af', 'Student-Centered Mentor': '#06b6d4',
   };
-  return m[s] ?? '#9ca3af';
+  return m[s] ?? '#1E8A6E';
 }
 
 // ─── Cognitive Style Colors ───────────────────────────────────────────────────
@@ -72,49 +72,129 @@ interface TeacherData {
 }
 
 function extractTeaching(assessments: any[]): TeachingStyleData | null {
-  const a = assessments.filter((x: any) => x.type === 'jtia' && (x.completedAt || x.completed || x.report || x.results || x.score?.jtia))
-    .sort((a: any, b: any) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())[0];
+  const a = assessments.filter((x: any) => 
+    (x.type === 'jtia' || x.type === 'teaching-style' || x.type === 'teaching') && 
+    (x.completedAt || x.completed || x.report || x.results || x.score?.jtia || x.score?.['teaching-style'])
+  ).sort((a: any, b: any) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())[0];
+
   if (!a) return null;
-  const jtia = a.report || a.results || a.score?.jtia || {};
+
+  const jtia = a.report || a.results?.jtia || a.score?.jtia || a.results || a.score?.['teaching-style'] || {};
+  const teachStyle = a.score?.['teaching-style'] || (jtia.scores?.axisAuthority ? jtia : {});
+
+  // Extract or derive the 6 axes
+  const rawAxes = teachStyle.scores || jtia.scores || jtia.axes || {};
+  const domainScores = jtia.domainScores || {};
+
+  const axisAuthority = rawAxes.axisAuthority ?? domainScores.leadership ?? 70;
+  const axisKnowledge = rawAxes.axisKnowledge ?? domainScores.instructional ?? 70;
+  const axisMotivation = rawAxes.axisMotivation ?? Math.round(((domainScores.relationship ?? 70) + (domainScores.leadership ?? 70)) / 2);
+  const axisAssessment = rawAxes.axisAssessment ?? domainScores.instructional ?? 70;
+  const axisAdaptability = rawAxes.axisAdaptability ?? domainScores.cognitive ?? 70;
+  const axisClimate = rawAxes.axisClimate ?? domainScores.relationship ?? 75;
+
+  const axes: Record<string, number> = {
+    axisAuthority,
+    axisKnowledge,
+    axisMotivation,
+    axisAssessment,
+    axisAdaptability,
+    axisClimate,
+    cognitive: domainScores.cognitive ?? axisAdaptability,
+    instructional: domainScores.instructional ?? axisKnowledge,
+    leadership: domainScores.leadership ?? axisAuthority,
+    relationship: domainScores.relationship ?? axisClimate,
+    professional: domainScores.professional ?? axisAssessment,
+  };
+
+  let primaryStyle = teachStyle.primaryStyle || jtia.primaryStyle || jtia.topSynergyDomain;
+  let secondaryStyle = teachStyle.secondaryStyle || jtia.secondaryStyle;
+
+  if (!primaryStyle) {
+    const getFit = (actual: number, target: number, isMin: boolean) => {
+      if (isMin) return actual >= target ? 100 : (actual / target) * 100;
+      return actual <= target ? 100 : Math.max(0, (1 - (actual - target) / (100 - target)) * 100);
+    };
+    const profileScores = [
+      { name: "Authoritative Instructor", fit: (getFit(axisAuthority, 40, false) + getFit(axisAdaptability, 40, false)) / 2 },
+      { name: "Structured Educator", fit: (getFit(axisAuthority, 40, false) + getFit(axisAssessment, 60, true)) / 2 },
+      { name: "Facilitator Coach", fit: (getFit(axisAuthority, 60, true) + getFit(axisClimate, 60, true)) / 2 },
+      { name: "Engagement Driver", fit: getFit(axisMotivation, 70, true) },
+      { name: "Learning Architect", fit: (getFit(axisKnowledge, 60, true) + getFit(axisAssessment, 60, true)) / 2 },
+      { name: "Innovation Leader", fit: (getFit(axisAdaptability, 60, true) + getFit(domainScores.cognitive ?? 50, 60, true)) / 2 },
+      { name: "Traditionalist", fit: (getFit(axisKnowledge, 40, false) + getFit(axisAssessment, 40, false)) / 2 },
+      { name: "Student-Centered Mentor", fit: (getFit(axisClimate, 60, true) + getFit(axisKnowledge, 60, true)) / 2 },
+    ].sort((a, b) => b.fit - a.fit);
+
+    primaryStyle = profileScores[0]?.name || 'Facilitator Coach';
+    secondaryStyle = secondaryStyle || profileScores[1]?.name || `${jtia.overallScore || 70}/100 Overall`;
+  }
+
+  if (!secondaryStyle) {
+    secondaryStyle = `${jtia.overallScore || 70}/100 Overall`;
+  }
+
   return {
-    primaryStyle: jtia.topSynergyDomain || 'JTIA Complete',
-    secondaryStyle: `${jtia.overallScore || 100}/100 Overall`,
-    axes: jtia.domainScores || { axisAuthority: 70, axisAdaptability: 75, axisMotivation: 80, axisAssessment: 70, axisClimate: 75 }
+    primaryStyle,
+    secondaryStyle,
+    axes
   };
 }
 
 function extractLearning(assessments: any[]): LearningStyleData | null {
-  const a = assessments.filter((x: any) => x.type === 'kolb' && x.completedAt && x.score?.kolb)
-    .sort((a: any, b: any) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+  const a = assessments.filter((x: any) => 
+    (x.type === 'kolb' || x.type === 'learning') && 
+    (x.completedAt || x.completed) && 
+    (x.score?.kolb || x.score?.learning || x.results?.kolb || x.results?.scores)
+  ).sort((a: any, b: any) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())[0];
+
   if (!a) return null;
-  const k = a.score.kolb;
-  return { style: k.style, scores: { CE: k.scores.CE ?? 0, RO: k.scores.RO ?? 0, AC: k.scores.AC ?? 0, AE: k.scores.AE ?? 0 } };
+  const k = a.score?.kolb || a.score?.learning || a.results?.kolb || a.results || {};
+  const scores = k.scores || {};
+  return { 
+    style: k.style || k.dominantStyle || 'Converging', 
+    scores: { CE: scores.CE ?? 0, RO: scores.RO ?? 0, AC: scores.AC ?? 0, AE: scores.AE ?? 0 } 
+  };
 }
 
 function extractThinking(assessments: any[]): ThinkingStyleData | null {
-  const all = assessments.filter((x: any) => x.completedAt && x.score);
-  for (const type of ['sternberg', 'adult-thinking', 'shs-thinking', 'jhs-thinking']) {
-    const a = all.filter((x: any) => x.type === type).sort((a: any, b: any) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+  const all = assessments.filter((x: any) => (x.completedAt || x.completed) && (x.score || x.results || x.report));
+  for (const type of ['sternberg', 'thinking', 'adult-thinking', 'shs-thinking', 'jhs-thinking']) {
+    const a = all.filter((x: any) => x.type === type).sort((a: any, b: any) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())[0];
     if (!a) continue;
-    const s = a.score;
-    if (type === 'sternberg' && s.sternberg) return { style: s.sternberg.style, scores: s.sternberg.scores, assessmentType: 'Sternberg' };
-    const ts = s['adult-thinking'] || s['shs-thinking'] || s['jhs-thinking'];
+    const s = a.score || {};
+    if ((type === 'sternberg' || type === 'thinking') && s.sternberg) {
+      return { style: s.sternberg.style, scores: s.sternberg.scores, assessmentType: 'Sternberg' };
+    }
+    const ts = s['adult-thinking'] || s['shs-thinking'] || s['jhs-thinking'] || s.thinking || a.report || a.results;
     if (!ts) continue;
     const rawScores: Record<string, number> = ts.scores || {};
     const primary = ts.style || ts.primaryStyle || ts.dominantStyle || Object.entries(rawScores).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Mixed';
-    return { style: primary.charAt(0).toUpperCase() + primary.slice(1), scores: rawScores, assessmentType: type === 'adult-thinking' ? 'Adult' : type === 'shs-thinking' ? 'SHS' : 'JHS' };
+    return { 
+      style: primary.charAt(0).toUpperCase() + primary.slice(1), 
+      scores: rawScores, 
+      assessmentType: type === 'adult-thinking' ? 'Adult' : type === 'shs-thinking' ? 'SHS' : type === 'jhs-thinking' ? 'JHS' : 'Sternberg' 
+    };
   }
   return null;
 }
 
 function extractDecision(assessments: any[]): DecisionStyleData | null {
-  const a = assessments.filter((x: any) => x.type === 'dual-process' && x.completedAt && x.score?.dualProcess)
-    .sort((a: any, b: any) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+  const a = assessments.filter((x: any) => 
+    (x.type === 'dual-process' || x.type === 'decision') && 
+    (x.completedAt || x.completed) && 
+    (x.score?.dualProcess || x.score?.decision || x.results?.dualProcess || x.results?.scores || x.report)
+  ).sort((a: any, b: any) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())[0];
+
   if (!a) return null;
-  const d = a.score.dualProcess;
+  const d = a.score?.dualProcess || a.score?.decision || a.results?.dualProcess || a.report || a.results || {};
+  const scores = d.scores || {};
+  const sys1 = scores.intuitive ?? scores.System1 ?? scores.system1 ?? 0;
+  const sys2 = scores.reflective ?? scores.System2 ?? scores.system2 ?? 0;
+  const style = d.style || d.dominantStyle || (sys1 >= sys2 ? 'Intuitive' : 'Reflective');
   return {
-    style: d.style,
-    scores: { intuitive: d.scores?.intuitive ?? d.scores?.System1 ?? 0, reflective: d.scores?.reflective ?? d.scores?.System2 ?? 0 },
+    style: style.charAt(0).toUpperCase() + style.slice(1).toLowerCase(),
+    scores: { intuitive: sys1, reflective: sys2 },
   };
 }
 
@@ -294,8 +374,15 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
     const server = serverByUser[t.id] || [];
     const local = getAssessmentsByUserId(t.id) || [];
     const byType = new Map<string, any>();
-    for (const a of local) if (a?.type) byType.set(a.type, a);
-    for (const a of server) if (a?.type) byType.set(a.type, a); // server overrides
+    const canonicalKey = (type: string) => {
+      if (type === 'teaching-style' || type === 'teaching') return 'jtia';
+      if (type === 'learning') return 'kolb';
+      if (type === 'thinking') return 'sternberg';
+      if (type === 'decision') return 'dual-process';
+      return type;
+    };
+    for (const a of local) if (a?.type) byType.set(canonicalKey(a.type), a);
+    for (const a of server) if (a?.type) byType.set(canonicalKey(a.type), a); // server overrides
     return buildTeacherData(t, Array.from(byType.values()));
   }), [allTeachers, serverByUser]);
 
@@ -340,9 +427,27 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
     allTeachers.forEach(t => {
       const server = serverByUser[t.id] || [];
       const local = getAssessmentsByUserId(t.id) || [];
-      const jtia = [...server, ...local].find(a => a?.type === 'jtia');
-      if (jtia?.results || jtia?.report) {
-        list.push(jtia.report || jtia.results);
+      const all = [...server, ...local];
+      const jtia = all.find(a => a?.type === 'jtia' || a?.type === 'teaching-style' || a?.type === 'teaching');
+      if (!jtia) return;
+
+      const rep = jtia.report || jtia.results?.jtia || jtia.score?.jtia || (jtia.score?.['teaching-style']?.domainScores ? jtia.score?.['teaching-style'] : null) || jtia.results;
+      if (rep && (rep.domainScores || rep.overallScore)) {
+        list.push({
+          domainScores: {
+            cognitive: rep.domainScores?.cognitive ?? 70,
+            instructional: rep.domainScores?.instructional ?? 70,
+            leadership: rep.domainScores?.leadership ?? 70,
+            relationship: rep.domainScores?.relationship ?? 75,
+            professional: rep.domainScores?.professional ?? 70,
+          },
+          overallScore: rep.overallScore ?? 70,
+          subCompetencies: rep.subCompetencies || {},
+          strengths: rep.strengths || [],
+          growthOpportunities: rep.growthOpportunities || [],
+          recommendations: rep.recommendations || { resources: [], activities: [], coaching: [], pathways: [] },
+          completedAt: rep.completedAt || jtia.completedAt || new Date().toISOString(),
+        });
       }
     });
     return list;
