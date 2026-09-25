@@ -315,9 +315,24 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
                               )}
                             </>
                           ) : (
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
-                              <Clock className="w-3 h-3 mr-1" /> Pending
-                            </Badge>
+                            <>
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                                <Clock className="w-3 h-3 mr-1" /> Pending
+                              </Badge>
+                              {!isSelected && (
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-7 px-2 text-[10px] text-gray-700 hover:text-gray-900 hover:bg-gray-100 bg-gray-50 border border-gray-200"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedStudentId(student.id);
+                                  }}
+                                >
+                                  View Profile
+                                </Button>
+                              )}
+                            </>
                           )}
                           <ChevronRight className="w-4 h-4 text-gray-400" />
                         </div>

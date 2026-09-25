@@ -105,7 +105,11 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
 
   // Main Style Section
   const score = assessment.score || {};
-  const mainStyle = score.kolb?.style || score.sternberg?.style || score.dualProcess?.style || score['teaching-style']?.primaryStyle || '';
+  const isJTIA = assessment.type === 'jtia' || !!score.jtia || !!(assessment as any).report?.domainScores;
+  const jtiaData = isJTIA ? ((assessment as any).report || (assessment as any).results || score.jtia || {}) : null;
+  const mainStyle = isJTIA
+    ? (jtiaData?.recommendations?.pedagogicalArchetype || 'Teaching Intelligence Profile')
+    : (score.kolb?.style || score.sternberg?.style || score.dualProcess?.style || score['teaching-style']?.primaryStyle || '');
   
   // Style Card
   doc.setFillColor(248, 250, 252); // slate-50
@@ -115,13 +119,17 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   doc.setFont(font, 'bold');
   doc.setFontSize(14);
   doc.setTextColor(...BRAND.indigo);
-  doc.text(`Your Style: ${mainStyle || 'N/A'}`, margin + 6, yPos + 10);
+  doc.text(isJTIA ? `Pedagogical Profile: ${mainStyle}` : `Your Style: ${mainStyle || 'N/A'}`, margin + 6, yPos + 10);
   
   let description = '';
-  try {
-    description = mainStyle ? getStyleDescription(assessment.type as any, mainStyle) : 'Assessment completed successfully.';
-  } catch {
-    description = 'Assessment completed successfully.';
+  if (isJTIA) {
+    description = jtiaData?.recommendations?.executiveSummary || `Comprehensive evaluation across 5 core teaching intelligence domains with an overall alignment score of ${jtiaData?.overallScore || 'Completed'}/100.`;
+  } else {
+    try {
+      description = mainStyle ? getStyleDescription(assessment.type as any, mainStyle) : 'Assessment completed successfully.';
+    } catch {
+      description = 'Assessment completed successfully.';
+    }
   }
   doc.setFont(font, 'normal');
   doc.setFontSize(10);
@@ -132,10 +140,22 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
 
   // Executive Summary Card
   let insights: any;
-  try {
-    insights = getAssessmentInsights(assessment);
-  } catch {
-    insights = { strengths: ['Assessment completed'], weaknesses: ['N/A'], improvements: ['Continue learning'], organizationalFit: [] };
+  if (isJTIA && jtiaData) {
+    const strList = (jtiaData.strengths || []).map((s: any) => `${s.title}: ${s.description}`);
+    const growthList = (jtiaData.growthOpportunities || []).map((g: any) => `${g.title}: ${g.description}`);
+    const actList = jtiaData.recommendations?.activities || jtiaData.recommendations?.coaching || ['Continue professional pedagogical development'];
+    insights = {
+      strengths: strList.length > 0 ? strList : ['Strong instructional presence and classroom management.'],
+      weaknesses: growthList.length > 0 ? growthList : ['Expand differentiation strategies across diverse cognitive profiles.'],
+      improvements: actList.length > 0 ? actList : ['Engage with formative assessment and student feedback loops.'],
+      organizationalFit: []
+    };
+  } else {
+    try {
+      insights = getAssessmentInsights(assessment);
+    } catch {
+      insights = { strengths: ['Assessment completed'], weaknesses: ['N/A'], improvements: ['Continue learning'], organizationalFit: [] };
+    }
   }
   
   doc.setFontSize(15);
@@ -250,6 +270,22 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
     yPos += 6;
     doc.text(`Secondary Style: ${score['teaching-style'].secondaryStyle || 'N/A'}`, 25, yPos);
     yPos += 10;
+  } else if (isJTIA && jtiaData) {
+    const domains = jtiaData.domainScores || {};
+    doc.text(`Overall Pedagogical Alignment: ${jtiaData.overallScore || 'Completed'}/100`, 25, yPos);
+    yPos += 6;
+    if (domains.cognitive !== undefined) {
+      doc.text(`Cognitive Intelligence: ${domains.cognitive}%`, 25, yPos);
+      yPos += 6;
+      doc.text(`Instructional Intelligence: ${domains.instructional}%`, 25, yPos);
+      yPos += 6;
+      doc.text(`Classroom Leadership: ${domains.leadership}%`, 25, yPos);
+      yPos += 6;
+      doc.text(`Relationship Intelligence: ${domains.relationship}%`, 25, yPos);
+      yPos += 6;
+      doc.text(`Professional Intelligence: ${domains.professional}%`, 25, yPos);
+      yPos += 10;
+    }
   } else {
     // Generic fallback for any other assessment type
     try {
@@ -592,53 +628,67 @@ export async function generateSchoolSummaryPDF(
     doc.text(`Student Cognitive Roster (${assessmentRecords.length} learners)`, margin, yPos);
     yPos += 6;
 
-    // Table Header
-    doc.setFillColor(...BRAND.indigo);
-    doc.rect(margin, yPos, pageWidth - (margin * 2), 8, 'F');
+    // Table Header function
+    const drawTableHeader = (headerY: number) => {
+      doc.setFillColor(...BRAND.indigo);
+      doc.rect(margin, headerY, pageWidth - (margin * 2), 8, 'F');
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('Student Name', margin + 3, headerY + 5.5);
+      doc.text('Code', margin + 46, headerY + 5.5);
+      doc.text('Class', margin + 68, headerY + 5.5);
+      doc.text('Learning Style', margin + 98, headerY + 5.5);
+      doc.text('Thinking Style', margin + 132, headerY + 5.5);
+      doc.text('Decision Style', margin + 162, headerY + 5.5);
+    };
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-
-    doc.text('Student Name', margin + 3, yPos + 5.5);
-    doc.text('Code', margin + 46, yPos + 5.5);
-    doc.text('Class', margin + 68, yPos + 5.5);
-    doc.text('Learning Style', margin + 98, yPos + 5.5);
-    doc.text('Thinking Style', margin + 132, yPos + 5.5);
-    doc.text('Decision Style', margin + 162, yPos + 5.5);
-
-    yPos += 8;
+    drawTableHeader(yPos);
+    let currentRowY = yPos + 8;
+    let pageNumber = 1;
 
     // Table Rows
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...BRAND.ink);
 
-    const maxRows = Math.min(30, assessmentRecords.length);
-    for (let i = 0; i < maxRows; i++) {
-      const rec = assessmentRecords[i];
-      const rowY = yPos + (i * 7);
+    for (let i = 0; i < assessmentRecords.length; i++) {
+      if (currentRowY > 272) {
+        // Draw footer on current page
+        doc.setFontSize(7.5);
+        doc.setTextColor(...BRAND.muted);
+        doc.text(`JotMinds Educational Cognitive Platform · Confidential Institutional Report · Page ${pageNumber}`, margin, 286);
 
-      if (rowY > 272) break; // page overflow guard
-
-      if (i % 2 === 1) {
-        doc.setFillColor(248, 250, 252);
-        doc.rect(margin, rowY - 4.5, pageWidth - (margin * 2), 7, 'F');
+        doc.addPage();
+        pageNumber++;
+        currentRowY = 20;
+        drawTableHeader(currentRowY);
+        currentRowY += 8;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(...BRAND.ink);
       }
 
-      doc.text(rec.studentName.substring(0, 22), margin + 3, rowY);
-      doc.text((rec.studentCode || '—').substring(0, 10), margin + 46, rowY);
-      doc.text((rec.className || 'General').substring(0, 14), margin + 68, rowY);
-      doc.text((rec.learningStyle || 'Pending').substring(0, 16), margin + 98, rowY);
-      doc.text((rec.thinkingStyle || 'Pending').substring(0, 14), margin + 132, rowY);
-      doc.text((rec.decisionStyle || 'Pending').substring(0, 12), margin + 162, rowY);
+      const rec = assessmentRecords[i];
+      if (i % 2 === 1) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(margin, currentRowY - 1, pageWidth - (margin * 2), 7, 'F');
+      }
+
+      doc.text(rec.studentName.substring(0, 22), margin + 3, currentRowY + 4.5);
+      doc.text((rec.studentCode || '—').substring(0, 10), margin + 46, currentRowY + 4.5);
+      doc.text((rec.className || 'General').substring(0, 14), margin + 68, currentRowY + 4.5);
+      doc.text((rec.learningStyle || 'Pending').substring(0, 16), margin + 98, currentRowY + 4.5);
+      doc.text((rec.thinkingStyle || 'Pending').substring(0, 14), margin + 132, currentRowY + 4.5);
+      doc.text((rec.decisionStyle || 'Pending').substring(0, 12), margin + 162, currentRowY + 4.5);
+
+      currentRowY += 7;
     }
 
-    // Footer
-    const footerY = 286;
+    // Final Page Footer
     doc.setFontSize(7.5);
     doc.setTextColor(...BRAND.muted);
-    doc.text('JotMinds Educational Cognitive Platform · Confidential Institutional Report', margin, footerY);
+    doc.text(`JotMinds Educational Cognitive Platform · Confidential Institutional Report · Page ${pageNumber}`, margin, 286);
 
     doc.save(`${institutionName.replace(/[^a-zA-Z0-9]/g, '_')}_Cognitive_Summary_Report.pdf`);
     return true;
@@ -647,3 +697,187 @@ export async function generateSchoolSummaryPDF(
     return false;
   }
 }
+
+/**
+ * Generate a beautifully styled, branded PDF for training materials, onboarding guides, and checklists.
+ */
+export async function generateTrainingResourcePDF(
+  title: string,
+  format: string,
+  readTime: string,
+  content: string
+): Promise<boolean> {
+  try {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 16;
+    const contentWidth = pageWidth - (margin * 2);
+    let pageNumber = 1;
+    let currentY = 20;
+
+    const drawHeader = () => {
+      // Header Banner
+      doc.setFillColor(...BRAND.indigo);
+      doc.rect(0, 0, pageWidth, 28, 'F');
+
+      // Accent stripe
+      doc.setFillColor(...BRAND.purple);
+      doc.rect(0, 27.5, pageWidth, 1.5, 'F');
+
+      // Header Text
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(255, 255, 255);
+      doc.text('JOTMINDS EDUCATIONAL RESOURCES', margin, 12);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(225, 230, 245);
+      doc.text(`Official Institutional Guide · ${format} · ${readTime}`, margin, 19);
+
+      currentY = 40;
+    };
+
+    const drawFooter = () => {
+      doc.setDrawColor(...BRAND.hairline);
+      doc.setLineWidth(0.3);
+      doc.line(margin, 282, pageWidth - margin, 282);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...BRAND.muted);
+      doc.text('JotMinds Platform · Educator Development & Institutional Training', margin, 288);
+      doc.text(`Page ${pageNumber}`, pageWidth - margin - 12, 288);
+    };
+
+    drawHeader();
+
+    // Document Title Box
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(margin, currentY, contentWidth, 22, 2, 2, 'F');
+    doc.setDrawColor(...BRAND.hairline);
+    doc.roundedRect(margin, currentY, contentWidth, 22, 2, 2, 'S');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...BRAND.dark);
+    doc.text(title, margin + 4, currentY + 9);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...BRAND.muted);
+    doc.text(`Published for School Leaders & Classroom Educators · Generated on ${new Date().toLocaleDateString()}`, margin + 4, currentY + 16);
+
+    currentY += 30;
+
+    // Parse Markdown lines
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i].trim();
+
+      if (!rawLine) {
+        currentY += 3;
+        continue;
+      }
+
+      if (currentY > 265) {
+        drawFooter();
+        doc.addPage();
+        pageNumber++;
+        drawHeader();
+      }
+
+      if (rawLine.startsWith('# ')) {
+        // Document H1 title (already in banner or primary topic)
+        currentY += 4;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(...BRAND.indigo);
+        doc.text(rawLine.replace(/^#\s*/, ''), margin, currentY);
+        currentY += 2;
+        doc.setDrawColor(...BRAND.indigo);
+        doc.setLineWidth(0.5);
+        doc.line(margin, currentY, margin + 60, currentY);
+        currentY += 5;
+      } else if (rawLine.startsWith('## ')) {
+        currentY += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(...BRAND.dark);
+        doc.text(rawLine.replace(/^##\s*/, ''), margin, currentY);
+        currentY += 4;
+      } else if (rawLine.startsWith('### ')) {
+        currentY += 3;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(...BRAND.purple);
+        doc.text(rawLine.replace(/^###\s*/, ''), margin, currentY);
+        currentY += 4;
+      } else if (rawLine.startsWith('- [ ]') || rawLine.startsWith('- [x]')) {
+        const isChecked = rawLine.startsWith('- [x]');
+        const checkText = rawLine.replace(/^- \[[ x]\]\s*/, '');
+
+        // Draw checkbox square
+        doc.setDrawColor(...BRAND.indigo);
+        doc.setLineWidth(0.4);
+        doc.rect(margin, currentY - 2.5, 3.2, 3.2, 'S');
+
+        if (isChecked) {
+          doc.setFillColor(...BRAND.indigo);
+          doc.rect(margin + 0.6, currentY - 1.9, 2, 2, 'F');
+        }
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...BRAND.ink);
+
+        const wrapped = doc.splitTextToSize(checkText, contentWidth - 8);
+        doc.text(wrapped, margin + 6, currentY);
+        currentY += (wrapped.length * 4.5) + 1.5;
+      } else if (rawLine.startsWith('- ') || rawLine.startsWith('* ')) {
+        const bulletText = rawLine.replace(/^[-*]\s*/, '').replace(/\*\*(.*?)\*\*/g, '$1');
+
+        doc.setFillColor(...BRAND.indigo);
+        doc.circle(margin + 1.5, currentY - 1, 1, 'F');
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...BRAND.ink);
+
+        const wrapped = doc.splitTextToSize(bulletText, contentWidth - 8);
+        doc.text(wrapped, margin + 6, currentY);
+        currentY += (wrapped.length * 4.5) + 1;
+      } else if (/^\d+\.\s/.test(rawLine)) {
+        // Numbered list
+        const cleanText = rawLine.replace(/\*\*(.*?)\*\*/g, '$1');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...BRAND.ink);
+
+        const wrapped = doc.splitTextToSize(cleanText, contentWidth - 2);
+        doc.text(wrapped, margin, currentY);
+        currentY += (wrapped.length * 4.5) + 1;
+      } else {
+        // Normal paragraph
+        const cleanText = rawLine.replace(/\*\*(.*?)\*\*/g, '$1');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...BRAND.ink);
+
+        const wrapped = doc.splitTextToSize(cleanText, contentWidth);
+        doc.text(wrapped, margin, currentY);
+        currentY += (wrapped.length * 4.2) + 2;
+      }
+    }
+
+    drawFooter();
+
+    doc.save(`${title.replace(/[^a-zA-Z0-9]/g, '_')}_Guide.pdf`);
+    return true;
+  } catch (err) {
+    console.error('Failed to generate training resource PDF:', err);
+    return false;
+  }
+}
+

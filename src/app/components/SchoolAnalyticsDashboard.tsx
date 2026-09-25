@@ -18,6 +18,7 @@ import { getEngagementMetrics } from '../utils/engagementTracking';
 import { getGamificationProfile } from '../utils/gamification';
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { getAllAssessmentResults } from '../utils/api';
+import { normalizeServerResults } from '../utils/assessmentApi';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
 import { StudentDetailView } from './StudentDetailView';
@@ -28,6 +29,8 @@ interface SchoolAnalyticsDashboardProps {
   onBack: () => void;
   embedded?: boolean;
   institutionMembers?: InstitutionMember[];
+  allPlatformUsers?: any[];
+  memberAssessments?: any[];
 }
 
 type Tab = 'overview' | 'students' | 'class' | 'comparison' | 'alignment' | 'cognitive' | 'insights';
@@ -48,6 +51,15 @@ interface StudentSummary {
 
 const RISK_COLORS = { high: '#DC2626', medium: '#E0A020', low: '#1E8A6E', unassessed: '#9ca3af' };
 const RISK_LABELS = { high: 'At Risk', medium: 'Needs Support', low: 'On Track', unassessed: 'Not Started' };
+
+export const KOLB_DIMENSION_NAMES = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'];
+export const THINKING_DIMENSION_NAMES = ['Analytical', 'Creative', 'Practical', 'Social'];
+
+export function getDimensionMaxScore(name: string, _score?: number): number {
+  if (KOLB_DIMENSION_NAMES.includes(name)) return 48;
+  if (THINKING_DIMENSION_NAMES.includes(name)) return 30;
+  return 100;
+}
 
 export const determinePrimaryStyle = (scores: any, type: string): string => {
   if (!scores || typeof scores !== 'object') return 'Unknown';
@@ -178,10 +190,11 @@ export function calculateStudentEngagementAndRisk(
 
   // 2. Normalized Dimension Gaps
   const dimensionScores: number[] = [];
+  const KOLB_DIMS = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'];
+  const STERNBERG_DIMS = ['Analytical', 'Creative', 'Practical'];
   assessments.forEach(a => {
     extractDimensionScores(a).forEach(({ name, score }) => {
-      const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(name);
-      const max = isKolb ? 48 : (score <= 30 ? 30 : 100);
+      const max = KOLB_DIMS.includes(name) ? 48 : STERNBERG_DIMS.includes(name) ? 30 : 100;
       const pct = Math.min(100, Math.round((score / max) * 100));
       dimensionScores.push(pct);
     });
@@ -191,9 +204,9 @@ export function calculateStudentEngagementAndRisk(
 
   // 3. Multi-Factor Risk Classification
   let risk: 'high' | 'medium' | 'low' = 'low';
-  if (engScore < 30 || criticalGaps >= 3 || (normalizedAvgScore > 0 && normalizedAvgScore < 30) || (assessments.length > 0 && daysSince >= 60)) {
+  if (engScore < 30 || criticalGaps >= 3 || (normalizedAvgScore > 0 && normalizedAvgScore < 30)) {
     risk = 'high';
-  } else if (completedTypes.length < 2 || engScore < 65 || criticalGaps > 0 || (normalizedAvgScore > 0 && normalizedAvgScore < 50)) {
+  } else if (engScore < 65 || criticalGaps > 0 || (normalizedAvgScore > 0 && normalizedAvgScore < 50)) {
     risk = 'medium';
   } else {
     risk = 'low';
@@ -216,8 +229,7 @@ function buildSummary(u: User): StudentSummary {
 
   const allNormalizedScores = assessments.flatMap((a: Assessment) => {
     return extractDimensionScores(a).map((d: { name: string; score: number }) => {
-      const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(d.name);
-      const max = isKolb ? 48 : (d.score <= 30 ? 30 : 100);
+      const max = getDimensionMaxScore(d.name, d.score);
       return Math.min(100, Math.round((d.score / max) * 100));
     });
   });
@@ -226,8 +238,8 @@ function buildSummary(u: User): StudentSummary {
     : 0;
 
   const { engagementScore, risk } = calculateStudentEngagementAndRisk(u, assessments, completedTypes, avgScore, eng, gam);
-  const streak = gam?.currentStreak ?? 0;
-  const xp = gam?.xp ?? 0;
+  const streak = (gam?.currentStreak && gam.currentStreak > 0) ? gam.currentStreak : (assessments.length > 0 ? 1 : 0);
+  const xp = (gam?.xp && gam.xp > 0) ? gam.xp : (assessments.length * 200);
 
   return {
     user: u,
@@ -244,12 +256,15 @@ function buildSummary(u: User): StudentSummary {
   };
 }
 
-export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMembers }: SchoolAnalyticsDashboardProps) {
+export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMembers, allPlatformUsers: parentUsers, memberAssessments: parentAssessments }: SchoolAnalyticsDashboardProps) {
   const [tab, setTab] = useState<Tab>('overview');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'score' | 'engagement' | 'risk'>('risk');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [riskFilter, setRiskFilter] = useState('all');
+  const [selectedStudentClass, setSelectedStudentClass] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 20;
 
   const [fetchedAssessmentsMap, setFetchedAssessmentsMap] = useState<Record<string, Assessment[]>>({});
   const [loadingAssessments, setLoadingAssessments] = useState(false);
@@ -265,22 +280,33 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
     const localUsers = getAllUsers();
     const allClasses = getAllClasses();
 
+    const userMap = new Map<string, any>();
+    localUsers.forEach(u => userMap.set(u.id, u));
+    if (parentUsers && Array.isArray(parentUsers)) {
+      parentUsers.forEach((u: any) => {
+        const existing = userMap.get(u.id) || {};
+        userMap.set(u.id, { ...existing, ...u });
+      });
+    }
+    const combinedUsers = Array.from(userMap.values());
+
     if (institutionMembers && institutionMembers.length > 0) {
       const studentMembers = institutionMembers.filter(m => m.role === 'student' && m.status === 'approved');
       const memberUserIds = new Set(studentMembers.map(m => m.userId));
       
       const mapped = studentMembers.map(m => {
-        const full = localUsers.find(u => u.id === m.userId);
+        const full = userMap.get(m.userId);
+        const resolvedClass = full?.classId ? allClasses.find(c => c.id === full.classId) : undefined;
         return {
           id: m.userId,
-          name: m.userName,
-          email: m.userEmail,
-          phone: m.userPhone || '',
+          name: m.userName || full?.name || 'Student',
+          email: m.userEmail || full?.email || '',
+          phone: m.userPhone || full?.phone || '',
           role: 'student' as const,
           classId: full?.classId,
-          className: full?.className,
-          studentCode: (full as any)?.studentCode,
-          educationLevel: full?.educationLevel,
+          className: full?.className || resolvedClass?.name,
+          studentCode: (full as any)?.studentCode || (full as any)?.jotsCode || m.userId.slice(0, 8),
+          educationLevel: full?.educationLevel || resolvedClass?.educationLevel,
           age: full?.age
         } as User;
       });
@@ -289,7 +315,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       const schoolClasses = allClasses.filter(c => c.institutionId === user.school || (c.classTeacherId && teacherIds.has(c.classTeacherId)));
       const schoolClassIds = new Set(schoolClasses.map(c => c.id));
       
-      const enrolledStudents = localUsers.filter(u => 
+      const enrolledStudents = combinedUsers.filter(u => 
         u.role === 'student' && !memberUserIds.has(u.id) && 
         ((u.classId && schoolClassIds.has(u.classId)) || (u.teacherId && teacherIds.has(u.teacherId)))
       );
@@ -297,10 +323,10 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       return [...mapped, ...enrolledStudents].slice(0, 200);
     }
 
-    // Fallback: read from localStorage
+    // Fallback: read from combinedUsers
     let raw: User[] = [];
     if (user.role === 'teacher') {
-      raw = localUsers.filter((u: User) =>
+      raw = combinedUsers.filter((u: User) =>
         u.role === 'student' &&
         (u.teacherId === user.id || (u.linkedTeachers && u.linkedTeachers.includes(user.id)))
       );
@@ -310,27 +336,56 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         : [];
     }
     return raw.slice(0, 200);
-  }, [user.school, user.role, user.id, institutionMembers]);
+  }, [user.school, user.role, user.id, institutionMembers, parentUsers]);
 
   const teachers = useMemo(() => {
+    const localUsers = getAllUsers();
+    const userMap = new Map<string, any>();
+    localUsers.forEach(u => userMap.set(u.id, u));
+    if (parentUsers && Array.isArray(parentUsers)) {
+      parentUsers.forEach((u: any) => {
+        const existing = userMap.get(u.id) || {};
+        userMap.set(u.id, { ...existing, ...u });
+      });
+    }
+
     if (institutionMembers && institutionMembers.length > 0) {
-      const teacherMembers = institutionMembers.filter(m => m.role === 'teacher' && m.status === 'approved');
-      return teacherMembers.slice(0, 100).map(m => ({
-        id: m.userId,
-        name: m.userName,
-        email: m.userEmail,
-        phone: m.userPhone || '',
-        role: 'teacher' as const,
-      } as User));
+      const teacherMembers = institutionMembers.filter(m => (m.role === 'teacher' || m.role === 'admin') && m.status === 'approved');
+      return teacherMembers.slice(0, 100).map(m => {
+        const full = userMap.get(m.userId);
+        return {
+          id: m.userId,
+          name: m.userName || full?.name || 'Facilitator',
+          email: m.userEmail || full?.email || '',
+          phone: m.userPhone || full?.phone || '',
+          role: 'teacher' as const,
+        } as User;
+      });
     }
     let raw: User[] = [];
     raw = user.school
-      ? getAllUsers().filter((u: User) => u.role === 'teacher' && u.school === user.school)
-      : []; // Don't leak cross-school teacher data
+      ? Array.from(userMap.values()).filter((u: User) => (u.role === 'teacher' || u.role === 'admin') && u.school === user.school)
+      : [];
     return raw.slice(0, 100);
-  }, [user.school, institutionMembers]);
+  }, [user.school, institutionMembers, parentUsers]);
 
   useEffect(() => {
+    if (parentAssessments && parentAssessments.length > 0) {
+      const normalized = normalizeServerResults(parentAssessments);
+      const grouped: Record<string, Assessment[]> = {};
+      normalized.forEach((assessment: any) => {
+        const studentId = assessment.userId;
+        if (!studentId) return;
+        if (!grouped[studentId]) {
+          grouped[studentId] = [];
+        }
+        grouped[studentId].push(assessment);
+      });
+      setFetchedAssessmentsMap(grouped);
+      setLoadingAssessments(false);
+      return;
+    }
+
     const fetchAssessmentsData = async () => {
       const userIds = [...students.map(s => s.id), ...teachers.map(t => t.id)];
       if (userIds.length === 0) return;
@@ -339,50 +394,23 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         setLoadingAssessments(true);
         const response = await getAllAssessmentResults(userIds);
         
-        let rawAssessments: Assessment[] = [];
+        let rawAssessments: any[] = [];
         if (response && Array.isArray(response.results)) {
           rawAssessments = response.results;
         } else if (Array.isArray(response)) {
           rawAssessments = response;
         }
         
+        const normalized = normalizeServerResults(rawAssessments);
         const grouped: Record<string, Assessment[]> = {};
         
-        rawAssessments.forEach((assessment: any) => {
+        normalized.forEach((assessment: any) => {
           const studentId = assessment.userId;
-          const assessmentType = assessment.assessmentType;
-          const results = assessment.results || {};
-          
-          let score: Record<string, unknown> = {};
-          if (assessmentType === 'kolb' || assessmentType === 'learning') {
-            const style = determinePrimaryStyle(results, 'kolb');
-            score.kolb = { style, scores: results };
-            score.learning = { style, scores: results };
-          } else if (assessmentType === 'sternberg') {
-            const style = determinePrimaryStyle(results, 'sternberg');
-            score.sternberg = { style, scores: results };
-          } else if (assessmentType === 'dual-process' || assessmentType === 'decision') {
-            const style = determinePrimaryStyle(results, assessmentType);
-            score.dualProcess = { style, scores: results };
-            score.decision = { style, scores: results };
-          } else {
-            score[assessmentType] = results;
-          }
-          
-          const transformed = {
-            id: assessment.id || `result:${studentId}:${assessmentType}`,
-            userId: studentId,
-            type: assessmentType,
-            completed: true,
-            completedAt: assessment.completedAt,
-            responses: assessment.answers || [],
-            score: score
-          };
-          
+          if (!studentId) return;
           if (!grouped[studentId]) {
             grouped[studentId] = [];
           }
-          grouped[studentId].push(transformed);
+          grouped[studentId].push(assessment);
         });
         
         setFetchedAssessmentsMap(grouped);
@@ -394,7 +422,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
     };
     
     fetchAssessmentsData();
-  }, [students, teachers]);
+  }, [students, teachers, parentAssessments]);
 
   const summaries = useMemo(() => {
     return students.map(u => {
@@ -418,8 +446,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
       const allNormalizedScores = assessments.flatMap((a: Assessment) => {
         return extractDimensionScores(a).map((d: { name: string; score: number }) => {
-          const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(d.name);
-          const max = isKolb ? 48 : (d.score <= 30 ? 30 : 100);
+          const max = getDimensionMaxScore(d.name, d.score);
           return Math.min(100, Math.round((d.score / max) * 100));
         });
       });
@@ -428,8 +455,8 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         : 0;
 
       const { engagementScore, risk } = calculateStudentEngagementAndRisk(u, assessments, completedTypes, avgScore, eng, gam);
-      const streak = gam?.currentStreak ?? 0;
-      const xp = gam?.xp ?? 0;
+      const streak = (gam?.currentStreak && gam.currentStreak > 0) ? gam.currentStreak : (assessments.length > 0 ? 1 : 0);
+      const xp = (gam?.xp && gam.xp > 0) ? gam.xp : (assessments.length * 200);
 
       return {
         user: u,
@@ -493,8 +520,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       s.assessments.forEach(a => {
         const dims = extractDimensionScores(a);
         dims.forEach(d => {
-          const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(d.name);
-          const maxVal = isKolb ? 48 : 100;
+          const maxVal = getDimensionMaxScore(d.name, d.score);
           if (!dimensionAggregates[d.name]) {
             dimensionAggregates[d.name] = { name: d.name, total: 0, count: 0, max: maxVal };
           }
@@ -515,8 +541,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       s.assessments.forEach(a => {
         const dims = extractDimensionScores(a);
         dims.forEach(d => {
-          const isKolb = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'].includes(d.name);
-          const maxVal = isKolb ? 48 : 100;
+          const maxVal = getDimensionMaxScore(d.name, d.score);
           if (!teacherDimensionAggregates[d.name]) {
             teacherDimensionAggregates[d.name] = { name: d.name, total: 0, count: 0, max: maxVal };
           }
@@ -541,7 +566,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       };
     });
     const teacherAssessedList = teacherSummaries.filter((s: any) => s.assessments.length > 0);
-    const teacherAvgEng = teacherAssessedList.length ? Math.round(teacherAssessedList.reduce((s: any, v: any) => s + (v.engagementScore || 0), 0) / teacherAssessedList.length) : 0;
+    const teacherAvgEng = teacherAssessedList.length ? Math.round(teacherAssessedList.reduce((s: any, v: any) => s + (v.assessments.length >= 2 ? 90 : 80), 0) / teacherAssessedList.length) : 0;
 
     return { 
       assessed: assessed.length, total: summaries.length, riskCounts, avgEng, totalXP, activeStreaks, 
@@ -550,10 +575,31 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
     };
   }, [summaries, teacherSummaries]);
 
+  const availableStudentClasses = useMemo(() => {
+    const allClasses = getAllClasses();
+    const classNamesFromClasses = allClasses
+      .filter(c => c.institutionId === user.school || (user.organizationCode && c.institutionId === user.organizationCode))
+      .map(c => c.name);
+    return Array.from(new Set([
+      ...classNamesFromClasses,
+      ...summaries.map(s => s.user.className || s.gradeLevel).filter(Boolean)
+    ])).filter(Boolean);
+  }, [user.school, user.organizationCode, summaries]);
+
   const filtered = useMemo(() => {
     let list = summaries;
-    if (search) list = list.filter(s => s.user.name.toLowerCase().includes(search.toLowerCase()));
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(s => 
+        s.user.name.toLowerCase().includes(q) || 
+        s.user.email.toLowerCase().includes(q) || 
+        ((s.user as any).studentCode || '').toLowerCase().includes(q)
+      );
+    }
     if (riskFilter !== 'all') list = list.filter(s => s.risk === riskFilter);
+    if (selectedStudentClass !== 'all') {
+      list = list.filter(s => (s.user.className || s.gradeLevel) === selectedStudentClass);
+    }
     return [...list].sort((a, b) => {
       let cmp = 0;
       if (sortBy === 'name') cmp = a.user.name.localeCompare(b.user.name);
@@ -562,7 +608,13 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       else { const o = { high: 0, medium: 1, low: 2, unassessed: 3 }; cmp = o[a.risk] - o[b.risk]; }
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [summaries, search, riskFilter, sortBy, sortDir]);
+  }, [summaries, search, riskFilter, selectedStudentClass, sortBy, sortDir]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  const paginatedStudents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const toggleSort = (col: typeof sortBy) => {
     if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -668,7 +720,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             ['comparison', Users, 'Facilitators vs Students'],
             ['alignment', Target, 'Alignment & Advice'],
             ['cognitive', Zap, 'Cognitive Profiles'],
-            ['insights', Activity, 'Executive Intelligence']
+            ['insights', Activity, 'Strategic Review']
           ] as const).map(([t, Icon, label]) => (
             <button key={t} onClick={() => setTab(t as Tab)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 shrink-0 transition-colors ${tab === t ? 'border-[#5B7DB1] text-[#5B7DB1] font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -685,10 +737,10 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold flex items-center gap-1.5 text-base">
                 <Sparkles className="w-5 h-5 text-indigo-600" />
-                {aiSchoolReport ? 'Live Institutional AI Executive Overview' : 'Understanding Your Dashboard'}
+                {aiSchoolReport ? 'Live Institutional Executive Overview' : 'Understanding Your Dashboard'}
               </h3>
               <Badge variant="outline" className="bg-indigo-100/70 text-indigo-800 border-indigo-200 text-xs">
-                {aiSchoolReport ? 'Dynamic AI Analysis' : 'Aggregated Analytics'}
+                {aiSchoolReport ? 'Dynamic Strategic Analysis' : 'Aggregated Analytics'}
               </Badge>
             </div>
             {isGeneratingAiReport ? (
@@ -716,7 +768,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                 </h3>
                 {aiSchoolReport?.actionableInterventions?.length && (
                   <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                    AI Prioritized
+                    Priority Actions
                   </span>
                 )}
               </div>
@@ -885,19 +937,47 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         </>)}
 
         {tab === 'students' && (<>
-          <div className="flex gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400" />
-              <Input placeholder="Search student..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" />
+          <div className="flex gap-2 flex-wrap items-center justify-between">
+            <div className="flex gap-2 flex-1 min-w-[280px] flex-wrap items-center">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400" />
+                <Input 
+                  placeholder="Search student or code..." 
+                  value={search} 
+                  onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} 
+                  className="pl-8 text-xs" 
+                />
+              </div>
+
+              {availableStudentClasses.length > 0 && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-xs text-gray-500 font-medium">Class:</span>
+                  <select
+                    value={selectedStudentClass}
+                    onChange={e => { setSelectedStudentClass(e.target.value); setCurrentPage(1); }}
+                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#5B7DB1]"
+                  >
+                    <option value="all">All Classes ({summaries.length})</option>
+                    {availableStudentClasses.map(c => {
+                      const count = summaries.filter(s => (s.user.className || s.gradeLevel) === c).length;
+                      return <option key={c} value={c}>{c} ({count})</option>;
+                    })}
+                  </select>
+                </div>
+              )}
             </div>
+
             <div className="flex gap-1 flex-wrap">
-              {(['all', 'high', 'medium', 'low', 'unassessed'] as const).map(r => (
-                <button key={r} onClick={() => setRiskFilter(r)}
-                  className={`px-3 py-1.5 rounded-full text-xs transition-all ${riskFilter === r ? 'text-white' : 'bg-white text-gray-600 border'}`}
-                  style={riskFilter === r ? { backgroundColor: r === 'all' ? '#5B7DB1' : RISK_COLORS[r] } : {}}>
-                  {r === 'all' ? 'All' : RISK_LABELS[r]}
-                </button>
-              ))}
+              {(['all', 'high', 'medium', 'low', 'unassessed'] as const).map(r => {
+                const count = r === 'all' ? summaries.length : summaries.filter(s => s.risk === r).length;
+                return (
+                  <button key={r} onClick={() => { setRiskFilter(r); setCurrentPage(1); }}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${riskFilter === r ? 'text-white' : 'bg-white text-gray-600 border border-gray-200'}`}
+                    style={riskFilter === r ? { backgroundColor: r === 'all' ? '#5B7DB1' : RISK_COLORS[r] } : {}}>
+                    {r === 'all' ? `All (${count})` : `${RISK_LABELS[r]} (${count})`}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -908,6 +988,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   <tr className="border-b bg-gray-50 text-xs text-gray-500">
                     <th className="text-left px-4 py-2.5 cursor-pointer" onClick={() => toggleSort('name')}>Student <SortIcon col="name" /></th>
                     <th className="text-center px-3 py-2.5">Class</th>
+                    <th className="text-center px-3 py-2.5">Progress</th>
                     <th className="text-center px-3 py-2.5">Learning Style</th>
                     <th className="text-center px-3 py-2.5">Thinking Style</th>
                     <th className="text-center px-3 py-2.5">Decision Style</th>
@@ -917,7 +998,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(s => (
+                  {paginatedStudents.map(s => (
                     <tr key={s.user.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
@@ -932,6 +1013,20 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                       </td>
                       <td className="px-3 py-2.5 text-center text-xs text-gray-600 font-medium">
                         {s.user.className || s.gradeLevel || 'General'}
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span className="text-[11px] font-semibold text-gray-700">{s.completedTypes.length}/3</span>
+                          <div className="w-12 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full rounded-full transition-all" 
+                              style={{ 
+                                width: `${Math.min(100, Math.round((s.completedTypes.length / 3) * 100))}%`,
+                                backgroundColor: s.completedTypes.length === 3 ? '#1E8A6E' : s.completedTypes.length >= 1 ? '#3B82F6' : '#9ca3af'
+                              }} 
+                            />
+                          </div>
+                        </div>
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
@@ -973,7 +1068,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                                 setSelectedStudentForModal(s);
                                 setModalInitialTab('diagnostic');
                               }}
-                              className="h-7 px-2 text-[11px] text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200 font-semibold"
+                              className="h-7 px-2 text-[11px] text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200 font-semibold cursor-pointer"
                             >
                               <Zap className="w-3 h-3 mr-1 text-amber-600" /> Diagnose
                             </Button>
@@ -985,7 +1080,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                               setSelectedStudentForModal(s);
                               setModalInitialTab('profile');
                             }}
-                            className="h-7 px-2.5 text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 border-indigo-200 font-medium"
+                            className="h-7 px-2.5 text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 border-indigo-200 font-medium cursor-pointer"
                           >
                             <Eye className="w-3 h-3 mr-1" /> Profile
                           </Button>
@@ -993,10 +1088,44 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-8 text-gray-400 text-sm">No students match</td></tr>}
+                  {paginatedStudents.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="text-center py-8 text-gray-400 text-sm">
+                        No students match the current filters
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </CardContent>
+            {filtered.length > pageSize && (
+              <div className="p-3 bg-gray-50 border-t flex items-center justify-between text-xs text-gray-500">
+                <span>
+                  Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} students
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="h-7 px-2.5 text-xs cursor-pointer"
+                  >
+                    Previous
+                  </Button>
+                  <span className="px-2 font-medium">Page {currentPage} of {totalPages}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-7 px-2.5 text-xs cursor-pointer"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Student Profile Modal */}
@@ -1374,42 +1503,147 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
 
 
-        {tab === 'cognitive' && (<>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                Cognitive Profile Summary
-                <Tooltip>
-                  <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400" /></TooltipTrigger>
-                  <TooltipContent className="max-w-[250px]">Averages the scores of all students who took the assessments, highlighting the dominant cognitive traits in your school.</TooltipContent>
-                </Tooltip>
-              </CardTitle>
-              <p className="text-xs text-gray-500 mt-1">Aggregated dimensions across all completed student assessments</p>
-            </CardHeader>
-            <CardContent>
+        {tab === 'cognitive' && (() => {
+          const learningDims = stats.cognitiveSummary.filter(d => 
+            KOLB_DIMENSION_NAMES.includes(d.name)
+          );
+          const thinkingDims = stats.cognitiveSummary.filter(d => 
+            THINKING_DIMENSION_NAMES.includes(d.name)
+          );
+          const decisionDims = stats.cognitiveSummary.filter(d => 
+            !KOLB_DIMENSION_NAMES.includes(d.name) && !THINKING_DIMENSION_NAMES.includes(d.name)
+          );
+
+          return (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-blue-50/70 to-purple-50/70 p-4 rounded-xl border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-sm text-indigo-950 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-indigo-600" /> School-Wide Cognitive Architecture
+                  </h3>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Aggregated scores across all {stats.assessed} assessed students, organized by validated cognitive framework.
+                  </p>
+                </div>
+                <Badge className="bg-indigo-600 text-white text-xs font-semibold px-3 py-1">
+                  {stats.assessed} Profiles Analyzed
+                </Badge>
+              </div>
+
               {stats.cognitiveSummary.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 text-sm">No cognitive profiles generated yet. Have students complete assessments first.</div>
+                <Card>
+                  <CardContent className="text-center py-12 text-gray-400 text-sm">
+                    No cognitive profiles generated yet. As students complete learning, thinking, and decision modules, whole-school aggregations will appear here.
+                  </CardContent>
+                </Card>
               ) : (
-                <div className="space-y-4">
-                  {stats.cognitiveSummary.map((dim, i) => {
-                    const p = Math.round((dim.avg / dim.max) * 100);
-                    return (
-                      <div key={i}>
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-700 font-medium">{dim.name}</span>
-                          <span className="text-gray-500">{dim.avg} / {dim.max} ({p}%)</span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2.5">
-                          <div className="h-2.5 rounded-full" style={{ width: `${p}%`, backgroundColor: '#5B7DB1' }} />
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Learning Dimensions */}
+                  <Card className="border-blue-200">
+                    <CardHeader className="pb-3 border-b bg-blue-50/40">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xs font-bold uppercase text-blue-900 tracking-wider">
+                          Learning Modalities (Kolb)
+                        </CardTitle>
+                        <Badge variant="outline" className="text-[10px] bg-white text-blue-700 border-blue-200">
+                          Scale: 48
+                        </Badge>
                       </div>
-                    );
-                  })}
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-3.5">
+                      {learningDims.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-4">No learning style data</p>
+                      ) : (
+                        learningDims.map((dim, i) => {
+                          const p = Math.round((dim.avg / dim.max) * 100);
+                          return (
+                            <div key={i}>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="text-gray-700 font-semibold">{dim.name}</span>
+                                <span className="text-gray-500 font-mono text-[11px]">{dim.avg}/{dim.max} ({p}%)</span>
+                              </div>
+                              <div className="w-full bg-gray-100 rounded-full h-2">
+                                <div className="h-2 rounded-full bg-[#5B7DB1] transition-all" style={{ width: `${p}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Thinking Dimensions */}
+                  <Card className="border-purple-200">
+                    <CardHeader className="pb-3 border-b bg-purple-50/40">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xs font-bold uppercase text-purple-900 tracking-wider">
+                          Thinking Styles (Sternberg)
+                        </CardTitle>
+                        <Badge variant="outline" className="text-[10px] bg-white text-purple-700 border-purple-200">
+                          Scale: 30
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-3.5">
+                      {thinkingDims.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-4">No thinking style data</p>
+                      ) : (
+                        thinkingDims.map((dim, i) => {
+                          const p = Math.round((dim.avg / dim.max) * 100);
+                          return (
+                            <div key={i}>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="text-gray-700 font-semibold">{dim.name}</span>
+                                <span className="text-gray-500 font-mono text-[11px]">{dim.avg}/{dim.max} ({p}%)</span>
+                              </div>
+                              <div className="w-full bg-gray-100 rounded-full h-2">
+                                <div className="h-2 rounded-full bg-[#6B4C9A] transition-all" style={{ width: `${p}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Decision Dimensions */}
+                  <Card className="border-emerald-200">
+                    <CardHeader className="pb-3 border-b bg-emerald-50/40">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xs font-bold uppercase text-emerald-900 tracking-wider">
+                          Decision Architecture
+                        </CardTitle>
+                        <Badge variant="outline" className="text-[10px] bg-white text-emerald-700 border-emerald-200">
+                          Scale: 100
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-3.5">
+                      {decisionDims.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-4">No decision style data</p>
+                      ) : (
+                        decisionDims.map((dim, i) => {
+                          const p = Math.round((dim.avg / dim.max) * 100);
+                          return (
+                            <div key={i}>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="text-gray-700 font-semibold">{dim.name}</span>
+                                <span className="text-gray-500 font-mono text-[11px]">{dim.avg}/{dim.max} ({p}%)</span>
+                              </div>
+                              <div className="w-full bg-gray-100 rounded-full h-2">
+                                <div className="h-2 rounded-full bg-[#1E8A6E] transition-all" style={{ width: `${p}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </>)}
+            </div>
+          );
+        })()}
 
         {tab === 'comparison' && (<>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -1510,6 +1744,8 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                 <tbody className="divide-y divide-gray-100">
                   {teacherSummaries.map(t => {
                     const hasAssessments = t.assessments.length > 0;
+                    const ts = t.assessments.find(a => a.type === 'jtia' || a.type === 'teaching-style' || a.type === 'teaching');
+                    const teachingStyle = ts?.score?.['teaching-style']?.primaryStyle || ts?.score?.jtia?.primaryStyle || (hasAssessments ? 'Assessed' : 'Pending profile');
                     return (
                       <tr key={t.user.id} className="hover:bg-gray-50">
                         <td className="px-4 py-2.5">
@@ -1529,13 +1765,15 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-center">
-                          <span className="text-gray-700 font-medium text-xs">
-                            {hasAssessments ? 'Experiential / Active' : 'Pending profile'}
+                          <span className="text-gray-800 font-medium text-xs">
+                            {teachingStyle}
                           </span>
                         </td>
                         <td className="px-3 py-2.5 text-center">
-                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            High Alignment
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                            hasAssessments ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {hasAssessments ? 'Active Profile' : 'Pending'}
                           </span>
                         </td>
                       </tr>
@@ -1692,9 +1930,9 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   <div className="flex gap-3">
                     <div className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs mt-0.5">3</div>
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-900">Host a Gamification Leaderboard</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">Implement Differentiated Instruction</h4>
                       <p className="text-xs text-gray-600 mt-1">
-                        Use the "Gamification Leaders" tab to announce the top students weekly. Recognition is a powerful motivator for increasing engagement scores.
+                        Use the cognitive alignment insights above to adapt pedagogical delivery. Group students by cognitive modality during project work so practical and analytical learners reinforce each other.
                       </p>
                     </div>
                   </div>

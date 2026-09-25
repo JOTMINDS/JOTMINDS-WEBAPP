@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Badge } from '../ui/badge';
 import { BarChart3, Users, User as UserIcon, Save, CheckCircle2, ClipboardList, Download, ChevronRight, Mail, Shield, MoreVertical, X } from 'lucide-react';
 import { formatAssessmentType } from '../InstitutionReporting';
 import { toast } from 'sonner';
@@ -179,6 +180,55 @@ export function TeacherManagementContent({
                 </Button>
               </div>
             </div>
+
+            {/* Teaching Insights Assessment Summary — Clean Percentage Bar */}
+            <div className="bg-white p-5 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teaching Insights Assessment
+                </h4>
+                {jtiaAssmt ? (
+                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
+                    Completed
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
+                    Pending
+                  </Badge>
+                )}
+              </div>
+
+              {jtiaAssmt ? (
+                <div className="space-y-3">
+                  {(() => {
+                    const scoreObj = jtiaAssmt.report || jtiaAssmt.results || jtiaAssmt.score?.jtia || {};
+                    const overall = Number(scoreObj.overallScore ?? (typeof jtiaAssmt.score === 'number' ? jtiaAssmt.score : 0)) || 0;
+                    return (
+                      <div>
+                        <div className="flex justify-between items-center text-xs mb-1.5">
+                          <span className="text-gray-600 font-medium">Overall Pedagogical Alignment</span>
+                          <span className="text-sm font-bold text-[#6B4C9A]">{overall}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                          <div
+                            className="bg-gradient-to-r from-[#5B7DB1] to-[#6B4C9A] h-3 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(100, Math.max(0, overall))}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] text-gray-500 mt-2">
+                          <span>Status: Profile Verified</span>
+                          <span>Completed on {jtiaAssmt.completedAt ? new Date(jtiaAssmt.completedAt).toLocaleDateString() : 'Recorded'}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  This educator has not yet completed the Teaching Insights assessment.
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -302,9 +352,25 @@ export function TeacherManagementContent({
                     {assmt.score && (
                       <div className="mt-3 p-3 bg-gray-50 rounded text-sm">
                         {assmt.type === 'jtia' ? (
-                          <div className="grid grid-cols-2 gap-2">
-                            <div><span className="text-gray-500">Overall Score:</span> {(assmt.report || assmt.results || assmt.score?.jtia)?.overallScore || 'Completed'}/100</div>
-                            <div><span className="text-gray-500">Status:</span> Profile Complete</div>
+                          <div className="space-y-2">
+                            {(() => {
+                              const scoreObj = assmt.report || assmt.results || assmt.score?.jtia || {};
+                              const overall = Number(scoreObj.overallScore ?? (typeof assmt.score === 'number' ? assmt.score : 0)) || 0;
+                              return (
+                                <>
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-gray-600 font-medium">Overall Teaching Insights</span>
+                                    <span className="font-bold text-[#6B4C9A]">{overall}%</span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                    <div
+                                      className="bg-gradient-to-r from-[#5B7DB1] to-[#6B4C9A] h-2 rounded-full transition-all"
+                                      style={{ width: `${Math.min(100, Math.max(0, overall))}%` }}
+                                    />
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         ) : (
                           <div className="space-y-1">

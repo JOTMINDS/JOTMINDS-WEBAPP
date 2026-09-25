@@ -6,12 +6,14 @@ import { Input } from '../ui/input';
 import {
   BookOpen, Video, FileText, Download, Search, CheckCircle2,
   Sparkles, GraduationCap, HelpCircle, ExternalLink, Play, Lightbulb,
-  Shield, Users, AlertTriangle, ArrowRight, UserPlus, Target, X, Pause, Volume2
+  Shield, Users, AlertTriangle, ArrowRight, UserPlus, Target, X, Pause, Volume2,
+  Mail, Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { InstitutionMember } from '../../utils/institution';
 import { getAllClasses, getAllUsers, getAssignmentsForTeacher, getAssessmentsByUserId } from '../../utils/storage';
 import { extractDimensionScores } from '../../utils/cognitiveXP';
+import { generateTrainingResourcePDF } from '../../utils/pdfGenerator';
 
 interface ResourceItem {
   id: string;
@@ -148,6 +150,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedVideoModal, setSelectedVideoModal] = useState<ResourceItem | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [videoError, setVideoError] = useState(false);
 
   const allClasses = getAllClasses();
   // allPlatformUsers is fetched server-side for every institution member (via
@@ -210,14 +213,26 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
   const highRiskCount = facultyGaps.filter(g => g.riskLevel === 'High').length;
   const mediumRiskCount = facultyGaps.filter(g => g.riskLevel === 'Medium').length;
 
-  const handleDownload = (resource: ResourceItem) => {
-    const blob = new Blob([resource.content], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${resource.title.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
-    link.click();
-    toast.success(`Downloaded "${resource.title}" (${resource.format})`);
+  const handleDownload = async (resource: ResourceItem) => {
+    toast.loading(`Generating ${resource.format} PDF...`, { id: 'training-dl' });
+    const success = await generateTrainingResourcePDF(
+      resource.title,
+      resource.format,
+      resource.readTime,
+      resource.content
+    );
+
+    if (success) {
+      toast.success(`Downloaded "${resource.title}" (${resource.format})`, { id: 'training-dl' });
+    } else {
+      const blob = new Blob([resource.content], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${resource.title.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
+      link.click();
+      toast.success(`Downloaded "${resource.title}"`, { id: 'training-dl' });
+    }
   };
 
   const filteredResources = RESOURCES.filter(r => {
@@ -351,6 +366,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                     <th className="text-center px-3 py-3 font-semibold">Gap Status</th>
                     <th className="text-left px-4 py-3 font-semibold">Identified Gap & Rationale</th>
                     <th className="text-left px-4 py-3 font-semibold">Recommended Training Action</th>
+                    <th className="text-right px-4 py-3 font-semibold">Leadership Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -403,11 +419,40 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                           ))}
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        {g.riskLevel === 'High' ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              toast.success(`Assessment reminder queued for ${g.teacher.userName} (${g.teacher.userEmail})`);
+                            }}
+                            className="text-[11px] h-7 border-red-200 text-red-700 hover:bg-red-50 gap-1"
+                          >
+                            <Mail className="w-3 h-3" /> Remind Assessment
+                          </Button>
+                        ) : g.riskLevel === 'Medium' ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              toast.success(`Coaching session advisory scheduled for ${g.teacher.userName}`);
+                            }}
+                            className="text-[11px] h-7 border-amber-200 text-amber-700 hover:bg-amber-50 gap-1"
+                          >
+                            <Calendar className="w-3 h-3" /> Schedule Coaching
+                          </Button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-medium">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Profile Aligned
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                   {facultyGaps.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="text-center py-8 text-gray-400">
+                      <td colSpan={6} className="text-center py-8 text-gray-400">
                         No faculty members connected to evaluate.
                       </td>
                     </tr>
@@ -443,6 +488,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                 onClick={() => {
                   setSelectedVideoModal(RESOURCES[4]);
                   setIsPlaying(true);
+                  setVideoError(false);
                 }}
                 className="relative rounded-xl overflow-hidden bg-slate-900 aspect-video max-h-[260px] flex items-center justify-center group cursor-pointer border border-indigo-200 shadow-inner"
               >
@@ -539,6 +585,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                       onClick={() => {
                         setSelectedVideoModal(res);
                         setIsPlaying(true);
+                        setVideoError(false);
                       }}
                       className="w-full text-xs text-purple-700 border-purple-200 hover:bg-purple-50 flex items-center justify-center gap-1.5"
                     >
@@ -585,25 +632,42 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
             </div>
 
             {/* Video Viewport */}
-            <div className="relative aspect-video bg-black flex items-center justify-center">
-              {selectedVideoModal.videoUrl ? (
+            <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+              {selectedVideoModal.videoUrl && !videoError ? (
                 <video
                   key={selectedVideoModal.videoUrl}
                   src={selectedVideoModal.videoUrl}
                   controls
                   autoPlay
+                  onError={() => setVideoError(true)}
                   className="w-full h-full"
                 >
                   Your browser does not support the video tag.
                 </video>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-950/80 via-slate-900 to-black">
-                  <div className="text-center p-6 max-w-md">
-                    <div className="w-16 h-16 rounded-full bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center mx-auto mb-3">
-                      <Video className="w-8 h-8" />
+                <div className="absolute inset-0 flex flex-col justify-center items-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 text-center">
+                  <div className="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mb-3">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold text-base text-white mb-1">
+                    Interactive Platform Walkthrough Guide
+                  </h4>
+                  <p className="text-xs text-indigo-200/90 max-w-md mb-4 leading-relaxed">
+                    Online video stream is undergoing scheduled server updates. Explore the core platform workflow below:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full max-w-lg text-left text-[11px]">
+                    <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
+                      <span className="font-bold text-indigo-300 block mb-0.5">1. Class Codes</span>
+                      <span className="text-slate-300 text-[10px]">Teachers generate codes in Class Management for students to self-enroll.</span>
                     </div>
-                    <h4 className="font-bold text-base mb-1">{selectedVideoModal.title}</h4>
-                    <p className="text-xs text-slate-400">This video is not available yet. Check back soon.</p>
+                    <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
+                      <span className="font-bold text-emerald-300 block mb-0.5">2. Assessments</span>
+                      <span className="text-slate-300 text-[10px]">Learners complete Kolb, Sternberg & Decision frameworks in 15 mins.</span>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
+                      <span className="font-bold text-amber-300 block mb-0.5">3. School Reports</span>
+                      <span className="text-slate-300 text-[10px]">Download executive PDF dossiers and CSV rosters for leadership meetings.</span>
+                    </div>
                   </div>
                 </div>
               )}

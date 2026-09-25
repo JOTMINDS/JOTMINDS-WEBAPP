@@ -17,6 +17,7 @@ import {
   GHANA_REGIONS,
   saveInstitution
 } from '../../utils/institution';
+import { getAllClasses } from '../../utils/storage';
 
 interface InstitutionOverviewProps {
   institution: Institution;
@@ -29,6 +30,7 @@ interface InstitutionOverviewProps {
   setTab: (tab: 'overview' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile') => void;
   onManageCodes?: () => void;
   onInstitutionUpdate?: (updated: Institution) => void;
+  memberAssessments?: any[];
 }
 
 export function InstitutionOverview({
@@ -41,12 +43,35 @@ export function InstitutionOverview({
   handleShare,
   setTab,
   onManageCodes,
-  onInstitutionUpdate
+  onInstitutionUpdate,
+  memberAssessments
 }: InstitutionOverviewProps) {
   const statusCounts = getMemberCountsByStatus(members);
   const headAdminMember = members.find(m => m.userId === institution.adminId);
   const adminName = headAdminMember?.userName || institution.adminName;
   const adminEmail = headAdminMember?.userEmail || institution.adminEmail;
+
+  const approvedStudents = members.filter(m => m.role === 'student' && m.status === 'approved').length;
+  const pendingStudents = members.filter(m => m.role === 'student' && (m.status === 'pending' || !m.status)).length;
+  const approvedTeachers = members.filter(m => (m.role === 'teacher' || m.role === 'admin') && m.status === 'approved').length;
+  const pendingTeachers = members.filter(m => m.role === 'teacher' && (m.status === 'pending' || !m.status)).length;
+
+  const allClasses = getAllClasses();
+  const teacherIds = new Set(members.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+  const schoolClasses = allClasses.filter(c => c.institutionId === institution.id || (c.classTeacherId && teacherIds.has(c.classTeacherId)));
+  const totalClasses = schoolClasses.length;
+
+  // Assessed students calculation
+  const studentMemberIds = new Set(members.filter(m => m.role === 'student').map(m => m.userId));
+  const assessedStudentIds = new Set(
+    (memberAssessments || [])
+      .filter((a: any) => studentMemberIds.has(a.userId) && a.completedAt)
+      .map((a: any) => a.userId)
+  );
+  const assessedStudentsCount = assessedStudentIds.size;
+  const assessmentCompletionRate = approvedStudents > 0 
+    ? Math.round((assessedStudentsCount / approvedStudents) * 100) 
+    : 0;
 
   const loc = resolveSchoolLocation(institution);
   const displayLocation = loc.displayLocation;
@@ -127,11 +152,22 @@ export function InstitutionOverview({
               {institution.tagline && <p className="text-xs text-gray-500 italic mb-2">{institution.tagline}</p>}
               <div className="flex flex-wrap items-center gap-1.5 mt-1">
                 <Badge variant="secondary" className="text-[10px] font-semibold">{institution.type}</Badge>
-                <Badge variant="secondary" className="text-[10px] flex items-center font-medium bg-emerald-50 text-emerald-800 border-emerald-200">
-                  <MapPin className="w-2.5 h-2.5 mr-1 text-emerald-600 shrink-0" />
-                  {displayLocation}
-                </Badge>
-                {loc.address && (
+                {displayLocation && displayLocation.toLowerCase() !== 'not specified' ? (
+                  <Badge variant="secondary" className="text-[10px] flex items-center font-medium bg-emerald-50 text-emerald-800 border-emerald-200">
+                    <MapPin className="w-2.5 h-2.5 mr-1 text-emerald-600 shrink-0" />
+                    {displayLocation}
+                  </Badge>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditLocationOpen(true)}
+                    className="text-[10px] flex items-center font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition-colors cursor-pointer"
+                  >
+                    <MapPin className="w-2.5 h-2.5 mr-1 text-amber-600 shrink-0" />
+                    Set Campus Location
+                  </button>
+                )}
+                {loc.address && loc.address.toLowerCase() !== 'not specified' && (
                   <span className="text-[11px] text-gray-500 hidden sm:inline-flex items-center">
                     • {loc.address}
                   </span>
@@ -149,7 +185,7 @@ export function InstitutionOverview({
 
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 border-t pt-4">
             {[
-              { label: 'Campus Location', icon: <MapPin className="w-3.5 h-3.5 text-rose-500" />, value: displayLocation },
+              { label: 'Campus Location', icon: <MapPin className="w-3.5 h-3.5 text-rose-500" />, value: displayLocation && displayLocation.toLowerCase() !== 'not specified' ? displayLocation : 'Set Location' },
               { label: 'School Code', icon: <QrCode className="w-3.5 h-3.5 text-indigo-500" />, value: institution.code },
               { label: 'Head of School', icon: <Shield className="w-3.5 h-3.5 text-amber-500" />, value: adminName },
               { label: 'Email', icon: <Mail className="w-3.5 h-3.5 text-blue-500" />, value: institution.email },
@@ -208,12 +244,38 @@ export function InstitutionOverview({
       </Card>
 
       {/* School Summary KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
-          { label: 'Connected Students', value: statusCounts.students, subtitle: statusCounts.pending > 0 ? `${statusCounts.pending} pending review` : 'All verified', color: '#1E8A6E' },
-          { label: 'Active Teachers', value: statusCounts.teachers, subtitle: 'Faculty & educators', color: '#6B4C9A' },
-          { label: 'Total Approved Members', value: statusCounts.approved, subtitle: 'Verified school community', color: '#5B7DB1' },
-          { label: 'School Status', value: institution.isActive ? 'Active' : 'Inactive', subtitle: `${daysLeft ?? 30} days left on code`, color: institution.isActive ? '#10B981' : '#EF4444' },
+          { 
+            label: 'Connected Students', 
+            value: approvedStudents, 
+            subtitle: pendingStudents > 0 ? `${pendingStudents} awaiting verification` : 'Verified students', 
+            color: '#1E8A6E' 
+          },
+          { 
+            label: 'Active Facilitators', 
+            value: approvedTeachers, 
+            subtitle: pendingTeachers > 0 ? `${pendingTeachers} pending approval` : 'Faculty active', 
+            color: '#6B4C9A' 
+          },
+          { 
+            label: 'Active Classes', 
+            value: totalClasses, 
+            subtitle: 'Class sections & cohorts', 
+            color: '#2563EB' 
+          },
+          { 
+            label: 'Assessed Profiles', 
+            value: `${assessmentCompletionRate}%`, 
+            subtitle: `${assessedStudentsCount} of ${approvedStudents} completed`, 
+            color: '#D97706' 
+          },
+          { 
+            label: 'School Status', 
+            value: institution.isActive ? 'Active' : 'Inactive', 
+            subtitle: `${daysLeft ?? 30} days left on code`, 
+            color: institution.isActive ? '#10B981' : '#EF4444' 
+          },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="pt-4 text-center">

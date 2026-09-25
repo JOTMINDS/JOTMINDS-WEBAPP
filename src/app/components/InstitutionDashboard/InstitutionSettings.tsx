@@ -57,7 +57,11 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
   const [editAddress, setEditAddress] = useState(institution.address ?? '');
   const [editEmail, setEditEmail] = useState(institution.email ?? '');
   const [editPhone, setEditPhone] = useState(institution.phone ?? '');
-  const [editWebsite, setEditWebsite] = useState(institution.website ?? '');
+  const [editWebsite, setEditWebsite] = useState(
+    institution.website && !institution.website.toLowerCase().includes('jotminds.com')
+      ? institution.website
+      : ''
+  );
   const [editTagline, setEditTagline] = useState(institution.tagline ?? '');
   const [editAdminName, setEditAdminName] = useState(institution.adminName ?? '');
   const [editAdminEmail, setEditAdminEmail] = useState(institution.adminEmail ?? '');
@@ -107,7 +111,7 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
       address: editAddress.trim(),
       email: editEmail.trim(),
       phone: editPhone.trim(),
-      website: editWebsite.trim() || undefined,
+      website: editWebsite.trim() && !editWebsite.trim().toLowerCase().includes('jotminds.com') ? editWebsite.trim() : undefined,
       tagline: editTagline.trim() || undefined,
       adminName: editAdminName.trim(),
       adminEmail: editAdminEmail.trim(),

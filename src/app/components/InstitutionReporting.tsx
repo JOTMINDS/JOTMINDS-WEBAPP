@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Badge } from './ui/badge';
-import { Download, Filter, Search, Calendar, FileText, Users, CheckCircle2, AlertTriangle, Sparkles, BarChart3 } from 'lucide-react';
+import { Download, Filter, Search, Calendar, FileText, Users, CheckCircle2, AlertTriangle, Sparkles, BarChart3, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAllAssessmentResults } from '../utils/api';
 import { getAllUsers, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
@@ -34,6 +34,8 @@ interface InstitutionReportingProps {
   institutionId: string;
   institutionName: string;
   members?: InstitutionMember[];
+  allPlatformUsers?: any[];
+  memberAssessments?: any[];
   currentTeacherId?: string;
 }
 
@@ -41,6 +43,8 @@ export function InstitutionReporting({
   institutionId,
   institutionName,
   members = [],
+  allPlatformUsers = [],
+  memberAssessments = [],
   currentTeacherId
 }: InstitutionReportingProps) {
   const [dateFrom, setDateFrom] = useState('');
@@ -48,20 +52,35 @@ export function InstitutionReporting({
   const [selectedTeacherId, setSelectedTeacherId] = useState(currentTeacherId || 'all');
   const [selectedClassId, setSelectedClassId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedReportType, setSelectedReportType] = useState<'dossier' | 'roster' | 'diagnostic'>('dossier');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // If parent passed allPlatformUsers and memberAssessments, use them directly
+    if (allPlatformUsers && allPlatformUsers.length > 0) {
+      setAllUsers(allPlatformUsers);
+    } else {
+      setAllUsers(getAllUsers());
+    }
+
+    if (memberAssessments && memberAssessments.length > 0) {
+      setAllAssessments(memberAssessments);
+      setIsLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const users = getAllUsers();
+        const users = allPlatformUsers.length > 0 ? allPlatformUsers : getAllUsers();
         setAllUsers(users);
 
         let studentMemberIds = members
-          .filter(m => m.role === 'student' && m.status === 'approved')
+          .filter(m => m.role === 'student' && m.status !== 'rejected')
           .map(m => m.userId);
 
         if (studentMemberIds.length === 0) {
@@ -98,14 +117,14 @@ export function InstitutionReporting({
       }
     };
     fetchData();
-  }, [institutionId, members, currentTeacherId]);
+  }, [institutionId, members, currentTeacherId, allPlatformUsers, memberAssessments]);
 
-  const teachers = members.filter(m => m.role === 'teacher' && m.status === 'approved');
+  const teachers = members.filter(m => (m.role === 'teacher' || m.role === 'admin') && m.status !== 'rejected');
   const allClasses = getAllClasses();
 
   // Build aggregated student list with cognitive styles
   const studentReports = useMemo(() => {
-    const studentMembers = members.filter(m => m.role === 'student' && m.status === 'approved');
+    const studentMembers = members.filter(m => m.role === 'student' && m.status !== 'rejected');
     const memberUserIds = new Set(studentMembers.map(m => m.userId));
 
     let studentsInScope = allUsers.filter(u => u.role === 'student' && memberUserIds.has(u.id));
@@ -315,75 +334,119 @@ export function InstitutionReporting({
         </div>
       </div>
 
-      {/* Two Direct Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* PDF Card */}
-        <Card className="border-indigo-100 bg-gradient-to-br from-indigo-50/40 via-white to-white hover:border-indigo-300 transition-all">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200 text-xs">
-                Official Document
-              </Badge>
-              <FileText className="w-5 h-5 text-indigo-600" />
-            </div>
-            <CardTitle className="text-base font-bold text-gray-900 mt-2">
-              Institutional Cognitive Dossier (PDF)
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Formatted executive summary document featuring institutional metrics, learner cognitive distribution, and verified student profiles.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="space-y-1.5 text-xs text-gray-600 mb-4 bg-white p-3 rounded-lg border border-gray-100">
-              <p className="flex items-center gap-1.5 text-indigo-900 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" /> Includes Kolb learning styles & Sternberg thinking styles
-              </p>
-              <p className="flex items-center gap-1.5 text-indigo-900 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" /> Executive summary metrics & classroom distribution
-              </p>
-              <p className="flex items-center gap-1.5 text-indigo-900 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" /> Filtered to current selection ({filteredReports.length} learners)
-              </p>
-            </div>
-            <Button onClick={handleExportPDF} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white gap-2 text-xs">
-              <FileText className="w-4 h-4" /> Download Official PDF Report
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* CSV Card */}
-        <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50/40 via-white to-white hover:border-emerald-300 transition-all">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs">
-                Spreadsheet Dataset
-              </Badge>
-              <Download className="w-5 h-5 text-emerald-600" />
-            </div>
-            <CardTitle className="text-base font-bold text-gray-900 mt-2">
-              Student Cognitive Roster (CSV)
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Structured spreadsheet formatted with student codes, primary learning, thinking, and decision styles, engagement levels, and risk flags.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="space-y-1.5 text-xs text-gray-600 mb-4 bg-white p-3 rounded-lg border border-gray-100">
-              <p className="flex items-center gap-1.5 text-emerald-900 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Normalized columns ready for Excel & Google Sheets
-              </p>
-              <p className="flex items-center gap-1.5 text-emerald-900 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> No raw JSON dumps — only actionable educational metrics
-              </p>
-              <p className="flex items-center gap-1.5 text-emerald-900 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Exports all {filteredReports.length} selected learners
-              </p>
-            </div>
-            <Button onClick={handleExportCSV} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white gap-2 text-xs">
-              <Download className="w-4 h-4" /> Download Spreadsheet (CSV)
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Report Type Selector */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          {
+            id: 'dossier' as const,
+            name: 'Executive Cognitive Dossier',
+            formatBadge: 'Official PDF Document',
+            badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+            icon: FileText,
+            iconColor: 'text-indigo-600',
+            desc: 'Multi-page leadership dossier featuring school KPIs, cognitive distributions across learning & thinking modalities, and verified learner profiles.',
+            action: () => handleExportPDF(),
+            actionLabel: 'Download PDF Dossier',
+            btnColor: 'bg-indigo-600 hover:bg-indigo-700'
+          },
+          {
+            id: 'roster' as const,
+            name: 'Student Cognitive Roster',
+            formatBadge: 'Spreadsheet (CSV)',
+            badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+            icon: Download,
+            iconColor: 'text-emerald-600',
+            desc: 'Structured spreadsheet of all learners with student codes, primary learning, thinking, and decision styles, engagement levels, and assessment dates.',
+            action: () => handleExportCSV(),
+            actionLabel: 'Download CSV Roster',
+            btnColor: 'bg-emerald-700 hover:bg-emerald-800'
+          },
+          {
+            id: 'diagnostic' as const,
+            name: 'Learner Support Diagnostic',
+            formatBadge: 'Diagnostic CSV & PDF',
+            badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
+            icon: AlertTriangle,
+            iconColor: 'text-amber-600',
+            desc: 'Targeted support diagnostic identifying learners requiring differentiated instruction, intervention categories, and tailored pedagogical advice.',
+            action: () => {
+              // Export diagnostic CSV
+              const headers = ['Student Name', 'Student Code', 'Class', 'Teacher', 'Risk Level', 'Engagement Score', 'Support Priority', 'Primary Learning Style'];
+              const rows = filteredReports.map(r => [
+                r.user.name || 'Unknown',
+                (r.user as any).studentCode || '',
+                r.className,
+                r.teacherName,
+                r.riskStatus,
+                `${r.engagementScore}/100`,
+                r.riskStatus === 'Priority Support' ? 'Immediate Differentiated Scaffolding' : r.riskStatus === 'Needs Support' ? 'Structured Cognitive Monitoring' : 'Standard Enrichment',
+                r.styles.learningStyle
+              ].map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','));
+              const csvContent = [headers.join(','), ...rows].join('\n');
+              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `${institutionName.replace(/[^a-zA-Z0-9]/g, '_')}_Learner_Support_Diagnostic_${new Date().toISOString().split('T')[0]}.csv`;
+              link.click();
+              toast.success('Learner Support Diagnostic CSV downloaded!');
+            },
+            actionLabel: 'Download Diagnostic CSV',
+            btnColor: 'bg-amber-700 hover:bg-amber-800'
+          },
+        ].map(item => {
+          const isSelected = selectedReportType === item.id;
+          const IconComponent = item.icon;
+          return (
+            <Card
+              key={item.id}
+              onClick={() => setSelectedReportType(item.id)}
+              className={`cursor-pointer transition-all border-2 ${
+                isSelected
+                  ? 'border-indigo-600 ring-2 ring-indigo-100 shadow-md bg-white'
+                  : 'border-gray-200 hover:border-gray-300 bg-gray-50/50'
+              }`}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <Badge className={`text-xs ${item.badgeColor}`}>
+                    {item.formatBadge}
+                  </Badge>
+                  <IconComponent className={`w-5 h-5 ${item.iconColor}`} />
+                </div>
+                <CardTitle className="text-base font-bold text-gray-900 mt-2">
+                  {item.name}
+                </CardTitle>
+                <CardDescription className="text-xs min-h-[48px]">
+                  {item.desc}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-2 space-y-2">
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    item.action();
+                  }}
+                  className={`w-full text-white text-xs gap-1.5 ${item.btnColor}`}
+                >
+                  <Download className="w-3.5 h-3.5" /> {item.actionLabel}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedReportType(item.id);
+                    setIsPreviewOpen(true);
+                  }}
+                  className="w-full text-xs text-gray-700 hover:bg-gray-100 gap-1.5"
+                >
+                  <Eye className="w-3.5 h-3.5" /> Preview Report
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Filters Card */}
@@ -535,6 +598,179 @@ export function InstitutionReporting({
           )}
         </CardContent>
       </Card>
+
+      {/* Report Preview Modal */}
+      {isPreviewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col border border-gray-100 overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-slate-900 text-white">
+              <div className="flex items-center gap-3">
+                <span className="p-2 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30">
+                  <Eye className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-base text-white">
+                    {selectedReportType === 'dossier'
+                      ? 'Executive Cognitive Dossier Preview'
+                      : selectedReportType === 'roster'
+                      ? 'Student Cognitive Roster Preview'
+                      : 'Learner Support Diagnostic Preview'}
+                  </h3>
+                  <p className="text-xs text-indigo-200">
+                    {institutionName} • Scoped dataset: {filteredReports.length} learners
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsPreviewOpen(false)}
+                className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6">
+              {/* Document Metadata Banner */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
+                <div>
+                  <span className="text-gray-500 font-medium block">Report Scope</span>
+                  <span className="font-semibold text-gray-900">
+                    {selectedClassId === 'all' ? 'All Classes' : allClasses.find(c => c.id === selectedClassId)?.name || selectedClassId}
+                    {selectedTeacherId !== 'all' ? ` • ${teachers.find(t => t.userId === selectedTeacherId)?.userName || 'Teacher'}` : ''}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 font-medium block">Generated Date</span>
+                  <span className="font-semibold text-gray-900">{new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 font-medium block">Format</span>
+                  <Badge className="bg-indigo-100 text-indigo-800 text-[11px] font-semibold">
+                    {selectedReportType === 'dossier' ? 'PDF Document' : 'CSV Spreadsheet'}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="text-gray-500 font-medium block">Completion Rate</span>
+                  <span className="font-bold text-emerald-600">
+                    {filteredReports.length > 0
+                      ? `${Math.round((filteredReports.filter(r => r.assessments.length > 0).length / filteredReports.length) * 100)}%`
+                      : '0%'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Sample Table Preview */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    First 10 Records Preview
+                  </h4>
+                  <span className="text-xs text-gray-400">
+                    Showing 10 of {filteredReports.length} records
+                  </span>
+                </div>
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-100/70 text-gray-600 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-3 py-2 font-semibold">Learner</th>
+                        <th className="text-center px-2 py-2 font-semibold">Class</th>
+                        <th className="text-center px-2 py-2 font-semibold">Learning Style</th>
+                        <th className="text-center px-2 py-2 font-semibold">Thinking Style</th>
+                        <th className="text-center px-2 py-2 font-semibold">Decision Style</th>
+                        <th className="text-center px-2 py-2 font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredReports.slice(0, 10).map((r, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 font-medium text-gray-900">
+                            <div>{r.user.name}</div>
+                            <div className="text-[10px] text-gray-400">{r.user.email}</div>
+                          </td>
+                          <td className="px-2 py-2 text-center text-gray-600">{r.className}</td>
+                          <td className="px-2 py-2 text-center text-gray-700 font-semibold">{r.styles.learningStyle}</td>
+                          <td className="px-2 py-2 text-center text-gray-700 font-semibold">{r.styles.thinkingStyle}</td>
+                          <td className="px-2 py-2 text-center text-gray-700 font-semibold">{r.styles.decisionStyle}</td>
+                          <td className="px-2 py-2 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                              r.riskStatus === 'On Track'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : r.riskStatus === 'Needs Support'
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-red-50 text-red-700'
+                            }`}>
+                              {r.riskStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredReports.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6 text-gray-400">
+                            No student records available for current filter selection.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPreviewOpen(false)}
+                className="text-xs"
+              >
+                Close Preview
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setIsPreviewOpen(false);
+                  if (selectedReportType === 'dossier') handleExportPDF();
+                  else if (selectedReportType === 'roster') handleExportCSV();
+                  else {
+                    const headers = ['Student Name', 'Student Code', 'Class', 'Teacher', 'Risk Level', 'Engagement Score', 'Support Priority', 'Primary Learning Style'];
+                    const rows = filteredReports.map(r => [
+                      r.user.name || 'Unknown',
+                      (r.user as any).studentCode || '',
+                      r.className,
+                      r.teacherName,
+                      r.riskStatus,
+                      `${r.engagementScore}/100`,
+                      r.riskStatus === 'Priority Support' ? 'Immediate Differentiated Scaffolding' : r.riskStatus === 'Needs Support' ? 'Structured Cognitive Monitoring' : 'Standard Enrichment',
+                      r.styles.learningStyle
+                    ].map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','));
+                    const csvContent = [headers.join(','), ...rows].join('\n');
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${institutionName.replace(/[^a-zA-Z0-9]/g, '_')}_Learner_Support_Diagnostic_${new Date().toISOString().split('T')[0]}.csv`;
+                    link.click();
+                    toast.success('Learner Support Diagnostic CSV downloaded!');
+                  }
+                }}
+                className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5" />
+                {selectedReportType === 'dossier'
+                  ? 'Download Full PDF Dossier'
+                  : selectedReportType === 'roster'
+                  ? 'Download Full CSV Roster'
+                  : 'Download Full Diagnostic CSV'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

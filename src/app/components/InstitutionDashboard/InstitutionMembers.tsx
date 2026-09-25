@@ -182,10 +182,20 @@ export function InstitutionMembers({
     [members]
   );
 
-  const visibleInvitations = useMemo(
-    () => institutionInvitations.filter(inv => !cancelledInvitationIds.has(inv.id)),
-    [institutionInvitations, cancelledInvitationIds]
-  );
+  const visibleInvitations = useMemo(() => {
+    const existingEmails = new Set(
+      members.map(m => (m.userEmail || '').toLowerCase().trim()).filter(Boolean)
+    );
+    return institutionInvitations.filter(inv => {
+      if (cancelledInvitationIds.has(inv.id)) return false;
+      const invEmail = (inv.email || '').toLowerCase().trim();
+      // Hide if the teacher has already joined as an active or approved member
+      if (existingEmails.has(invEmail)) return false;
+      // Hide if status is marked accepted or cancelled
+      if ((inv as any).status === 'accepted' || (inv as any).status === 'cancelled') return false;
+      return true;
+    });
+  }, [institutionInvitations, cancelledInvitationIds, members]);
 
   const activeMembers = useMemo(
     () => filteredMembers.filter(m => m.status !== 'rejected'),

@@ -1,5 +1,6 @@
 import { User, Assessment } from '../types';
-import { calculateStudentEngagementAndRisk } from '../components/SchoolAnalyticsDashboard';
+import { calculateStudentEngagementAndRisk, getDimensionMaxScore } from '../components/SchoolAnalyticsDashboard';
+import { extractDimensionScores } from './cognitiveXP';
 import { formatDate } from './dateFormat';
 
 export interface DiagnosticRootCause {
@@ -79,9 +80,18 @@ export function diagnoseStudentRisk(
     daysSinceLastActive = Math.max(0, Math.floor((Date.now() - mostRecentMs) / (1000 * 60 * 60 * 24)));
   }
 
-  // Calculate engagement score using standard formula
+  // Calculate engagement score using student's actual normalized score
   const completedTypes = studentAssessments.map(a => a.type);
-  const avgScore = 75; // Baseline normalized score
+  const allNormalizedScores = studentAssessments.flatMap((a: Assessment) => {
+    return extractDimensionScores(a).map((d: { name: string; score: number }) => {
+      const max = getDimensionMaxScore(d.name, d.score);
+      return Math.min(100, Math.round((d.score / max) * 100));
+    });
+  });
+  const avgScore = allNormalizedScores.length 
+    ? Math.round(allNormalizedScores.reduce((s: number, v: number) => s + v, 0) / allNormalizedScores.length) 
+    : 70;
+
   const { engagementScore, risk } = calculateStudentEngagementAndRisk(
     student,
     studentAssessments,

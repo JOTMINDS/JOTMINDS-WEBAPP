@@ -27,7 +27,7 @@ import {
   getInstitutionBySchoolName,
   getInstitutionByCode
 } from '../../utils/institution';
-import { getAllUsers } from '../../utils/storage';
+import { getAllUsers, getAllClasses } from '../../utils/storage';
 import { getAllAssessmentResults } from '../../utils/api';
 import { normalizeServerResults } from '../../utils/assessmentApi';
 
@@ -342,6 +342,11 @@ export function InstitutionDashboard({
   const isPrimaryAdmin = institution.adminId === user.id;
   const isCoAdmin = institution.coAdminIds?.includes(user.id) ?? false;
   
+  const pendingClassesCount = React.useMemo(() => {
+    const teacherIds = new Set(members.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+    return getAllClasses().filter(c => c.status === 'pending' && (c.institutionId === institution.id || (c.classTeacherId && teacherIds.has(c.classTeacherId)))).length;
+  }, [members, institution.id]);
+
   const institutionNavGroups: NavGroup[] = [
     {
       groupLabel: 'A. SCHOOL ADMINISTRATION',
@@ -355,7 +360,13 @@ export function InstitutionDashboard({
       groupLabel: 'B. TEACHING & ACADEMICS',
       items: [
         { id: 'teacher_management', label: 'Teacher Management', icon: Users },
-        { id: 'class_management', label: 'Class Management', icon: GraduationCap },
+        {
+          id: 'class_management',
+          label: 'Class Management',
+          icon: GraduationCap,
+          badge: pendingClassesCount > 0 ? pendingClassesCount : undefined,
+          badgeVariant: 'destructive'
+        },
         { id: 'lesson_planning', label: 'Lesson Planning', icon: BookOpen },
         { id: 'reports', label: 'Reports', icon: Download },
         { id: 'training', label: 'Training & Alignment', icon: Award },
@@ -442,6 +453,7 @@ export function InstitutionDashboard({
             setTab={setTab}
             onManageCodes={isPrimaryAdmin ? () => setIsCodeManagerOpen(true) : undefined}
             onInstitutionUpdate={(updated) => setInstitution(updated)}
+            memberAssessments={memberAssessments}
           />
         )}
 
@@ -479,11 +491,18 @@ export function InstitutionDashboard({
         )}
 
         {tab === 'manage_students' && (() => {
-          const studentMembers = members.filter(m => m.role === 'student' && m.status !== 'rejected');
-          const studentList = studentMembers.map(m => {
+          const teacherIds = new Set(members.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+          const schoolClasses = getAllClasses().filter(c => c.institutionId === institution.id || (c.classTeacherId && teacherIds.has(c.classTeacherId)));
+          const schoolClassIds = new Set(schoolClasses.map(c => c.id));
+          const memberUserIds = new Set(members.map(m => m.userId));
+
+          const studentMap = new Map<string, any>();
+
+          // 1. Members
+          members.filter(m => m.role === 'student' && m.status !== 'rejected').forEach(m => {
             const stu = allPlatformUsers.find(u => u.id === m.userId);
             const stuAssessments = memberAssessments.filter(a => a.userId === m.userId && a.score);
-            return {
+            studentMap.set(m.userId, {
               id: m.userId,
               name: stu?.name || m.userName || (m.userEmail ? m.userEmail.split('@')[0] : 'Student'),
               email: stu?.email || m.userEmail,
@@ -499,9 +518,28 @@ export function InstitutionDashboard({
               teacherId: stu?.teacherId || stu?.teacher_id,
               teacherName: stu?.teacherName || stu?.teacher_name,
               hasCompletedAssessment: stuAssessments.length > 0,
+              status: m.status || 'approved',
               ...(stu || {})
-            };
+            });
           });
+
+          // 2. Platform users in our classes or under our teachers
+          allPlatformUsers.filter(u => u.role === 'student').forEach(u => {
+            if (schoolClassIds.has(u.classId) || (u.teacherId && teacherIds.has(u.teacherId)) || memberUserIds.has(u.id)) {
+              if (!studentMap.has(u.id)) {
+                const stuAssessments = memberAssessments.filter(a => a.userId === u.id && a.score);
+                studentMap.set(u.id, {
+                  ...u,
+                  school: u.school || institution.name,
+                  organizationName: u.organizationName || institution.name,
+                  organizationCode: u.organizationCode || institution.code,
+                  hasCompletedAssessment: stuAssessments.length > 0,
+                });
+              }
+            }
+          });
+
+          const studentList = Array.from(studentMap.values());
 
           return (
             <CentralStudentManagement
@@ -517,7 +555,7 @@ export function InstitutionDashboard({
 
         {tab === 'student_insights' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <SchoolAnalyticsDashboard user={user} onBack={() => setTab('overview')} embedded={true} institutionMembers={members} />
+            <SchoolAnalyticsDashboard user={user} onBack={() => setTab('overview')} embedded={true} institutionMembers={members} allPlatformUsers={allPlatformUsers} memberAssessments={memberAssessments} />
           </div>
         )}
         
@@ -534,7 +572,14 @@ export function InstitutionDashboard({
         )}
 
         {tab === 'reports' && (
-          <InstitutionReporting institutionId={institution.id} institutionName={institution.name} members={members} currentTeacherId={user.role === 'teacher' ? user.id : undefined} />
+          <InstitutionReporting
+            institutionId={institution.id}
+            institutionName={institution.name}
+            members={members}
+            allPlatformUsers={allPlatformUsers}
+            memberAssessments={memberAssessments}
+            currentTeacherId={user.role === 'teacher' ? user.id : undefined}
+          />
         )}
 
         {tab === 'profile' && (
@@ -639,7 +684,7 @@ export function InstitutionDashboard({
         </div>
       )}
 
-      {/* Floating Ask Jotti AI Assistant Button */}
+      {/* Floating Ask Jotti Assistant Button */}
       <div className="fixed bottom-6 right-6 z-40 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="relative group">
           <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full blur-xs opacity-30 group-hover:opacity-60 transition duration-500"></div>

@@ -5,6 +5,7 @@ import { getAllUsers, saveUser, getAllTeacherAssignments, saveTeacherAssignment,
 import { assignMemberToClass, sendClassAssignmentEmail } from '../../utils/api';
 import { EnrollStudentModal } from './EnrollStudentModal';
 import { toast } from 'sonner';
+import { AlertTriangle, CheckCircle2, Trash2, Users, GraduationCap, Clock } from 'lucide-react';
 
 interface ClassManagementProps {
   institutionMembers?: InstitutionMember[];
@@ -64,48 +65,73 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     // Use allPlatformUsers (which includes server profiles) if available, else fall back to localStorage
     const usersSource = allPlatformUsers.length > 0 ? allPlatformUsers : getAllUsers();
     
-    if (memberIds.size > 0) {
-      // Map teachers and students directly from institutionMembers enriched with profile data
-      const mappedTeachers = institutionMembers
-        .filter(m => (m.role === 'teacher' || m.role === 'admin') && m.status !== 'rejected')
-        .map(m => {
-          const profile = usersSource.find((u: any) => u.id === m.userId);
-          return {
-            id: m.userId,
-            name: profile?.name || m.userName || (m.userEmail ? m.userEmail.split('@')[0] : 'Teacher'),
-            email: profile?.email || m.userEmail,
-            phone: profile?.phone || m.userPhone || '',
-            role: m.role as any,
-            school: profile?.school || '',
-            ...(profile || {})
-          };
-        });
+    // Map teachers directly from institutionMembers enriched with profile data
+    const mappedTeachers = institutionMembers
+      .filter(m => (m.role === 'teacher' || m.role === 'admin') && m.status !== 'rejected')
+      .map(m => {
+        const profile = usersSource.find((u: any) => u.id === m.userId);
+        return {
+          id: m.userId,
+          name: profile?.name || m.userName || (m.userEmail ? m.userEmail.split('@')[0] : 'Teacher'),
+          email: profile?.email || m.userEmail,
+          phone: profile?.phone || m.userPhone || '',
+          role: m.role as any,
+          school: profile?.school || '',
+          ...(profile || {})
+        };
+      });
 
-      const mappedStudents = institutionMembers
-        .filter(m => m.role === 'student' && m.status !== 'rejected')
-        .map(m => {
-          const profile = usersSource.find((u: any) => u.id === m.userId);
-          return {
-            id: m.userId,
-            name: profile?.name || m.userName || (m.userEmail ? m.userEmail.split('@')[0] : 'Student'),
-            email: profile?.email || m.userEmail,
-            phone: profile?.phone || m.userPhone || '',
-            role: 'student' as any,
-            classId: profile?.classId || profile?.class_id,
-            className: profile?.className,
-            dateOfBirth: profile?.dateOfBirth || profile?.date_of_birth,
-            studentCode: profile?.studentCode,
-            teacherId: profile?.teacherId || profile?.teacher_id,
-            ...(profile || {})
-          };
-        });
+    // Also include any teacher in usersSource assigned to one of our classes
+    const existingTeacherIds = new Set(mappedTeachers.map(t => t.id));
+    classes.forEach(c => {
+      if (c.classTeacherId && !existingTeacherIds.has(c.classTeacherId)) {
+        const profile = usersSource.find((u: any) => u.id === c.classTeacherId);
+        if (profile) {
+          mappedTeachers.push(profile);
+          existingTeacherIds.add(profile.id);
+        }
+      }
+    });
 
-      setTeachers(mappedTeachers);
-      setStudents(mappedStudents);
-    } else {
-      setTeachers([]);
-      setStudents([]);
-    }
+    // Map students: include members with role === student, PLUS any students in usersSource enrolled in our classes or assigned to our teachers
+    const studentMap = new Map<string, any>();
+    const teacherIdSet = new Set(teacherIds);
+
+    // 1. Institution members with role === 'student'
+    institutionMembers
+      .filter(m => m.role === 'student' && m.status !== 'rejected')
+      .forEach(m => {
+        const profile = usersSource.find((u: any) => u.id === m.userId);
+        studentMap.set(m.userId, {
+          id: m.userId,
+          name: profile?.name || m.userName || (m.userEmail ? m.userEmail.split('@')[0] : 'Student'),
+          email: profile?.email || m.userEmail,
+          phone: profile?.phone || m.userPhone || '',
+          role: 'student' as any,
+          classId: profile?.classId || profile?.class_id,
+          className: profile?.className,
+          dateOfBirth: profile?.dateOfBirth || profile?.date_of_birth,
+          studentCode: profile?.studentCode,
+          teacherId: profile?.teacherId || profile?.teacher_id,
+          ...(profile || {})
+        });
+      });
+
+    // 2. All platform users who are students and enrolled in our classes, assigned to our teachers, or have member ID
+    usersSource
+      .filter((u: any) => u.role === 'student')
+      .forEach((u: any) => {
+        const inOurClass = classes.some(c => c.id === u.classId);
+        const underOurTeacher = u.teacherId && teacherIdSet.has(u.teacherId);
+        if (inOurClass || underOurTeacher || memberIds.has(u.id)) {
+          if (!studentMap.has(u.id)) {
+            studentMap.set(u.id, u);
+          }
+        }
+      });
+
+    setTeachers(mappedTeachers);
+    setStudents(Array.from(studentMap.values()));
     
     setAssignments(getAllTeacherAssignments());
   };
@@ -310,7 +336,33 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     loadData();
   };
 
+  const handleRemoveStudentFromClass = async (studentId: string, classId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+
+    if (!window.confirm(`Remove ${student.name} from this class?`)) return;
+
+    try {
+      saveUser({ ...student, classId: undefined, className: undefined });
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, classId: undefined, className: undefined } : s));
+
+      await assignMemberToClass({
+        userId: studentId,
+        classId: '',
+        className: '',
+        role: 'student',
+        institutionId: institutionId
+      });
+
+      toast.success(`${student.name} removed from class.`);
+    } catch (err) {
+      console.error("Failed to remove student from class", err);
+      toast.error("Failed to remove student from class.");
+    }
+  };
+
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const pendingClasses = classes.filter(c => c.status === 'pending');
 
   const displayedClasses = classes.filter(cls => {
     if (levelFilter === 'all') return true;
@@ -340,6 +392,40 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
           Add New Class
         </button>
       </div>
+
+      {/* Pending Class Verification Alert Banner */}
+      {pendingClasses.length > 0 && (
+        <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-amber-900">
+                {pendingClasses.length} Class Verification{pendingClasses.length > 1 ? 's' : ''} Pending Approval
+              </p>
+              <p className="text-xs text-amber-700">
+                Teachers submitted {pendingClasses.length} class{pendingClasses.length > 1 ? 'es' : ''} awaiting institutional review and approval before students can officially join.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                pendingClasses.forEach(cls => {
+                  const updated = { ...cls, status: 'approved' as const };
+                  saveClass(updated);
+                });
+                setClasses(prev => prev.map(c => c.status === 'pending' ? { ...c, status: 'approved' } : c));
+                toast.success(`Approved all ${pendingClasses.length} pending classes!`);
+              }}
+              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs cursor-pointer"
+            >
+              Approve All
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Education Level Filter Tabs */}
       <div className="flex flex-wrap gap-2 mb-4 pb-2 border-b">
@@ -864,7 +950,17 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                             </span>
                           )}
                         </div>
-                        <span className="text-sm text-gray-500">{student.email}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-gray-500 hidden sm:inline">{student.email}</span>
+                          <button
+                            onClick={() => handleRemoveStudentFromClass(student.id, activeClass.id)}
+                            className="text-xs text-red-600 hover:text-red-800 hover:bg-red-50 border border-red-200 px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Remove student from this class"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
