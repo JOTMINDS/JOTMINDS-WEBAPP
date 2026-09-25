@@ -20,7 +20,7 @@ interface InstitutionSettingsProps {
   onInstitutionUpdate: (updated: Institution) => void;
 }
 
-const INSTITUTION_TYPES: InstitutionType[] = ['Pre-school', 'Primary', 'JHS', 'SHS', 'Primary-JHS', 'Primary-SHS', 'Tertiary', 'Vocational', 'Other'];
+const INSTITUTION_TYPES: InstitutionType[] = ['Pre-school', 'Elementary', 'Primary', 'JHS', 'SHS', 'Primary-JHS', 'Primary-SHS', 'Tertiary', 'Vocational', 'Other'];
 
 function compressImage(file: File, maxSize = 200): Promise<string> {
   return new Promise((resolve, reject) => {

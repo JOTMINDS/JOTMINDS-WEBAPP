@@ -3,7 +3,7 @@ import { projectId, publicAnonKey } from './supabase/info';
 
 const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
 
-export type InstitutionType = 'Pre-school' | 'Primary' | 'JHS' | 'SHS' | 'Primary-JHS' | 'Primary-SHS' | 'Tertiary' | 'Vocational' | 'Other';
+export type InstitutionType = 'Pre-school' | 'Elementary' | 'Primary' | 'JHS' | 'SHS' | 'Primary-JHS' | 'Primary-SHS' | 'Tertiary' | 'Vocational' | 'Other';
 
 export interface Institution {
   id: string;
@@ -1233,10 +1233,12 @@ export async function createInstitutionClass(classData: Class): Promise<Class> {
 }
 
 export async function deleteInstitutionClass(classId: string): Promise<void> {
+  let apiFailed = false;
   try {
     await deleteInstitutionClassAPI(classId);
   } catch (e) {
     console.warn("Failed to delete class from Backend API:", e);
+    apiFailed = true;
   }
 
   const { error } = await (supabase as any)
@@ -1244,7 +1246,12 @@ export async function deleteInstitutionClass(classId: string): Promise<void> {
     .delete()
     .eq('id', classId);
 
-  if (error) console.warn("Failed deleting from Supabase:", error);
+  if (error) {
+    console.warn("Failed deleting from Supabase:", error);
+    if (apiFailed) {
+      throw new Error(`Failed to delete class: ${error.message}`);
+    }
+  }
 
   // Also remove from local storage, otherwise getInstitutionClasses() merges
   // it straight back in on the very next load.

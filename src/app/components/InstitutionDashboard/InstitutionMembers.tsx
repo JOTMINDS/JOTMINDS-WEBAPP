@@ -628,7 +628,7 @@ export function InstitutionMembers({
         <div className="flex gap-2 flex-wrap">
           {onViewTeacherStyles && (
             <Button variant="secondary" onClick={onViewTeacherStyles} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">
-              <Brain className="w-4 h-4 mr-2" /> Teacher Analytics
+              <Brain className="w-4 h-4 mr-2" /> View Teaching Insights
             </Button>
           )}
           <Button variant="secondary" onClick={onOpenBulkUploadModal} className="bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200">

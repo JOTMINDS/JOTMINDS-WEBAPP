@@ -360,7 +360,8 @@ export function InstitutionDashboard({
     {
       groupLabel: 'B. TEACHING & ACADEMICS',
       items: [
-        { id: 'teacher_management', label: 'Teacher Management', icon: Users },
+        { id: 'teacher_management', label: 'Faculty Roster', icon: Users },
+        { id: 'teaching_analytics', label: 'Teaching Insights', icon: BarChart3 },
         {
           id: 'class_management',
           label: 'Class Management',

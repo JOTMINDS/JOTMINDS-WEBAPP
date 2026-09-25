@@ -41,7 +41,7 @@ const RESOURCES: ResourceItem[] = [
 ## 1. Onboarding Your Institution
 - Set up your school code and share it with faculty members.
 - Approve incoming teacher and student connection requests in Class Management.
-- Organize learners into classes by education level (Primary, JHS, SHS).
+- Organize learners into classes by education level (Pre-school, Elementary, JHS, SHS).
 
 ## 2. Administering Cognitive Assessments
 - Have students log in and take the 3 core assessments: Kolb Learning Style, Sternberg Thinking Style, and Dual-Process Decision Style.
@@ -76,7 +76,7 @@ const RESOURCES: ResourceItem[] = [
     id: '3',
     title: 'How to Administer Assessments in the Classroom',
     category: 'assessment-guides',
-    description: 'Step-by-step instructions for teachers on guiding primary, JHS, and SHS students through taking their cognitive assessments.',
+    description: 'Step-by-step instructions for teachers on guiding pre-school, elementary, JHS, and SHS students through taking their assessments.',
     format: 'Checklist',
     readTime: '4 min read',
     content: `# Classroom Assessment Administration Checklist

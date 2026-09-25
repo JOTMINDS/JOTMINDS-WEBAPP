@@ -6,13 +6,14 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
   Users, Search, Filter, Eye, Download, CheckCircle2, 
-  Clock, AlertCircle, Award, Sparkles, X, ChevronRight, User as UserIcon, Upload
+  Clock, AlertCircle, Award, Sparkles, X, ChevronRight, User as UserIcon, Upload, Trash2
 } from 'lucide-react';
 import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { StudentDetailView } from './StudentDetailView';
 import { GenerateStudentCodesModal } from './InstitutionDashboard/GenerateStudentCodesModal';
 import { BulkUploadModal } from './InstitutionDashboard/BulkUploadModal';
-import { approveMember } from '../utils/institution';
+import { approveMember, removeMember } from '../utils/institution';
+import { getAllUsers, saveUser } from '../utils/storage';
 import { toast } from 'sonner';
 
 interface CentralStudentManagementProps {
@@ -30,6 +31,40 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
   const [approvingStudentId, setApprovingStudentId] = useState<string | null>(null);
+  const [removingStudentId, setRemovingStudentId] = useState<string | null>(null);
+
+  const handleRemoveStudent = async (e: React.MouseEvent, studentId: string) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to remove this student from the institution?')) {
+      return;
+    }
+    const instId = teacher?.institutionId || teacher?.organizationId;
+    if (!instId) {
+      toast.error('Institution ID not found');
+      return;
+    }
+    
+    setRemovingStudentId(studentId);
+    try {
+      const userToUpdate = getAllUsers().find(u => u.id === studentId);
+      if (userToUpdate) {
+        userToUpdate.organizationName = undefined;
+        userToUpdate.organizationCode = undefined;
+        userToUpdate.classId = undefined;
+        userToUpdate.className = undefined;
+        saveUser(userToUpdate);
+      }
+      
+      await removeMember(instId, studentId);
+      toast.success('Student removed successfully');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to remove student');
+    } finally {
+      setRemovingStudentId(null);
+    }
+  };
 
   const handleApproveStudent = async (e: React.MouseEvent, studentId: string) => {
     e.stopPropagation();
@@ -334,7 +369,17 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
                               )}
                             </>
                           )}
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50 ml-1"
+                            onClick={(e) => handleRemoveStudent(e, student.id)}
+                            disabled={removingStudentId === student.id}
+                            title="Remove Student"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <ChevronRight className="w-4 h-4 text-gray-400 ml-1" />
                         </div>
                       </div>
                     );

@@ -204,9 +204,11 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     if (window.confirm('Are you sure you want to delete this class? This will orphan any assigned students.')) {
       try {
         await deleteInstitutionClass(id);
-        loadData();
+        toast.success('Class deleted successfully');
+        await loadData();
       } catch (err) {
         console.error("Failed to delete class", err);
+        toast.error('Failed to delete class');
       }
     }
   };
@@ -432,7 +434,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
         {[
           { id: 'all', label: 'All Levels' },
           { id: 'Early Years', label: 'Pre-school / Early Years' },
-          { id: 'Primary', label: 'Primary / Elementary' },
+          { id: 'Primary', label: 'Elementary / Primary' },
           { id: 'JHS', label: 'Junior High School (JHS)' },
           { id: 'SHS', label: 'Senior High School (SHS)' },
           { id: 'Tertiary', label: 'Tertiary' },
@@ -499,7 +501,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                   </td>
                   <td className="p-4">
                     {(() => {
-                      const lvl = cls.educationLevel || 'Primary';
+                      const lvl = cls.educationLevel || 'Elementary';
                       let color = 'bg-emerald-50 text-emerald-800 border-emerald-200';
                       let label: string = lvl;
                       if (['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'].includes(lvl)) {
@@ -507,7 +509,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                         label = 'Pre-school / Early Years';
                       } else if (['Primary', 'Elementary'].includes(lvl)) {
                         color = 'bg-emerald-50 text-emerald-800 border-emerald-200';
-                        label = 'Primary';
+                        label = 'Elementary';
                       } else if (lvl === 'JHS') {
                         color = 'bg-blue-50 text-blue-800 border-blue-200';
                         label = 'JHS';
@@ -673,7 +675,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                 >
                   <option value="">-- Select Level --</option>
                   <option value="Early Years">Pre-school / Early Years (Crèche, Nursery, KG)</option>
-                  <option value="Primary">Primary / Elementary (Basic 1-6)</option>
+                  <option value="Elementary">Elementary / Primary (Basic 1-6)</option>
                   <option value="JHS">Junior High School (JHS 1-3)</option>
                   <option value="SHS">Senior High School (SHS 1-3)</option>
                   <option value="Tertiary">Tertiary (University/College)</option>
