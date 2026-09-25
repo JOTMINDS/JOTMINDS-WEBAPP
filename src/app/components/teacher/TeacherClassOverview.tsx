@@ -44,6 +44,7 @@ import {
 interface TeacherClassOverviewProps {
   students: User[];
   assessments: Assessment[];
+  onSelectTab?: (tab: string) => void;
 }
 
 const COLORS = {
@@ -59,7 +60,7 @@ const COLORS = {
 
 const CHART_PALETTE = ['#2563EB', '#16A34A', '#8B5CF6', '#F97316', '#06B6D4', '#EC4899', '#10B981'];
 
-export function TeacherClassOverview({ students: rawStudents, assessments: rawAssessments }: TeacherClassOverviewProps) {
+export function TeacherClassOverview({ students: rawStudents, assessments: rawAssessments, onSelectTab }: TeacherClassOverviewProps) {
   const [selectedClass, setSelectedClass] = useState<string>('ALL');
   const [graphViewMode, setGraphViewMode] = useState<'donut' | 'bar' | 'radar' | 'cards'>('donut');
 
@@ -288,6 +289,30 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             </button>
           </div>
         </div>
+
+        {/* Early Years Banner */}
+        {onSelectTab && (
+          <div className="bg-gradient-to-r from-purple-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white border border-purple-800/40 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-[#6B4C9A] text-white text-[10px] font-bold">JM-PDAF v1.0</Badge>
+                <span className="text-xs text-purple-200 font-semibold">Preschool Developmental Intelligence</span>
+              </div>
+              <h3 className="text-base font-bold text-white">
+                Early Years Assessment Framework (Ages 2–6)
+              </h3>
+              <p className="text-xs text-purple-200/80 max-w-xl">
+                Continuous play-based observation across 240 indicators in 7 developmental domains, multidimensional school readiness tracking, and branded parent summaries.
+              </p>
+            </div>
+            <Button
+              onClick={() => onSelectTab('preschool')}
+              className="bg-white hover:bg-slate-100 text-purple-950 font-bold text-xs shrink-0 shadow-sm"
+            >
+              Open Early Years Module →
+            </Button>
+          </div>
+        )}
 
         {/* Class Stats Header */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">

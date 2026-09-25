@@ -50,6 +50,7 @@ import { LessonCopilotDrawer } from '../lessonPlanner/LessonCopilotDrawer';
 import { SchoolAnalyticsDashboard } from '../SchoolAnalyticsDashboard';
 import { InstitutionReporting } from '../InstitutionReporting';
 import { SchoolTeacherStylesView } from '../SchoolTeacherStylesView';
+import { PreschoolContainer } from '../preschool/PreschoolContainer';
 
 interface InstitutionDashboardProps {
   user: User;
@@ -59,7 +60,7 @@ interface InstitutionDashboardProps {
   onProfileUpdate?: () => void;
 }
 
-type Tab = 'overview' | 'class_management' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile' | 'lesson_planning';
+type Tab = 'overview' | 'class_management' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile' | 'lesson_planning' | 'preschool';
 
 export function InstitutionDashboard({
   user,
@@ -368,6 +369,7 @@ export function InstitutionDashboard({
           badgeVariant: 'destructive'
         },
         { id: 'lesson_planning', label: 'Lesson Planning', icon: BookOpen },
+        { id: 'preschool', label: 'Early Years (JM-PDAF)', icon: Sparkles, badge: 'Ages 2–6' },
         { id: 'reports', label: 'Reports', icon: Download },
         { id: 'training', label: 'Training & Alignment', icon: Award },
       ]
@@ -565,6 +567,17 @@ export function InstitutionDashboard({
             members={members}
             onOpenTeacherProfile={setPerformanceTargetId}
           />
+        )}
+
+        {tab === 'preschool' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <PreschoolContainer
+              currentUser={user}
+              childrenList={allPlatformUsers.filter(u => u.role === 'student')}
+              onBack={() => setTab('overview')}
+              initialTab="school-insights"
+            />
+          </div>
         )}
 
         {tab === 'training' && (

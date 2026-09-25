@@ -30,6 +30,7 @@ import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
 import { CentralStudentManagement } from './CentralStudentManagement';
 import { CentralAnalyticsHub } from './CentralAnalyticsHub';
+import { PreschoolContainer } from './preschool/PreschoolContainer';
 
 interface TeacherDashboardNewProps {
   user: User;
@@ -49,7 +50,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'manage-classes' | 'students' | 'analytics' | 'alignment' | 'lesson-planner' | 'jtia'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'manage-classes' | 'students' | 'preschool' | 'analytics' | 'alignment' | 'lesson-planner' | 'jtia'>('overview');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -365,6 +366,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         { id: 'overview', label: 'Overview', icon: Users },
         { id: 'manage-classes', label: 'Manage Classes', icon: School },
         { id: 'students', label: 'Students', icon: Eye, badge: students.length },
+        { id: 'preschool', label: 'Early Years (JM-PDAF)', icon: Sparkles, badge: 'Ages 2–6' },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'alignment', label: 'Alignment Analysis', icon: Target },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
@@ -377,7 +379,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'alignment' ? 'Alignment Analysis' : activeTab.replace('-', ' ')}
+          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'preschool' ? 'Early Years Developmental Intelligence' : activeTab === 'alignment' ? 'Alignment Analysis' : activeTab.replace('-', ' ')}
         </h2>
         {user.school && (
           <Badge variant="outline" className="border-purple-600 text-purple-700">
@@ -447,13 +449,23 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
 
         {activeTab === 'overview' && (
           <div className="space-y-8">
-            <TeacherClassOverview students={students} assessments={allAssessments} />
+            <TeacherClassOverview students={students} assessments={allAssessments} onSelectTab={(tab) => setActiveTab(tab as any)} />
           </div>
         )}
 
         {(activeTab as string) === 'students' && (
           <div className="space-y-8">
             <CentralStudentManagement students={students as any} assessments={allAssessments} teacher={user} onRefresh={loadClassData} />
+          </div>
+        )}
+
+        {(activeTab as string) === 'preschool' && (
+          <div className="space-y-8">
+            <PreschoolContainer
+              currentUser={user}
+              childrenList={students}
+              onBack={() => setActiveTab('overview')}
+            />
           </div>
         )}
 

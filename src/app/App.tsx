@@ -46,6 +46,7 @@ import { PlatformEssentials } from './components/PlatformEssentials';
 import { SchoolTeacherStylesView } from './components/SchoolTeacherStylesView';
 import { InstitutionRegistration } from './components/InstitutionRegistration';
 import { InstitutionDashboard } from './components/InstitutionDashboard';
+import { PreschoolContainer } from './components/preschool/PreschoolContainer';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { runAccountMigration } from './utils/accountMigration';
 import { syncGamificationProfile } from './utils/gamification';
@@ -89,7 +90,8 @@ type ViewType =
   | 'platform-essentials'
   | 'school-teacher-styles'
   | 'institution-register'
-  | 'institution-dashboard';
+  | 'institution-dashboard'
+  | 'preschool-development';
 
 type AssessmentType = 'learning' | 'thinking' | 'decision';
 
@@ -843,6 +845,14 @@ function AppContent() {
           onLogout={handleBackToDashboard}
           onRegisterNew={handleViewInstitutionRegister}
           onProfileUpdate={refreshUser}
+        />
+      ) : null;
+
+    case 'preschool-development':
+      return user ? (
+        <PreschoolContainer
+          currentUser={impersonatedUser || user}
+          onBack={handleBackToDashboard}
         />
       ) : null;
 
