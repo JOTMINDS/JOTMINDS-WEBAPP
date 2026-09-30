@@ -172,9 +172,9 @@ export function PreschoolAssessModal({
               <CheckCircle2 className="w-5 h-5" />
             </span>
             <div>
-              <h3 className="font-bold text-base text-white">Record Developmental Evidence</h3>
+              <h3 className="font-bold text-base text-white">Record Milestone Observation</h3>
               <p className="text-xs text-indigo-200">
-                Preschool Observation & Milestone Logging (JM-PDAF v1.0)
+                Early Childhood Milestone & Observation Note
               </p>
             </div>
           </div>
@@ -204,9 +204,9 @@ export function PreschoolAssessModal({
             </select>
             {selectedChild && (
               <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-500">
-                <span>Band: <b>{childBand}</b></span>
+                <span>Age Group: <b>{DEVELOPMENTAL_BANDS[childBand]?.ageRange || childBand}</b></span>
                 <span>•</span>
-                <span>Previous observations: <b>{existingEventsForIndicator.length}</b></span>
+                <span>Observations recorded: <b>{existingEventsForIndicator.length}</b></span>
                 <span>•</span>
                 <span className="text-indigo-600 font-medium">{predictedConfidence}</span>
               </div>
@@ -215,7 +215,7 @@ export function PreschoolAssessModal({
 
           {/* 2. Core Developmental Domain */}
           <div>
-            <Label className="font-semibold text-gray-700 block mb-1">Developmental Domain</Label>
+            <Label className="font-semibold text-gray-700 block mb-1">Learning Area</Label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {(Object.keys(DEVELOPMENTAL_DOMAINS) as DevelopmentalDomainCode[]).map(code => {
                 const isSelected = selectedDomain === code;
@@ -232,7 +232,7 @@ export function PreschoolAssessModal({
                     }`}
                   >
                     <span className="line-clamp-1">{d.shortName}</span>
-                    <span className="text-[10px] text-gray-400 font-normal">{d.code}</span>
+                    <span className="text-[10px] text-gray-400 font-normal">{d.indicatorCount} milestones</span>
                   </button>
                 );
               })}
@@ -241,7 +241,7 @@ export function PreschoolAssessModal({
 
           {/* 3. Specific Indicator */}
           <div>
-            <Label className="font-semibold text-gray-700 block mb-1">Observable Indicator</Label>
+            <Label className="font-semibold text-gray-700 block mb-1">Skill or Milestone</Label>
             <select
               value={selectedIndicatorId}
               onChange={e => {
@@ -253,7 +253,7 @@ export function PreschoolAssessModal({
             >
               {availableIndicators.map(ind => (
                 <option key={ind.id} value={ind.id}>
-                  [{ind.id}] ({ind.band}) {ind.title}
+                  {ind.title} ({DEVELOPMENTAL_BANDS[ind.band as DevelopmentalBand]?.ageRange || ind.band})
                 </option>
               ))}
             </select>
@@ -320,7 +320,7 @@ export function PreschoolAssessModal({
           {/* 5. Assessment Method & Language */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="font-semibold text-gray-700 block mb-1">Assessment Method</Label>
+              <Label className="font-semibold text-gray-700 block mb-1">Observation Setting</Label>
               <select
                 value={selectedMethod}
                 onChange={e => setSelectedMethod(e.target.value as AssessmentMethodCode)}
@@ -328,14 +328,14 @@ export function PreschoolAssessModal({
               >
                 {(Object.keys(ASSESSMENT_METHODS) as AssessmentMethodCode[]).map(code => (
                   <option key={code} value={code}>
-                    {ASSESSMENT_METHODS[code].code} - {ASSESSMENT_METHODS[code].label}
+                    {ASSESSMENT_METHODS[code].label}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <Label className="font-semibold text-gray-700 block mb-1">Language of Evidence</Label>
+              <Label className="font-semibold text-gray-700 block mb-1">Language Spoken</Label>
               <select
                 value={selectedLanguage}
                 onChange={e => setSelectedLanguage(e.target.value as LanguageOfEvidence)}
@@ -364,7 +364,7 @@ export function PreschoolAssessModal({
           {/* 7. Observational Notes */}
           <div>
             <Label className="font-semibold text-gray-700 block mb-1">
-              Observational Evidence Notes (Optional)
+              Observation Notes (Optional)
             </Label>
             <Textarea
               value={notes}
@@ -387,7 +387,7 @@ export function PreschoolAssessModal({
               className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              {isSubmitting ? 'Recording...' : 'Save Evidence Event'}
+              {isSubmitting ? 'Saving...' : 'Save Observation'}
             </Button>
           </div>
         </form>

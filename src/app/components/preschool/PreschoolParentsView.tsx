@@ -126,6 +126,24 @@ export function PreschoolParentsView({
     }
   };
 
+  if (childrenList.length === 0) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center max-w-lg mx-auto my-8 space-y-4">
+        <div className="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center mx-auto">
+          <Heart className="h-8 w-8" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+            No Preschool Learners Found
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            There are currently no early childhood learners enrolled. Once young learners (ages 2 to 6) are added to your class, parent summaries, home activity guides, and caregiver logs will be available here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -134,13 +152,13 @@ export function PreschoolParentsView({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Badge className="bg-rose-600 text-white font-medium">Family & Home Bridge</Badge>
-              <Badge variant="outline" className="text-xs">Co-Assessment Portal</Badge>
+              <Badge variant="outline" className="text-xs">Family Partnership</Badge>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Parent Partnership & Home Progress
+              Parent Partnership & Home Activities
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
-              Nurture reciprocal communication with families through jargon-free developmental narratives, accessible home play ideas, and caregiver milestone logs.
+              Share caring developmental updates with families, fun home play ideas, and simple notes from parents.
             </p>
           </div>
 
@@ -184,7 +202,7 @@ export function PreschoolParentsView({
                   className="bg-rose-600 hover:bg-rose-700 text-white text-xs gap-1.5 shrink-0"
                 >
                   <Download className="h-3.5 w-3.5" />
-                  {isGeneratingPdf ? 'Generating...' : 'Download Parent PDF'}
+                  {isGeneratingPdf ? 'Generating...' : 'Family Growth Guide (PDF)'}
                 </Button>
               </CardHeader>
 
@@ -278,7 +296,7 @@ export function PreschoolParentsView({
                   </CardTitle>
                 </div>
                 <CardDescription className="text-xs">
-                  Parent/Caregiver Voice (Method PAR)
+                  Parent/Caregiver Notes
                 </CardDescription>
               </CardHeader>
 
@@ -300,7 +318,7 @@ export function PreschoolParentsView({
                   {/* Domain */}
                   <div className="space-y-1">
                     <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      Observed Competency Domain
+                      Learning & Growth Area
                     </label>
                     <select
                       value={parDomain}
@@ -318,7 +336,7 @@ export function PreschoolParentsView({
                   {/* Context */}
                   <div className="space-y-1">
                     <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      Home Setting / Context
+                      Home Setting / Routine
                     </label>
                     <Input
                       value={parContext}
@@ -350,24 +368,24 @@ export function PreschoolParentsView({
                   {/* Rating / Level */}
                   <div className="space-y-1">
                     <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      Observed Stage
+                      How confident was the child?
                     </label>
                     <select
                       value={parRating}
                       onChange={e => setParRating(Number(e.target.value) as any)}
                       className="w-full h-8 text-xs border rounded-lg px-2 bg-white dark:bg-slate-900 dark:border-slate-800"
                     >
-                      <option value={1}>Stage 1: Emerging (Needs support)</option>
-                      <option value={2}>Stage 2: Developing (With reminders)</option>
-                      <option value={3}>Stage 3: Achieving (Does independently)</option>
-                      <option value={4}>Stage 4: Extending (Teaches/helps others)</option>
+                      <option value={1}>Stage 1: Getting Started (Needs a little help)</option>
+                      <option value={2}>Stage 2: Practicing (With reminders)</option>
+                      <option value={3}>Stage 3: Confident (Does on their own)</option>
+                      <option value={4}>Stage 4: Thriving (Enjoys showing others)</option>
                     </select>
                   </div>
 
                   {/* Observation Note */}
                   <div className="space-y-1">
                     <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      What did the child do?
+                      What did your child do or say?
                     </label>
                     <Textarea
                       value={parNotes}

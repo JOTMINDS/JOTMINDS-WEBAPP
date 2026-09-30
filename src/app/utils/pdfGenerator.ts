@@ -107,9 +107,18 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   const score = assessment.score || {};
   const isJTIA = assessment.type === 'jtia' || !!score.jtia || !!(assessment as any).report?.domainScores;
   const jtiaData = isJTIA ? ((assessment as any).report || (assessment as any).results || score.jtia || {}) : null;
-  const mainStyle = isJTIA
+  const kolbData = score.kolb || (assessment.type === 'kolb' ? score : null);
+  const decisionData = score.dualProcess || (score as any)['dual-process'] || (score as any).decision || (assessment.type === 'dual-process' || assessment.type === 'decision' ? score : null);
+  const thinkingData = score.sternberg || (score as any)['jhs-thinking'] || (score as any)['shs-thinking'] || (score as any)['adult-thinking'] || (score as any)['child-thinking'] || (score as any)['children-thinking'] || (score as any).thinking || (assessment.type?.includes('thinking') || assessment.type === 'sternberg' ? score : null);
+
+  let rawMainStyle = isJTIA
     ? (jtiaData?.recommendations?.pedagogicalArchetype || 'Teaching Intelligence Profile')
-    : (score.kolb?.style || score.sternberg?.style || score.dualProcess?.style || score['teaching-style']?.primaryStyle || '');
+    : (kolbData?.style || thinkingData?.style || thinkingData?.personalityType || thinkingData?.dominantStyle || decisionData?.style || score['teaching-style']?.primaryStyle || '');
+  
+  if (rawMainStyle === 'Reflective' && (assessment.type === 'dual-process' || assessment.type === 'decision' || decisionData?.style === 'Reflective')) {
+    rawMainStyle = 'Deliberate';
+  }
+  const mainStyle = rawMainStyle;
   
   // Style Card
   doc.setFillColor(248, 250, 252); // slate-50
@@ -126,7 +135,8 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
     description = jtiaData?.recommendations?.executiveSummary || `Comprehensive evaluation across 5 core teaching intelligence domains with an overall alignment score of ${jtiaData?.overallScore || 'Completed'}/100.`;
   } else {
     try {
-      description = mainStyle ? getStyleDescription(assessment.type as any, mainStyle) : 'Assessment completed successfully.';
+      const typeKey = (assessment.type === 'dual-process' || assessment.type === 'decision') ? 'dual-process' : assessment.type;
+      description = mainStyle ? getStyleDescription(typeKey as any, mainStyle) : 'Assessment completed successfully.';
     } catch {
       description = 'Assessment completed successfully.';
     }
@@ -232,77 +242,153 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
 
   // Scores
   doc.setFontSize(14);
-  doc.text('Your Scores:', 20, yPos);
+  doc.setFont(font, 'bold');
+  doc.text('Your Scores Breakdown:', 20, yPos);
   yPos += 8;
 
+  doc.setFont(font, 'normal');
   doc.setFontSize(10);
-  if (score.kolb) {
-    const ceLabel = isOrganizational ? 'Hands-on Experience:' : 'Concrete Experience:';
-    const roLabel = isOrganizational ? 'Reflective Analysis:' : 'Reflective Observation:';
-    const acLabel = isOrganizational ? 'Conceptual Frameworks:' : 'Abstract Conceptualization:';
-    const aeLabel = isOrganizational ? 'Active Implementation:' : 'Active Experimentation:';
+
+  let renderedAnySection = false;
+
+  // 1. Kolb Learning Dimensions
+  if (kolbData?.scores) {
+    renderedAnySection = true;
+    doc.setFont(font, 'bold');
+    doc.setTextColor(...BRAND.indigo);
+    doc.text(`Learning Dimensions (Kolb - ${kolbData.style || 'Assessed'}):`, 25, yPos);
+    yPos += 6;
+    doc.setFont(font, 'normal');
+    doc.setTextColor(...BRAND.ink);
+
+    const ceLabel = isOrganizational ? 'Hands-on Experience (CE):' : 'Concrete Experience (CE):';
+    const roLabel = isOrganizational ? 'Reflective Analysis (RO):' : 'Reflective Observation (RO):';
+    const acLabel = isOrganizational ? 'Conceptual Frameworks (AC):' : 'Abstract Conceptualization (AC):';
+    const aeLabel = isOrganizational ? 'Active Implementation (AE):' : 'Active Experimentation (AE):';
     
-    doc.text(`${ceLabel} ${score.kolb.scores?.CE ?? 'N/A'}`, 25, yPos);
+    doc.text(`• ${ceLabel} ${kolbData.scores?.CE ?? 'N/A'}`, 30, yPos);
+    yPos += 5.5;
+    doc.text(`• ${roLabel} ${kolbData.scores?.RO ?? 'N/A'}`, 30, yPos);
+    yPos += 5.5;
+    doc.text(`• ${acLabel} ${kolbData.scores?.AC ?? 'N/A'}`, 30, yPos);
+    yPos += 5.5;
+    doc.text(`• ${aeLabel} ${kolbData.scores?.AE ?? 'N/A'}`, 30, yPos);
+    yPos += 8;
+  }
+
+  // 2. Thinking Style Dimensions
+  if (thinkingData) {
+    if (yPos > 255) { doc.addPage(); yPos = 20; }
+    renderedAnySection = true;
+    const thinkingScores = thinkingData.scores || thinkingData;
+    const thinkingStyleName = thinkingData.style || thinkingData.personalityType || thinkingData.dominantStyle || 'Thinking Profile';
+
+    doc.setFont(font, 'bold');
+    doc.setTextColor(...BRAND.indigo);
+    doc.text(`Thinking Dimensions (${thinkingStyleName}):`, 25, yPos);
     yPos += 6;
-    doc.text(`${roLabel} ${score.kolb.scores?.RO ?? 'N/A'}`, 25, yPos);
+    doc.setFont(font, 'normal');
+    doc.setTextColor(...BRAND.ink);
+
+    if (thinkingScores.analytical !== undefined || thinkingScores.Analytical !== undefined) {
+      doc.text(`• Analytical: ${thinkingScores.analytical ?? thinkingScores.Analytical ?? 'N/A'}`, 30, yPos);
+      yPos += 5.5;
+    }
+    if (thinkingScores.creative !== undefined || thinkingScores.Creative !== undefined) {
+      doc.text(`• Creative: ${thinkingScores.creative ?? thinkingScores.Creative ?? 'N/A'}`, 30, yPos);
+      yPos += 5.5;
+    }
+    if (thinkingScores.practical !== undefined || thinkingScores.Practical !== undefined) {
+      doc.text(`• Practical: ${thinkingScores.practical ?? thinkingScores.Practical ?? 'N/A'}`, 30, yPos);
+      yPos += 5.5;
+    }
+    yPos += 3;
+  }
+
+  // 3. Decision Style Dimensions (Dual Process)
+  if (decisionData) {
+    if (yPos > 255) { doc.addPage(); yPos = 20; }
+    renderedAnySection = true;
+    const decScores = decisionData.scores || decisionData;
+    let decStyle = decisionData.style || 'Decision Profile';
+    if (decStyle === 'Reflective') decStyle = 'Deliberate';
+
+    doc.setFont(font, 'bold');
+    doc.setTextColor(...BRAND.indigo);
+    doc.text(`Decision-Making Profile (${decStyle}):`, 25, yPos);
     yPos += 6;
-    doc.text(`${acLabel} ${score.kolb.scores?.AC ?? 'N/A'}`, 25, yPos);
-    yPos += 6;
-    doc.text(`${aeLabel} ${score.kolb.scores?.AE ?? 'N/A'}`, 25, yPos);
-    yPos += 10;
-  } else if (score.sternberg) {
-    doc.text(`Analytical: ${score.sternberg.scores?.analytical ?? 'N/A'}`, 25, yPos);
-    yPos += 6;
-    doc.text(`Creative: ${score.sternberg.scores?.creative ?? 'N/A'}`, 25, yPos);
-    yPos += 6;
-    doc.text(`Practical: ${score.sternberg.scores?.practical ?? 'N/A'}`, 25, yPos);
-    yPos += 10;
-  } else if (score.dualProcess) {
-    const system1Label = isOrganizational ? 'Intuitive/Rapid:' : 'Intuitive (System 1):';
-    const system2Label = isOrganizational ? 'Analytical/Deliberate:' : 'Reflective (System 2):';
+    doc.setFont(font, 'normal');
+    doc.setTextColor(...BRAND.ink);
+
+    const s1Val = decScores.system1 ?? decScores.Intuitive ?? 'N/A';
+    const s2Val = decScores.system2 ?? decScores.Deliberate ?? decScores.Reflective ?? 'N/A';
+    const system1Label = isOrganizational ? 'Intuitive / Rapid:' : 'Intuitive (System 1):';
+    const system2Label = isOrganizational ? 'Deliberate / Analytical:' : 'Deliberate (System 2):';
     
-    doc.text(`${system1Label} ${score.dualProcess.scores?.system1 ?? 'N/A'}`, 25, yPos);
+    doc.text(`• ${system1Label} ${s1Val}`, 30, yPos);
+    yPos += 5.5;
+    doc.text(`• ${system2Label} ${s2Val}`, 30, yPos);
+    yPos += 8;
+  }
+
+  // 4. Teaching Style (if applicable)
+  if (score['teaching-style']) {
+    if (yPos > 255) { doc.addPage(); yPos = 20; }
+    renderedAnySection = true;
+    doc.setFont(font, 'bold');
+    doc.setTextColor(...BRAND.indigo);
+    doc.text('Teaching Style Dimensions:', 25, yPos);
     yPos += 6;
-    doc.text(`${system2Label} ${score.dualProcess.scores?.system2 ?? 'N/A'}`, 25, yPos);
-    yPos += 10;
-  } else if (score['teaching-style']) {
-    doc.text(`Primary Style: ${score['teaching-style'].primaryStyle || 'N/A'}`, 25, yPos);
-    yPos += 6;
-    doc.text(`Secondary Style: ${score['teaching-style'].secondaryStyle || 'N/A'}`, 25, yPos);
-    yPos += 10;
-  } else if (isJTIA && jtiaData) {
+    doc.setFont(font, 'normal');
+    doc.setTextColor(...BRAND.ink);
+    doc.text(`• Primary Style: ${score['teaching-style'].primaryStyle || 'N/A'}`, 30, yPos);
+    yPos += 5.5;
+    doc.text(`• Secondary Style: ${score['teaching-style'].secondaryStyle || 'N/A'}`, 30, yPos);
+    yPos += 8;
+  }
+
+  // 5. JTIA Domains
+  if (isJTIA && jtiaData) {
+    if (yPos > 245) { doc.addPage(); yPos = 20; }
+    renderedAnySection = true;
     const domains = jtiaData.domainScores || {};
+    doc.setFont(font, 'bold');
+    doc.setTextColor(...BRAND.indigo);
     doc.text(`Overall Pedagogical Alignment: ${jtiaData.overallScore || 'Completed'}/100`, 25, yPos);
     yPos += 6;
+    doc.setFont(font, 'normal');
+    doc.setTextColor(...BRAND.ink);
     if (domains.cognitive !== undefined) {
-      doc.text(`Cognitive Intelligence: ${domains.cognitive}%`, 25, yPos);
-      yPos += 6;
-      doc.text(`Instructional Intelligence: ${domains.instructional}%`, 25, yPos);
-      yPos += 6;
-      doc.text(`Classroom Leadership: ${domains.leadership}%`, 25, yPos);
-      yPos += 6;
-      doc.text(`Relationship Intelligence: ${domains.relationship}%`, 25, yPos);
-      yPos += 6;
-      doc.text(`Professional Intelligence: ${domains.professional}%`, 25, yPos);
-      yPos += 10;
+      doc.text(`• Cognitive Intelligence: ${domains.cognitive}%`, 30, yPos);
+      yPos += 5.5;
+      doc.text(`• Instructional Intelligence: ${domains.instructional}%`, 30, yPos);
+      yPos += 5.5;
+      doc.text(`• Classroom Leadership: ${domains.leadership}%`, 30, yPos);
+      yPos += 5.5;
+      doc.text(`• Relationship Intelligence: ${domains.relationship}%`, 30, yPos);
+      yPos += 5.5;
+      doc.text(`• Professional Intelligence: ${domains.professional}%`, 30, yPos);
+      yPos += 8;
     }
-  } else {
-    // Generic fallback for any other assessment type
+  }
+
+  // Fallback if none matched
+  if (!renderedAnySection) {
     try {
       const scoreEntries = Object.entries(score);
       if (scoreEntries.length > 0) {
         scoreEntries.slice(0, 6).forEach(([key, value]) => {
-          doc.text(`${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`, 25, yPos);
+          doc.text(`• ${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`, 25, yPos);
           yPos += 6;
         });
         yPos += 4;
       } else {
-        doc.text('Score details not available', 25, yPos);
-        yPos += 10;
+        doc.text('Score details recorded successfully.', 25, yPos);
+        yPos += 8;
       }
     } catch {
-      doc.text('Score details not available', 25, yPos);
-      yPos += 10;
+      doc.text('Score details recorded successfully.', 25, yPos);
+      yPos += 8;
     }
   }
 

@@ -17,10 +17,14 @@ interface OrganizationAppProps {
 }
 
 function isSchoolAdmin(userData: any): boolean {
+  if (!userData) return false;
   const role = (userData?.role || '').toLowerCase();
   return (
     role === 'school_admin' ||
+    role === 'institution' ||
+    role === 'school' ||
     userData?.organizationType === 'Educational Institution' ||
+    userData?.organizationType === 'School' ||
     userData?.industrySector === 'Educational Institutions'
   );
 }

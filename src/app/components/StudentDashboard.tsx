@@ -15,11 +15,13 @@ import { calculateAge } from '../utils/dateUtils';
 import { useState, useEffect } from 'react';
 import { User, Assessment } from '../types';
 import { getUserAssessments, getUserReflections, getAllUsers } from '../utils/storage';
-import { getUserAssessmentResults, getAllAssessmentResults } from '../utils/api';
+import { getUserAssessmentResults, getAllAssessmentResults, updateUserProfile } from '../utils/api';
 import { useAuth } from './AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { CardV2, CardV2Grid, StatBadge } from './ui/card-v2';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { FeedbackTab } from './StudentDashboardTabs/FeedbackTab';
@@ -52,7 +54,11 @@ import {
   ChevronDown,
   Building2,
   ArrowLeft,
-  Briefcase
+  Briefcase,
+  Mail,
+  Check,
+  Save,
+  AlertCircle
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AssessmentTaking } from './AssessmentTaking';
@@ -102,6 +108,37 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
   const [showingCognitiveProfile, setShowingCognitiveProfile] = useState(false);
   const [showingCareerRecommendations, setShowingCareerRecommendations] = useState(false);
   const [cognitiveProfile, setCognitiveProfile] = useState<CognitiveProfile | null>(null);
+
+  // Student email address management
+  const [studentEmail, setStudentEmail] = useState(user.email || '');
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [emailSaveSuccess, setEmailSaveSuccess] = useState(false);
+  const [emailSaveError, setEmailSaveError] = useState('');
+
+  const handleSaveStudentEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailSaveError('');
+    setEmailSaveSuccess(false);
+
+    const clean = studentEmail.trim().toLowerCase();
+    if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+      setEmailSaveError('Please enter a valid email address.');
+      return;
+    }
+
+    try {
+      setIsSavingEmail(true);
+      await updateUserProfile({ email: clean });
+      user.email = clean;
+      setEmailSaveSuccess(true);
+      toast.success('Email linked successfully! Assessment reports will now be delivered to this email.');
+      setTimeout(() => setEmailSaveSuccess(false), 4000);
+    } catch (err: any) {
+      setEmailSaveError(err.message || 'Failed to update email address.');
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
 
   useEffect(() => {
     loadAssessments();
@@ -315,6 +352,39 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
     });
     
     return hasKolb && hasSternberg && hasDualProcess;
+  };
+
+  const getCoreCompletedCount = () => {
+    const hasKolb = hasCompletedAssessment('kolb');
+    const hasSternberg = hasCompletedAssessment('sternberg') || 
+                         hasCompletedAssessment('jhs-thinking') || 
+                         hasCompletedAssessment('shs-thinking') || 
+                         hasCompletedAssessment('child-thinking') || 
+                         hasCompletedAssessment('adult-thinking');
+    const hasDualProcess = hasCompletedAssessment('dual-process');
+    return (hasKolb ? 1 : 0) + (hasSternberg ? 1 : 0) + (hasDualProcess ? 1 : 0);
+  };
+
+  const hasCompletedThinkingAssessment = () => {
+    return assessments.some(a => 
+      a.type === 'sternberg' || 
+      a.type === 'jhs-thinking' || 
+      a.type === 'shs-thinking' || 
+      a.type === 'child-thinking' || 
+      a.type === 'adult-thinking'
+    );
+  };
+
+  const getLatestThinkingAssessment = () => {
+    return assessments.filter(a => 
+      a.type === 'sternberg' || 
+      a.type === 'jhs-thinking' || 
+      a.type === 'shs-thinking' || 
+      a.type === 'child-thinking' || 
+      a.type === 'adult-thinking'
+    ).sort((a, b) => 
+      new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+    )[0];
   };
 
   const getLatestAssessment = (type: Assessment['type']) => {
@@ -813,293 +883,62 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                 </CardContent>
               </Card>
             )}
-
-            {/* Brain Gym - Daily Cognitive Training */}
-            <Card className="border-2 border-gradient-to-r from-purple-200 to-pink-200 dark:from-purple-700 dark:to-pink-700 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 overflow-hidden relative shadow-xl">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl" />
-              <CardHeader className="relative">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center animate-pulse">
-                    <Brain className="h-7 w-7 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <CardTitle className="text-xl sm:text-2xl">🧠 Brain Gym - Daily Challenges</CardTitle>
-                      {brainGymProgress.currentStreak > 0 && (
-                        <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 flex items-center gap-1">
-                          <Flame className="h-3 w-3" />
-                          {brainGymProgress.currentStreak} Day Streak
+            {/* In-Progress Welcome Banner (< 3 core assessments) */}
+            {!loading && !hasCompletedAllThree() && (
+              <Card className="border border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50/70 via-indigo-50/70 to-pink-50/70 dark:from-purple-950/20 dark:via-indigo-950/20 dark:to-pink-950/20 shadow-sm">
+                <CardContent className="p-5">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-purple-600 text-white hover:bg-purple-700">
+                          {getCoreCompletedCount()} of 3 Completed
                         </Badge>
-                      )}
+                        <span className="text-xs text-muted-foreground font-medium">Core Cognitive Path</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        Welcome to your JotMinds Journey, {user.name.split(' ')[0]}! 🚀
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Complete your 3 core assessments below to unlock your personalized cognitive archetype, brain gym, and skill plans.
+                      </p>
                     </div>
-                    <CardDescription className="text-sm sm:text-base">
-                      Train your cognitive skills daily with fun challenges!
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="relative space-y-4">
-                {/* Today's Progress */}
-                <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg p-4 border-2 border-purple-200 dark:border-purple-700">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Today's Challenges</h3>
-                    <Badge variant="secondary">{getTodayProgress(user.id).total}/3 Complete</Badge>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => setShowingBrainGym(true)}
-                      disabled={getTodayProgress(user.id).learning}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        getTodayProgress(user.id).learning
-                          ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600'
-                          : 'bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md cursor-pointer'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <Brain className={`h-6 w-6 ${getTodayProgress(user.id).learning ? 'text-green-600' : 'text-purple-600'}`} />
-                        <span className="text-xs font-medium text-center">Learning</span>
-                        {getTodayProgress(user.id).learning && <span className="text-xs text-green-600">✓</span>}
+                    <div className="w-full sm:w-48 bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg border border-purple-100 dark:border-purple-900/50 shadow-sm shrink-0">
+                      <div className="flex justify-between text-xs font-semibold mb-1 text-purple-700 dark:text-purple-300">
+                        <span>Profile Progress</span>
+                        <span>{Math.round((getCoreCompletedCount() / 3) * 100)}%</span>
                       </div>
-                    </button>
-                    <button
-                      onClick={() => setShowingBrainGym(true)}
-                      disabled={getTodayProgress(user.id).thinking}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        getTodayProgress(user.id).thinking
-                          ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600'
-                          : 'bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md cursor-pointer'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <Zap className={`h-6 w-6 ${getTodayProgress(user.id).thinking ? 'text-green-600' : 'text-purple-600'}`} />
-                        <span className="text-xs font-medium text-center">Thinking</span>
-                        {getTodayProgress(user.id).thinking && <span className="text-xs text-green-600">✓</span>}
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => setShowingBrainGym(true)}
-                      disabled={getTodayProgress(user.id).decision}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        getTodayProgress(user.id).decision
-                          ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600'
-                          : 'bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md cursor-pointer'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <Target className={`h-6 w-6 ${getTodayProgress(user.id).decision ? 'text-green-600' : 'text-purple-600'}`} />
-                        <span className="text-xs font-medium text-center">Decision</span>
-                        {getTodayProgress(user.id).decision && <span className="text-xs text-green-600">✓</span>}
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-200 dark:border-orange-700">
-                    <div className="flex flex-col items-center gap-1">
-                      <Flame className="h-6 w-6 text-orange-500" />
-                      <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{brainGymProgress.currentStreak}</div>
-                      <p className="text-xs text-orange-600 dark:text-orange-400 text-center">Streak</p>
-                    </div>
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
-                    <div className="flex flex-col items-center gap-1">
-                      <Sparkles className="h-6 w-6 text-purple-500" />
-                      <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{brainGymProgress.totalPoints}</div>
-                      <p className="text-xs text-purple-600 dark:text-purple-400 text-center">Points</p>
-                    </div>
-                  </div>
-                  <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-3 border border-pink-200 dark:border-pink-700">
-                    <div className="flex flex-col items-center gap-1">
-                      <TrendingUp className="h-6 w-6 text-pink-500" />
-                      <div className="text-2xl font-bold text-pink-700 dark:text-pink-300">
-                        {brainGymProgress.completedChallenges.length}
-                      </div>
-                      <p className="text-xs text-pink-600 dark:text-pink-400 text-center">Total</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Start Button */}
-                <Button
-                  onClick={() => setShowingBrainGym(true)}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
-                  size="lg"
-                >
-                  <Brain className="mr-2 h-5 w-5" />
-                  Start Daily Challenge
-                  <Sparkles className="ml-2 h-5 w-5" />
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  🎯 Build mental agility • Train daily • Level up your brain!
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Cognitive Profile - Your Thinking Archetype */}
-            {cognitiveProfile && (
-              <Card className="border-2 border-gradient-to-r from-purple-200 to-pink-200 dark:from-purple-700 dark:to-pink-700 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 overflow-hidden relative shadow-xl">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl" />
-                <CardHeader className="relative">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                      <Brain className="h-7 w-7 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <CardTitle className="text-xl sm:text-2xl">🧠 {cognitiveProfile.cognitiveArchetype}</CardTitle>
-                        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
-                          {Math.round(cognitiveProfile.profileCompleteness)}% Complete
-                        </Badge>
-                      </div>
-                      <CardDescription className="text-sm sm:text-base">
-                        Your Cognitive Profile
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="relative space-y-4">
-                  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg p-4 border-2 border-purple-200 dark:border-purple-700">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Your Top Strengths:</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">Learning Agility</p>
-                        <p className="text-lg font-bold text-purple-600">{cognitiveProfile.learningAgility}</p>
-                      </div>
-                      <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">Innovation</p>
-                        <p className="text-lg font-bold text-pink-600">{cognitiveProfile.innovationPotential}</p>
-                      </div>
-                      <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">Execution</p>
-                        <p className="text-lg font-bold text-orange-600">{cognitiveProfile.executionCapability}</p>
-                      </div>
-                      <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">Self-Awareness</p>
-                        <p className="text-lg font-bold text-purple-600">{cognitiveProfile.metacognitiveAwareness}</p>
+                      <div className="h-2 w-full bg-purple-100 dark:bg-purple-950 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full transition-all duration-500"
+                          style={{ width: `${(getCoreCompletedCount() / 3) * 100}%` }}
+                        />
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setShowingCognitiveProfile(true)}
-                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
-                      size="lg"
-                    >
-                      <Brain className="mr-2 h-5 w-5" />
-                      View Full Profile
-                    </Button>
-                    {cognitiveProfile.profileCompleteness === 100 && (
-                      <Button
-                        onClick={() => setShowingCareerRecommendations(true)}
-                        variant="outline"
-                        className="flex-1"
-                        size="lg"
-                      >
-                        <Briefcase className="mr-2 h-5 w-5" />
-                        Career Matches
-                      </Button>
-                    )}
-                  </div>
-
-                  {cognitiveProfile.profileCompleteness < 100 && (
-                    <p className="text-xs text-center text-muted-foreground">
-                      💡 Complete {3 - cognitiveProfile.completedAssessments.length} more assessment(s) for career recommendations
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             )}
 
-            {/* Skill Builder - Personalized Learning Plans */}
-            <Card className="border-2 border-gradient-to-r from-teal-200 to-cyan-200 dark:from-teal-700 dark:to-cyan-700 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-blue-900/20 overflow-hidden relative shadow-xl">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-teal-400/20 to-cyan-400/20 rounded-full blur-3xl" />
-              <CardHeader className="relative">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
-                    <Target className="h-7 w-7 text-white" />
+            {/* Step 1: Core Cognitive Assessments */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600">
+                    <BookOpen className="h-4 w-4" />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <CardTitle className="text-xl sm:text-2xl">🎯 Skill Builder</CardTitle>
-                      <Badge className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0">
-                        New!
-                      </Badge>
-                    </div>
-                    <CardDescription className="text-sm sm:text-base">
-                      7-day personalized plans to strengthen your weakest cognitive dimensions
-                    </CardDescription>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                      Step 1: Core Cognitive Assessments
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Discover your unique learning patterns, thinking archetype, and decision-making preferences.
+                    </p>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="relative space-y-4">
-                <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg p-4 border-2 border-teal-200 dark:border-teal-700">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">How it works:</h3>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2">
-                      <span className="text-teal-500 font-bold">1.</span>
-                      <span>Complete an assessment to identify areas for growth</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-teal-500 font-bold">2.</span>
-                      <span>Get a personalized 7-day plan auto-generated for your weakest dimension</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-teal-500 font-bold">3.</span>
-                      <span>Each day: play a Brain Gym game, reflect, and complete a real-world challenge</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-teal-500 font-bold">4.</span>
-                      <span>Track your progress and build stronger cognitive skills!</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-3 border border-teal-200 dark:border-teal-700">
-                    <div className="flex flex-col items-center gap-1">
-                      <Brain className="h-6 w-6 text-teal-500" />
-                      <p className="text-xs text-teal-600 dark:text-teal-400 text-center font-medium">Metacognition</p>
-                    </div>
-                  </div>
-                  <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-3 border border-cyan-200 dark:border-cyan-700">
-                    <div className="flex flex-col items-center gap-1">
-                      <Target className="h-6 w-6 text-cyan-500" />
-                      <p className="text-xs text-cyan-600 dark:text-cyan-400 text-center font-medium">Problem Solving</p>
-                    </div>
-                  </div>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
-                    <div className="flex flex-col items-center gap-1">
-                      <Sparkles className="h-6 w-6 text-blue-500" />
-                      <p className="text-xs text-blue-600 dark:text-blue-400 text-center font-medium">Curiosity</p>
-                    </div>
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
-                    <div className="flex flex-col items-center gap-1">
-                      <Flame className="h-6 w-6 text-purple-500" />
-                      <p className="text-xs text-purple-600 dark:text-purple-400 text-center font-medium">Emotional Regulation</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={() => setShowingSkillBuilder(true)}
-                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transition-all"
-                  size="lg"
-                >
-                  <Target className="mr-2 h-5 w-5" />
-                  View My Skill Plans
-                  <Sparkles className="ml-2 h-5 w-5" />
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  💡 Plans are auto-created when you score low on assessments
-                </p>
-              </CardContent>
-            </Card>
+                <Badge variant="outline" className="px-3 py-1 text-xs font-semibold">
+                  {getCoreCompletedCount()}/3 Complete
+                </Badge>
+              </div>
 
             {/* Core Assessments - Using Card v2 */}
             <CardV2Grid columns={3}>
@@ -1152,18 +991,18 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                 iconBgColor="bg-purple-100"
                 title="Thinking Style"
                 subtitle="Understand how you think"
-                stats={hasCompletedAssessment('sternberg') ? [
+                stats={hasCompletedThinkingAssessment() ? [
                   { label: 'Status', value: '✓ Done' }
                 ] : [
                   { label: 'Status', value: 'Not started' }
                 ]}
                 cta={
-                  hasCompletedAssessment('sternberg') ? (
+                  hasCompletedThinkingAssessment() ? (
                     <div className="flex gap-2 w-full">
                       <Button 
                         size="sm"
                         className="flex-1 gradient-purple text-white" 
-                        onClick={() => setViewingReport(getLatestAssessment('sternberg'))}
+                        onClick={() => setViewingReport(getLatestThinkingAssessment())}
                       >
                         <Eye className="mr-1 h-3 w-3" />
                         View
@@ -1639,6 +1478,337 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
             </Card>
             </div>
             )}
+            </div>
+
+            {/* Step 2: Daily Brain Boost & Training Gym */}
+            <div className="space-y-4 pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center text-orange-600">
+                    <Flame className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                      Step 2: Daily Brain Boost & Training Gym
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Train daily with age-appropriate logic challenges, lateral thinking puzzles, and Kolb daily missions.
+                    </p>
+                  </div>
+                </div>
+                {brainGymProgress.currentStreak > 0 && (
+                  <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 hidden sm:flex items-center gap-1">
+                    <Flame className="h-3 w-3" />
+                    {brainGymProgress.currentStreak} Day Streak
+                  </Badge>
+                )}
+              </div>
+
+              {/* Brain Gym - Daily Cognitive Training */}
+              <Card className="border-2 border-gradient-to-r from-purple-200 to-pink-200 dark:from-purple-700 dark:to-pink-700 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 overflow-hidden relative shadow-xl">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl" />
+                <CardHeader className="relative">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center animate-pulse">
+                      <Brain className="h-7 w-7 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <CardTitle className="text-xl sm:text-2xl">🧠 Brain Gym - Daily Challenges</CardTitle>
+                        {brainGymProgress.currentStreak > 0 && (
+                          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 flex items-center gap-1">
+                            <Flame className="h-3 w-3" />
+                            {brainGymProgress.currentStreak} Day Streak
+                          </Badge>
+                        )}
+                      </div>
+                      <CardDescription className="text-sm sm:text-base">
+                        Train your cognitive skills daily with fun challenges!
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="relative space-y-4">
+                  {/* Today's Progress */}
+                  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg p-4 border-2 border-purple-200 dark:border-purple-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">Today's Challenges</h3>
+                      <Badge variant="secondary">{getTodayProgress(user.id).total}/3 Complete</Badge>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setShowingBrainGym(true)}
+                        disabled={getTodayProgress(user.id).learning}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          getTodayProgress(user.id).learning
+                            ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600'
+                            : 'bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <Brain className={`h-6 w-6 ${getTodayProgress(user.id).learning ? 'text-green-600' : 'text-purple-600'}`} />
+                          <span className="text-xs font-medium text-center">Learning</span>
+                          {getTodayProgress(user.id).learning && <span className="text-xs text-green-600">✓</span>}
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => setShowingBrainGym(true)}
+                        disabled={getTodayProgress(user.id).thinking}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          getTodayProgress(user.id).thinking
+                            ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600'
+                            : 'bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <Zap className={`h-6 w-6 ${getTodayProgress(user.id).thinking ? 'text-green-600' : 'text-purple-600'}`} />
+                          <span className="text-xs font-medium text-center">Thinking</span>
+                          {getTodayProgress(user.id).thinking && <span className="text-xs text-green-600">✓</span>}
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => setShowingBrainGym(true)}
+                        disabled={getTodayProgress(user.id).decision}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          getTodayProgress(user.id).decision
+                            ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600'
+                            : 'bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <Target className={`h-6 w-6 ${getTodayProgress(user.id).decision ? 'text-green-600' : 'text-purple-600'}`} />
+                          <span className="text-xs font-medium text-center">Decision</span>
+                          {getTodayProgress(user.id).decision && <span className="text-xs text-green-600">✓</span>}
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-200 dark:border-orange-700">
+                      <div className="flex flex-col items-center gap-1">
+                        <Flame className="h-6 w-6 text-orange-500" />
+                        <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{brainGymProgress.currentStreak}</div>
+                        <p className="text-xs text-orange-600 dark:text-orange-400 text-center">Streak</p>
+                      </div>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                      <div className="flex flex-col items-center gap-1">
+                        <Sparkles className="h-6 w-6 text-purple-500" />
+                        <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{brainGymProgress.totalPoints}</div>
+                        <p className="text-xs text-purple-600 dark:text-purple-400 text-center">Points</p>
+                      </div>
+                    </div>
+                    <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-3 border border-pink-200 dark:border-pink-700">
+                      <div className="flex flex-col items-center gap-1">
+                        <TrendingUp className="h-6 w-6 text-pink-500" />
+                        <div className="text-2xl font-bold text-pink-700 dark:text-pink-300">
+                          {brainGymProgress.completedChallenges.length}
+                        </div>
+                        <p className="text-xs text-pink-600 dark:text-pink-400 text-center">Total</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Start Button */}
+                  <Button
+                    onClick={() => setShowingBrainGym(true)}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
+                    size="lg"
+                  >
+                    <Brain className="mr-2 h-5 w-5" />
+                    Start Daily Challenge
+                    <Sparkles className="ml-2 h-5 w-5" />
+                  </Button>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    🎯 Build mental agility • Train daily • Level up your brain!
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Step 3: Strengths, Skills & Academic Growth */}
+            <div className="space-y-6 pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center text-teal-600">
+                    <Target className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                      Step 3: Strengths, Skills & Academic Growth
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Personalized growth plans and archetype breakdowns based on your cognitive assessments.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cognitive Profile - Your Thinking Archetype */}
+              {cognitiveProfile && (
+                <Card className="border-2 border-gradient-to-r from-purple-200 to-pink-200 dark:from-purple-700 dark:to-pink-700 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 overflow-hidden relative shadow-xl">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl" />
+                  <CardHeader className="relative">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <Brain className="h-7 w-7 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <CardTitle className="text-xl sm:text-2xl">🧠 {cognitiveProfile.cognitiveArchetype}</CardTitle>
+                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
+                            {Math.round(cognitiveProfile.profileCompleteness)}% Complete
+                          </Badge>
+                        </div>
+                        <CardDescription className="text-sm sm:text-base">
+                          Your Cognitive Profile
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative space-y-4">
+                    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg p-4 border-2 border-purple-200 dark:border-purple-700">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Your Top Strengths:</h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Learning Agility</p>
+                          <p className="text-lg font-bold text-purple-600">{cognitiveProfile.learningAgility}</p>
+                        </div>
+                        <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Innovation</p>
+                          <p className="text-lg font-bold text-pink-600">{cognitiveProfile.innovationPotential}</p>
+                        </div>
+                        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Execution</p>
+                          <p className="text-lg font-bold text-orange-600">{cognitiveProfile.executionCapability}</p>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Self-Awareness</p>
+                          <p className="text-lg font-bold text-purple-600">{cognitiveProfile.metacognitiveAwareness}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => setShowingCognitiveProfile(true)}
+                        className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
+                        size="lg"
+                      >
+                        <Brain className="mr-2 h-5 w-5" />
+                        View Full Profile
+                      </Button>
+                      {cognitiveProfile.profileCompleteness === 100 && (
+                        <Button
+                          onClick={() => setShowingCareerRecommendations(true)}
+                          variant="outline"
+                          className="flex-1"
+                          size="lg"
+                        >
+                          <Briefcase className="mr-2 h-5 w-5" />
+                          Career Matches
+                        </Button>
+                      )}
+                    </div>
+
+                    {cognitiveProfile.profileCompleteness < 100 && (
+                      <p className="text-xs text-center text-muted-foreground">
+                        💡 Complete {3 - cognitiveProfile.completedAssessments.length} more assessment(s) for career recommendations
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Skill Builder - Personalized Learning Plans */}
+              <Card className="border-2 border-gradient-to-r from-teal-200 to-cyan-200 dark:from-teal-700 dark:to-cyan-700 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-blue-900/20 overflow-hidden relative shadow-xl">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-teal-400/20 to-cyan-400/20 rounded-full blur-3xl" />
+                <CardHeader className="relative">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
+                      <Target className="h-7 w-7 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <CardTitle className="text-xl sm:text-2xl">🎯 Skill Builder</CardTitle>
+                        <Badge className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0">
+                          New!
+                        </Badge>
+                      </div>
+                      <CardDescription className="text-sm sm:text-base">
+                        7-day personalized plans to strengthen your weakest cognitive dimensions
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="relative space-y-4">
+                  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg p-4 border-2 border-teal-200 dark:border-teal-700">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">How it works:</h3>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <span className="text-teal-500 font-bold">1.</span>
+                        <span>Complete an assessment to identify areas for growth</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-teal-500 font-bold">2.</span>
+                        <span>Get a personalized 7-day plan auto-generated for your weakest dimension</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-teal-500 font-bold">3.</span>
+                        <span>Each day: play a Brain Gym game, reflect, and complete a real-world challenge</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-teal-500 font-bold">4.</span>
+                        <span>Track your progress and build stronger cognitive skills!</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-3 border border-teal-200 dark:border-teal-700">
+                      <div className="flex flex-col items-center gap-1">
+                        <Brain className="h-6 w-6 text-teal-500" />
+                        <p className="text-xs text-teal-600 dark:text-teal-400 text-center font-medium">Metacognition</p>
+                      </div>
+                    </div>
+                    <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-3 border border-cyan-200 dark:border-cyan-700">
+                      <div className="flex flex-col items-center gap-1">
+                        <Target className="h-6 w-6 text-cyan-500" />
+                        <p className="text-xs text-cyan-600 dark:text-cyan-400 text-center font-medium">Problem Solving</p>
+                      </div>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
+                      <div className="flex flex-col items-center gap-1">
+                        <Sparkles className="h-6 w-6 text-blue-500" />
+                        <p className="text-xs text-blue-600 dark:text-blue-400 text-center font-medium">Curiosity</p>
+                      </div>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                      <div className="flex flex-col items-center gap-1">
+                        <Flame className="h-6 w-6 text-purple-500" />
+                        <p className="text-xs text-purple-600 dark:text-purple-400 text-center font-medium">Emotional Regulation</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => setShowingSkillBuilder(true)}
+                    className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transition-all"
+                    size="lg"
+                  >
+                    <Target className="mr-2 h-5 w-5" />
+                    View My Skill Plans
+                    <Sparkles className="ml-2 h-5 w-5" />
+                  </Button>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    💡 Plans are auto-created when you score low on assessments
+                  </p>
+                </CardContent>
+              </Card>
 
             {trendData.length >= 1 && (
               <Card className="border-2 border-purple-200 bg-gradient-to-br from-white via-purple-50 to-pink-50 shadow-lg">
@@ -1861,6 +2031,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
             </CardContent>
               </Card>
             )}
+            </div>
           </TabsContent>
 
           <TabsContent value="daily-challenges" className="space-y-6">
@@ -1982,10 +2153,11 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Card 1: Student Information */}
                   <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
                     <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      <UserIcon className="w-4 h-4 text-indigo-600" /> Student Information
+                      <UserIcon className="w-4 h-4 text-indigo-600" /> Student Profile
                     </h3>
                     <div className="space-y-2 text-xs">
                       <div>
@@ -1993,8 +2165,8 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                         <span className="font-bold text-slate-800 dark:text-slate-200">{user.name}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground block">Email / Username:</span>
-                        <span className="font-bold text-slate-800 dark:text-slate-200">{user.email}</span>
+                        <span className="text-muted-foreground block">Current Email / ID:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">{user.email || 'None registered'}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground block">Education Level:</span>
@@ -2007,6 +2179,83 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                     </div>
                   </div>
 
+                  {/* Card 2: Interactive Student Email Setup / Update */}
+                  <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-emerald-600" /> Email & Reports
+                      </h3>
+                      <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">
+                        Deliveries
+                      </Badge>
+                    </div>
+
+                    {(!studentEmail || studentEmail.endsWith('@jotminds.local') || studentEmail.includes('placeholder')) && (
+                      <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                        <p className="font-semibold flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Onboarded via Class Code?
+                        </p>
+                        <p className="text-[11px] leading-relaxed">
+                          Link your personal or student email to receive PDF assessment reports directly and keep your account secure.
+                        </p>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSaveStudentEmail} className="space-y-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="student-email-input" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Your Email Address
+                        </Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="student-email-input"
+                            type="email"
+                            value={studentEmail}
+                            onChange={(e) => {
+                              setStudentEmail(e.target.value);
+                              setEmailSaveError('');
+                              setEmailSaveSuccess(false);
+                            }}
+                            placeholder="student@school.edu"
+                            className="pl-9 text-xs h-9 bg-slate-50 dark:bg-slate-800/50"
+                            required
+                          />
+                        </div>
+                        {emailSaveError && (
+                          <p className="text-[11px] text-red-600 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> {emailSaveError}
+                          </p>
+                        )}
+                        {emailSaveSuccess && (
+                          <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Saved! Reports will now be emailed here.
+                          </p>
+                        )}
+                      </div>
+
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={isSavingEmail || !studentEmail.trim()}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium"
+                      >
+                        {isSavingEmail ? (
+                          <>
+                            <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-1.5 h-3.5 w-3.5" />
+                            Save Email Address
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </div>
+
+                  {/* Card 3: Parent Access & Supervision */}
                   <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
                     <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                       <UserPlus className="w-4 h-4 text-purple-600" /> Parent Access & Supervision

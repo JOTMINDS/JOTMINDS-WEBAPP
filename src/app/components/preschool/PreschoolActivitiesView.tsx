@@ -79,32 +79,34 @@ export function PreschoolActivitiesView({
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge className="bg-amber-600 text-white font-medium">Cross-Domain Play Bank</Badge>
-              <Badge variant="outline" className="text-xs">Continuous Observation</Badge>
+              <Badge className="bg-amber-600 text-white font-medium">Play & Learning Bank</Badge>
+              <Badge variant="outline" className="text-xs">Everyday Activities</Badge>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Play-Based Developmental Activities
+              Play-Based Learning Activities
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
-              Conduct high-engagement play routines designed to assess multiple developmental competencies concurrently across cognitive, language, motor, and socio-emotional domains.
+              Simple, engaging games and routines designed to support and observe young learners across thinking, speaking, motor skills, and friendships.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Child for Quick Observe:
-            </span>
-            <select
-              value={selectedChildForActivity}
-              onChange={e => setSelectedChildForActivity(e.target.value)}
-              className="text-xs border rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-900 dark:border-slate-800 font-medium"
-            >
-              {childrenList.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {childrenList.length > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Child for Quick Observe:
+              </span>
+              <select
+                value={selectedChildForActivity}
+                onChange={e => setSelectedChildForActivity(e.target.value)}
+                className="text-xs border rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-900 dark:border-slate-800 font-medium"
+              >
+                {childrenList.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -122,20 +124,26 @@ export function PreschoolActivitiesView({
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {/* Band selector */}
+              {/* Age selector */}
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs">
-                <span className="px-2 font-medium text-slate-500">Band:</span>
-                {['all', 'P1', 'P2', 'P3', 'P4'].map(b => (
+                <span className="px-2 font-medium text-slate-500">Age:</span>
+                {[
+                  { id: 'all', label: 'All Ages' },
+                  { id: 'P1', label: '2–3y' },
+                  { id: 'P2', label: '3–4y' },
+                  { id: 'P3', label: '4–5y' },
+                  { id: 'P4', label: '5–6y' },
+                ].map(item => (
                   <button
-                    key={b}
-                    onClick={() => setSelectedBand(b)}
+                    key={item.id}
+                    onClick={() => setSelectedBand(item.id)}
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                      selectedBand === b
+                      selectedBand === item.id
                         ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                     }`}
                   >
-                    {b === 'all' ? 'All Bands' : b}
+                    {item.label}
                   </button>
                 ))}
               </div>
@@ -185,7 +193,7 @@ export function PreschoolActivitiesView({
                     variant="outline"
                     className="text-[10px] py-0 px-1.5 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-200"
                   >
-                    Band {b}
+                    {b === 'P1' ? 'Ages 2–3' : b === 'P2' ? 'Ages 3–4' : b === 'P3' ? 'Ages 4–5' : 'Ages 5–6'}
                   </Badge>
                 ))}
               </div>
@@ -222,18 +230,21 @@ export function PreschoolActivitiesView({
                 {/* Mapped Indicators */}
                 <div className="space-y-1">
                   <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                    Observed Competencies:
+                    Observed Areas:
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {activity.mappedIndicatorIds.map(id => (
-                      <Badge
-                        key={id}
-                        variant="secondary"
-                        className="text-[10px] py-0 px-1.5 font-mono bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/60"
-                      >
-                        {id}
-                      </Badge>
-                    ))}
+                    {activity.mappedIndicatorIds.map(id => {
+                      const ind = MASTER_PRESCHOOL_INDICATORS.find(i => i.id === id);
+                      return (
+                        <Badge
+                          key={id}
+                          variant="secondary"
+                          className="text-[10px] py-0.5 px-2 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/60"
+                        >
+                          {ind?.clusterName || ind?.title || 'Milestone'}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -279,7 +290,7 @@ export function PreschoolActivitiesView({
                   </Badge>
                   {activeActivity.ageBands.map(b => (
                     <Badge key={b} variant="secondary" className="text-xs">
-                      Band {b}
+                      {b === 'P1' ? 'Ages 2–3' : b === 'P2' ? 'Ages 3–4' : b === 'P3' ? 'Ages 4–5' : 'Ages 5–6'}
                     </Badge>
                   ))}
                 </div>
@@ -314,7 +325,7 @@ export function PreschoolActivitiesView({
                 <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-xl space-y-1">
                   <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
                     <Compass className="h-3.5 w-3.5" />
-                    Local Ghanaian Context & Materials Adaptation
+                    Local Context & Materials Adaptation
                   </div>
                   <p className="text-xs text-emerald-700 dark:text-emerald-400">
                     {activeActivity.culturalAdaptationNotes}
@@ -343,7 +354,7 @@ export function PreschoolActivitiesView({
               {/* Step-by-Step Instructions */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Facilitator Guidance & Procedure
+                  Teacher Guidance & Procedure
                 </h4>
                 <div className="space-y-2">
                   {activeActivity.teacherInstructions.map((inst, i) => (
@@ -374,7 +385,7 @@ export function PreschoolActivitiesView({
               {/* Mapped Indicators With Quick Action */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Mapped Developmental Indicators ({mappedIndicators.length})
+                  Related Developmental Milestones ({mappedIndicators.length})
                 </h4>
                 <div className="space-y-2">
                   {mappedIndicators.map(ind => (
@@ -384,14 +395,11 @@ export function PreschoolActivitiesView({
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
-                            {ind.id}
-                          </span>
                           <Badge variant="outline" className="text-[10px]">
                             {ind.clusterName}
                           </Badge>
                           <Badge variant="secondary" className="text-[10px]">
-                            Band {ind.band}
+                            {ind.band === 'P1' ? 'Ages 2–3' : ind.band === 'P2' ? 'Ages 3–4' : ind.band === 'P3' ? 'Ages 4–5' : 'Ages 5–6'}
                           </Badge>
                         </div>
                         <div className="text-xs font-semibold text-slate-900 dark:text-white">
@@ -407,7 +415,7 @@ export function PreschoolActivitiesView({
                         className="text-xs shrink-0 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 text-white gap-1"
                       >
                         <Play className="h-3 w-3" />
-                        Log Evidence
+                        Observe
                       </Button>
                     </div>
                   ))}

@@ -210,82 +210,99 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
     }
   };
 
+  const getStrengthBadge = (val: number, max: number) => {
+    const pct = max > 0 ? (val / max) * 100 : 0;
+    if (pct >= 75) {
+      return (
+        <Badge className="text-[10px] px-2 py-0.5 font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
+          Dominant Strength
+        </Badge>
+      );
+    }
+    if (pct >= 50) {
+      return (
+        <Badge className="text-[10px] px-2 py-0.5 font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-300">
+          Active Mode
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="text-[10px] px-2 py-0.5 font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300">
+        Growth Area
+      </Badge>
+    );
+  };
+
   const getChartData = () => {
     if (assessment?.score?.kolb?.scores) {
       return [
         { 
-          name: 'Concrete Experience', 
-          shortName: 'CE',
+          name: 'Concrete Experience (Hands-On)', 
+          shortName: 'Hands-On (CE)',
           value: assessment.score.kolb.scores.CE || 0,
           color: '#1FC8E1',
-          description: 'Learning through feeling and experience'
+          description: 'Learning through direct action, feeling, and practical experience'
         },
         { 
-          name: 'Reflective Observation', 
-          shortName: 'RO',
+          name: 'Reflective Observation (Thoughtful)', 
+          shortName: 'Observing (RO)',
           value: assessment.score.kolb.scores.RO || 0,
           color: '#7B61FF',
-          description: 'Learning through watching and reflecting'
+          description: 'Learning through watching carefully, listening, and reflecting'
         },
         { 
-          name: 'Abstract Conceptualization', 
-          shortName: 'AC',
+          name: 'Abstract Conceptualization (Logic)', 
+          shortName: 'Concepts (AC)',
           value: assessment.score.kolb.scores.AC || 0,
           color: '#FF715B',
-          description: 'Learning through thinking and analyzing'
+          description: 'Learning through theories, logical analysis, and clear models'
         },
         { 
-          name: 'Active Experimentation', 
-          shortName: 'AE',
+          name: 'Active Experimentation (Action)', 
+          shortName: 'Action (AE)',
           value: assessment.score.kolb.scores.AE || 0,
           color: '#2C2E83',
-          description: 'Learning through doing and testing'
+          description: 'Learning through testing ideas out, experimenting, and doing'
         },
       ];
     } else if (assessment?.score?.sternberg?.scores) {
       return [
         { 
-          name: 'Analytical', 
+          name: 'Analytical (Problem Solving)', 
           value: assessment.score.sternberg.scores.analytical || 0,
           color: '#1FC8E1',
-          description: 'Critical thinking and problem analysis'
+          description: 'Critical thinking, breaking problems down, and evaluating logic'
         },
         { 
-          name: 'Creative', 
+          name: 'Creative (Idea Innovation)', 
           value: assessment.score.sternberg.scores.creative || 0,
           color: '#7B61FF',
-          description: 'Innovation and imaginative thinking'
+          description: 'Inventing new possibilities, artistic flair, and original thinking'
         },
         { 
-          name: 'Practical', 
+          name: 'Practical (Real-World Action)', 
           value: assessment.score.sternberg.scores.practical || 0,
           color: '#FF715B',
-          description: 'Real-world application and common sense'
+          description: 'Real-world application, common sense, and daily execution'
         },
       ];
-    } else if (assessment?.score?.dualProcess?.scores) {
-      const scores = assessment.score.dualProcess.scores;
+    } else if (assessment?.score?.dualProcess?.scores || (assessment?.score as any)?.['dual-process']?.scores || (assessment?.score as any)?.decision?.scores) {
+      const scores = assessment.score?.dualProcess?.scores || (assessment?.score as any)?.['dual-process']?.scores || (assessment?.score as any)?.decision?.scores || assessment.score;
       const system1Score = scores.system1 || (scores as any).Intuitive || 0;
-      const system2Score = scores.system2 || (scores as any).Reflective || 0;
-      
-      console.log('[AssessmentReport] Dual-Process scores:', {
-        raw: scores,
-        system1Score,
-        system2Score
-      });
+      const system2Score = scores.system2 || (scores as any).Deliberate || (scores as any).Reflective || 0;
       
       return [
         { 
           name: 'Intuitive (System 1)', 
           value: system1Score,
           color: '#1FC8E1',
-          description: 'Fast, automatic, intuitive decisions'
+          description: 'Fast, automatic, intuitive decisions based on pattern instincts'
         },
         { 
-          name: 'Reflective (System 2)', 
+          name: 'Deliberate (System 2)', 
           value: system2Score,
           color: '#7B61FF',
-          description: 'Slow, deliberate, analytical decisions'
+          description: 'Slow, careful, analytical decisions through evidence and logic'
         },
       ];
     } else if (
@@ -308,24 +325,31 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
       }
 
       return [
-        { name: 'Creative', value: actualScores.creative || actualScores.Creative || 0, color: '#1FC8E1' },
-        { name: 'Analytical', value: actualScores.analytical || actualScores.Analytical || 0, color: '#7B61FF' },
-        { name: 'Practical', value: actualScores.practical || actualScores.Practical || 0, color: '#FF715B' },
-        { name: 'Reflective', value: actualScores.reflective || actualScores.Reflective || 0, color: '#2C2E83' }
+        { name: 'Creative Innovation', value: actualScores.creative || actualScores.Creative || 0, color: '#1FC8E1', description: 'Imaginative, original and flexible thinking' },
+        { name: 'Analytical Logic', value: actualScores.analytical || actualScores.Analytical || 0, color: '#7B61FF', description: 'Systematic analysis and reasoned problem solving' },
+        { name: 'Practical Application', value: actualScores.practical || actualScores.Practical || 0, color: '#FF715B', description: 'Applying skills to real everyday life' },
+        { name: 'Reflective Depth', value: actualScores.reflective || actualScores.Reflective || 0, color: '#2C2E83', description: 'Deep consideration and thoughtful synthesis' }
       ].filter(item => item.value > 0);
     }
     return [];
   };
 
   const getMainStyle = () => {
-    if (assessment.score.kolb) return assessment.score.kolb.style;
-    if (assessment.score.sternberg) return assessment.score.sternberg.style;
-    if (assessment.score.dualProcess) return assessment.score.dualProcess.style;
-    if (assessment.score['jhs-thinking']) return assessment.score['jhs-thinking'].personalityType;
-    if (assessment.score['shs-thinking']) return assessment.score['shs-thinking'].personalityType;
-    if (assessment.score['children-thinking']) return assessment.score['children-thinking'].personalityType;
-    if (assessment.score['adult-thinking']) return assessment.score['adult-thinking'].dominantStyle;
-    return '';
+    let style = '';
+    if (assessment.score?.kolb) style = assessment.score.kolb.style;
+    else if (assessment.score?.sternberg) style = assessment.score.sternberg.style;
+    else if (assessment.score?.dualProcess) style = assessment.score.dualProcess.style;
+    else if ((assessment.score as any)?.['dual-process']) style = (assessment.score as any)['dual-process'].style;
+    else if ((assessment.score as any)?.decision) style = (assessment.score as any).decision.style;
+    else if (assessment.score?.['jhs-thinking']) style = assessment.score['jhs-thinking'].personalityType || assessment.score['jhs-thinking'].style;
+    else if (assessment.score?.['shs-thinking']) style = assessment.score['shs-thinking'].personalityType || assessment.score['shs-thinking'].style;
+    else if (assessment.score?.['children-thinking']) style = assessment.score['children-thinking'].personalityType || assessment.score['children-thinking'].style;
+    else if (assessment.score?.['adult-thinking']) style = assessment.score['adult-thinking'].dominantStyle || assessment.score['adult-thinking'].style;
+
+    if (style === 'Reflective' && (assessment.type === 'dual-process' || assessment.type === 'decision' || assessment.score?.dualProcess || (assessment.score as any)?.['dual-process'] || (assessment.score as any)?.decision)) {
+      return 'Deliberate';
+    }
+    return style || '';
   };
 
   const getReportTitle = () => {
@@ -442,7 +466,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-violet-50 to-indigo-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-2 sm:p-4">
       <div className="max-w-4xl mx-auto py-4 sm:py-8 space-y-4 sm:space-y-6">
         {/* Print-only branded header */}
-        <div className="print-header hidden">
+        <div className="print-header hidden print:flex">
           <div>
             <div className="logo-text">JotMinds</div>
             <div className="tagline-text">Your brain has a manual, we built it</div>
@@ -586,16 +610,22 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     {/* Score bars with labels */}
                     <div className="grid grid-cols-1 gap-3">
                       {chartData.map((item: any, index: number) => {
-                        const percentage = (item.value / maxValue) * 100;
+                        const percentage = Math.round((item.value / maxValue) * 100);
                         return (
-                          <div key={index} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs sm:text-sm font-medium">{item.name}</span>
-                              <span className="text-xs sm:text-sm font-bold" style={{ color: item.color }}>
-                                {item.value}
-                              </span>
+                          <div key={index} className="space-y-2 p-3.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">{item.name}</span>
+                              <div className="flex items-center gap-2">
+                                {getStrengthBadge(item.value, maxValue)}
+                                <span className="text-xs sm:text-sm font-bold" style={{ color: item.color }}>
+                                  {item.value} <span className="text-[11px] text-muted-foreground font-normal">({percentage}%)</span>
+                                </span>
+                              </div>
                             </div>
-                            <div className="relative w-full h-3 bg-muted rounded-full overflow-hidden">
+                            {item.description && (
+                              <p className="text-[11px] text-muted-foreground">{item.description}</p>
+                            )}
+                            <div className="relative w-full h-2.5 bg-muted rounded-full overflow-hidden">
                               <div
                                 className="absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out"
                                 style={{
@@ -673,36 +703,50 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     
                     {/* Score cards - Standardized 20px padding */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {chartData.map((item: any, index: number) => (
-                        <Card key={index} className="border-2 transition-all hover:shadow-md">
-                          <CardContent style={{ padding: `${componentSpacing.cardPadding}px` }}>
-                            <div className="space-y-2">
-                              <div 
-                                className="w-12 h-12 rounded-full flex items-center justify-center"
-                                style={{ backgroundColor: `${item.color}20` }}
-                              >
-                                <span 
-                                  className="text-xl font-bold"
-                                  style={{ color: item.color }}
-                                >
-                                  {item.value}
-                                </span>
+                      {chartData.map((item: any, index: number) => {
+                        const percentage = Math.round((item.value / maxValue) * 100);
+                        return (
+                          <Card key={index} className="border-2 transition-all hover:shadow-md bg-white dark:bg-slate-900">
+                            <CardContent style={{ padding: `${componentSpacing.cardPadding}px` }}>
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div 
+                                    className="w-12 h-12 rounded-xl flex items-center justify-center shadow-inner"
+                                    style={{ backgroundColor: `${item.color}15`, border: `1.5px solid ${item.color}40` }}
+                                  >
+                                    <span 
+                                      className="text-lg font-bold"
+                                      style={{ color: item.color }}
+                                    >
+                                      {item.value}
+                                    </span>
+                                  </div>
+                                  {getStrengthBadge(item.value, maxValue)}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">{item.name}</h4>
+                                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.description}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                                    <span>Relative Strength</span>
+                                    <span className="font-semibold" style={{ color: item.color }}>{percentage}%</span>
+                                  </div>
+                                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full transition-all duration-1000"
+                                      style={{
+                                        width: `${percentage}%`,
+                                        backgroundColor: item.color,
+                                      }}
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                              <h4 className="font-semibold text-sm">{item.name}</h4>
-                              <p className="text-xs text-muted-foreground">{item.description}</p>
-                              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all duration-1000"
-                                  style={{
-                                    width: `${(item.value / maxValue) * 100}%`,
-                                    backgroundColor: item.color,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -1349,7 +1393,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                     data={generatePeerComparisonData(
                       {
                         Intuitive: assessment.score.dualProcess.scores.system1,
-                        Reflective: assessment.score.dualProcess.scores.system2
+                        Deliberate: assessment.score.dualProcess.scores.system2
                       },
                       defaultAverages.dualProcess
                     )}

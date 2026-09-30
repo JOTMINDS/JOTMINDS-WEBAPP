@@ -24,21 +24,21 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
   });
 
   // Get latest assessment of each type
-  const latestKolb = assessments.filter(a => {
+let latestKolb = assessments.filter(a => {
     const t = (a.type as any) || (a as any).assessmentType;
     return t === 'kolb' || t === 'learning' || Boolean(a.score?.kolb);
   }).sort((a, b) => 
     new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()
   )[0];
   
-  const latestSternberg = assessments.filter(a => {
+  let latestSternberg = assessments.filter(a => {
     const t = (a.type as any) || (a as any).assessmentType;
     return t === 'sternberg' || t === 'thinking' || (typeof t === 'string' && t.includes('thinking')) || Boolean(a.score?.sternberg);
   }).sort((a, b) => 
     new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()
   )[0];
   
-  const latestDualProcess = assessments.filter(a => {
+  let latestDualProcess = assessments.filter(a => {
     const t = (a.type as any) || (a as any).assessmentType;
     return t === 'dual-process' || t === 'decision' || Boolean(a.score?.dualProcess);
   }).sort((a, b) => 
@@ -51,23 +51,42 @@ export function CombinedCognitiveProfile({ assessments, userName, onBack }: Comb
     hasDualProcess: !!latestDualProcess
   });
 
-  if (!latestKolb || !latestSternberg || !latestDualProcess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-violet-50 to-indigo-50 p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Complete Your Profile</CardTitle>
-            <CardDescription>
-              Complete all three assessments to view your comprehensive cognitive profile
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={onBack}>Return to Dashboard</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Ensure assessments exist; use placeholders if missing
+  const placeholderDate = new Date(0);
+  const placeholderKolb = {
+    type: 'kolb' as any,
+    score: {
+      kolb: {
+        style: 'Not yet assessed',
+        scores: { CE: 0, RO: 0, AC: 0, AE: 0 },
+      },
+    },
+    completedAt: placeholderDate,
+  };
+  const placeholderSternberg = {
+    type: 'sternberg' as any,
+    score: {
+      sternberg: { style: 'Not yet assessed' },
+      thinking: {
+        style: 'Not yet assessed',
+        scores: { analytical: 0, creative: 0, practical: 0 },
+      },
+    },
+    completedAt: placeholderDate,
+  };
+  const placeholderDual = {
+    type: 'dual-process' as any,
+    score: {
+      dualProcess: {
+        style: 'Not yet assessed',
+        scores: { system1: 0, system2: 0 },
+      },
+    },
+    completedAt: placeholderDate,
+  };
+  latestKolb = latestKolb ?? placeholderKolb;
+  latestSternberg = latestSternberg ?? placeholderSternberg;
+  latestDualProcess = latestDualProcess ?? placeholderDual;
 
   console.log('📈 Assessment Scores:', {
     kolbScore: latestKolb.score,

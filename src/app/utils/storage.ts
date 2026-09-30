@@ -177,6 +177,31 @@ export function deleteUser(userId: string) {
   deleteUserFromSupabase(userId);
 }
 
+export function updateUserEmail(userId: string, newEmail: string): User | null {
+  const cleanEmail = newEmail.trim().toLowerCase();
+  if (!cleanEmail) return null;
+
+  // 1. Update in ALL users array
+  const users = getAllUsers();
+  const index = users.findIndex(u => u.id === userId);
+  let updatedUser: User | null = null;
+  if (index >= 0) {
+    users[index] = { ...users[index], email: cleanEmail };
+    updatedUser = users[index];
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    syncUserToSupabase(users[index]);
+  }
+
+  // 2. Update current logged-in user if matching
+  const current = getCurrentUser();
+  if (current && current.id === userId) {
+    updatedUser = { ...current, email: cleanEmail };
+    saveCurrentUser(updatedUser);
+  }
+
+  return updatedUser;
+}
+
 
 export function findUserByEmail(email: string): User | undefined {
   const users = getAllUsers();

@@ -5,6 +5,8 @@ import {
   getAllEvidenceEvents,
   seedSamplePreschoolEventsIfEmpty,
 } from '../../utils/preschoolStorage';
+import { isPreschoolChild } from '../../utils/preschoolEngine';
+import { safeParse } from '../../utils/storage';
 import { PreschoolChildrenView } from './PreschoolChildrenView';
 import { PreschoolAssessView } from './PreschoolAssessView';
 import { PreschoolActivitiesView } from './PreschoolActivitiesView';
@@ -39,98 +41,6 @@ interface PreschoolContainerProps {
   initialTab?: PreschoolTab;
 }
 
-// Starter roster of preschool children for immediate demo / exploration if none exist
-const DEFAULT_PRESCHOOL_CHILDREN: User[] = [
-  {
-    id: 'child_kofi_01',
-    name: 'Kofi Mensah',
-    email: 'kofi.mensah@school.edu',
-    role: 'student',
-    school: 'Preschool Academy',
-    age: 4.5,
-    className: 'Kindergarten 1',
-    classId: 'class_kg1',
-    dateOfBirth: '2021-11-15',
-  },
-  {
-    id: 'child_ama_02',
-    name: 'Ama Asante',
-    email: 'ama.asante@school.edu',
-    role: 'student',
-    school: 'Preschool Academy',
-    age: 3.4,
-    className: 'Nursery 2',
-    classId: 'class_nur2',
-    dateOfBirth: '2023-01-20',
-  },
-  {
-    id: 'child_kwesi_03',
-    name: 'Kwesi Boateng',
-    email: 'kwesi.boateng@school.edu',
-    role: 'student',
-    school: 'Preschool Academy',
-    age: 5.6,
-    className: 'Kindergarten 2 (P4)',
-    classId: 'class_kg2',
-    dateOfBirth: '2020-10-05',
-  },
-  {
-    id: 'child_efua_04',
-    name: 'Efua Osei',
-    email: 'efua.osei@school.edu',
-    role: 'student',
-    school: 'Preschool Academy',
-    age: 2.8,
-    className: 'Crèche & Nursery 1',
-    classId: 'class_nur1',
-    dateOfBirth: '2023-07-12',
-  },
-  {
-    id: 'child_yaw_05',
-    name: 'Yaw Addo',
-    email: 'yaw.addo@school.edu',
-    role: 'student',
-    school: 'Preschool Academy',
-    age: 5.8,
-    className: 'Kindergarten 2 (P4)',
-    classId: 'class_kg2',
-    dateOfBirth: '2020-08-22',
-  },
-  {
-    id: 'child_akua_06',
-    name: 'Akua Badu',
-    email: 'akua.badu@school.edu',
-    role: 'student',
-    school: 'Preschool Academy',
-    age: 4.2,
-    className: 'Kindergarten 1',
-    classId: 'class_kg1',
-    dateOfBirth: '2022-03-10',
-  },
-  {
-    id: 'child_kojo_07',
-    name: 'Kojo Frimpong',
-    email: 'kojo.frimpong@school.edu',
-    role: 'student',
-    school: 'Preschool Academy',
-    age: 3.8,
-    className: 'Nursery 2',
-    classId: 'class_nur2',
-    dateOfBirth: '2022-08-18',
-  },
-  {
-    id: 'child_abena_08',
-    name: 'Abena Darko',
-    email: 'abena.darko@school.edu',
-    role: 'student',
-    school: 'Preschool Academy',
-    age: 5.3,
-    className: 'Kindergarten 2 (P4)',
-    classId: 'class_kg2',
-    dateOfBirth: '2021-01-30',
-  },
-];
-
 export function PreschoolContainer({
   currentUser,
   childrenList: rawChildren,
@@ -143,24 +53,29 @@ export function PreschoolContainer({
   const [modalChildId, setModalChildId] = useState<string | undefined>(undefined);
   const [modalIndicatorId, setModalIndicatorId] = useState<string | undefined>(undefined);
 
-  // Combine provided children with default sample children if list is empty
+  // Filter provided children strictly for preschool (empty if none enrolled)
   const effectiveChildren = useMemo(() => {
-    if (rawChildren && rawChildren.length > 0) {
-      // If provided children have young ages or none specified, use them
-      return rawChildren;
+    if (rawChildren) {
+      return rawChildren.filter(isPreschoolChild);
     }
-    return DEFAULT_PRESCHOOL_CHILDREN;
+    const storedUsers = safeParse<User[]>('ts_users', []);
+    return storedUsers.filter(u => u.role === 'student' && isPreschoolChild(u));
   }, [rawChildren]);
 
-  // Load Evidence Events and Seed sample events if empty
+  // Load Evidence Events for enrolled preschool children
   const loadEvents = useCallback(() => {
-    seedSamplePreschoolEventsIfEmpty(
-      effectiveChildren,
-      currentUser.id || 'teacher_01',
-      currentUser.name || 'Classroom Teacher'
-    );
-    const loaded = getAllEvidenceEvents();
-    setEvents(loaded);
+    if (effectiveChildren.length > 0) {
+      seedSamplePreschoolEventsIfEmpty(
+        effectiveChildren,
+        currentUser.id || 'teacher_01',
+        currentUser.name || 'Classroom Teacher'
+      );
+      const loaded = getAllEvidenceEvents();
+      const childIds = new Set(effectiveChildren.map(c => c.id));
+      setEvents(loaded.filter(e => childIds.has(e.childId)));
+    } else {
+      setEvents([]);
+    }
   }, [effectiveChildren, currentUser]);
 
   useEffect(() => {
@@ -169,20 +84,24 @@ export function PreschoolContainer({
 
   // Modal open helper
   const handleOpenAssessModal = (childId?: string, indicatorId?: string) => {
+    if (effectiveChildren.length === 0) {
+      toast.info('No preschool children currently enrolled.');
+      return;
+    }
     setModalChildId(childId || effectiveChildren[0]?.id);
     setModalIndicatorId(indicatorId);
     setIsAssessModalOpen(true);
   };
 
   const navTabs: { id: PreschoolTab; label: string; icon: React.ElementType; badge?: string }[] = [
-    { id: 'children', label: 'Children Profiles', icon: Users, badge: `${effectiveChildren.length}` },
-    { id: 'assess', label: 'Assess & Checklists', icon: CheckCircle2 },
-    { id: 'activities', label: 'Play Bank', icon: Sparkles, badge: '8 Activities' },
-    { id: 'progress', label: 'Progress Timeline', icon: Clock, badge: `${events.length}` },
-    { id: 'class-insights', label: 'Class Insights', icon: Compass },
-    { id: 'teaching-insights', label: 'Teaching Insights', icon: BookOpen },
+    { id: 'children', label: 'Children', icon: Users, badge: effectiveChildren.length > 0 ? `${effectiveChildren.length}` : undefined },
+    { id: 'assess', label: 'Milestones & Notes', icon: CheckCircle2 },
+    { id: 'activities', label: 'Play & Activities', icon: Sparkles, badge: '8 Activities' },
+    { id: 'progress', label: 'Growth Timeline', icon: Clock, badge: events.length > 0 ? `${events.length}` : undefined },
+    { id: 'class-insights', label: 'Class Overview', icon: Compass },
+    { id: 'teaching-insights', label: 'Teaching Tips', icon: BookOpen },
     { id: 'parents', label: 'Family & Home', icon: Heart },
-    { id: 'school-insights', label: 'School Leadership', icon: GraduationCap },
+    { id: 'school-insights', label: 'School Overview', icon: GraduationCap },
   ];
 
   return (
@@ -206,18 +125,18 @@ export function PreschoolContainer({
             <div>
               <div className="flex items-center gap-2">
                 <Badge className="bg-[#6B4C9A] hover:bg-[#583D80] text-white text-[10px] tracking-wide font-bold">
-                  JM-PDAF v1.0
+                  JotMinds Early Years
                 </Badge>
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  Ages 2–6 · 240 Indicators
+                  Ages 2–6 · Early Milestones
                 </span>
                 <span className="hidden sm:inline text-xs text-slate-300 dark:text-slate-700">|</span>
                 <span className="hidden sm:inline text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                  Assess • Understand • Support • Track • Improve
+                  Observe • Support • Encourage • Celebrate
                 </span>
               </div>
               <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                Preschool Developmental Intelligence
+                Preschool & Early Years
               </h1>
             </div>
           </div>
@@ -228,7 +147,7 @@ export function PreschoolContainer({
               size="sm"
               onClick={loadEvents}
               className="h-8 text-xs text-slate-600 dark:text-slate-300 gap-1.5"
-              title="Refresh Evidence"
+              title="Refresh Observations"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh
@@ -237,10 +156,11 @@ export function PreschoolContainer({
             <Button
               size="sm"
               onClick={() => handleOpenAssessModal()}
-              className="h-8 text-xs bg-[#6B4C9A] hover:bg-[#583D80] text-white gap-1.5 shadow-sm"
+              disabled={effectiveChildren.length === 0}
+              className="h-8 text-xs bg-[#6B4C9A] hover:bg-[#583D80] text-white gap-1.5 shadow-sm disabled:opacity-50"
             >
               <Plus className="h-3.5 w-3.5" />
-              Log Observation
+              Record Observation
             </Button>
           </div>
         </div>

@@ -22,6 +22,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { getBrainBoostPuzzle, getKolbDailyMission } from '../data/brainBoostData';
 
 interface DailyChallengeTabProps {
   userId: string;
@@ -123,15 +124,15 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
     const questionSets = {
       youth: [
         {
-          domainLabel: "Learning Style",
-          question: "When learning something new in class, how do you like to learn best?",
+          domainLabel: "Learning Style (Kolb)",
+          question: "When learning something new in class, how do you learn most effectively?",
           options: [
-            "Watching video demonstrations and diagrams (Visual / Abstract)",
-            "Doing hands-on experiments and building things (Concrete / Active)",
-            "Listening quietly and reflecting on examples (Reflective Observation)",
-            "Reading step-by-step summary guides (Assimilating)"
+            "Doing hands-on trials and active experiments (Accommodating)",
+            "Brainstorming many ideas and watching examples quietly (Diverging)",
+            "Structuring clear theoretical models and detailed notes (Assimilating)",
+            "Applying logical concepts to solve a practical problem (Converging)"
           ],
-          dimension: ['visual', 'kinesthetic', 'reflective', 'analytical']
+          dimension: ['accommodating', 'diverging', 'assimilating', 'converging']
         },
         {
           domainLabel: "Thinking Style",
@@ -158,15 +159,15 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
       ],
       teen: [
         {
-          domainLabel: "Learning Style",
-          question: "When reviewing complex study material for an exam, how do you learn best?",
+          domainLabel: "Learning Style (Kolb)",
+          question: "When mastering complex study material for tests, what is your strongest learning pathway?",
           options: [
-            "Visual diagrams, flowcharts, and mind maps (Visual / Abstract)",
-            "Hands-on practice problems and physical experiments (Concrete / Active)",
-            "Quiet reflection and watching video walkthroughs (Reflective Observation)",
-            "Reading comprehensive notes and organizing theoretical concepts (Assimilating)"
+            "Hands-on practice, physical lab work, and trial-and-error (Accommodating)",
+            "Watching case examples and viewing problems from diverse angles (Diverging)",
+            "Reading structured notes and organizing theoretical concepts (Assimilating)",
+            "Testing hypotheses and applying technical solutions directly (Converging)"
           ],
-          dimension: ['visual', 'kinesthetic', 'reflective', 'analytical']
+          dimension: ['accommodating', 'diverging', 'assimilating', 'converging']
         },
         {
           domainLabel: "Thinking Style",
@@ -193,15 +194,15 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
       ],
       adult: [
         {
-          domainLabel: "Learning Style",
-          question: "When learning new methods or concepts, how do you process information best?",
+          domainLabel: "Learning Style (Kolb)",
+          question: "When analyzing new systems or methods, how do you absorb and process best?",
           options: [
-            "Visual maps and structured conceptual diagrams (Visual / Abstract)",
-            "Direct application and hands-on practice (Concrete / Active)",
-            "Observing expert demos and reflective analysis (Reflective Observation)",
-            "Synthesizing theoretical frameworks and literature (Assimilating)"
+            "Immediate trial, real-world pilots, and adaptive testing (Accommodating)",
+            "Observing expert demos and synthesizing multiple perspectives (Diverging)",
+            "Reading comprehensive frameworks and theoretical models (Assimilating)",
+            "Applying analytical frameworks to practical implementation (Converging)"
           ],
-          dimension: ['visual', 'kinesthetic', 'reflective', 'analytical']
+          dimension: ['accommodating', 'diverging', 'assimilating', 'converging']
         },
         {
           domainLabel: "Thinking Style",
@@ -241,46 +242,25 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
   };
 
   const generatePuzzleChallenge = (ageGroup: string, age: number): DailyChallenge => {
+    // If youth or teen, use enriched brain boost challenges bank
+    if (ageGroup === 'youth' || ageGroup === 'teen') {
+      const puzzle = getBrainBoostPuzzle(age, Math.floor(Math.random() * 10));
+      return {
+        id: `puzzle-${puzzle.id}-${Date.now()}`,
+        type: 'puzzle',
+        content: {
+          title: puzzle.title,
+          description: puzzle.description,
+          hint: puzzle.hint,
+          answer: puzzle.answer,
+          explanation: puzzle.explanation,
+          kolbAlignment: puzzle.kolbAlignment
+        },
+        points: puzzle.points || 30
+      };
+    }
+
     const puzzles = {
-      youth: [
-        {
-          title: "Pattern Detective 🔍",
-          description: "Look at this sequence: 2, 4, 8, 16, ___. What comes next and why?",
-          hint: "Each number is double the previous one!",
-          answer: "32",
-          explanation: "Each number is multiplied by 2, so 16 × 2 = 32"
-        },
-        {
-          title: "Word Wizard 🎨",
-          description: "How many words can you make from the letters in 'CREATIVE'? (Minimum 3 letters)",
-          hint: "Try mixing the letters in different ways!",
-          answer: "10",
-          explanation: "Examples: CREATE, REACT, ACTIVE, TRACE, CRATE, etc."
-        },
-        {
-          title: "Logic Puzzle 🧩",
-          description: "If all Bloops are Razzies and all Razzies are Lazzies, are all Bloops definitely Lazzies?",
-          hint: "Think step by step!",
-          answer: "yes",
-          explanation: "If A=B and B=C, then A=C. So yes, all Bloops are Lazzies!"
-        }
-      ],
-      teen: [
-        {
-          title: "Strategic Thinking 🎯",
-          description: "You have 100 meters of fencing to create a rectangular garden. What dimensions give you the maximum area?",
-          hint: "Think about squares vs rectangles!",
-          answer: "25x25",
-          explanation: "A square (25m × 25m = 625 m²) gives the maximum area for a fixed perimeter"
-        },
-        {
-          title: "Analytical Challenge 📊",
-          description: "If it takes 5 machines 5 minutes to make 5 widgets, how long would it take 100 machines to make 100 widgets?",
-          hint: "Don't overthink it!",
-          answer: "5",
-          explanation: "Each machine takes 5 minutes to make 1 widget, so 100 machines still take 5 minutes"
-        }
-      ],
       adult: [
         {
           title: "Business Logic 💼",
@@ -299,7 +279,7 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
       ]
     };
 
-    const agePuzzles = puzzles[ageGroup as keyof typeof puzzles];
+    const agePuzzles = puzzles.adult;
     const randomPuzzle = agePuzzles[Math.floor(Math.random() * agePuzzles.length)];
 
     return {
@@ -785,9 +765,16 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
       case 'puzzle':
         return (
           <div className="p-6 bg-white rounded-lg border-2 border-purple-200">
-            <h3 className="text-xl font-bold mb-3 text-purple-700">
-              {todayChallenge.content.title}
-            </h3>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h3 className="text-xl font-bold text-purple-700">
+                {todayChallenge.content.title}
+              </h3>
+              {todayChallenge.content.kolbAlignment && (
+                <Badge variant="outline" className="text-xs border-purple-300 text-purple-700 bg-purple-50">
+                  Kolb: {todayChallenge.content.kolbAlignment}
+                </Badge>
+              )}
+            </div>
             <p className="text-gray-700 mb-4">{todayChallenge.content.description}</p>
             <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
               <p className="text-sm text-yellow-800">

@@ -341,7 +341,7 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
       
       // Verify the user is an organization/supervisor/school_admin
       const userRole = (userData.role || '').toLowerCase();
-      const isOrgAccount = userRole === 'organization' || userRole === 'supervisor' || userRole === 'school_admin';
+      const isOrgAccount = userRole === 'organization' || userRole === 'supervisor' || userRole === 'school_admin' || userRole === 'institution' || userRole === 'school';
       
       if (!isOrgAccount) {
         setError(`This account is not registered as an organization or institution admin. Your role is: "${userData.role}". Please use the main application.`);

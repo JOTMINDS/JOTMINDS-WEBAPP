@@ -94,6 +94,22 @@ export function PreschoolChildrenView({
     else toast.error('Failed to generate PDF', { id: 'pdf-gen' });
   };
 
+  if (childrenList.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center space-y-4 max-w-xl mx-auto my-8">
+        <div className="w-12 h-12 bg-purple-50 text-[#6B4C9A] rounded-full flex items-center justify-center mx-auto">
+          <Users className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-gray-900">No Preschool Children Enrolled</h3>
+          <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
+            There are currently no preschool learners (ages 2–6) enrolled in your class or school. When preschool learners are added or assigned, their profiles, milestones, and reports will appear here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Controls */}
@@ -111,11 +127,11 @@ export function PreschoolChildrenView({
         {/* Age Band Filter Tabs */}
         <div className="flex gap-1.5 flex-wrap">
           {[
-            { id: 'all', label: 'All Bands (2–6 yrs)' },
-            { id: 'P1', label: 'JM-P1 (2–3 yrs)' },
-            { id: 'P2', label: 'JM-P2 (3–4 yrs)' },
-            { id: 'P3', label: 'JM-P3 (4–5 yrs)' },
-            { id: 'P4', label: 'JM-P4 (5–6 yrs)' },
+            { id: 'all', label: 'All Ages (2–6 yrs)' },
+            { id: 'P1', label: 'Ages 2–3' },
+            { id: 'P2', label: 'Ages 3–4' },
+            { id: 'P3', label: 'Ages 4–5' },
+            { id: 'P4', label: 'Ages 5–6' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -167,16 +183,16 @@ export function PreschoolChildrenView({
                 <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
                   <div>
                     <span className="text-[10px] text-gray-400 block">Observations</span>
-                    <span className="font-bold text-gray-800">{childEvents.length} events</span>
+                    <span className="font-bold text-gray-800">{childEvents.length} recorded</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-400 block">Domains Tracked</span>
+                    <span className="text-[10px] text-gray-400 block">Learning Areas</span>
                     <span className="font-bold text-indigo-700">{distinctDomains} of 7</span>
                   </div>
                 </div>
 
                 <div className="text-[11px] text-gray-600 line-clamp-1">
-                  <span className="text-gray-400">Emphasis: </span>
+                  <span className="text-gray-400">Focus: </span>
                   {bandMeta.primaryEmphasis}
                 </div>
 
@@ -195,7 +211,7 @@ export function PreschoolChildrenView({
                     onClick={() => onOpenAssessModal(child.id)}
                     className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Log Evidence
+                    <Plus className="w-3.5 h-3.5" /> Record Observation
                   </Button>
                 </div>
               </CardContent>
@@ -222,11 +238,11 @@ export function PreschoolChildrenView({
                 </span>
                 <div>
                   <h3 className="font-bold text-base text-white">
-                    {activeChildProfile.child.name} — Developmental Profile
+                    {activeChildProfile.child.name} — Growth & Milestones
                   </h3>
                   <p className="text-xs text-indigo-200">
-                    {activeChildProfile.ageYears} yrs • Band {activeChildProfile.assignedBand} •{' '}
-                    {activeChildProfile.totalEvidenceEvents} Evidence Events
+                    {activeChildProfile.ageYears} yrs • Age Group: {DEVELOPMENTAL_BANDS[activeChildProfile.assignedBand]?.ageRange || activeChildProfile.ageYears + ' yrs'} •{' '}
+                    {activeChildProfile.totalEvidenceEvents} Observations
                   </p>
                 </div>
               </div>
@@ -248,7 +264,7 @@ export function PreschoolChildrenView({
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                7 Core Domains Profile
+                Learning Areas & Milestones
               </button>
               {activeChildProfile.schoolReadiness && (
                 <button
@@ -260,7 +276,7 @@ export function PreschoolChildrenView({
                   }`}
                 >
                   <GraduationCap className="w-3.5 h-3.5" />
-                  School Readiness (Band P4)
+                  Primary School Readiness (Ages 5–6)
                 </button>
               )}
               <button
@@ -271,7 +287,7 @@ export function PreschoolChildrenView({
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Parent Narrative & Home Guide
+                Family Update & Home Activities
               </button>
             </div>
 
@@ -284,7 +300,7 @@ export function PreschoolChildrenView({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                     <div className="h-64 flex flex-col items-center justify-center">
                       <span className="text-xs font-bold text-gray-600 mb-1">
-                        Multidimensional Developmental Radar
+                        Growth Across Learning Areas
                       </span>
                       <ResponsiveContainer width="100%" height="100%">
                         <RadarChart
@@ -313,7 +329,7 @@ export function PreschoolChildrenView({
                       {/* Emerging Strengths */}
                       <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl">
                         <span className="font-bold text-emerald-900 block mb-1">
-                          🌟 Emerging Strengths (Achieving Independently):
+                          🌟 Strengths We Celebrate (Doing on their own):
                         </span>
                         <ul className="list-disc pl-4 space-y-1 text-emerald-800">
                           {activeChildProfile.overallEmergingStrengths.map((str, idx) => (
@@ -325,7 +341,7 @@ export function PreschoolChildrenView({
                       {/* Growing Competencies */}
                       <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl">
                         <span className="font-bold text-amber-900 block mb-1">
-                          🌱 Currently Developing & Practicing:
+                          🌱 Practicing & Learning Next:
                         </span>
                         <ul className="list-disc pl-4 space-y-1 text-amber-800">
                           {activeChildProfile.priorityDevelopmentAreas.map((pri, idx) => (
@@ -339,7 +355,7 @@ export function PreschoolChildrenView({
                   {/* 7 Domains Detailed Grid */}
                   <div>
                     <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
-                      Developmental Domains Progression
+                      Learning Areas Progression
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {Object.values(activeChildProfile.domains).map(d => (
@@ -506,7 +522,7 @@ export function PreschoolChildrenView({
                   onClick={() => handleDownloadParent(activeChildProfile)}
                   className="text-xs text-indigo-700 border-indigo-200 hover:bg-indigo-50 gap-1.5"
                 >
-                  <Download className="w-3.5 h-3.5" /> Parent Guide PDF
+                  <Download className="w-3.5 h-3.5" /> Family Guide (PDF)
                 </Button>
                 {activeChildProfile.schoolReadiness && (
                   <Button
@@ -515,7 +531,7 @@ export function PreschoolChildrenView({
                     onClick={() => handleDownloadReadiness(activeChildProfile)}
                     className="text-xs text-amber-700 border-amber-200 hover:bg-amber-50 gap-1.5"
                   >
-                    <Download className="w-3.5 h-3.5" /> School Readiness PDF
+                    <Download className="w-3.5 h-3.5" /> School Readiness (PDF)
                   </Button>
                 )}
                 <Button
@@ -523,7 +539,7 @@ export function PreschoolChildrenView({
                   onClick={() => handleDownloadDossier(activeChildProfile)}
                   className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
                 >
-                  <Download className="w-3.5 h-3.5" /> Download Full Dossier PDF
+                  <Download className="w-3.5 h-3.5" /> Download Child Growth Report (PDF)
                 </Button>
               </div>
             </div>

@@ -1,33 +1,113 @@
 /**
- * JotMinds Preschool Developmental Assessment Framework (JM-PDAF v1.0)
+ * JotMinds Early Childhood Framework
  * Branded PDF Report Generator
+ *
  * Generates:
- * 1. Comprehensive Child Developmental Dossier
- * 2. Parent-Friendly Developmental Summary & Home Activity Guide
- * 3. Multidimensional School Readiness Transition Portfolio (Band P4)
+ * 1. JotMinds Early Childhood Growth Report
+ * 2. JotMinds Family Growth Guide & Playful Activities
+ * 3. JotMinds Primary School Readiness Profile (Ages 5–6)
  */
 
 import jsPDF from 'jspdf';
 import {
   ChildDevelopmentalProfile,
   SchoolReadinessProfile,
-  ClassDevelopmentIntelligence,
   DEVELOPMENTAL_BANDS,
   DEVELOPMENTAL_DOMAINS,
   DevelopmentalDomainCode,
 } from '../types/preschoolDevelopmental';
+import { registerPoppins } from './pdfFonts';
 
+// ── Official JotMinds brand palette (RGB) ──────────────────────────────────────
 const BRAND = {
   indigo: [107, 76, 154] as [number, number, number], // #6B4C9A JotMinds Purple
-  purple: [123, 97, 255] as [number, number, number],
-  dark: [15, 23, 42] as [number, number, number],
-  ink: [33, 37, 41] as [number, number, number],
-  muted: [108, 117, 125] as [number, number, number],
-  hairline: [225, 228, 235] as [number, number, number],
+  purple: [123, 97, 255] as [number, number, number], // #7B61FF Violet accent
+  coral: [255, 113, 91] as [number, number, number],  // #FF715B Coral accent
+  dark: [15, 23, 42] as [number, number, number],      // #0F172A Slate 900
+  ink: [33, 37, 41] as [number, number, number],       // #212529 body text
+  muted: [108, 117, 125] as [number, number, number],  // secondary text
+  hairline: [225, 228, 235] as [number, number, number], // borders
+  emerald: [16, 185, 129] as [number, number, number],
+  amber: [217, 119, 6] as [number, number, number],
 };
 
+function loadLogo(): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = '/logo.png';
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+function drawJotMindsHeader(
+  doc: jsPDF,
+  reportTitle: string,
+  pageWidth: number,
+  margin: number,
+  logo: HTMLImageElement | null,
+  font: string
+) {
+  const bandHeight = 36;
+  doc.setFillColor(...BRAND.indigo);
+  doc.rect(0, 0, pageWidth, bandHeight, 'F');
+
+  // Coral accent line
+  doc.setFillColor(...BRAND.coral);
+  doc.rect(0, bandHeight, pageWidth, 1.5, 'F');
+
+  let logoRight = margin;
+  if (logo && logo.naturalWidth > 0) {
+    const logoH = 18;
+    const logoW = (logo.naturalWidth / logo.naturalHeight) * logoH;
+    doc.addImage(logo, 'PNG', margin, (bandHeight - logoH) / 2, logoW, logoH);
+    logoRight = margin + logoW + 6;
+  }
+
+  // Brand Name
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(font, 'bold');
+  doc.setFontSize(18);
+  doc.text('JotMinds', logoRight, 16);
+
+  // Brand Tagline
+  doc.setFont(font, 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(230, 230, 245);
+  doc.text('Your brain has a manual, we built it', logoRight, 22);
+
+  // Subtitle / Report Title
+  doc.setFont(font, 'bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text(reportTitle.toUpperCase(), logoRight, 30);
+}
+
+function drawJotMindsFooter(
+  doc: jsPDF,
+  pageNumber: number,
+  pageWidth: number,
+  margin: number,
+  font: string
+) {
+  doc.setDrawColor(...BRAND.hairline);
+  doc.setLineWidth(0.3);
+  doc.line(margin, 282, pageWidth - margin, 282);
+
+  doc.setFont(font, 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...BRAND.muted);
+  doc.text('JotMinds Early Childhood Developmental System · Confidential', margin, 288);
+  doc.text(`Page ${pageNumber}`, pageWidth - margin - 14, 288);
+}
+
 /**
- * 1. Comprehensive Child Developmental Dossier (Multi-page PDF)
+ * 1. JotMinds Early Childhood Growth Report (Multi-page PDF)
  */
 export async function generateChildDevelopmentReportPDF(profile: ChildDevelopmentalProfile): Promise<boolean> {
   try {
@@ -37,39 +117,14 @@ export async function generateChildDevelopmentReportPDF(profile: ChildDevelopmen
     const contentWidth = pageWidth - margin * 2;
     let pageNumber = 1;
 
-    const drawHeader = (subtitle: string) => {
-      doc.setFillColor(...BRAND.indigo);
-      doc.rect(0, 0, pageWidth, 28, 'F');
-      doc.setFillColor(...BRAND.purple);
-      doc.rect(0, 27.5, pageWidth, 1.5, 'F');
+    const hasPoppins = await registerPoppins(doc);
+    const font = hasPoppins ? 'Poppins' : 'helvetica';
+    const logo = await loadLogo();
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.setTextColor(255, 255, 255);
-      doc.text('JOTMINDS PRESCHOOL DEVELOPMENTAL INTELLIGENCE', margin, 12);
+    // PAGE 1: Child Overview & Learning Areas
+    drawJotMindsHeader(doc, 'Early Childhood Growth Report', pageWidth, margin, logo, font);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      doc.setTextColor(225, 230, 245);
-      doc.text(`JM-PDAF v1.0 Framework · ${subtitle}`, margin, 19);
-    };
-
-    const drawFooter = () => {
-      doc.setDrawColor(...BRAND.hairline);
-      doc.setLineWidth(0.3);
-      doc.line(margin, 282, pageWidth - margin, 282);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(...BRAND.muted);
-      doc.text('JotMinds Early Childhood Developmental System · Evidence-Led & Confidential', margin, 288);
-      doc.text(`Page ${pageNumber}`, pageWidth - margin - 12, 288);
-    };
-
-    // PAGE 1: Executive Profile & 7 Domains
-    drawHeader('Comprehensive Child Developmental Dossier');
-
-    let currentY = 38;
+    let currentY = 46;
 
     // Child Identification Box
     doc.setFillColor(248, 250, 252);
@@ -77,49 +132,48 @@ export async function generateChildDevelopmentReportPDF(profile: ChildDevelopmen
     doc.setDrawColor(...BRAND.hairline);
     doc.roundedRect(margin, currentY, contentWidth, 26, 2, 2, 'S');
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(font, 'bold');
     doc.setFontSize(14);
     doc.setTextColor(...BRAND.dark);
-    doc.text(profile.child.name || 'Child Learner', margin + 5, currentY + 9);
+    doc.text(profile.child.name || 'Child Learner', margin + 6, currentY + 9);
 
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(font, 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(...BRAND.muted);
     const bandInfo = DEVELOPMENTAL_BANDS[profile.assignedBand];
+    const ageGroupLabel = bandInfo ? `${bandInfo.ageRange} (${bandInfo.title})` : `${profile.ageYears} years`;
     doc.text(
-      `Age: ${profile.ageYears} yrs · Band: ${bandInfo.code} (${bandInfo.ageRange}) · Evidence Language: ${profile.dominantLanguageOfEvidence}`,
-      margin + 5,
+      `Age: ${profile.ageYears} yrs · Age Group: ${ageGroupLabel} · Class: ${profile.child.className || 'Early Years'}`,
+      margin + 6,
       currentY + 16
     );
     doc.text(
-      `Total Evidence Events: ${profile.totalEvidenceEvents} · Last Observed: ${profile.lastObservationDate || 'Recent'}`,
-      margin + 5,
+      `Total Observations Recorded: ${profile.totalEvidenceEvents} · Last Observed: ${profile.lastObservationDate || 'Recent'}`,
+      margin + 6,
       currentY + 22
     );
 
     currentY += 34;
 
-    // Section 1: Multidimensional Domain Overview
-    doc.setFont('helvetica', 'bold');
+    // Section 1: Learning & Growth Areas
+    doc.setFont(font, 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...BRAND.indigo);
-    doc.text('SEVEN CORE DEVELOPMENTAL DOMAINS (JM-PDAF)', margin, currentY);
+    doc.text('LEARNING & GROWTH AREAS', margin, currentY);
     currentY += 2;
-    doc.setDrawColor(...BRAND.indigo);
-    doc.setLineWidth(0.5);
-    doc.line(margin, currentY, margin + 55, currentY);
+    doc.setFillColor(...BRAND.coral);
+    doc.rect(margin, currentY, 40, 0.8, 'F');
     currentY += 6;
 
-    // Domains Table Header
+    // Table Header
     doc.setFillColor(241, 245, 249);
     doc.rect(margin, currentY, contentWidth, 7, 'F');
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(font, 'bold');
     doc.setFontSize(8);
     doc.setTextColor(...BRAND.dark);
-    doc.text('Domain', margin + 3, currentY + 4.8);
-    doc.text('Indicators', margin + 65, currentY + 4.8);
-    doc.text('Avg Stage (1–4)', margin + 95, currentY + 4.8);
-    doc.text('Developmental Stage', margin + 130, currentY + 4.8);
+    doc.text('Learning Area', margin + 4, currentY + 4.8);
+    doc.text('Milestones Noted', margin + 70, currentY + 4.8);
+    doc.text('Progress Stage', margin + 120, currentY + 4.8);
     currentY += 7;
 
     const domainList: DevelopmentalDomainCode[] = [
@@ -139,121 +193,123 @@ export async function generateChildDevelopmentReportPDF(profile: ChildDevelopmen
         doc.rect(margin, currentY, contentWidth, 7.5, 'F');
       }
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(font, 'bold');
       doc.setFontSize(8);
       doc.setTextColor(...BRAND.ink);
-      doc.text(d.domainName, margin + 3, currentY + 5);
+      doc.text(d.domainName, margin + 4, currentY + 5);
 
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${d.observedCount} / ${d.totalIndicators}`, margin + 65, currentY + 5);
-      doc.text(`${d.averageStage > 0 ? d.averageStage : '—'} / 4.0`, margin + 95, currentY + 5);
+      doc.setFont(font, 'normal');
+      doc.text(`${d.observedCount} of ${d.totalIndicators} observed`, margin + 70, currentY + 5);
 
       // Stage label
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(font, 'bold');
       if (d.averageStage >= 2.8) doc.setTextColor(16, 185, 129); // emerald
       else if (d.averageStage >= 1.8) doc.setTextColor(217, 119, 6); // amber
-      else doc.setTextColor(239, 68, 68); // red
-      doc.text(d.stageLabel, margin + 130, currentY + 5);
+      else doc.setTextColor(79, 70, 229); // indigo
+      doc.text(d.stageLabel, margin + 120, currentY + 5);
 
       currentY += 7.5;
     });
 
     currentY += 8;
 
-    // Emerging Strengths Card
+    // Strengths We Celebrate Box
     doc.setFillColor(240, 253, 244);
     doc.roundedRect(margin, currentY, contentWidth, 26, 2, 2, 'F');
     doc.setDrawColor(187, 247, 208);
     doc.roundedRect(margin, currentY, contentWidth, 26, 2, 2, 'S');
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(font, 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(21, 128, 61);
-    doc.text('Key Emerging Strengths (Achieving Independently)', margin + 4, currentY + 6);
+    doc.text('🌟 Strengths We Celebrate (Doing on their own):', margin + 5, currentY + 6);
 
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(font, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(22, 101, 52);
     let sY = currentY + 11;
-    profile.overallEmergingStrengths.slice(0, 3).forEach(str => {
+    (profile.overallEmergingStrengths.length ? profile.overallEmergingStrengths : ['Enjoys exploring learning materials', 'Interacts warmly with classmates']).slice(0, 3).forEach(str => {
       doc.text(`• ${str}`, margin + 6, sY);
       sY += 4.5;
     });
 
     currentY += 32;
 
-    // Priority Focus Areas
+    // What We Are Practicing Next Box
     doc.setFillColor(254, 243, 199);
     doc.roundedRect(margin, currentY, contentWidth, 26, 2, 2, 'F');
     doc.setDrawColor(253, 230, 138);
     doc.roundedRect(margin, currentY, contentWidth, 26, 2, 2, 'S');
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(font, 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(180, 83, 9);
-    doc.text('Priority Development Areas (Currently Consolidating)', margin + 4, currentY + 6);
+    doc.text('🌱 Practicing & Exploring Next:', margin + 5, currentY + 6);
 
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(font, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(146, 64, 14);
     let pY = currentY + 11;
-    profile.priorityDevelopmentAreas.slice(0, 3).forEach(pri => {
+    (profile.priorityDevelopmentAreas.length ? profile.priorityDevelopmentAreas : ['Expanding expressive vocabulary', 'Refining fine motor control during creative play']).slice(0, 3).forEach(pri => {
       doc.text(`• ${pri}`, margin + 6, pY);
       pY += 4.5;
     });
 
-    drawFooter();
+    drawJotMindsFooter(doc, pageNumber, pageWidth, margin, font);
 
-    // PAGE 2: Teacher Next Steps & Home Activities
+    // PAGE 2: Classroom Next Steps & Home Play
     doc.addPage();
     pageNumber++;
-    drawHeader('Teacher Next Steps & Home Collaboration');
-    currentY = 38;
+    drawJotMindsHeader(doc, 'Classroom Support & Home Activities', pageWidth, margin, logo, font);
+    currentY = 46;
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(font, 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...BRAND.indigo);
-    doc.text('RECOMMENDED TEACHER INSTRUCTIONAL NEXT STEPS', margin, currentY);
+    doc.text('HELPFUL CLASSROOM NEXT STEPS', margin, currentY);
     currentY += 2;
-    doc.setDrawColor(...BRAND.indigo);
-    doc.setLineWidth(0.5);
-    doc.line(margin, currentY, margin + 70, currentY);
-    currentY += 8;
+    doc.setFillColor(...BRAND.coral);
+    doc.rect(margin, currentY, 40, 0.8, 'F');
+    currentY += 7;
 
     const teacherActions = Object.values(profile.domains).flatMap(d => d.suggestedTeacherActions);
-    const uniqueTeacherActions = [...new Set(teacherActions)].slice(0, 4);
+    const uniqueTeacherActions = [...new Set(teacherActions)].slice(0, 3);
+    const actionsToRender = uniqueTeacherActions.length ? uniqueTeacherActions : [
+      'Encourage playful turn-taking during morning play and circle time.',
+      'Provide open-ended building and counting items during free choice stations.',
+      'Ask open questions about story characters to build confidence in speaking.',
+    ];
 
-    uniqueTeacherActions.forEach(act => {
+    actionsToRender.forEach(act => {
       doc.setFillColor(248, 250, 252);
       doc.roundedRect(margin, currentY, contentWidth, 14, 1.5, 1.5, 'F');
       doc.setDrawColor(...BRAND.hairline);
       doc.roundedRect(margin, currentY, contentWidth, 14, 1.5, 1.5, 'S');
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(font, 'bold');
       doc.setFontSize(8);
       doc.setTextColor(...BRAND.dark);
-      doc.text('Classroom Strategy:', margin + 4, currentY + 5.5);
+      doc.text('Classroom Idea:', margin + 4, currentY + 5.5);
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(font, 'normal');
       doc.setTextColor(...BRAND.ink);
-      const wrapped = doc.splitTextToSize(act, contentWidth - 40);
-      doc.text(wrapped, margin + 35, currentY + 5.5);
+      const wrapped = doc.splitTextToSize(act, contentWidth - 36);
+      doc.text(wrapped, margin + 30, currentY + 5.5);
 
       currentY += 17;
     });
 
     currentY += 6;
 
-    // Home Collaboration Section
-    doc.setFont('helvetica', 'bold');
+    // Home Activities Section
+    doc.setFont(font, 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...BRAND.indigo);
-    doc.text('SUGGESTED HOME COLLABORATION ACTIVITIES', margin, currentY);
+    doc.text('PLAYFUL ACTIVITIES FOR HOME', margin, currentY);
     currentY += 2;
-    doc.setDrawColor(...BRAND.indigo);
-    doc.setLineWidth(0.5);
-    doc.line(margin, currentY, margin + 65, currentY);
-    currentY += 8;
+    doc.setFillColor(...BRAND.coral);
+    doc.rect(margin, currentY, 40, 0.8, 'F');
+    currentY += 7;
 
     profile.parentSummary.recommendedHomeActivities.forEach(ha => {
       doc.setFillColor(255, 255, 255);
@@ -261,33 +317,33 @@ export async function generateChildDevelopmentReportPDF(profile: ChildDevelopmen
       doc.setDrawColor(...BRAND.hairline);
       doc.roundedRect(margin, currentY, contentWidth, 20, 1.5, 1.5, 'S');
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(font, 'bold');
       doc.setFontSize(9);
       doc.setTextColor(...BRAND.purple);
-      doc.text(ha.title, margin + 4, currentY + 6);
+      doc.text(ha.title, margin + 5, currentY + 6);
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(font, 'normal');
       doc.setFontSize(8);
       doc.setTextColor(...BRAND.ink);
-      const wrappedDesc = doc.splitTextToSize(ha.description, contentWidth - 8);
-      doc.text(wrappedDesc, margin + 4, currentY + 11);
+      const wrappedDesc = doc.splitTextToSize(ha.description, contentWidth - 10);
+      doc.text(wrappedDesc, margin + 5, currentY + 11.5);
 
       currentY += 23;
     });
 
-    drawFooter();
+    drawJotMindsFooter(doc, pageNumber, pageWidth, margin, font);
 
-    const fileName = `${(profile.child.name || 'Child').replace(/[^a-zA-Z0-9]/g, '_')}_JM_PDAF_Dossier.pdf`;
+    const fileName = `${(profile.child.name || 'Child').replace(/[^a-zA-Z0-9]/g, '_')}_JotMinds_Growth_Report.pdf`;
     doc.save(fileName);
     return true;
   } catch (err) {
-    console.error('Failed to generate child developmental PDF:', err);
+    console.error('Failed to generate child growth report PDF:', err);
     return false;
   }
 }
 
 /**
- * 2. Parent-Friendly Developmental Summary & Home Activity Guide
+ * 2. JotMinds Family Growth Guide & Playful Activities
  */
 export async function generateParentSummaryPDF(profile: ChildDevelopmentalProfile): Promise<boolean> {
   try {
@@ -296,35 +352,31 @@ export async function generateParentSummaryPDF(profile: ChildDevelopmentalProfil
     const margin = 16;
     const contentWidth = pageWidth - margin * 2;
 
-    // Soft header
-    doc.setFillColor(79, 70, 229); // Indigo 600
-    doc.rect(0, 0, pageWidth, 28, 'F');
-    doc.setFillColor(129, 140, 248);
-    doc.rect(0, 27.5, pageWidth, 1.5, 'F');
+    const hasPoppins = await registerPoppins(doc);
+    const font = hasPoppins ? 'Poppins' : 'helvetica';
+    const logo = await loadLogo();
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(255, 255, 255);
-    doc.text('FAMILY DEVELOPMENTAL SUMMARY & HOME GUIDE', margin, 12);
+    drawJotMindsHeader(doc, 'Family Growth Guide & Playful Activities', pageWidth, margin, logo, font);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(224, 231, 255);
-    doc.text(`Celebrating Growth & Playful Learning at Home · ${profile.child.name}`, margin, 19);
+    let currentY = 46;
 
-    let currentY = 38;
+    // Greeting box
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(margin, currentY, contentWidth, 20, 2, 2, 'F');
+    doc.setDrawColor(...BRAND.hairline);
+    doc.roundedRect(margin, currentY, contentWidth, 20, 2, 2, 'S');
 
-    // Warm greeting
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
-    doc.setTextColor(...BRAND.ink);
-    const greetingWrapped = doc.splitTextToSize(profile.parentSummary.greeting, contentWidth);
-    doc.text(greetingWrapped, margin, currentY);
-    currentY += greetingWrapped.length * 5 + 4;
+    doc.setFont(font, 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...BRAND.dark);
+    doc.text(`A Special Note About ${profile.child.name || 'Your Child'}`, margin + 5, currentY + 7);
 
-    const narrativeWrapped = doc.splitTextToSize(profile.parentSummary.narrativeSummary, contentWidth);
-    doc.text(narrativeWrapped, margin, currentY);
-    currentY += narrativeWrapped.length * 5 + 6;
+    doc.setFont(font, 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...BRAND.muted);
+    doc.text(profile.parentSummary.greeting, margin + 5, currentY + 13.5);
+
+    currentY += 26;
 
     // What your child is enjoying & doing well
     doc.setFillColor(240, 253, 244);
@@ -332,17 +384,17 @@ export async function generateParentSummaryPDF(profile: ChildDevelopmentalProfil
     doc.setDrawColor(187, 247, 208);
     doc.roundedRect(margin, currentY, contentWidth, 32, 2, 2, 'S');
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(font, 'bold');
     doc.setFontSize(10);
     doc.setTextColor(21, 128, 61);
-    doc.text("What We Are Celebrating in School:", margin + 5, currentY + 7);
+    doc.text('🌟 What We Are Celebrating in School:', margin + 5, currentY + 7);
 
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(font, 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(22, 101, 52);
     let sY = currentY + 13;
     profile.parentSummary.highlightStrengths.forEach(str => {
-      doc.text(`🌟 ${str}`, margin + 6, sY);
+      doc.text(`• ${str}`, margin + 6, sY);
       sY += 5;
     });
 
@@ -354,31 +406,30 @@ export async function generateParentSummaryPDF(profile: ChildDevelopmentalProfil
     doc.setDrawColor(253, 230, 138);
     doc.roundedRect(margin, currentY, contentWidth, 32, 2, 2, 'S');
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(font, 'bold');
     doc.setFontSize(10);
     doc.setTextColor(180, 83, 9);
-    doc.text("What We Are Practicing Right Now:", margin + 5, currentY + 7);
+    doc.text('🌱 What We Are Practicing Right Now:', margin + 5, currentY + 7);
 
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(font, 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(146, 64, 14);
     let pY = currentY + 13;
     profile.parentSummary.whatWeArePracticing.forEach(str => {
-      doc.text(`🌱 ${str}`, margin + 6, pY);
+      doc.text(`• ${str}`, margin + 6, pY);
       pY += 5;
     });
 
     currentY += 40;
 
     // Fun Home Activities
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(font, 'bold');
     doc.setFontSize(11);
-    doc.setTextColor(79, 70, 229);
-    doc.text('3 FUN & PLAYFUL ACTIVITIES TO TRY AT HOME', margin, currentY);
+    doc.setTextColor(...BRAND.indigo);
+    doc.text('FUN & PLAYFUL ACTIVITIES TO TRY AT HOME', margin, currentY);
     currentY += 2;
-    doc.setDrawColor(79, 70, 229);
-    doc.setLineWidth(0.5);
-    doc.line(margin, currentY, margin + 65, currentY);
+    doc.setFillColor(...BRAND.coral);
+    doc.rect(margin, currentY, 40, 0.8, 'F');
     currentY += 7;
 
     profile.parentSummary.recommendedHomeActivities.forEach(ha => {
@@ -387,12 +438,12 @@ export async function generateParentSummaryPDF(profile: ChildDevelopmentalProfil
       doc.setDrawColor(...BRAND.hairline);
       doc.roundedRect(margin, currentY, contentWidth, 22, 2, 2, 'S');
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(font, 'bold');
       doc.setFontSize(9.5);
       doc.setTextColor(...BRAND.dark);
       doc.text(ha.title, margin + 5, currentY + 6.5);
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(font, 'normal');
       doc.setFontSize(8);
       doc.setTextColor(...BRAND.ink);
       const descWrapped = doc.splitTextToSize(ha.description, contentWidth - 10);
@@ -401,23 +452,19 @@ export async function generateParentSummaryPDF(profile: ChildDevelopmentalProfil
       currentY += 25;
     });
 
-    // Footer
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...BRAND.muted);
-    doc.text('Thank you for partnering with us in your child\'s early learning journey! · JotMinds Early Years', margin, 286);
+    drawJotMindsFooter(doc, 1, pageWidth, margin, font);
 
-    const fileName = `${(profile.child.name || 'Child').replace(/[^a-zA-Z0-9]/g, '_')}_Parent_Developmental_Guide.pdf`;
+    const fileName = `${(profile.child.name || 'Child').replace(/[^a-zA-Z0-9]/g, '_')}_JotMinds_Family_Guide.pdf`;
     doc.save(fileName);
     return true;
   } catch (err) {
-    console.error('Failed to generate parent summary PDF:', err);
+    console.error('Failed to generate family guide PDF:', err);
     return false;
   }
 }
 
 /**
- * 3. Multidimensional School Readiness Transition Portfolio (Band P4)
+ * 3. JotMinds Primary School Readiness Profile (Ages 5–6)
  */
 export async function generateSchoolReadinessPDF(
   childName: string,
@@ -429,51 +476,41 @@ export async function generateSchoolReadinessPDF(
     const margin = 16;
     const contentWidth = pageWidth - margin * 2;
 
-    doc.setFillColor(217, 119, 6); // Amber 600
-    doc.rect(0, 0, pageWidth, 28, 'F');
-    doc.setFillColor(251, 191, 36);
-    doc.rect(0, 27.5, pageWidth, 1.5, 'F');
+    const hasPoppins = await registerPoppins(doc);
+    const font = hasPoppins ? 'Poppins' : 'helvetica';
+    const logo = await loadLogo();
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(255, 255, 255);
-    doc.text('MULTIDIMENSIONAL SCHOOL READINESS PORTFOLIO', margin, 12);
+    drawJotMindsHeader(doc, 'Primary School Readiness Profile', pageWidth, margin, logo, font);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(254, 243, 199);
-    doc.text(`Kindergarten to Primary 1 Transition · JM-PDAF Band P4 (Ages 5–6) · ${childName}`, margin, 19);
+    let currentY = 46;
 
-    let currentY = 38;
-
-    // Narrative Summary Card
+    // Child Banner
     doc.setFillColor(254, 243, 199);
     doc.roundedRect(margin, currentY, contentWidth, 24, 2, 2, 'F');
     doc.setDrawColor(253, 230, 138);
     doc.roundedRect(margin, currentY, contentWidth, 24, 2, 2, 'S');
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
+    doc.setFont(font, 'bold');
+    doc.setFontSize(11);
     doc.setTextColor(180, 83, 9);
-    doc.text('Developmental Readiness Narrative:', margin + 4, currentY + 6);
+    doc.text(`Kindergarten to Primary 1 Transition · ${childName} (Ages 5–6)`, margin + 5, currentY + 7);
 
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(font, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(146, 64, 14);
-    const narrWrapped = doc.splitTextToSize(readiness.overallReadinessSummary, contentWidth - 8);
-    doc.text(narrWrapped, margin + 4, currentY + 11);
+    const narrWrapped = doc.splitTextToSize(readiness.overallReadinessSummary, contentWidth - 10);
+    doc.text(narrWrapped, margin + 5, currentY + 13);
 
     currentY += 30;
 
-    // 7 Dimensions Table
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.5);
-    doc.setTextColor(217, 119, 6);
-    doc.text('SEVEN FOUNDATIONAL SCHOOL READINESS DIMENSIONS', margin, currentY);
+    // 7 Readiness Dimensions
+    doc.setFont(font, 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...BRAND.indigo);
+    doc.text('FOUNDATIONAL SCHOOL READINESS AREAS', margin, currentY);
     currentY += 2;
-    doc.setDrawColor(217, 119, 6);
-    doc.setLineWidth(0.5);
-    doc.line(margin, currentY, margin + 65, currentY);
+    doc.setFillColor(...BRAND.coral);
+    doc.rect(margin, currentY, 40, 0.8, 'F');
     currentY += 6;
 
     readiness.dimensions.forEach((dim, idx) => {
@@ -482,23 +519,23 @@ export async function generateSchoolReadinessPDF(
       doc.setDrawColor(...BRAND.hairline);
       doc.roundedRect(margin, currentY, contentWidth, 13, 1.5, 1.5, 'S');
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(font, 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(...BRAND.dark);
-      doc.text(dim.dimension, margin + 4, currentY + 5);
+      doc.text(dim.dimension, margin + 5, currentY + 5);
 
       // Score progress indicator
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(font, 'bold');
       doc.setFontSize(8);
       if (dim.score >= 80) doc.setTextColor(16, 185, 129);
       else if (dim.score >= 65) doc.setTextColor(217, 119, 6);
       else doc.setTextColor(239, 68, 68);
-      doc.text(`${dim.stageLabel} (${dim.score}%)`, margin + 55, currentY + 5);
+      doc.text(`${dim.stageLabel} (${dim.score}%)`, margin + 65, currentY + 5);
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(font, 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(...BRAND.muted);
-      doc.text(`Evidence: ${dim.keyEvidence.substring(0, 75)}`, margin + 4, currentY + 9.5);
+      doc.text(`Observed: ${dim.keyEvidence.substring(0, 80)}`, margin + 5, currentY + 9.5);
 
       currentY += 15;
     });
@@ -506,8 +543,8 @@ export async function generateSchoolReadinessPDF(
     currentY += 4;
 
     // Transition Checklist
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.5);
+    doc.setFont(font, 'bold');
+    doc.setFontSize(11);
     doc.setTextColor(...BRAND.dark);
     doc.text('PRIMARY 1 CLASSROOM ROUTINES CHECKLIST', margin, currentY);
     currentY += 6;
@@ -522,12 +559,12 @@ export async function generateSchoolReadinessPDF(
         doc.rect(margin + 2.5, currentY - 2, 2, 2, 'F');
       }
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(font, 'normal');
       doc.setFontSize(8);
       doc.setTextColor(...BRAND.ink);
       doc.text(item.title, margin + 8, currentY);
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(font, 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(...BRAND.muted);
       doc.text(`[${item.domain}]`, margin + 140, currentY);
@@ -535,13 +572,9 @@ export async function generateSchoolReadinessPDF(
       currentY += 6;
     });
 
-    // Footer
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...BRAND.muted);
-    doc.text('JotMinds Kindergarten to Primary Transition Portfolio · Confidential Diagnostic Profile', margin, 286);
+    drawJotMindsFooter(doc, 1, pageWidth, margin, font);
 
-    const fileName = `${childName.replace(/[^a-zA-Z0-9]/g, '_')}_School_Readiness_Portfolio.pdf`;
+    const fileName = `${childName.replace(/[^a-zA-Z0-9]/g, '_')}_JotMinds_School_Readiness.pdf`;
     doc.save(fileName);
     return true;
   } catch (err) {

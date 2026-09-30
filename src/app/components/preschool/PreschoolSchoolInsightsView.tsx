@@ -168,20 +168,38 @@ export function PreschoolSchoolInsightsView({
     }
   };
 
+  if (childrenList.length === 0) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center max-w-lg mx-auto my-8 space-y-4">
+        <div className="w-16 h-16 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center mx-auto">
+          <GraduationCap className="h-8 w-8" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+            No Preschool Learners Found
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            There are currently no early childhood learners enrolled. Once young learners (ages 2 to 6) are added to your class or school, their developmental tracking and school readiness insights will display here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-indigo-500/10 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl p-6 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Badge className="bg-amber-600 text-white font-medium">Executive Leadership</Badge>
-            <Badge variant="outline" className="text-xs">Institutional Oversight</Badge>
+            <Badge className="bg-amber-600 text-white font-medium">Leadership Overview</Badge>
+            <Badge variant="outline" className="text-xs">School Overview</Badge>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Early Years Leadership & Transition Intelligence
+            Early Years Leadership & Transition
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
-            High-level oversight of early childhood development, authentic observational fidelity across teaching staff, and Primary 1 transition readiness portfolios.
+            Gentle oversight of early childhood development, teacher observations, and Primary 1 school readiness guides.
           </p>
         </div>
       </div>
@@ -190,19 +208,19 @@ export function PreschoolSchoolInsightsView({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="border border-slate-200 dark:border-slate-800">
           <CardContent className="p-4 space-y-1">
-            <span className="text-xs font-semibold text-slate-500">Total Enrollment</span>
+            <span className="text-xs font-semibold text-slate-500">Total Children</span>
             <div className="text-2xl font-bold text-slate-900 dark:text-white">
               {childrenList.length}
             </div>
             <div className="text-[11px] text-slate-500 flex items-center gap-1">
-              <span>P1: {bandCounts.P1}</span> • <span>P2: {bandCounts.P2}</span> • <span>P3: {bandCounts.P3}</span> • <span>P4: {bandCounts.P4}</span>
+              <span>2–3y: {bandCounts.P1}</span> • <span>3–4y: {bandCounts.P2}</span> • <span>4–5y: {bandCounts.P3}</span> • <span>5–6y: {bandCounts.P4}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border border-slate-200 dark:border-slate-800">
           <CardContent className="p-4 space-y-1">
-            <span className="text-xs font-semibold text-slate-500">Evidence Events Logged</span>
+            <span className="text-xs font-semibold text-slate-500">Observations Logged</span>
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {events.length}
             </div>
@@ -214,11 +232,11 @@ export function PreschoolSchoolInsightsView({
 
         <Card className="border border-slate-200 dark:border-slate-800">
           <CardContent className="p-4 space-y-1">
-            <span className="text-xs font-semibold text-slate-500">P4 Transition Cohort</span>
+            <span className="text-xs font-semibold text-slate-500">Primary 1 Transition Group</span>
             <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               {p4Learners.length}
             </div>
-            <span className="text-[11px] text-slate-500">Entering Primary 1 next cycle</span>
+            <span className="text-[11px] text-slate-500">Children aged 5–6 preparing for Primary 1</span>
           </CardContent>
         </Card>
 
@@ -230,12 +248,12 @@ export function PreschoolSchoolInsightsView({
                 ? `${Math.round(((readinessStats.advanced + readinessStats.consolidating) / readinessStats.total) * 100)}%`
                 : '100%'}
             </div>
-            <span className="text-[11px] text-slate-500">Transition benchmark met</span>
+            <span className="text-[11px] text-slate-500">Transition milestone met</span>
           </CardContent>
         </Card>
       </div>
 
-      {/* School Readiness Section (Band P4) */}
+      {/* School Readiness Section */}
       <Card className="border border-amber-200/80 dark:border-amber-900/40 bg-amber-50/20 dark:bg-amber-950/10">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -243,15 +261,15 @@ export function PreschoolSchoolInsightsView({
               <div className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-amber-600" />
                 <CardTitle className="text-base font-bold text-amber-950 dark:text-amber-200">
-                  Primary 1 Transition Readiness (Band P4: Ages 5–6)
+                  Primary 1 Transition Readiness (Ages 5–6)
                 </CardTitle>
               </div>
               <CardDescription className="text-xs text-amber-800/80 dark:text-amber-300">
-                Evaluation across the 7 foundational school readiness dimensions for incoming primary students
+                Evaluation across foundational school readiness areas for children entering Primary 1
               </CardDescription>
             </div>
             <Badge className="bg-amber-600 text-white self-start sm:self-center">
-              {p4Learners.length} Transition Candidates
+              {p4Learners.length} Children Preparing for Primary 1
             </Badge>
           </div>
         </CardHeader>
@@ -281,15 +299,15 @@ export function PreschoolSchoolInsightsView({
               <span className="text-[10px] text-slate-400">Progressing well</span>
             </div>
             <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 space-y-1 text-xs">
-              <span className="text-slate-500 text-[11px]">Targeted Support Needed</span>
+              <span className="text-slate-500 text-[11px]">Gentle Support Needed</span>
               <div className="text-xl font-bold text-amber-600">
                 {readinessStats.emergingSupport}
               </div>
-              <span className="text-[10px] text-slate-400">Transition plan recommended</span>
+              <span className="text-[10px] text-slate-400">Extra encouragement recommended</span>
             </div>
           </div>
 
-          {/* Roster of P4 Learners with Readiness Score and Download Button */}
+          {/* Roster of Learners with Readiness Score and Download Button */}
           <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
             <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
               Kindergarten Class Transition Roster ({readinessProfiles.length} Learners)
@@ -297,7 +315,7 @@ export function PreschoolSchoolInsightsView({
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {readinessProfiles.length === 0 ? (
                 <div className="p-6 text-center text-xs text-slate-400">
-                  No children currently enrolled in Band P4 (Ages 5–6).
+                  No children currently in the 5–6 age group.
                 </div>
               ) : (
                 readinessProfiles.map(({ child, readiness, avgScore }) => (
@@ -337,7 +355,7 @@ export function PreschoolSchoolInsightsView({
                         className="h-8 text-xs gap-1.5"
                       >
                         <Download className="h-3.5 w-3.5" />
-                        {downloadingChildId === child.id ? 'Generating...' : 'Transition PDF'}
+                        {downloadingChildId === child.id ? 'Generating...' : 'Readiness Report'}
                       </Button>
                     </div>
                   </div>

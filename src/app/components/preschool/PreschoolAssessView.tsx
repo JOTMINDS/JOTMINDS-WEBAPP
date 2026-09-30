@@ -99,6 +99,22 @@ export function PreschoolAssessView({
     }
   };
 
+  if (childrenList.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center space-y-4 max-w-xl mx-auto my-8">
+        <div className="w-12 h-12 bg-purple-50 text-[#6B4C9A] rounded-full flex items-center justify-center mx-auto">
+          <CheckCircle2 className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-gray-900">No Preschool Children Enrolled</h3>
+          <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
+            There are currently no preschool learners enrolled in your class or school. When preschool learners are added, their milestones and observation notes will appear here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Controls Banner */}
@@ -106,10 +122,10 @@ export function PreschoolAssessView({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="font-bold text-base text-gray-900">
-              Observational Evidence & Developmental Checklist
+              Milestones & Classroom Observations
             </h3>
             <p className="text-xs text-gray-500">
-              Select a child to view ongoing progress against the 240 master indicators or log natural evidence.
+              Select a child to view progress against early childhood milestones or record natural observations.
             </p>
           </div>
           <Button
@@ -117,7 +133,7 @@ export function PreschoolAssessView({
             onClick={() => onOpenAssessModal(selectedChildId)}
             className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
           >
-            <Plus className="w-3.5 h-3.5" /> Log Detailed Evidence
+            <Plus className="w-3.5 h-3.5" /> Record Observation
           </Button>
         </div>
 
@@ -132,31 +148,31 @@ export function PreschoolAssessView({
             >
               {childrenList.map(c => (
                 <option key={c.id} value={c.id}>
-                  {c.name} ({resolveChildBand(c)}) • {c.className || 'Early Years'}
+                  {c.name} ({DEVELOPMENTAL_BANDS[resolveChildBand(c)]?.ageRange || 'Early Years'}) • {c.className || 'Early Years'}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <span className="text-[11px] font-semibold text-gray-700 block mb-1">Age Band Filter:</span>
+            <span className="text-[11px] font-semibold text-gray-700 block mb-1">Age Group:</span>
             <select
               value={selectedBand}
               onChange={e => setSelectedBand(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none"
             >
-              <option value="all">All Developmental Bands</option>
-              <option value="P1">JM-P1 (2–3 years)</option>
-              <option value="P2">JM-P2 (3–4 years)</option>
-              <option value="P3">JM-P3 (4–5 years)</option>
-              <option value="P4">JM-P4 (5–6 years)</option>
+              <option value="all">All Age Groups</option>
+              <option value="P1">Ages 2–3 (Early Explorers)</option>
+              <option value="P2">Ages 3–4 (Curious Learners)</option>
+              <option value="P3">Ages 4–5 (Young Thinkers)</option>
+              <option value="P4">Ages 5–6 (School Prep)</option>
             </select>
           </div>
 
           <div>
-            <span className="text-[11px] font-semibold text-gray-700 block mb-1">Search Indicator:</span>
+            <span className="text-[11px] font-semibold text-gray-700 block mb-1">Search Milestones:</span>
             <Input
-              placeholder="Search title, cluster, or ID..."
+              placeholder="Search milestone or activity..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="text-xs"
@@ -181,7 +197,7 @@ export function PreschoolAssessView({
               }`}
             >
               <span className="font-semibold block mb-0.5 line-clamp-1">{d.shortName}</span>
-              <span className="text-[10px] text-gray-400">{d.indicatorCount} indicators</span>
+              <span className="text-[10px] text-gray-400">{d.indicatorCount} milestones</span>
             </button>
           );
         })}
@@ -192,10 +208,10 @@ export function PreschoolAssessView({
         <CardHeader className="py-3 border-b bg-gray-50/50">
           <div className="flex justify-between items-center">
             <CardTitle className="text-sm font-bold text-gray-900">
-              {DEVELOPMENTAL_DOMAINS[selectedDomain].name} ({indicatorsInDomain.length} Indicators)
+              {DEVELOPMENTAL_DOMAINS[selectedDomain].name} ({indicatorsInDomain.length} Milestones)
             </CardTitle>
             <span className="text-xs text-gray-500">
-              Evaluating: <b className="text-indigo-700">{selectedChild?.name || 'Child'}</b>
+              Observing: <b className="text-indigo-700">{selectedChild?.name || 'Child'}</b>
             </span>
           </div>
         </CardHeader>
@@ -203,11 +219,11 @@ export function PreschoolAssessView({
           <table className="w-full text-xs">
             <thead className="bg-gray-50 text-gray-500 border-b">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold">Indicator & Cluster</th>
-                <th className="text-center px-2 py-3 font-semibold">Band</th>
+                <th className="text-left px-4 py-3 font-semibold">Milestone & Activity</th>
+                <th className="text-center px-2 py-3 font-semibold">Age Group</th>
                 <th className="text-center px-3 py-3 font-semibold">Current Level</th>
                 <th className="text-center px-3 py-3 font-semibold">Confidence</th>
-                <th className="text-center px-3 py-3 font-semibold">Quick Stage Log</th>
+                <th className="text-center px-3 py-3 font-semibold">Quick Record</th>
                 <th className="text-right px-4 py-3 font-semibold">Action</th>
               </tr>
             </thead>
@@ -221,18 +237,15 @@ export function PreschoolAssessView({
                   <tr key={ind.id} className="hover:bg-gray-50/80 transition-colors">
                     <td className="px-4 py-3 max-w-sm">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <code className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-1 rounded">
-                          {ind.id}
-                        </code>
                         <span className="text-[11px] font-semibold text-gray-500">{ind.clusterName}</span>
                       </div>
                       <p className="font-bold text-gray-900 leading-snug">{ind.title}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Method: {ind.primaryAssessment}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{ind.primaryAssessment}</p>
                     </td>
 
                     <td className="px-2 py-3 text-center">
                       <Badge variant="outline" className="text-[10px] font-medium">
-                        {ind.band}
+                        {DEVELOPMENTAL_BANDS[ind.band as DevelopmentalBand]?.ageRange || ind.band}
                       </Badge>
                     </td>
 

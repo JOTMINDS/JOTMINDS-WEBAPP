@@ -103,6 +103,8 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
     ? "This user will be elevated to an Organization Supervisor and granted full dashboard access."
     : "This user will be elevated to an Institution Administrator and granted full dashboard access.";
 
+  const isEmailEditable = user?.role === 'student' || !user?.email || user?.email.endsWith('@jotminds.local');
+
   if (!isOpen) return null;
 
   const handlePersonalSave = async (e: React.FormEvent) => {
@@ -112,9 +114,13 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
     setSuccess('');
 
     try {
-      const updates = { name, phone, secondaryEmail, secondaryPhone, avatarUrl, parentName };
+      const cleanEmail = email.trim().toLowerCase();
+      const updates: any = { name, phone, secondaryEmail, secondaryPhone, avatarUrl, parentName };
+      if (cleanEmail && cleanEmail !== user.email?.toLowerCase()) {
+        updates.email = cleanEmail;
+      }
       const updatedData = await updateUserProfile(updates);
-      const updatedUser = { ...user, ...updatedData };
+      const updatedUser = { ...user, ...updatedData, ...(cleanEmail ? { email: cleanEmail } : {}) };
       onProfileUpdate(updatedUser);
       setSuccess('Profile updated successfully!');
       setTimeout(() => setSuccess(''), 2500);
@@ -282,11 +288,29 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="email">Email Address</Label>
+                        {isEmailEditable && (
+                          <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                            Editable
+                          </span>
+                        )}
+                      </div>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="email" type="email" value={email} disabled className="pl-10 bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed" />
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          value={email} 
+                          onChange={(e) => setEmail(e.target.value)}
+                          disabled={!isEmailEditable} 
+                          placeholder="student@school.edu" 
+                          className={`pl-10 ${!isEmailEditable ? "bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed" : ""}`} 
+                        />
                       </div>
+                      {isEmailEditable && (
+                        <p className="text-[11px] text-muted-foreground">Add or update your email to receive direct assessment reports and updates.</p>
+                      )}
                     </div>
                     <PhoneInput id="phone" value={phone} onChange={setPhone} label="Phone Number" />
                     
@@ -446,11 +470,29 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="email">Email Address</Label>
+                      {isEmailEditable && (
+                        <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                          Editable
+                        </span>
+                      )}
+                    </div>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="email" type="email" value={email} disabled className="pl-10 bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed" />
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={!isEmailEditable} 
+                        placeholder="student@school.edu" 
+                        className={`pl-10 ${!isEmailEditable ? "bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed" : ""}`} 
+                      />
                     </div>
+                    {isEmailEditable && (
+                      <p className="text-[11px] text-muted-foreground">Add or update your email to receive direct assessment reports and updates.</p>
+                    )}
                   </div>
                   <PhoneInput id="phone" value={phone} onChange={setPhone} label="Phone Number" />
                   

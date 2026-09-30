@@ -109,6 +109,22 @@ export function PreschoolProgressView({
     }
   };
 
+  if (childrenList.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center space-y-4 max-w-xl mx-auto my-8">
+        <div className="w-12 h-12 bg-purple-50 text-[#6B4C9A] rounded-full flex items-center justify-center mx-auto">
+          <Clock className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-gray-900">No Preschool Children Enrolled</h3>
+          <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
+            There are currently no preschool learners enrolled in your class or school. When preschool learners are added, their chronological observation timeline will appear here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -116,14 +132,14 @@ export function PreschoolProgressView({
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge className="bg-blue-600 text-white font-medium">Longitudinal Progress</Badge>
-              <Badge variant="outline" className="text-xs">Continuous Observation Log</Badge>
+              <Badge className="bg-blue-600 text-white font-medium">Growth Journey</Badge>
+              <Badge variant="outline" className="text-xs">Observations Timeline</Badge>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Developmental Evidence Timeline
+              Observations & Milestones Timeline
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
-              Chronological log of authentic play-based evidence, observations, and milestones recorded by facilitators and parents across all 7 developmental domains.
+              A chronological timeline of play-based observations and milestones recorded by educators and families across all learning areas.
             </p>
           </div>
           <Button
@@ -131,7 +147,7 @@ export function PreschoolProgressView({
             className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-sm text-xs"
           >
             <Plus className="h-4 w-4" />
-            Log New Observation
+            Record Observation
           </Button>
         </div>
       </div>
@@ -240,10 +256,10 @@ export function PreschoolProgressView({
                 onChange={e => setSelectedMethod(e.target.value)}
                 className="h-9 text-xs border rounded-lg px-2.5 bg-white dark:bg-slate-900 dark:border-slate-800 font-medium"
               >
-                <option value="all">All Methods</option>
+                <option value="all">All Observation Settings</option>
                 {Object.values(ASSESSMENT_METHODS).map(m => (
                   <option key={m.code} value={m.code}>
-                    {m.code} - {m.label}
+                    {m.label}
                   </option>
                 ))}
               </select>
@@ -261,7 +277,7 @@ export function PreschoolProgressView({
               No Observation Events Found
             </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No evidence events match your current filter criteria. Try adjusting your search query or log an observation.
+              No observation records match your current filter criteria. Try adjusting your search query or record an observation.
             </p>
             <Button
               size="sm"
@@ -269,7 +285,7 @@ export function PreschoolProgressView({
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5"
             >
               <Plus className="h-3.5 w-3.5" />
-              Log Observation
+              Record Observation
             </Button>
           </CardContent>
         </Card>
@@ -298,9 +314,6 @@ export function PreschoolProgressView({
                           <span className="text-sm font-bold text-slate-900 dark:text-white">
                             {event.childName || 'Child'}
                           </span>
-                          <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-mono">
-                            {event.indicatorId}
-                          </Badge>
                         </div>
                         <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
                           <span className="flex items-center gap-1">
@@ -359,7 +372,7 @@ export function PreschoolProgressView({
                       )}
                     </div>
                     <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      {ind?.title || event.indicatorId}
+                      {ind?.title || 'Milestone Observation'}
                     </div>
                   </div>
 

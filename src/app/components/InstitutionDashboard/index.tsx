@@ -51,6 +51,7 @@ import { SchoolAnalyticsDashboard } from '../SchoolAnalyticsDashboard';
 import { InstitutionReporting } from '../InstitutionReporting';
 import { SchoolTeacherStylesView } from '../SchoolTeacherStylesView';
 import { PreschoolContainer } from '../preschool/PreschoolContainer';
+import { isPreschoolChild } from '../../utils/preschoolEngine';
 
 interface InstitutionDashboardProps {
   user: User;
@@ -95,6 +96,12 @@ export function InstitutionDashboard({
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+
+  const pendingClassesCount = React.useMemo(() => {
+    if (!institution) return 0;
+    const teacherIds = new Set(members.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
+    return getAllClasses().filter(c => c.status === 'pending' && (c.institutionId === institution.id || (c.classTeacherId && teacherIds.has(c.classTeacherId)))).length;
+  }, [members, institution?.id]);
 
   // Initialize Institution
   useEffect(() => {
@@ -343,11 +350,6 @@ export function InstitutionDashboard({
   const isPrimaryAdmin = institution.adminId === user.id;
   const isCoAdmin = institution.coAdminIds?.includes(user.id) ?? false;
   
-  const pendingClassesCount = React.useMemo(() => {
-    const teacherIds = new Set(members.filter(m => m.role === 'teacher' || m.role === 'admin').map(m => m.userId));
-    return getAllClasses().filter(c => c.status === 'pending' && (c.institutionId === institution.id || (c.classTeacherId && teacherIds.has(c.classTeacherId)))).length;
-  }, [members, institution.id]);
-
   const institutionNavGroups: NavGroup[] = [
     {
       groupLabel: 'A. SCHOOL ADMINISTRATION',
@@ -370,7 +372,7 @@ export function InstitutionDashboard({
           badgeVariant: 'destructive'
         },
         { id: 'lesson_planning', label: 'Lesson Planning', icon: BookOpen },
-        { id: 'preschool', label: 'Early Years (JM-PDAF)', icon: Sparkles, badge: 'Ages 2–6' },
+        { id: 'preschool', label: 'Early Years (Preschool)', icon: Sparkles, badge: 'Ages 2–6' },
         { id: 'reports', label: 'Reports', icon: Download },
         { id: 'training', label: 'Training & Alignment', icon: Award },
       ]
@@ -574,7 +576,7 @@ export function InstitutionDashboard({
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <PreschoolContainer
               currentUser={user}
-              childrenList={allPlatformUsers.filter(u => u.role === 'student')}
+              childrenList={allPlatformUsers.filter(u => u.role === 'student' && isPreschoolChild(u))}
               onBack={() => setTab('overview')}
               initialTab="school-insights"
             />

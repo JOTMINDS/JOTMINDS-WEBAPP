@@ -31,6 +31,7 @@ import { NavGroup } from './ui/collapsible-sidebar';
 import { CentralStudentManagement } from './CentralStudentManagement';
 import { CentralAnalyticsHub } from './CentralAnalyticsHub';
 import { PreschoolContainer } from './preschool/PreschoolContainer';
+import { isPreschoolChild } from '../utils/preschoolEngine';
 
 interface TeacherDashboardNewProps {
   user: User;
@@ -366,7 +367,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         { id: 'overview', label: 'Overview', icon: Users },
         { id: 'manage-classes', label: 'Manage Classes', icon: School },
         { id: 'students', label: 'Students', icon: Eye, badge: students.length },
-        { id: 'preschool', label: 'Early Years (JM-PDAF)', icon: Sparkles, badge: 'Ages 2–6' },
+        { id: 'preschool', label: 'Early Years (Preschool)', icon: Sparkles, badge: 'Ages 2–6' },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'alignment', label: 'Alignment Analysis', icon: Target },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
@@ -379,7 +380,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'preschool' ? 'Early Years Developmental Intelligence' : activeTab === 'alignment' ? 'Alignment Analysis' : activeTab.replace('-', ' ')}
+          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'preschool' ? 'Early Years & Preschool' : activeTab === 'alignment' ? 'Alignment Analysis' : activeTab.replace('-', ' ')}
         </h2>
         {user.school && (
           <Badge variant="outline" className="border-purple-600 text-purple-700">
@@ -463,7 +464,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
           <div className="space-y-8">
             <PreschoolContainer
               currentUser={user}
-              childrenList={students}
+              childrenList={students.filter(isPreschoolChild)}
               onBack={() => setActiveTab('overview')}
             />
           </div>

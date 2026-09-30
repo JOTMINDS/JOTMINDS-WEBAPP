@@ -32,6 +32,64 @@ import { MASTER_PRESCHOOL_INDICATORS, INDICATORS_BY_DOMAIN, INDICATORS_BY_ID } f
 import { calculateAge } from './dateUtils';
 
 /**
+ * Determines whether a user/student strictly belongs to the Preschool / Early Years cohort (ages ~2 to 6).
+ * Filters out older students (Primary, Elementary, JHS, SHS, Tertiary, or age >= 7).
+ */
+export function isPreschoolChild(child: User): boolean {
+  if (!child) return false;
+
+  // Only consider students or children
+  if (child.role && child.role !== 'student' && child.role !== 'child') {
+    return false;
+  }
+
+  // 1. Check age first if available
+  let age = child.age;
+  if (!age && child.dateOfBirth) {
+    age = calculateAge(child.dateOfBirth);
+  }
+
+  // If age is known and > 6.5, definitively not preschool
+  if (age !== undefined && age > 6.5) {
+    return false;
+  }
+
+  const rawLevel = (child.educationLevel || '').toLowerCase();
+  const rawClass = ((child as any).className || '').toLowerCase();
+
+  // Explicit non-preschool levels
+  const nonPreschoolKeywords = [
+    'jhs', 'shs', 'primary', 'elementary', 'tertiary', 'university',
+    'high school', 'junior high', 'senior high',
+    'grade 1', 'grade 2', 'grade 3', 'grade 4', 'grade 5', 'grade 6', 'grade 7', 'grade 8', 'grade 9', 'grade 10', 'grade 11', 'grade 12',
+    'class 1', 'class 2', 'class 3', 'class 4', 'class 5', 'class 6',
+    'basic 1', 'basic 2', 'basic 3', 'basic 4', 'basic 5', 'basic 6', 'basic 7', 'basic 8', 'basic 9',
+  ];
+
+  if (nonPreschoolKeywords.some(kw => rawLevel.includes(kw) || rawClass.includes(kw))) {
+    return false;
+  }
+
+  // Explicit preschool indicators in level or class name
+  const preschoolKeywords = [
+    'pre-school', 'preschool', 'early years', 'nursery', 'kindergarten',
+    'creche', 'crèche', 'kg', 'kg 1', 'kg 2', 'kg1', 'kg2',
+    'reception', 'toddler', 'playgroup',
+  ];
+
+  if (preschoolKeywords.some(kw => rawLevel.includes(kw) || rawClass.includes(kw))) {
+    return true;
+  }
+
+  // If age is within 1.5 to 6.5 years
+  if (age !== undefined && age >= 1.5 && age <= 6.5) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Determine a child's developmental band based on age or grade level.
  */
 export function resolveChildBand(child: User): DevelopmentalBand {

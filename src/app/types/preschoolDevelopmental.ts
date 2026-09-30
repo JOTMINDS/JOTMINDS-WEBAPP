@@ -23,7 +23,7 @@ export interface BandMetadata {
 export const DEVELOPMENTAL_BANDS: Record<DevelopmentalBand, BandMetadata> = {
   P1: {
     band: 'P1',
-    code: 'JM-P1',
+    code: 'Ages 2–3',
     ageRange: '2–3 years',
     minAge: 2,
     maxAge: 3.5,
@@ -33,7 +33,7 @@ export const DEVELOPMENTAL_BANDS: Record<DevelopmentalBand, BandMetadata> = {
   },
   P2: {
     band: 'P2',
-    code: 'JM-P2',
+    code: 'Ages 3–4',
     ageRange: '3–4 years',
     minAge: 3,
     maxAge: 4.5,
@@ -43,7 +43,7 @@ export const DEVELOPMENTAL_BANDS: Record<DevelopmentalBand, BandMetadata> = {
   },
   P3: {
     band: 'P3',
-    code: 'JM-P3',
+    code: 'Ages 4–5',
     ageRange: '4–5 years',
     minAge: 4,
     maxAge: 5.5,
@@ -53,7 +53,7 @@ export const DEVELOPMENTAL_BANDS: Record<DevelopmentalBand, BandMetadata> = {
   },
   P4: {
     band: 'P4',
-    code: 'JM-P4',
+    code: 'Ages 5–6',
     ageRange: '5–6 years',
     minAge: 5,
     maxAge: 6.9,
@@ -62,6 +62,29 @@ export const DEVELOPMENTAL_BANDS: Record<DevelopmentalBand, BandMetadata> = {
     color: '#D97706', // Amber
   },
 };
+
+export function getFriendlyAgeGroup(band?: DevelopmentalBand | string): string {
+  if (!band) return 'Early Years (2–6 yrs)';
+  const b = band as DevelopmentalBand;
+  const meta = DEVELOPMENTAL_BANDS[b];
+  if (meta) {
+    return `${meta.ageRange} (${meta.title})`;
+  }
+  return band;
+}
+
+export function getFriendlyMethodLabel(code?: AssessmentMethodCode | string): string {
+  if (!code) return 'Classroom Observation';
+  const map: Record<string, string> = {
+    OBS: 'Classroom Play Observation',
+    ACT: 'Guided Activity',
+    ORL: 'Talking & Listening',
+    CHK: 'Milestone Checklist',
+    PRT: "Child's Work & Drawing",
+    PAR: 'Observation from Home',
+  };
+  return map[code] || code;
+}
 
 // ── Core Developmental Domains ─────────────────────────────────────────────────
 export type DevelopmentalDomainCode =

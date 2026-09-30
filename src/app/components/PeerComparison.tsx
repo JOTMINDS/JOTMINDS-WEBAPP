@@ -110,6 +110,7 @@ export const defaultAverages = {
   },
   dualProcess: {
     Intuitive: 18,
+    Deliberate: 18,
     Reflective: 18
   }
 };

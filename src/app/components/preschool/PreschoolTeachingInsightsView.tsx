@@ -32,14 +32,14 @@ export function PreschoolTeachingInsightsView({
       <div className="bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-pink-500/10 border border-violet-200/50 dark:border-violet-900/30 rounded-2xl p-6 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Badge className="bg-violet-600 text-white font-medium">Instructional Practice</Badge>
-            <Badge variant="outline" className="text-xs">Professional Pedagogy</Badge>
+            <Badge className="bg-violet-600 text-white font-medium">Classroom Support</Badge>
+            <Badge variant="outline" className="text-xs">Teacher Guide</Badge>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Teaching Insights & Classroom Pedagogy
+            Teaching Tips & Classroom Ideas
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
-            Practical strategies, classroom station designs, differentiation pathways, and professional development resources to support continuous early childhood development.
+            Practical everyday strategies, play learning corners, helpful guidance for each child, and teacher learning guides.
           </p>
         </div>
       </div>
@@ -47,10 +47,10 @@ export function PreschoolTeachingInsightsView({
       {/* Navigation Sub-Tabs */}
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
         {[
-          { id: 'moves', label: 'Daily Pedagogical Moves', icon: Lightbulb },
-          { id: 'stations', label: 'Classroom Station Blueprints', icon: Compass },
-          { id: 'differentiation', label: 'Domain Differentiation', icon: Layers },
-          { id: 'training', label: 'In-Service Modules', icon: GraduationCap },
+          { id: 'moves', label: 'Everyday Teaching Tips', icon: Lightbulb },
+          { id: 'stations', label: 'Learning Play Corners', icon: Compass },
+          { id: 'differentiation', label: 'Guiding Different Learners', icon: Layers },
+          { id: 'training', label: 'Teacher Learning Guides', icon: GraduationCap },
         ].map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -170,7 +170,7 @@ export function PreschoolTeachingInsightsView({
               materials: 'Dry beans, sand, scoops, sorting bowls, smooth stones, water cups',
               routine:
                 'Children dig, pour, sort textures by weight/roughness, and test items that float or sink.',
-              mappedDomains: ['Cognitive (JM-CD)', 'Physical & Motor (JM-PM)'],
+              mappedDomains: ['Thinking Skills', 'Physical & Motor'],
             },
             {
               title: 'Construction & Spatial Zone',
@@ -178,7 +178,7 @@ export function PreschoolTeachingInsightsView({
               materials: 'Wooden offcuts, cardboard boxes, tape, animal figures, measuring strings',
               routine:
                 'Children collaborate to construct enclosures, roads, and bridges with identifiable structural goals.',
-              mappedDomains: ['Creative Expression (JM-CE)', 'Cognitive (JM-CD)'],
+              mappedDomains: ['Creative Arts', 'Thinking Skills'],
             },
             {
               title: 'Story Nook & Puppetry Corner',
@@ -186,7 +186,7 @@ export function PreschoolTeachingInsightsView({
               materials: 'Picture books, finger puppets, bilingual flashcards, soft floor cushions',
               routine:
                 'Children look at visual stories, sequence picture cards, and act out cultural folk tales in English and local languages.',
-              mappedDomains: ['Language & Comm (JM-LC)', 'Social-Emotional (JM-SE)'],
+              mappedDomains: ['Language & Speaking', 'Social & Emotional'],
             },
             {
               title: 'Math & Manipulative Hub',
@@ -194,7 +194,7 @@ export function PreschoolTeachingInsightsView({
               materials: 'Bottle caps, shells, abacus counters, pattern cards, weighing balance',
               routine:
                 'Children count real-life collections, create alternating color patterns, and compare heavier vs lighter objects.',
-              mappedDomains: ['Early Numeracy (JM-EN)', 'Independence (JM-IL)'],
+              mappedDomains: ['Numbers & Counting', 'Daily Independence'],
             },
             {
               title: 'Socio-Dramatic Market & Home',
@@ -202,7 +202,7 @@ export function PreschoolTeachingInsightsView({
               materials: 'Play cooking pots, fabric cloths, play money, empty food containers',
               routine:
                 'Children role-play everyday Ghanaian market and home scenarios, practicing polite turn-taking and dialogue.',
-              mappedDomains: ['Social-Emotional (JM-SE)', 'Independence (JM-IL)'],
+              mappedDomains: ['Social & Emotional', 'Daily Independence'],
             },
             {
               title: 'Gross Motor & Movement Path',
@@ -210,7 +210,7 @@ export function PreschoolTeachingInsightsView({
               materials: 'Floor tape lines, balance beam or chalk circles, soft cones, beanbags',
               routine:
                 'Children walk heel-to-toe, jump over gentle obstacles, and balance beanbags while moving to traditional drum beats.',
-              mappedDomains: ['Physical & Motor (JM-PM)', 'Creative Expression (JM-CE)'],
+              mappedDomains: ['Physical & Motor', 'Creative Arts'],
             },
           ].map((station, i) => (
             <Card key={i} className="border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
@@ -259,35 +259,35 @@ export function PreschoolTeachingInsightsView({
         <div className="space-y-4">
           {[
             {
-              domain: 'Cognitive Development (JM-CD)',
+              domain: 'Thinking & Discovery',
               scaffoldSupport:
                 'Use physical 3D objects instead of 2D pictures; reduce choices to 2 items; provide clear visual sequence templates.',
               extensionChallenge:
                 'Ask child to invent a third sorting rule; introduce multi-step problem solving with missing parts; encourage verbal prediction.',
             },
             {
-              domain: 'Language & Communication (JM-LC)',
+              domain: 'Language & Communication',
               scaffoldSupport:
                 'Allow child to respond in their mother tongue (Twi/Ga/Ewe); use gestures and picture cards; model short 2-3 word sentences.',
               extensionChallenge:
                 'Ask child to narrate a full beginning-middle-end story; invite them to act as the "librarian" explaining a storybook to peers.',
             },
             {
-              domain: 'Early Numeracy (JM-EN)',
+              domain: 'Early Numbers & Counting',
               scaffoldSupport:
                 'Count small quantities (1 to 3) with tactile touch-counting; guide finger pointing directly on each object.',
               extensionChallenge:
                 'Introduce subitizing with dice patterns up to 6; explore simple sharing ("If we have 6 mangoes and 2 plates, how many on each?").',
             },
             {
-              domain: 'Social & Emotional (JM-SE)',
+              domain: 'Social & Emotional Growth',
               scaffoldSupport:
                 'Pair with a gentle, patient peer during partner activities; offer a calm corner with sensory cushions when overwhelmed.',
               extensionChallenge:
                 'Empower child to serve as "Peace Helper" to resolve minor toy disputes; encourage leadership in welcoming new classmates.',
             },
             {
-              domain: 'Physical & Motor (JM-PM)',
+              domain: 'Movement & Motor Skills',
               scaffoldSupport:
                 'Provide thicker triangular crayons, playdough squeezing routines, and large bead threading before thin pencils.',
               extensionChallenge:
@@ -330,14 +330,14 @@ export function PreschoolTeachingInsightsView({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             {
-              module: 'Module 1: Observational Assessment Fidelity & Objective Evidence Logging',
+              module: 'Module 1: Gentle Observation & Recording Everyday Moments',
               duration: '45 mins',
               summary:
-                'Mastering objective note-taking during everyday routines. How to record factual child behaviors without subjective bias or premature assumptions.',
+                'Mastering objective note-taking during everyday routines. How to record factual child behaviors warmly and accurately without guesswork.',
               keyTakeaways: [
-                'Distinguishing between objective facts and subjective judgements',
-                'Selecting appropriate assessment methods (OBS vs ACT vs ORL)',
-                'Applying the confidence framework (Low vs Moderate vs High)',
+                'Distinguishing between objective facts and personal assumptions',
+                'Using everyday play, games, and conversations as assessment moments',
+                'Noticing consistency across multiple days and play settings',
               ],
             },
             {
@@ -363,12 +363,12 @@ export function PreschoolTeachingInsightsView({
               ],
             },
             {
-              module: 'Module 4: Holistic School Readiness Transition for Band P4 (5–6 Years)',
+              module: 'Module 4: Primary 1 Readiness for Ages 5–6',
               duration: '60 mins',
               summary:
                 'Preparing learners socially, emotionally, and cognitively for Primary 1 without premature academic drilling or worksheets.',
               keyTakeaways: [
-                'Evaluating the 7 foundational school readiness dimensions',
+                'Evaluating foundational school readiness dimensions',
                 'Self-regulation and independent desk management routines',
                 'Generating transition portfolios for incoming primary teachers',
               ],

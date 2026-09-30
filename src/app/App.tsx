@@ -95,6 +95,19 @@ type ViewType =
 
 type AssessmentType = 'learning' | 'thinking' | 'decision';
 
+function isEducationalInstitutionUser(user: any): boolean {
+  if (!user) return false;
+  const role = (user.role || '').toLowerCase();
+  return (
+    role === 'school_admin' ||
+    role === 'institution' ||
+    role === 'school' ||
+    user.organizationType === 'Educational Institution' ||
+    user.organizationType === 'School' ||
+    user.industrySector === 'Educational Institutions'
+  );
+}
+
 function AppContent() {
   const { user, loading, refreshUser, impersonatedUser, setImpersonatedUser, signOut } = useAuth();
   const { isEnabled: isFeatureEnabled } = useFeatureFlags();
@@ -261,16 +274,16 @@ function AppContent() {
       // BUT allow them to view dashboard when impersonating a user
       console.log('[App] ⚠️ Admin in dashboard view without impersonation! Redirecting to admin panel');
       setCurrentView('admin');
-    } else if ((user?.role === 'school_admin' || ((user?.role as string) === 'organization' && (user?.organizationType === 'Educational Institution' || user?.industrySector === 'Educational Institutions'))) && (currentView === 'landing' || currentView === 'auth' || currentView === 'organization')) {
+    } else if (isEducationalInstitutionUser(user) && (currentView === 'landing' || currentView === 'auth' || currentView === 'organization')) {
       console.log('[App] School admin/Educational Institution detected, routing to school admin dashboard');
       setCurrentView('institution-dashboard');
     } else if ((user?.role as string) === 'supervisor' || (user?.role as string) === 'Supervisor' || (user?.role as string) === 'organization' || (user?.role as string) === 'Organization') {
       // If it's an Educational Institution, don't force them into the supervisor portal
-      if (user?.organizationType !== 'Educational Institution' && user?.industrySector !== 'Educational Institutions' && currentView !== 'organization') {
+      if (!isEducationalInstitutionUser(user) && currentView !== 'organization') {
         console.log('[App] ⚠️ Supervisor detected in main app, redirecting to supervisor portal');
         setCurrentView('organization');
       }
-    } else if (user && user.role !== 'admin' && (user.role as string) !== 'supervisor' && (user.role as string) !== 'Supervisor' && (user.role as string) !== 'organization' && (user.role as string) !== 'Organization' && (currentView === 'landing' || currentView === 'auth')) {
+    } else if (user && user.role !== 'admin' && (user.role as string) !== 'supervisor' && (user.role as string) !== 'Supervisor' && (user.role as string) !== 'organization' && (user.role as string) !== 'Organization' && !isEducationalInstitutionUser(user) && (currentView === 'landing' || currentView === 'auth')) {
       console.log('[App] Regular user detected, routing to dashboard');
       setCurrentView('dashboard');
     }
@@ -286,7 +299,7 @@ function AppContent() {
     console.log('[App] ===== Auth success complete, user loaded into context =====');
     
     if (updatedUser) {
-      if (updatedUser.role === 'school_admin' || ((updatedUser.role as string) === 'organization' && (updatedUser.organizationType === 'Educational Institution' || updatedUser.industrySector === 'Educational Institutions'))) {
+      if (isEducationalInstitutionUser(updatedUser)) {
         console.log('[App] School admin/Educational Institution detected, routing to institution dashboard');
         setCurrentView('institution-dashboard');
       } else if ((updatedUser.role as string) === 'supervisor' || (updatedUser.role as string) === 'Supervisor' || (updatedUser.role as string) === 'organization' || (updatedUser.role as string) === 'Organization') {
@@ -878,7 +891,7 @@ function AppContent() {
       // Supervisors should not access dashboards - redirect to supervisor portal
       if ((normalizedRole as string) === 'supervisor' || normalizedRole === 'organization') {
         // Educational Institutions should see the Institution Dashboard
-        if (displayUser?.organizationType === 'Educational Institution' || displayUser?.industrySector === 'Educational Institutions') {
+        if (isEducationalInstitutionUser(displayUser)) {
           return (
             <InstitutionDashboard
               user={displayUser}
@@ -901,7 +914,7 @@ function AppContent() {
         );
       }
       
-      if (normalizedRole === 'school_admin') {
+      if (normalizedRole === 'school_admin' || isEducationalInstitutionUser(displayUser)) {
         return (
           <InstitutionDashboard
             user={displayUser}

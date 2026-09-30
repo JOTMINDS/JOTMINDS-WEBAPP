@@ -295,21 +295,21 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
           <div className="bg-gradient-to-r from-purple-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white border border-purple-800/40 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <Badge className="bg-[#6B4C9A] text-white text-[10px] font-bold">JM-PDAF v1.0</Badge>
-                <span className="text-xs text-purple-200 font-semibold">Preschool Developmental Intelligence</span>
+                <Badge className="bg-[#6B4C9A] text-white text-[10px] font-bold">JotMinds Early Years</Badge>
+                <span className="text-xs text-purple-200 font-semibold">Early Childhood Growth</span>
               </div>
               <h3 className="text-base font-bold text-white">
-                Early Years Assessment Framework (Ages 2–6)
+                Early Years & Preschool (Ages 2–6)
               </h3>
               <p className="text-xs text-purple-200/80 max-w-xl">
-                Continuous play-based observation across 240 indicators in 7 developmental domains, multidimensional school readiness tracking, and branded parent summaries.
+                Gentle play-based observation across 7 growth areas, Primary 1 readiness guides, and caring family growth summaries.
               </p>
             </div>
             <Button
               onClick={() => onSelectTab('preschool')}
               className="bg-white hover:bg-slate-100 text-purple-950 font-bold text-xs shrink-0 shadow-sm"
             >
-              Open Early Years Module →
+              Open Early Years →
             </Button>
           </div>
         )}

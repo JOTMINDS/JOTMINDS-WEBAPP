@@ -110,6 +110,22 @@ export function PreschoolClassInsightsView({
     });
   }, [intelligence]);
 
+  if (childrenList.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center space-y-4 max-w-xl mx-auto my-8">
+        <div className="w-12 h-12 bg-purple-50 text-[#6B4C9A] rounded-full flex items-center justify-center mx-auto">
+          <Compass className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-gray-900">No Preschool Children Enrolled</h3>
+          <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
+            There are currently no preschool learners enrolled in your class or school. When preschool learners are added, class-wide progress and learning area overviews will appear here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -117,14 +133,14 @@ export function PreschoolClassInsightsView({
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge className="bg-emerald-600 text-white font-medium">Cohort Analytics</Badge>
-              <Badge variant="outline" className="text-xs">Multidimensional Tracking</Badge>
+              <Badge className="bg-emerald-600 text-white font-medium">Class Progress</Badge>
+              <Badge variant="outline" className="text-xs">Learning Areas Overview</Badge>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Class Developmental Intelligence
+              Class Overview & Progress
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
-              Cohort-wide developmental footprint across all 7 domains to inform station design, instructional differentiation, and collaborative learning circles.
+              A whole-class overview across all learning areas to help you plan playful stations, group activities, and support each child.
             </p>
           </div>
 
@@ -163,23 +179,23 @@ export function PreschoolClassInsightsView({
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {intelligence.activeObservations}
             </div>
-            <span className="text-[11px] text-slate-500">Evidence events logged</span>
+            <span className="text-[11px] text-slate-500">Observations recorded</span>
           </CardContent>
         </Card>
 
         <Card className="border border-slate-200 dark:border-slate-800">
           <CardContent className="p-4 space-y-1">
-            <span className="text-xs font-semibold text-slate-500">Band Distribution</span>
-            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 pt-1">
-              <span>P1: {intelligence.bandDistribution.P1}</span>
+            <span className="text-xs font-semibold text-slate-500">Children by Age</span>
+            <div className="flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300 pt-1 flex-wrap">
+              <span>2–3y: {intelligence.bandDistribution.P1}</span>
               <span>•</span>
-              <span>P2: {intelligence.bandDistribution.P2}</span>
+              <span>3–4y: {intelligence.bandDistribution.P2}</span>
               <span>•</span>
-              <span>P3: {intelligence.bandDistribution.P3}</span>
+              <span>4–5y: {intelligence.bandDistribution.P3}</span>
               <span>•</span>
-              <span>P4: {intelligence.bandDistribution.P4}</span>
+              <span>5–6y: {intelligence.bandDistribution.P4}</span>
             </div>
-            <span className="text-[11px] text-slate-500">Age groups 2–6</span>
+            <span className="text-[11px] text-slate-500">Early childhood learners</span>
           </CardContent>
         </Card>
 
