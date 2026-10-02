@@ -23,6 +23,6 @@ enabled = true
 host = "smtpout.secureserver.net"
 port = 465
 user = "service@jotminds.com"
-pass = "Service@0248838540"
+pass = "env(SMTP_PASS)"
 admin_email = "service@jotminds.com"
 sender_name = "JotMinds Support"

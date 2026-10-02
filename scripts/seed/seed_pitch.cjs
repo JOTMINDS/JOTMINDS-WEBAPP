@@ -1,14 +1,19 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = 'https://femvnconxoefpctiptkj.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbXZuY29ueG9lZnBjdGlwdGtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTY1ODMsImV4cCI6MjA3ODAzMjU4M30.kmYrjWIfgzXZuLda3D8LjqL6V20DBgo8fkHsnIdQLGA';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseKey || !process.env.SEED_PASSWORD) {
+  console.error('Set SUPABASE_URL, SUPABASE_ANON_KEY and SEED_PASSWORD before running.');
+  process.exit(1);
+}
+const SEED_PASSWORD = process.env.SEED_PASSWORD;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function createDummyData() {
   console.log('Creating Admin/Headmaster account...');
   const { data: adminAuth, error: adminErr } = await supabase.auth.signUp({
     email: 'headmaster@stpeter.edu',
-    password: 'StPeterJotminds2026!',
+    password: SEED_PASSWORD,
     options: {
       data: {
         name: 'Dr. Mensah',
@@ -21,7 +26,7 @@ async function createDummyData() {
   if (adminErr) {
     if (adminErr.message.includes('already registered')) {
         console.log('Admin already exists. Signing in...');
-        const { data } = await supabase.auth.signInWithPassword({ email: 'headmaster@stpeter.edu', password: 'StPeterJotminds2026!' });
+        const { data } = await supabase.auth.signInWithPassword({ email: 'headmaster@stpeter.edu', password: SEED_PASSWORD });
         adminUser = data.user;
     } else {
         console.error('Error creating admin:', adminErr);
@@ -36,7 +41,7 @@ async function createDummyData() {
   console.log('Creating Teacher account...');
   const { data: teacherAuth, error: teacherErr } = await supabase.auth.signUp({
     email: 'teacher@stpeter.edu',
-    password: 'StPeterJotminds2026!',
+    password: SEED_PASSWORD,
     options: {
       data: {
         name: 'Mr. Osei',
@@ -48,7 +53,7 @@ async function createDummyData() {
   let teacherUser;
   if (teacherErr && teacherErr.message.includes('already registered')) {
     console.log('Teacher already exists. Signing in...');
-    const { data } = await supabase.auth.signInWithPassword({ email: 'teacher@stpeter.edu', password: 'StPeterJotminds2026!' });
+    const { data } = await supabase.auth.signInWithPassword({ email: 'teacher@stpeter.edu', password: SEED_PASSWORD });
     teacherUser = data.user;
   } else if (teacherErr) {
     console.error('Error creating teacher:', teacherErr);
@@ -58,7 +63,7 @@ async function createDummyData() {
   }
 
   // To create the institution, we need to be logged in as the admin
-  await supabase.auth.signInWithPassword({ email: 'headmaster@stpeter.edu', password: 'StPeterJotminds2026!' });
+  await supabase.auth.signInWithPassword({ email: 'headmaster@stpeter.edu', password: SEED_PASSWORD });
 
   const institutionId = require('crypto').randomUUID();
   const code = 'JOTM-PITCH';
@@ -115,7 +120,7 @@ async function createDummyData() {
   });
 
   // Now login as teacher to join the school
-  await supabase.auth.signInWithPassword({ email: 'teacher@stpeter.edu', password: 'StPeterJotminds2026!' });
+  await supabase.auth.signInWithPassword({ email: 'teacher@stpeter.edu', password: SEED_PASSWORD });
   teacherUser = (await supabase.auth.getUser()).data.user;
 
   console.log('Inserting Teacher into institution_members...');

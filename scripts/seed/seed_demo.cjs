@@ -13,12 +13,17 @@
 const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 
-const supabaseUrl = 'https://femvnconxoefpctiptkj.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbXZuY29ueG9lZnBjdGlwdGtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTY1ODMsImV4cCI6MjA3ODAzMjU4M30.kmYrjWIfgzXZuLda3D8LjqL6V20DBgo8fkHsnIdQLGA';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseKey || !process.env.SEED_PASSWORD) {
+  console.error('Set SUPABASE_URL, SUPABASE_ANON_KEY and SEED_PASSWORD before running.');
+  process.exit(1);
+}
+const SEED_PASSWORD = process.env.SEED_PASSWORD;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ─── Account Credentials ────────────────────────────────────────────────────
-const DEMO_PASSWORD = 'JotMindsDemo2026!';
+const DEMO_PASSWORD = SEED_PASSWORD;
 
 const ADMIN = {
   email: 'principal@greenfield.edu.gh',

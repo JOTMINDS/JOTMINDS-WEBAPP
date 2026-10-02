@@ -1,8 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 
-const supabaseUrl = 'https://femvnconxoefpctiptkj.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbXZuY29ueG9lZnBjdGlwdGtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTY1ODMsImV4cCI6MjA3ODAzMjU4M30.kmYrjWIfgzXZuLda3D8LjqL6V20DBgo8fkHsnIdQLGA';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseKey || !process.env.SEED_PASSWORD) {
+  console.error('Set SUPABASE_URL, SUPABASE_ANON_KEY and SEED_PASSWORD before running.');
+  process.exit(1);
+}
+const SEED_PASSWORD = process.env.SEED_PASSWORD;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const STUDENTS = [
@@ -17,7 +22,7 @@ async function seedStudents() {
   console.log('Signing in as Headmaster...');
   const { data: { user: adminUser }, error: adminErr } = await supabase.auth.signInWithPassword({
     email: 'headmaster@stpeter.edu',
-    password: 'StPeterJotminds2026!'
+    password: SEED_PASSWORD
   });
 
   if (adminErr) {
@@ -42,13 +47,13 @@ async function seedStudents() {
     console.log(`Creating auth user for ${s.name}...`);
     const { data: authData, error: authErr } = await supabase.auth.signUp({
       email: s.email,
-      password: 'StPeterJotminds2026!',
+      password: SEED_PASSWORD,
       options: { data: { name: s.name, role: 'student' } }
     });
 
     let userId;
     if (authErr && authErr.message.includes('already registered')) {
-        const { data: loginData } = await supabase.auth.signInWithPassword({ email: s.email, password: 'StPeterJotminds2026!' });
+        const { data: loginData } = await supabase.auth.signInWithPassword({ email: s.email, password: SEED_PASSWORD });
         userId = loginData?.user?.id;
     } else if (!authErr) {
         userId = authData?.user?.id;
@@ -60,7 +65,7 @@ async function seedStudents() {
   // Login as admin again to insert members
   await supabase.auth.signInWithPassword({
     email: 'headmaster@stpeter.edu',
-    password: 'StPeterJotminds2026!'
+    password: SEED_PASSWORD
   });
 
   console.log('Inserting students into institution_members...');
