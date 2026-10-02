@@ -3,7 +3,6 @@ import { User } from '../../types';
 import { EvidenceEvent } from '../../types/preschoolDevelopmental';
 import {
   getAllEvidenceEvents,
-  seedSamplePreschoolEventsIfEmpty,
 } from '../../utils/preschoolStorage';
 import { isPreschoolChild } from '../../utils/preschoolEngine';
 import { safeParse } from '../../utils/storage';
@@ -65,11 +64,6 @@ export function PreschoolContainer({
   // Load Evidence Events for enrolled preschool children
   const loadEvents = useCallback(() => {
     if (effectiveChildren.length > 0) {
-      seedSamplePreschoolEventsIfEmpty(
-        effectiveChildren,
-        currentUser.id || 'teacher_01',
-        currentUser.name || 'Classroom Teacher'
-      );
       const loaded = getAllEvidenceEvents();
       const childIds = new Set(effectiveChildren.map(c => c.id));
       setEvents(loaded.filter(e => childIds.has(e.childId)));

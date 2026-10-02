@@ -15,10 +15,8 @@ export const DataExport: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       const csvHeader = "Age range,School level,Assessment responses,Domain scores,Report category,Parent observation scores,Child-parent alignment score,Completion date\n";
-      const dummyRow1 = "15-18,SHS,\"Q1:A, Q2:B\",Learning:30/Thinking:20,Student Assessment,Learning:25/Thinking:20,High Alignment,2026-07-01\n";
-      const dummyRow2 = "12-14,JHS,\"Q1:B, Q2:A\",Learning:15/Thinking:10,Student Assessment,Learning:10/Thinking:15,Moderate Alignment,2026-07-02\n";
-      
-      const csvContent = csvHeader + dummyRow1 + dummyRow2;
+      // No real export endpoint yet: emit headers only rather than fabricated rows.
+      const csvContent = csvHeader;
       
       // Create and trigger download
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

@@ -11,7 +11,8 @@ import { createClient } from './supabase/client';
 const PRESCHOOL_EVENTS_KEY = 'jotminds_preschool_evidence_events';
 
 export function getAllEvidenceEvents(): EvidenceEvent[] {
-  return safeParse<EvidenceEvent[]>(PRESCHOOL_EVENTS_KEY, []).filter(Boolean);
+  // Ignore fabricated sample events that earlier versions cached in localStorage.
+  return safeParse<EvidenceEvent[]>(PRESCHOOL_EVENTS_KEY, []).filter(e => e && !String(e.id).startsWith('seed_pdaf_'));
 }
 
 export function getEvidenceEventsForChild(childId: string): EvidenceEvent[] {
@@ -103,62 +104,5 @@ export async function deleteEvidenceEvent(eventId: string): Promise<boolean> {
   } catch (err) {
     console.error('Failed to delete evidence event:', err);
     return false;
-  }
-}
-
-/**
- * Seed sample evidence events for demo or newly created preschool children
- * so school leaders and teachers have rich data to explore immediately.
- */
-export function seedSamplePreschoolEventsIfEmpty(children: any[], teacherId: string, teacherName: string): void {
-  const existing = getAllEvidenceEvents();
-  if (existing.length > 0 || !children || children.length === 0) return;
-
-  const sampleEvents: EvidenceEvent[] = [];
-  const today = new Date();
-
-  children.slice(0, 8).forEach((child, cIdx) => {
-    // 5-8 observations per child across diverse domains
-    const baseDate = new Date(today);
-    baseDate.setDate(today.getDate() - (cIdx * 2 + 1));
-
-    const indicatorSamples = [
-      { id: 'JM-CD-013', domain: 'JM-CD' as const, rating: 3 as const, method: 'ACT' as const, title: 'Build a Bridge', notes: 'Sorted blocks by shape accurately to construct bridge pillars.' },
-      { id: 'JM-LC-014', domain: 'JM-LC' as const, rating: 3 as const, method: 'ORL' as const, title: 'Story Retelling', notes: 'Used full descriptive sentences to describe what happened in the picture.' },
-      { id: 'JM-EN-008', domain: 'JM-EN' as const, rating: 3 as const, method: 'ACT' as const, title: "Teddy's Picnic", notes: 'Counted 6 plastic mango slices with 1-to-1 finger pointing.' },
-      { id: 'JM-SE-023', domain: 'JM-SE' as const, rating: 2 as const, method: 'OBS' as const, title: 'Free Play Sharing', notes: 'Shared colored crayons with neighbor after gentle verbal reminder.' },
-      { id: 'JM-PM-018', domain: 'JM-PM' as const, rating: 3 as const, method: 'ACT' as const, title: 'Fine Motor Stacking', notes: 'Positioned wooden blocks steadily with confident pinch grip.' },
-      { id: 'JM-CE-004', domain: 'JM-CE' as const, rating: 4 as const, method: 'OBS' as const, title: 'Pretend Play Kitchen', notes: 'Created detailed role-play cooking jollof rice for class teddy bears.' },
-      { id: 'JM-IL-008', domain: 'JM-IL' as const, rating: 3 as const, method: 'OBS' as const, title: 'Tidy-Up Routine', notes: 'Packed away puzzle pieces into designated shelf bins without prompting.' },
-    ];
-
-    indicatorSamples.forEach((sample, sIdx) => {
-      const eventDate = new Date(baseDate);
-      eventDate.setDate(baseDate.getDate() - sIdx);
-
-      sampleEvents.push({
-        id: `seed_pdaf_${child.id}_${sIdx}`,
-        childId: child.id,
-        childName: child.name || `Child ${cIdx + 1}`,
-        indicatorId: sample.id,
-        domainCode: sample.domain,
-        rating: sample.rating,
-        method: sample.method,
-        date: eventDate.toISOString().split('T')[0],
-        timestamp: eventDate.toISOString(),
-        observerId: teacherId || 'teacher_demo',
-        observerName: teacherName || 'Classroom Teacher',
-        observerRole: 'teacher',
-        activityContext: sample.title,
-        languageOfEvidence: cIdx % 2 === 0 ? 'English' : 'Twi',
-        notes: sample.notes,
-        classId: child.classId,
-        institutionId: child.institutionId,
-      });
-    });
-  });
-
-  if (sampleEvents.length > 0) {
-    saveBatchEvidenceEvents(sampleEvents);
   }
 }
