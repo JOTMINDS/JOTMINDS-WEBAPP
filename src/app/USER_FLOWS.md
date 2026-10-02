@@ -334,7 +334,7 @@ Admin Login → Admin Dashboard → View All Users → Impersonate Users → Man
 
 ### Authentication
 - Email: `Alex.Attachey@gmail.com`
-- Password: `0248838540`
+- Password: `<ADMIN_PASSWORD>`
 - Bypasses normal Supabase authentication
 
 ### Features

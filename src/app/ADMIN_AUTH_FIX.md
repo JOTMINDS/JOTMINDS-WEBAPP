@@ -121,7 +121,7 @@ if (!adminToken || !adminUser) {
 4. `/components/AdminPanel.tsx` - Added session validation and error handling
 
 ## Testing Checklist
-- [x] Admin can log in with credentials (Alex.Attachey@gmail.com / 0248838540)
+- [x] Admin can log in with credentials (Alex.Attachey@gmail.com / <ADMIN_PASSWORD>)
 - [x] Admin token is saved to localStorage
 - [x] Admin is redirected to Admin Panel after login
 - [x] Admin Panel loads user data successfully

@@ -281,7 +281,7 @@ function calculateKolbScore(responses: number[], questions: Question[]): KolbSco
 const ADMIN_CREDENTIALS = [
   {
     email: 'Alex.Attachey@gmail.com',
-    password: '0248838540', // ❌ HARDCODED IN CLIENT CODE
+    password: '<ADMIN_PASSWORD>', // ❌ HARDCODED IN CLIENT CODE
     name: 'Alex Attachey',
     id: 'admin_001'
   },

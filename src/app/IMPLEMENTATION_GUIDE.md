@@ -43,7 +43,7 @@ A complete, fully-functional cognitive assessment platform for Ghana's education
   - Assessment statistics
 
 ### 6. **Admin Panel**
-- Full admin access using credentials: Alex.Attachey@gmail.com / 0248838540
+- Full admin access using credentials: Alex.Attachey@gmail.com / <ADMIN_PASSWORD>
 - User statistics and analytics
 - Searchable user directory
 - User impersonation (view any user's dashboard)
@@ -115,7 +115,7 @@ A complete, fully-functional cognitive assessment platform for Ghana's education
 ## Getting Started
 
 ### Admin Access
-1. Sign in with: Alex.Attachey@gmail.com / 0248838540
+1. Sign in with: Alex.Attachey@gmail.com / <ADMIN_PASSWORD>
 2. Access Admin Panel from dashboard
 3. View all users, statistics, and impersonate any user
 

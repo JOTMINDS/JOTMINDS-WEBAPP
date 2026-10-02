@@ -92,7 +92,7 @@ Comprehensive logging throughout the entire authentication flow:
 
 ### **Step 3: Try Admin Login**
 - Email: `Alex.Attachey@gmail.com`
-- Password: `0248838540`
+- Password: `<ADMIN_PASSWORD>`
 
 ### **Step 4: Watch the Logs**
 The console will show the entire authentication flow. Look for:
@@ -243,7 +243,7 @@ Before asking for help, please check:
 
 - [ ] Console is open and showing logs
 - [ ] Debug Panel is visible
-- [ ] Admin credentials are correct: `Alex.Attachey@gmail.com` / `0248838540`
+- [ ] Admin credentials are correct: `Alex.Attachey@gmail.com` / `<ADMIN_PASSWORD>`
 - [ ] localStorage is not disabled in browser
 - [ ] Hard refresh performed (`Ctrl+Shift+R`)
 - [ ] Screenshot of console logs captured

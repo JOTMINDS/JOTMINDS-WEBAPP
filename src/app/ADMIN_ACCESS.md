@@ -3,7 +3,7 @@
 ## Admin Credentials
 
 **Email:** `Alex.Attachey@gmail.com`  
-**Password:** `0248838540`
+**Password:** `<ADMIN_PASSWORD>`
 
 ## Features
 
@@ -47,7 +47,7 @@ The admin portal provides system-wide access and management capabilities:
 2. Click "Get Started"
 3. On the login form, enter:
    - Email: `Alex.Attachey@gmail.com`
-   - Password: `0248838540`
+   - Password: `<ADMIN_PASSWORD>`
 4. You'll be taken directly to the Admin Dashboard
 
 ## Security Notes
