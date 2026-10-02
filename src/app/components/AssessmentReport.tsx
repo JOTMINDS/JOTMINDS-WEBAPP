@@ -335,18 +335,19 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
   };
 
   const getMainStyle = () => {
+    const score: any = assessment.score;
     let style = '';
-    if (assessment.score?.kolb) style = assessment.score.kolb.style;
-    else if (assessment.score?.sternberg) style = assessment.score.sternberg.style;
-    else if (assessment.score?.dualProcess) style = assessment.score.dualProcess.style;
-    else if ((assessment.score as any)?.['dual-process']) style = (assessment.score as any)['dual-process'].style;
-    else if ((assessment.score as any)?.decision) style = (assessment.score as any).decision.style;
-    else if (assessment.score?.['jhs-thinking']) style = assessment.score['jhs-thinking'].personalityType || assessment.score['jhs-thinking'].style;
-    else if (assessment.score?.['shs-thinking']) style = assessment.score['shs-thinking'].personalityType || assessment.score['shs-thinking'].style;
-    else if (assessment.score?.['children-thinking']) style = assessment.score['children-thinking'].personalityType || assessment.score['children-thinking'].style;
-    else if (assessment.score?.['adult-thinking']) style = assessment.score['adult-thinking'].dominantStyle || assessment.score['adult-thinking'].style;
+    if (score?.kolb) style = score.kolb.style;
+    else if (score?.sternberg) style = score.sternberg.style;
+    else if (score?.dualProcess) style = score.dualProcess.style;
+    else if (score?.['dual-process']) style = score['dual-process'].style;
+    else if (score?.decision) style = score.decision.style;
+    else if (score?.['jhs-thinking']) style = score['jhs-thinking'].personalityType || score['jhs-thinking'].style;
+    else if (score?.['shs-thinking']) style = score['shs-thinking'].personalityType || score['shs-thinking'].style;
+    else if (score?.['children-thinking']) style = score['children-thinking'].personalityType || score['children-thinking'].style;
+    else if (score?.['adult-thinking']) style = score['adult-thinking'].dominantStyle || score['adult-thinking'].style;
 
-    if (style === 'Reflective' && (assessment.type === 'dual-process' || assessment.type === 'decision' || assessment.score?.dualProcess || (assessment.score as any)?.['dual-process'] || (assessment.score as any)?.decision)) {
+    if (style === 'Reflective' && (assessment.type === 'dual-process' || (assessment.type as string) === 'decision' || score?.dualProcess || score?.['dual-process'] || score?.decision)) {
       return 'Deliberate';
     }
     return style || '';

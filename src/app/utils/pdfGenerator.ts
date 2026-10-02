@@ -104,18 +104,18 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   doc.setTextColor(...BRAND.ink);
 
   // Main Style Section
-  const score = assessment.score || {};
+  const score: any = assessment.score || {};
   const isJTIA = assessment.type === 'jtia' || !!score.jtia || !!(assessment as any).report?.domainScores;
   const jtiaData = isJTIA ? ((assessment as any).report || (assessment as any).results || score.jtia || {}) : null;
   const kolbData = score.kolb || (assessment.type === 'kolb' ? score : null);
-  const decisionData = score.dualProcess || (score as any)['dual-process'] || (score as any).decision || (assessment.type === 'dual-process' || assessment.type === 'decision' ? score : null);
+  const decisionData = score.dualProcess || (score as any)['dual-process'] || (score as any).decision || (assessment.type === 'dual-process' || (assessment.type as string) === 'decision' ? score : null);
   const thinkingData = score.sternberg || (score as any)['jhs-thinking'] || (score as any)['shs-thinking'] || (score as any)['adult-thinking'] || (score as any)['child-thinking'] || (score as any)['children-thinking'] || (score as any).thinking || (assessment.type?.includes('thinking') || assessment.type === 'sternberg' ? score : null);
 
   let rawMainStyle = isJTIA
     ? (jtiaData?.recommendations?.pedagogicalArchetype || 'Teaching Intelligence Profile')
     : (kolbData?.style || thinkingData?.style || thinkingData?.personalityType || thinkingData?.dominantStyle || decisionData?.style || score['teaching-style']?.primaryStyle || '');
   
-  if (rawMainStyle === 'Reflective' && (assessment.type === 'dual-process' || assessment.type === 'decision' || decisionData?.style === 'Reflective')) {
+  if (rawMainStyle === 'Reflective' && (assessment.type === 'dual-process' || (assessment.type as string) === 'decision' || decisionData?.style === 'Reflective')) {
     rawMainStyle = 'Deliberate';
   }
   const mainStyle = rawMainStyle;
@@ -135,7 +135,7 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
     description = jtiaData?.recommendations?.executiveSummary || `Comprehensive evaluation across 5 core teaching intelligence domains with an overall alignment score of ${jtiaData?.overallScore || 'Completed'}/100.`;
   } else {
     try {
-      const typeKey = (assessment.type === 'dual-process' || assessment.type === 'decision') ? 'dual-process' : assessment.type;
+      const typeKey = (assessment.type === 'dual-process' || (assessment.type as string) === 'decision') ? 'dual-process' : assessment.type;
       description = mainStyle ? getStyleDescription(typeKey as any, mainStyle) : 'Assessment completed successfully.';
     } catch {
       description = 'Assessment completed successfully.';

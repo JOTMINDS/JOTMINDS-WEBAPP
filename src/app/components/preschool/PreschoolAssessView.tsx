@@ -5,6 +5,7 @@ import {
   DevelopmentalBand,
   DevelopmentalRating,
   EvidenceEvent,
+  DEVELOPMENTAL_BANDS,
   DEVELOPMENTAL_DOMAINS,
   DEVELOPMENTAL_RATINGS,
   CONFIDENCE_RULES,

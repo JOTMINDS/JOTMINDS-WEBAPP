@@ -7,6 +7,7 @@ import {
   DevelopmentalRating,
   LanguageOfEvidence,
   EvidenceEvent,
+  DEVELOPMENTAL_BANDS,
   DEVELOPMENTAL_DOMAINS,
   DEVELOPMENTAL_RATINGS,
   ASSESSMENT_METHODS,

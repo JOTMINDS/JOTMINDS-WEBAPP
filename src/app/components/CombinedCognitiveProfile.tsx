@@ -84,9 +84,9 @@ let latestKolb = assessments.filter(a => {
     },
     completedAt: placeholderDate,
   };
-  latestKolb = latestKolb ?? placeholderKolb;
-  latestSternberg = latestSternberg ?? placeholderSternberg;
-  latestDualProcess = latestDualProcess ?? placeholderDual;
+  latestKolb = latestKolb ?? (placeholderKolb as unknown as Assessment);
+  latestSternberg = latestSternberg ?? (placeholderSternberg as unknown as Assessment);
+  latestDualProcess = latestDualProcess ?? (placeholderDual as unknown as Assessment);
 
   console.log('📈 Assessment Scores:', {
     kolbScore: latestKolb.score,
