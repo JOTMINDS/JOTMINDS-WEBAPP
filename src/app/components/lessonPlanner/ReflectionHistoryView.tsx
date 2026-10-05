@@ -1,6 +1,7 @@
 import { formatDateTime } from '../../utils/dateFormat';
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Clock, BookOpen, Star, CheckCircle2, MessageSquare, AlertCircle, FileText, Calendar } from 'lucide-react';
@@ -43,7 +44,7 @@ export const ReflectionHistoryView: React.FC<ReflectionHistoryViewProps> = ({ us
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <div className="bg-gradient-to-r from-purple-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30">
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <HistoryIcon className="w-5 h-5 text-purple-400" /> Lesson Planner History
+          <HistoryIcon className="w-5 h-5 text-purple-400" /> Lesson Planner History<InfoTip>All your saved lesson plans and the reflections you logged after teaching them.</InfoTip>
         </h2>
         <p className="text-sm text-slate-300 mt-2">
           Review your generated lesson plans and post-lesson reflections to track your instructional progress.

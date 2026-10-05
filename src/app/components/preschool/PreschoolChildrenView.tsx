@@ -36,6 +36,7 @@ import {
   HeartHandshake, Compass, Brain, Calculator, Activity, ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { InfoTip } from '../ui/info-tip';
 
 interface PreschoolChildrenViewProps {
   childrenList: User[];
@@ -238,7 +239,7 @@ export function PreschoolChildrenView({
                 </span>
                 <div>
                   <h3 className="font-bold text-base text-white">
-                    {activeChildProfile.child.name} — Growth & Milestones
+                    {activeChildProfile.child.name} — Growth & Milestones<InfoTip>A summary of what this child can do now, built from your observations.</InfoTip>
                   </h3>
                   <p className="text-xs text-indigo-200">
                     {activeChildProfile.ageYears} yrs • Age Group: {DEVELOPMENTAL_BANDS[activeChildProfile.assignedBand]?.ageRange || activeChildProfile.ageYears + ' yrs'} •{' '}
@@ -355,7 +356,7 @@ export function PreschoolChildrenView({
                   {/* 7 Domains Detailed Grid */}
                   <div>
                     <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
-                      Learning Areas Progression
+                      Learning Areas Progression<InfoTip>How the child is progressing in each area of development, from your observations. Stages: Emerging, Developing, Achieving, Extending.</InfoTip>
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {Object.values(activeChildProfile.domains).map(d => (
@@ -484,7 +485,7 @@ export function PreschoolChildrenView({
                   {/* Recommended Home Activities */}
                   <div>
                     <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                      Playful Home Activities
+                      Playful Home Activities<InfoTip>Simple play ideas parents can do at home to support this child's growth.</InfoTip>
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {activeChildProfile.parentSummary.recommendedHomeActivities.map((act, idx) => (

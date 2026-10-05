@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
@@ -73,7 +74,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <FileCheck className="w-5 h-5 text-indigo-400" /> Multi-Format Assessment & Homework Generator
+            <FileCheck className="w-5 h-5 text-indigo-400" /> Multi-Format Assessment & Homework Generator<InfoTip title="Assessment generator">Creates questions for this lesson in five formats: multiple choice, short answer, discussion, practical and homework. Generate again for a fresh set, or add your own material to build on.</InfoTip>
           </h2>
           <p className="text-xs text-slate-300 mt-1">
             Generate Multiple Choice Questions, Short Answers, Discussion Prompts, Practical Exercises, and Homework.
@@ -107,7 +108,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-purple-900 dark:text-purple-300">
-                <Upload className="w-4 h-4 text-purple-600" /> Upload Your Own Assessment Questions & Reference Materials
+                <Upload className="w-4 h-4 text-purple-600" /> Upload Your Own Assessment Questions & Reference Materials<InfoTip>Paste or upload your own questions or notes. The generator will build on them instead of starting from nothing.</InfoTip>
               </CardTitle>
               <label className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1 font-semibold">
                 <input

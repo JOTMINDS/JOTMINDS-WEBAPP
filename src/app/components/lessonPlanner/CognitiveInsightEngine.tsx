@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Brain, Eye, Ear, BookOpen, Activity, AlertTriangle, Lightbulb, Users, CheckCircle2, ShieldCheck } from 'lucide-react';
@@ -23,7 +24,7 @@ export const CognitiveInsightEngine: React.FC<CognitiveInsightEngineProps> = ({ 
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-400" /> Class Cognitive & Learning Style Profile
+            <Brain className="w-5 h-5 text-purple-400" /> Class Cognitive & Learning Style Profile<InfoTip title="Class profile">A summary of how your class learns and thinks, built from the assessments your students have completed. Use it to plan lessons that suit them.</InfoTip>
           </h2>
           <p className="text-xs text-slate-300 mt-1">
             Aggregated cognitive profiles, learning modalities, risk alerts, and teaching recommendations for{' '}
@@ -92,7 +93,7 @@ export const CognitiveInsightEngine: React.FC<CognitiveInsightEngineProps> = ({ 
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-bold text-amber-950 dark:text-amber-300 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Cognitive Risk Alerts & Teacher-Guided Remediation
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Cognitive Risk Alerts & Teacher-Guided Remediation<InfoTip title="Risk alerts">Topics or skills where a group of students may struggle, for example abstract ideas or long attention spans, with suggested ways to help. These are prompts for you to check, not a diagnosis.</InfoTip>
             </CardTitle>
             <Badge className="bg-amber-600 text-white text-xs">
               {riskAlerts.length} Actionable Risk Patterns
@@ -143,7 +144,7 @@ export const CognitiveInsightEngine: React.FC<CognitiveInsightEngineProps> = ({ 
         </CardContent>
       </Card>
 
-      {/* Individual Student Remediation Roster */}
+      {/* Individual Student Remediation Roster<InfoTip>Students who may need extra help, with the reason they were flagged and a suggested action.</InfoTip> */}
       {summary.flaggedStudents && summary.flaggedStudents.length > 0 && (
         <Card className="border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/20 dark:bg-indigo-950/10 shadow-sm">
           <CardHeader className="pb-3">
@@ -201,7 +202,7 @@ export const CognitiveInsightEngine: React.FC<CognitiveInsightEngineProps> = ({ 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader>
             <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-amber-500" /> Recommended Teaching Style
+              <Lightbulb className="w-4 h-4 text-amber-500" /> Recommended Teaching Style<InfoTip>The teaching approach that best fits the most common styles in this class.</InfoTip>
             </CardTitle>
             <CardDescription className="text-xs">
               Tailored instructional approach for {summary.className}.
@@ -225,7 +226,7 @@ export const CognitiveInsightEngine: React.FC<CognitiveInsightEngineProps> = ({ 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader>
             <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" /> Top Class Cognitive Strengths
+              <ShieldCheck className="w-4 h-4 text-emerald-500" /> Top Class Cognitive Strengths<InfoTip>Skills that most students in the class are strong in. Build on these when you introduce new ideas.</InfoTip>
             </CardTitle>
             <CardDescription className="text-xs">
               Core intellectual capabilities to leverage in lesson activities.

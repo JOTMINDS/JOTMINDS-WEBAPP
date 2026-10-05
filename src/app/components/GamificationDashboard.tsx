@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { InfoTip } from './ui/info-tip';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
@@ -111,7 +112,7 @@ export function GamificationDashboard({ userId }: GamificationDashboardProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-[#5B7DB1]" />
-            Daily Challenges
+            Daily Challenges<InfoTip>Short tasks that refresh every day. Finish them to earn XP.</InfoTip>
           </CardTitle>
           <CardDescription>
             Fresh challenges every day!
@@ -173,7 +174,7 @@ export function GamificationDashboard({ userId }: GamificationDashboardProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5 text-[#6B4C9A]" />
-            Weekly Challenges
+            Weekly Challenges<InfoTip>Bigger goals that last the whole week and earn more XP.</InfoTip>
           </CardTitle>
           <CardDescription>
             Complete challenges to earn bonus XP!
@@ -237,7 +238,7 @@ export function GamificationDashboard({ userId }: GamificationDashboardProps) {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Award className="h-5 w-5 text-yellow-500" />
-                Badge Collection
+                Badge Collection<InfoTip>Badges you earn for milestones. Greyed-out badges are still locked.</InfoTip>
               </CardTitle>
               <CardDescription>
                 {profile.badges.length} of {BADGE_LIBRARY.length} badges earned
@@ -285,7 +286,7 @@ export function GamificationDashboard({ userId }: GamificationDashboardProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-500" />
-            Unlockable Themes
+            Unlockable Themes<InfoTip>Colour themes you unlock as you level up.</InfoTip>
           </CardTitle>
           <CardDescription>
             Level up to unlock new dashboard themes!
@@ -333,7 +334,7 @@ export function GamificationDashboard({ userId }: GamificationDashboardProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-orange-500" />
-            XP Streak Insurance
+            XP Streak Insurance<InfoTip>Protects your streak. If you miss a day, using one insurance keeps your streak alive. You earn insurance by levelling up.</InfoTip>
           </CardTitle>
           <CardDescription>
             Protect your streak! Use insurance if you miss a day.
@@ -373,7 +374,7 @@ export function GamificationDashboard({ userId }: GamificationDashboardProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-blue-500" />
-            Your Stats
+            Your Stats<InfoTip>Totals for everything you have done on JotMinds so far.</InfoTip>
           </CardTitle>
         </CardHeader>
         <CardContent>

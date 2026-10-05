@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { 
@@ -87,7 +88,7 @@ export function SchoolPortalTab({ user, assessments }: SchoolPortalTabProps) {
             <div>
               <h3 className="font-bold text-indigo-900 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                Your Student Code
+                Your Student Code<InfoTip>Your personal code. You use it to sign in to JotMinds and it links you to your school and class. Keep it private and share it only with your teacher or parent.</InfoTip>
               </h3>
               <p className="text-xs text-indigo-700/80">Use this code to sign in to JotMinds</p>
             </div>
@@ -116,7 +117,7 @@ export function SchoolPortalTab({ user, assessments }: SchoolPortalTabProps) {
         {/* Lesson List */}
         <div className="lg:col-span-1 space-y-3">
           <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[#6B4C9A]" /> Class Assignments & Lessons
+            <BookOpen className="w-4 h-4 text-[#6B4C9A]" /> Class Assignments & Lessons<InfoTip>Lessons and tasks your teacher has shared with your class.</InfoTip>
           </h3>
           {classLessons.map(lesson => (
             <div
@@ -179,7 +180,7 @@ export function SchoolPortalTab({ user, assessments }: SchoolPortalTabProps) {
                   {/* Practice Questions tailored to personalization */}
                   <div className="space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-emerald-600" /> Practice Questions for Your Style
+                      <FileText className="w-4 h-4 text-emerald-600" /> Practice Questions for Your Style<InfoTip>Questions chosen to suit how you learn best.</InfoTip>
                     </h4>
                     <div className="space-y-2">
                       {lesson.practiceQuestions.map((q, qIdx) => (

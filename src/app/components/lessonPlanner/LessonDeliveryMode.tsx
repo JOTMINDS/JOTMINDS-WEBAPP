@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
@@ -176,7 +177,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-bold flex items-center justify-between">
                   <span className="flex items-center gap-2 text-slate-900 dark:text-white">
-                    <CheckSquare className="w-4 h-4 text-indigo-600" /> Pre-Class Readiness Checklist
+                    <CheckSquare className="w-4 h-4 text-indigo-600" /> Pre-Class Readiness Checklist<InfoTip>Quick things to prepare before the lesson starts, such as materials and equipment.</InfoTip>
                   </span>
                   <Badge variant="outline" className={allChecklistDone ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'text-slate-500'}>
                     {checklist.filter(c => c.checked).length} of {checklist.length} Ready
@@ -224,7 +225,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
               <Card className="shadow-sm border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" /> Misconception Watch
+                    <AlertTriangle className="w-4 h-4 text-amber-600" /> Misconception Watch<InfoTip>Mistakes students commonly make with this topic. Listen out for them and correct early.</InfoTip>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-xs text-amber-950 dark:text-amber-200 space-y-2">
@@ -240,7 +241,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
               <Card className="shadow-sm border-indigo-200 bg-indigo-50/50 dark:bg-indigo-950/20 dark:border-indigo-900/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300 flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-indigo-600" /> Class Cognitive Reminders
+                    <Users className="w-4 h-4 text-indigo-600" /> Class Cognitive Reminders<InfoTip>Reminders based on your class profile, such as who may need extra support during this lesson.</InfoTip>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-xs text-indigo-950 dark:text-indigo-200 space-y-2">
@@ -279,7 +280,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
               <CardContent className="p-6 space-y-6">
                 {/* Activity Display */}
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Current Activity</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Current Activity<InfoTip>What to do in the current phase of the lesson. The timer counts down the time planned for it.</InfoTip></h3>
                   <p className="text-base font-semibold text-slate-900 dark:text-white leading-relaxed">
                     {currentPhase.activity}
                   </p>
@@ -334,7 +335,7 @@ export const LessonDeliveryMode: React.FC<LessonDeliveryModeProps> = ({
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Star className="w-4 h-4 text-amber-500" /> Student Engagement Rating
+                  <Star className="w-4 h-4 text-amber-500" /> Student Engagement Rating<InfoTip>Rate how engaged the class was from 1 to 5. This helps you spot which activities worked best.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">

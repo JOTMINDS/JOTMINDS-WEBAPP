@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { exportReportToPDF } from '../utils/pdfGenerator';
+import { InfoTip } from './ui/info-tip';
 import { toast } from "sonner";
 
 import {
@@ -373,7 +374,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
         </div>
         <div>
           <h4 className="font-semibold text-emerald-300 text-sm md:text-base">
-            Designed for Development, Not Ranking
+            Designed for Development, Not Ranking<InfoTip>These results are for your own growth. They are not used to rank or grade teachers.</InfoTip>
           </h4>
           <p className="text-xs md:text-sm text-slate-300 mt-1">
             The Teaching Insights Assessment does not rank or compare
@@ -442,7 +443,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
               <div>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Compass className="w-5 h-5 text-indigo-600" />
-                  Teaching Insights Domain Profile
+                  Teaching Insights Domain Profile<InfoTip>Your score in each of the five teaching domains. A lower score shows where you can grow, not a failure.</InfoTip>
                 </CardTitle>
                 <CardDescription className="mt-1">
                   Holistic orientation map across the five teaching insights
@@ -674,7 +675,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
         <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-5">
           <h3 className="font-bold text-emerald-900 dark:text-emerald-300 text-lg flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            Your Professional Strengths
+            Your Professional Strengths<InfoTip>The areas where you scored highest. Keep using and sharing these.</InfoTip>
           </h3>
           <p className="text-sm text-emerald-800 dark:text-emerald-400 mt-1">
             These are the sub-competencies where you consistently demonstrate
@@ -733,7 +734,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-5">
           <h3 className="font-bold text-amber-900 dark:text-amber-300 text-lg flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-amber-600" />
-            Your Growth Opportunities
+            Your Growth Opportunities<InfoTip>Areas where small changes could help most. Start with one.</InfoTip>
           </h3>
           <p className="text-sm text-amber-800 dark:text-amber-400 mt-1">
             These areas represent your highest potential for professional
@@ -799,7 +800,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-bold text-white">
-                    Personalised Development Pathway
+                    Personalised Development Pathway<InfoTip>Suggested next steps, in order, to build the skills you chose to focus on.</InfoTip>
                   </h3>
                   <Badge
                     variant="outline"

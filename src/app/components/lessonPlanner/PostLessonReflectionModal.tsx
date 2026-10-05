@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
@@ -104,7 +105,7 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
           {/* Was Lesson Completed as Planned? */}
           <div className="space-y-2">
             <Label className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              Was the lesson completed as planned?
+              Was the lesson completed as planned?<InfoTip>Choose Yes if you covered what you planned. This feeds the Completed As Planned figure in your analytics.</InfoTip>
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -135,7 +136,7 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
           {/* Student Understanding Level */}
           <div className="space-y-2">
             <Label className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              Student Overall Understanding Level
+              Student Overall Understanding Level<InfoTip>Your overall impression of how well students understood the lesson. Excellent = 5, Good = 4, Average = 3, Poor = 2 in your analytics.</InfoTip>
             </Label>
             <div className="grid grid-cols-4 gap-2">
               {(['Excellent', 'Good', 'Average', 'Poor'] as const).map(lvl => (
@@ -159,7 +160,7 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
           <div className="space-y-3.5">
             <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
               <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                <span>1. Classroom Observations</span>
+                <span>1. Classroom Observations<InfoTip>What you noticed during the lesson: participation, behaviour and anything that surprised you.</InfoTip></span>
                 <span className="text-[10px] text-indigo-600 font-normal">Compulsory</span>
               </Label>
               <textarea
@@ -173,7 +174,7 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
 
             <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
               <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                <span>2. Student Feedback & Responses</span>
+                <span>2. Student Feedback & Responses<InfoTip>What students said or showed about the lesson, including questions and difficulties.</InfoTip></span>
                 <span className="text-[10px] text-indigo-600 font-normal">Compulsory</span>
               </Label>
               <textarea
@@ -187,7 +188,7 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
 
             <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
               <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                <span>3. Pedagogical Insights & Pacing</span>
+                <span>3. Pedagogical Insights & Pacing<InfoTip>What worked or did not work in your teaching, and whether the timing was right.</InfoTip></span>
                 <span className="text-[10px] text-indigo-600 font-normal">Compulsory</span>
               </Label>
               <textarea
@@ -201,7 +202,7 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
 
             <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
               <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                <span>4. Next Steps & Recommendations</span>
+                <span>4. Next Steps & Recommendations<InfoTip>What you will do next: follow-up tasks, re-teaching or changes to the plan.</InfoTip></span>
                 <span className="text-[10px] text-indigo-600 font-normal">Compulsory</span>
               </Label>
               <textarea

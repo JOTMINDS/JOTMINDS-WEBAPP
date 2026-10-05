@@ -27,6 +27,7 @@ import {
   Activity, Compass, Brain, Calculator
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { InfoTip } from '../ui/info-tip';
 
 interface PreschoolAssessModalProps {
   isOpen: boolean;
@@ -173,7 +174,7 @@ export function PreschoolAssessModal({
               <CheckCircle2 className="w-5 h-5" />
             </span>
             <div>
-              <h3 className="font-bold text-base text-white">Record Milestone Observation</h3>
+              <h3 className="font-bold text-base text-white">Record Milestone Observation<InfoTip>Record one thing you saw a child do and which stage it shows. Observations build the child's growth profile over time.</InfoTip></h3>
               <p className="text-xs text-indigo-200">
                 Early Childhood Milestone & Observation Note
               </p>
@@ -216,7 +217,7 @@ export function PreschoolAssessModal({
 
           {/* 2. Core Developmental Domain */}
           <div>
-            <Label className="font-semibold text-gray-700 block mb-1">Learning Area</Label>
+            <Label className="font-semibold text-gray-700 block mb-1">Learning Area<InfoTip>One of the areas of early development, such as cognitive, language or social-emotional.</InfoTip></Label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {(Object.keys(DEVELOPMENTAL_DOMAINS) as DevelopmentalDomainCode[]).map(code => {
                 const isSelected = selectedDomain === code;
@@ -242,7 +243,7 @@ export function PreschoolAssessModal({
 
           {/* 3. Specific Indicator */}
           <div>
-            <Label className="font-semibold text-gray-700 block mb-1">Skill or Milestone</Label>
+            <Label className="font-semibold text-gray-700 block mb-1">Skill or Milestone<InfoTip>A specific skill children of this age are expected to build.</InfoTip></Label>
             <select
               value={selectedIndicatorId}
               onChange={e => {
@@ -273,7 +274,7 @@ export function PreschoolAssessModal({
 
           {/* 4. Developmental Rating Stage */}
           <div>
-            <Label className="font-semibold text-gray-700 block mb-1">Observed Developmental Stage</Label>
+            <Label className="font-semibold text-gray-700 block mb-1">Observed Developmental Stage<InfoTip>Stage 1 Emerging: just beginning, needs a lot of help. Stage 2 Developing: sometimes shows it, often with help. Stage 3 Achieving: does it alone and consistently at the expected level. Stage 4 Extending: uses it in new situations or in more complex ways.</InfoTip></Label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[1, 2, 3, 4].map(num => {
                 const r = num as DevelopmentalRating;
@@ -321,7 +322,7 @@ export function PreschoolAssessModal({
           {/* 5. Assessment Method & Language */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="font-semibold text-gray-700 block mb-1">Observation Setting</Label>
+              <Label className="font-semibold text-gray-700 block mb-1">Observation Setting<InfoTip>How you saw it: for example during free play, a planned activity or a conversation.</InfoTip></Label>
               <select
                 value={selectedMethod}
                 onChange={e => setSelectedMethod(e.target.value as AssessmentMethodCode)}
@@ -336,7 +337,7 @@ export function PreschoolAssessModal({
             </div>
 
             <div>
-              <Label className="font-semibold text-gray-700 block mb-1">Language Spoken</Label>
+              <Label className="font-semibold text-gray-700 block mb-1">Language Spoken<InfoTip>The language the child used. Children may show a skill in their home language first.</InfoTip></Label>
               <select
                 value={selectedLanguage}
                 onChange={e => setSelectedLanguage(e.target.value as LanguageOfEvidence)}

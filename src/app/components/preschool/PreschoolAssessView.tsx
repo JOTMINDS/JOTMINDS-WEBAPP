@@ -22,6 +22,7 @@ import {
   Calendar, MessageSquare, AlertCircle, Eye, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { InfoTip } from '../ui/info-tip';
 
 interface PreschoolAssessViewProps {
   childrenList: User[];
@@ -123,7 +124,7 @@ export function PreschoolAssessView({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="font-bold text-base text-gray-900">
-              Milestones & Classroom Observations
+              Milestones & Classroom Observations<InfoTip>Choose a learning area to see its milestones and record what you observe. Stage 1 Emerging: just beginning, needs a lot of help. Stage 2 Developing: sometimes shows it, often with help. Stage 3 Achieving: does it alone and consistently at the expected level. Stage 4 Extending: uses it in new situations or in more complex ways.</InfoTip>
             </h3>
             <p className="text-xs text-gray-500">
               Select a child to view progress against early childhood milestones or record natural observations.

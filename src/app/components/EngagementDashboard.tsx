@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { InfoTip } from './ui/info-tip';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import {
@@ -123,7 +124,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold mb-2">Overall Engagement</h3>
+                <h3 className="text-xl font-bold mb-2">Overall Engagement<InfoTip>A score out of 100 for how actively you use JotMinds. It looks at how often you are active, how consistent you are and how many features you use.</InfoTip></h3>
                 <p className="text-sm text-muted-foreground mb-3">
                   Your engagement score reflects your activity level, consistency, and feature usage
                 </p>
@@ -165,7 +166,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-blue-600" />
-                Active Days
+                Active Days<InfoTip>The number of different days you did something on JotMinds.</InfoTip>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -178,7 +179,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Target className="h-4 w-4 text-green-600" />
-                Total Sessions
+                Total Sessions<InfoTip>The number of times you opened JotMinds and did a learning activity.</InfoTip>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -191,7 +192,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Clock className="h-4 w-4 text-purple-600" />
-                Time Spent
+                Time Spent<InfoTip>Total minutes spent on learning activities.</InfoTip>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -206,7 +207,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Zap className="h-4 w-4 text-orange-600" />
-                Avg Session
+                Avg Session<InfoTip>Your average session length in minutes.</InfoTip>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -223,7 +224,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
           <div className="space-y-3">
             <h3 className="font-semibold flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-yellow-500" />
-              Insights & Recommendations
+              Insights & Recommendations<InfoTip>Tips based on your activity, such as how to build a steadier routine.</InfoTip>
             </h3>
             {insights.map((insight) => (
               <Card
@@ -283,7 +284,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
           {weeklyTrendData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Weekly Activity Trend</CardTitle>
+                <CardTitle>Weekly Activity Trend<InfoTip>Your activity week by week. Look for steady habits rather than one big week.</InfoTip></CardTitle>
                 <CardDescription>Your learning activity over time</CardDescription>
               </CardHeader>
               <CardContent>
@@ -320,7 +321,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
           {featureUsageData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Feature Usage</CardTitle>
+                <CardTitle>Feature Usage<InfoTip>How your time is split between assessments, Brain Gym, reflections and other features.</InfoTip></CardTitle>
                 <CardDescription>How you use the platform</CardDescription>
               </CardHeader>
               <CardContent>
@@ -353,7 +354,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
           {peakTimesData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Peak Activity Times</CardTitle>
+                <CardTitle>Peak Activity Times<InfoTip>The times of day when you are most active. Plan study sessions for these times.</InfoTip></CardTitle>
                 <CardDescription>When you're most active</CardDescription>
               </CardHeader>
               <CardContent>
@@ -377,7 +378,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-orange-600" />
-                Streak Progress
+                Streak Progress<InfoTip>A streak is the number of days in a row you were active. Missing a day resets it unless you use streak insurance.</InfoTip>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -407,7 +408,7 @@ export function EngagementDashboard({ userId, onBack }: Props) {
         {/* Feature Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle>Feature Activity Breakdown</CardTitle>
+            <CardTitle>Feature Activity Breakdown<InfoTip>A detailed count of how often you used each feature.</InfoTip></CardTitle>
             <CardDescription>Detailed usage across platform features</CardDescription>
           </CardHeader>
           <CardContent>

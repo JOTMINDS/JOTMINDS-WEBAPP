@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { TrendingUp, Award, Calendar, CheckCircle2, FileText, Star, Target, Info } from 'lucide-react';
 import { TeacherPerformanceMetric } from '../../types/lessonPlannerTypes';
 import { getTeacherPerformanceMetrics, getSavedLessonPlans } from '../../utils/lessonPlannerStorage';
+import { InfoTip } from '../ui/info-tip';
 
 interface TeacherPerformanceAnalyticsViewProps {
   user?: any;
@@ -49,7 +50,7 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-indigo-400" /> Lesson Planner Usage Insights
+            <TrendingUp className="w-5 h-5 text-indigo-400" /> Lesson Planner Usage Insights<InfoTip>Numbers calculated from your saved lesson plans and reflections. They show how you use the planner, not how well you teach.</InfoTip>
           </h2>
           <p className="text-xs text-slate-300 mt-1">
             Review how often you generate lessons, use differentiated instruction, and log post-lesson reflections.
@@ -129,7 +130,7 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Target className="w-4 h-4 text-indigo-500" /> Curriculum Coverage
+              <Target className="w-4 h-4 text-indigo-500" /> Curriculum Coverage<InfoTip>The share of topics in your Curriculum Tracker that you have marked as covered.</InfoTip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -144,7 +145,7 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Completed As Planned
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Completed As Planned<InfoTip>The share of reflected lessons where you answered Yes to "completed as planned". It stays blank until you log a reflection.</InfoTip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -158,7 +159,7 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Award className="w-4 h-4 text-purple-500" /> Planner Usage Score
+              <Award className="w-4 h-4 text-purple-500" /> Planner Usage Score<InfoTip>Out of 100. Half is how many saved lessons you have delivered, a quarter is how many delivered lessons have a reflection, and a quarter is how many plans include differentiated activities.</InfoTip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
+import { InfoTip } from './ui/info-tip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
@@ -791,7 +792,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Your Dominant Styles</CardTitle>
+                <CardTitle>Your Dominant Styles<InfoTip>Your strongest learning, thinking and decision styles across all the assessments you have taken.</InfoTip></CardTitle>
                 <CardDescription>Primary cognitive patterns across all assessments</CardDescription>
               </div>
               <div className="flex gap-2">
@@ -828,7 +829,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
           <CardHeader>
             <CardTitle className="flex items-center gap-2" style={{ color: '#5B7DB1' }}>
               <Sparkles className="h-6 w-6" style={{ color: '#6B4C9A' }} />
-              Executive Summary
+              Executive Summary<InfoTip>A short written summary of your overall cognitive profile.</InfoTip>
             </CardTitle>
             <CardDescription>Your comprehensive cognitive profile at a glance</CardDescription>
           </CardHeader>
@@ -927,7 +928,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5" style={{ color: '#6B4C9A' }} />
-                  Multi-Dimensional Profile
+                  Multi-Dimensional Profile<InfoTip>Your scores on each dimension drawn on one chart. A higher point means a stronger preference, not a better or worse result.</InfoTip>
                 </CardTitle>
                 <CardDescription>Compare your styles across all frameworks</CardDescription>
               </CardHeader>
@@ -987,7 +988,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" style={{ color: '#5B7DB1' }} />
-                  Dominant Style Strength
+                  Dominant Style Strength<InfoTip>Each bar shows how strongly you lean toward your main style in that area, out of 100. A high bar means a clear preference. A low bar means you use several styles about equally.</InfoTip>
                 </CardTitle>
                 <CardDescription>Your primary style in each framework</CardDescription>
               </CardHeader>
@@ -1028,7 +1029,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
           {learningResult && (
             <Card className="shadow-md">
               <CardHeader style={{ backgroundColor: '#F0F0FF' }}>
-                <CardTitle className="text-lg">Learning Style</CardTitle>
+                <CardTitle className="text-lg">Learning Style<InfoTip>How you like to take in and practise new information (Kolb learning styles).</InfoTip></CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4">
@@ -1060,7 +1061,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
           {thinkingResult && (
             <Card className="shadow-md">
               <CardHeader style={{ backgroundColor: '#E0F9FF' }}>
-                <CardTitle className="text-lg">Thinking Style</CardTitle>
+                <CardTitle className="text-lg">Thinking Style<InfoTip>The way you most often solve problems: analytical, creative or practical.</InfoTip></CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4">
@@ -1092,7 +1093,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
           {decisionResult && (
             <Card className="shadow-md">
               <CardHeader style={{ backgroundColor: '#FFF0EE' }}>
-                <CardTitle className="text-lg">Decision Style</CardTitle>
+                <CardTitle className="text-lg">Decision Style<InfoTip>How you usually make choices: quickly by instinct, or slowly with careful thought.</InfoTip></CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4">
@@ -1128,7 +1129,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-900">
                 <Target className="h-5 w-5 text-green-600" />
-                Your Cognitive Strengths
+                Your Cognitive Strengths<InfoTip>Things you naturally do well, based on your results.</InfoTip>
               </CardTitle>
               <CardDescription>
                 Areas where you naturally excel
@@ -1156,7 +1157,7 @@ export const CognitiveProfile: React.FC<CognitiveProfileProps> = ({ onBack }) =>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-blue-900">
                 <Lightbulb className="h-5 w-5 text-blue-600" />
-                Personalized Recommendations
+                Personalized Recommendations<InfoTip>Study and growth ideas that suit your profile.</InfoTip>
               </CardTitle>
               <CardDescription>
                 Actionable steps to enhance your learning

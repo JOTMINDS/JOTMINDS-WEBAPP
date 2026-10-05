@@ -10,6 +10,7 @@ import { Layers, Users, HelpCircle, Zap, Sparkles, CheckCircle2, Loader, ArrowRi
 import { DifferentiatedInstruction, LessonPlan } from '../../types/lessonPlannerTypes';
 import { generateAIDifferentiatedInstruction } from '../../utils/aiService';
 import { toast } from 'sonner';
+import { InfoTip } from '../ui/info-tip';
 
 interface DifferentiatedInstructionViewProps {
   plan?: LessonPlan;
@@ -126,7 +127,7 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
-              Module 3 • Activities for Every Learner
+              Module 3 • Activities for Every Learner<InfoTip>The same lesson at three levels. Give Extra Support to learners who find it hard, the Main Activity to most learners, and the Challenge to those who finish early. Alternative activities suit different learning styles.</InfoTip>
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
               3 Levels of Activity
@@ -264,7 +265,7 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
       {instruction.alternativeActivities && instruction.alternativeActivities.length > 0 && (
         <div className="mt-8">
           <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-indigo-500" /> Alternative Activities
+            <Sparkles className="w-5 h-5 text-indigo-500" /> Alternative Activities<InfoTip>Other ways to teach the same idea, each suited to a different learning style.</InfoTip>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {instruction.alternativeActivities.map((alt, index) => (

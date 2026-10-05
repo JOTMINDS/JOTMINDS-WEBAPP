@@ -17,6 +17,8 @@ import {
 import { extractDimensionScores } from '../utils/cognitiveXP';
 import { User } from '../types';
 import { TeacherAnalyticsComparison } from './teacher/TeacherAnalyticsComparison';
+import { InfoTip } from './ui/info-tip';
+import { getStyleHelp, getRiskHelp } from '../utils/glossary';
 
 interface CentralAnalyticsHubProps {
   students: any[];
@@ -264,7 +266,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Class Learning Style Distribution</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Class Learning Style Distribution<InfoTip>How your students prefer to take in and work with new information (based on the Kolb learning style assessment). Use it to mix teaching methods so every group is reached.</InfoTip></h3>
               <p className="text-xs text-slate-500">Visual, Kinesthetic, Reflective, and Assimilating learner preferences.</p>
             </div>
           </div>
@@ -273,7 +275,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-indigo-600" /> Student Count by Learning Style
+                  <BarChart3 className="w-4 h-4 text-indigo-600" /> Student Count by Learning Style<InfoTip>Number of students whose main learning style is each bar.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-72">
@@ -292,7 +294,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <PieChartIcon className="w-4 h-4 text-indigo-600" /> Proportion Breakdown
+                  <PieChartIcon className="w-4 h-4 text-indigo-600" /> Proportion Breakdown<InfoTip>The same counts shown as a share of the whole class.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-72">
@@ -313,7 +315,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {Object.entries(learningCounts).map(([style, count], i) => (
               <Card key={style} className="p-4 border-l-4 border-l-indigo-600 bg-white dark:bg-slate-900 shadow-xs">
-                <p className="text-xs text-slate-500 font-semibold uppercase">{style}</p>
+                <p className="text-xs text-slate-500 font-semibold uppercase">{style}{getStyleHelp(style) && <InfoTip title={style}>{getStyleHelp(style)}</InfoTip>}</p>
                 <div className="flex items-baseline justify-between mt-1">
                   <span className="text-2xl font-black text-slate-900 dark:text-white">{count}</span>
                   <Badge variant="outline" className="text-xs">
@@ -331,7 +333,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Class Decision Style Distribution</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Class Decision Style Distribution<InfoTip>How your students tend to make choices: quickly and by instinct, or slowly and with careful thought. Useful for deciding how much thinking time to give.</InfoTip></h3>
               <p className="text-xs text-slate-500">Dual-process cognitive modes: Intuitive, Deliberate, and Balanced decision-making.</p>
             </div>
           </div>
@@ -340,7 +342,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-emerald-600" /> Decision Style Distribution
+                  <BarChart3 className="w-4 h-4 text-emerald-600" /> Decision Style Distribution<InfoTip>Number of students whose main decision style is each bar.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-72">
@@ -359,7 +361,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <PieChartIcon className="w-4 h-4 text-emerald-600" /> Decision Proportion
+                  <PieChartIcon className="w-4 h-4 text-emerald-600" /> Decision Proportion<InfoTip>The same counts shown as a share of the whole class.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-72">
@@ -379,7 +381,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {Object.entries(decisionCounts).map(([style, count]) => (
               <Card key={style} className="p-4 border-l-4 border-l-emerald-600 bg-white dark:bg-slate-900 shadow-xs">
-                <p className="text-xs text-slate-500 font-semibold uppercase">{style}</p>
+                <p className="text-xs text-slate-500 font-semibold uppercase">{style}{getStyleHelp(style) && <InfoTip title={style}>{getStyleHelp(style)}</InfoTip>}</p>
                 <div className="flex items-baseline justify-between mt-1">
                   <span className="text-2xl font-black text-slate-900 dark:text-white">{count}</span>
                   <Badge variant="outline" className="text-xs">
@@ -397,7 +399,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Class Thinking Style Distribution</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Class Thinking Style Distribution<InfoTip>The kind of thinking each student uses most: analytical, creative or practical (Sternberg thinking styles). Use it to vary question and task types.</InfoTip></h3>
               <p className="text-xs text-slate-500">Analytical, Creative, and Practical cognitive problem-solving modalities.</p>
             </div>
           </div>
@@ -406,7 +408,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-purple-600" /> Thinking Profile Count
+                  <BarChart3 className="w-4 h-4 text-purple-600" /> Thinking Profile Count<InfoTip>Number of students whose main thinking style is each bar.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-72">
@@ -425,7 +427,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <PieChartIcon className="w-4 h-4 text-purple-600" /> Thinking Distribution Share
+                  <PieChartIcon className="w-4 h-4 text-purple-600" /> Thinking Distribution Share<InfoTip>The same counts shown as a share of the whole class.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-72">
@@ -445,7 +447,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {Object.entries(thinkingCounts).map(([style, count]) => (
               <Card key={style} className="p-4 border-l-4 border-l-purple-600 bg-white dark:bg-slate-900 shadow-xs">
-                <p className="text-xs text-slate-500 font-semibold uppercase">{style}</p>
+                <p className="text-xs text-slate-500 font-semibold uppercase">{style}{getStyleHelp(style) && <InfoTip title={style}>{getStyleHelp(style)}</InfoTip>}</p>
                 <div className="flex items-baseline justify-between mt-1">
                   <span className="text-2xl font-black text-slate-900 dark:text-white">{count}</span>
                   <Badge variant="outline" className="text-xs">
@@ -463,7 +465,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Learning Dimensions Multi-View</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Learning Dimensions Multi-View<InfoTip>Shows how the class scores on each cognitive dimension. A lower score means the class has a weaker preference for that way of learning. It is not a mark of ability.</InfoTip></h3>
               <p className="text-xs text-slate-500">Analyze the 9 core cognitive dimensions with alternative graph visualizations.</p>
             </div>
 
@@ -501,7 +503,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader>
                 <CardTitle className="text-sm font-bold flex items-center justify-between">
-                  <span>Classroom Cognitive Dimensions Radar</span>
+                  <span>Classroom Cognitive Dimensions Radar<InfoTip>Each point is the class average for one dimension. The 70% benchmark is a target for a well-rounded class, not a pass mark.</InfoTip></span>
                   <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 text-[11px]">
                     Class Average vs Expected Benchmark (70%)
                   </Badge>
@@ -530,7 +532,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
           {dimensionVizMode === 'bars' && (
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader>
-                <CardTitle className="text-sm font-bold">Comparative Mastery Levels by Dimension</CardTitle>
+                <CardTitle className="text-sm font-bold">Comparative Mastery Levels by Dimension<InfoTip>Each bar is the class average for a dimension, out of 100%. Compare bars to see where the class is strongest and where to add variety.</InfoTip></CardTitle>
                 <CardDescription className="text-xs">
                   Direct percentage comparison of class cohort against 100% scale.
                 </CardDescription>
@@ -613,7 +615,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
           {/* Heatmap Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700">Cognitive Score Heatmap</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700">Cognitive Score Heatmap<InfoTip>One row per student, one column per dimension. Green is a strong preference, amber is middle, and red is a weak preference. Low scores show how a student learns best, not that they are failing.</InfoTip></h3>
             </div>
             <div className="bg-slate-100 p-1.5 rounded-xl inline-flex items-center gap-1 flex-wrap">
               {Object.keys(DIMENSION_GROUPS).map(g => (
@@ -628,8 +630,8 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
                   <thead>
                     <tr className="border-b bg-gray-50">
                       <th className="text-left px-4 py-2.5 text-xs text-gray-500 min-w-[140px]">Student</th>
-                      {heatmapDimensions.map(dim => <th key={dim} className="text-center px-3 py-2.5 text-xs text-gray-500">{DIMENSION_LABELS[dim] ?? dim}</th>)}
-                      <th className="text-center px-3 py-2.5 text-xs text-gray-500">Status</th>
+                      {heatmapDimensions.map(dim => <th key={dim} className="text-center px-3 py-2.5 text-xs text-gray-500">{DIMENSION_LABELS[dim] ?? dim}{getStyleHelp(dim) && <InfoTip title={dim}>{getStyleHelp(dim)}</InfoTip>}</th>)}
+                      <th className="text-center px-3 py-2.5 text-xs text-gray-500">Status<InfoTip>Participation status: On Track, Needs Support or At Risk. Based on assessments completed and how recently, not on style scores.</InfoTip></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -671,7 +673,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
               <CardContent className="pt-4 flex gap-3">
                 <Lightbulb className="w-5 h-5 text-amber-600 shrink-0" />
                 <div>
-                  <p className="text-sm font-bold text-amber-900">Pedagogical Interventions</p>
+                  <p className="text-sm font-bold text-amber-900">Pedagogical Interventions<InfoTip>Suggested teaching actions for each student, built from their strongest and weakest dimensions. Open a student to see the details.</InfoTip></p>
                   <p className="text-xs text-amber-700 mt-1">Targeted instructional strategies generated dynamically from students' cognitive gaps and strengths.</p>
                 </div>
               </CardContent>

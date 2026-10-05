@@ -22,6 +22,7 @@ import {
   TrendingUp, Globe, FileText, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { InfoTip } from '../ui/info-tip';
 
 interface PreschoolProgressViewProps {
   childrenList: User[];
@@ -136,7 +137,7 @@ export function PreschoolProgressView({
               <Badge variant="outline" className="text-xs">Observations Timeline</Badge>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Observations & Milestones Timeline
+              Observations & Milestones Timeline<InfoTip>Every observation in the order it was recorded, so you can see growth over time.</InfoTip>
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
               A chronological timeline of play-based observations and milestones recorded by educators and families across all learning areas.

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { School, Users, BookOpen, AlertTriangle, CheckCircle2, ShieldCheck, TrendingUp, Sparkles, FileText, MessageSquare, Clock, Filter } from 'lucide-react';
@@ -49,7 +50,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <School className="w-5 h-5 text-indigo-400" /> School Insights & Lesson Oversight
+            <School className="w-5 h-5 text-indigo-400" /> School Insights & Lesson Oversight<InfoTip title="School oversight">For school leaders. Shows lesson plans and reflections saved by teachers, so you can see what is being taught and how it went.</InfoTip>
           </h2>
           <p className="text-xs text-slate-300 mt-1">
             Track student cognitive distributions, monitor teacher lesson plans (completed/pending), and review post-lesson reflections.
@@ -133,7 +134,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader>
                 <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-indigo-500" /> Student Cognitive Distribution
+                  <Users className="w-4 h-4 text-indigo-500" /> Student Cognitive Distribution<InfoTip>How students across the school split between learning styles.</InfoTip>
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Aggregated learning modalities across your students.
@@ -175,7 +176,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
               <CardHeader>
                 <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-emerald-500" /> Teaching & Curriculum Benchmarks
+                  <BookOpen className="w-4 h-4 text-emerald-500" /> Teaching & Curriculum Benchmarks<InfoTip>Compares lesson planning activity and curriculum coverage across the school.</InfoTip>
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Curriculum coverage and instructional effectiveness.
@@ -249,7 +250,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <FileText className="w-4 h-4 text-indigo-600" /> School Lesson Plan Oversight ({filteredPlans.length})
+                <FileText className="w-4 h-4 text-indigo-600" /> School Lesson Plan Oversight ({filteredPlans.length})<InfoTip>All lesson plans saved by teachers. Completed means the lesson was delivered; Pending and Draft are still in progress.</InfoTip>
               </CardTitle>
               <CardDescription className="text-xs">
                 Review all lesson plans generated and saved by educators in this school.
@@ -308,7 +309,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-purple-600" /> Compulsory Teacher Reflections & School Recommendations ({savedReflections.length})
+                <MessageSquare className="w-4 h-4 text-purple-600" /> Compulsory Teacher Reflections & School Recommendations ({savedReflections.length})<InfoTip>Notes teachers write after each lesson, with their suggestions for the school.</InfoTip>
               </CardTitle>
               <CardDescription className="text-xs">
                 Insights submitted by teachers post-lesson, detailing what worked, student understanding levels, and school-wide recommendations.

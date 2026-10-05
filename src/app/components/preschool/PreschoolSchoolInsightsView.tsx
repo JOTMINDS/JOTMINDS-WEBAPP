@@ -35,6 +35,7 @@ import {
   Users, Globe, FileText, Layers, Sparkles, BookOpen, ShieldCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { InfoTip } from '../ui/info-tip';
 
 interface PreschoolSchoolInsightsViewProps {
   childrenList: User[];
@@ -196,7 +197,7 @@ export function PreschoolSchoolInsightsView({
             <Badge variant="outline" className="text-xs">School Overview</Badge>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Early Years Leadership & Transition
+            Early Years Leadership & Transition<InfoTip>For school leaders: how preschool children are progressing and how ready they are for Primary 1.</InfoTip>
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
             Gentle oversight of early childhood development, teacher observations, and Primary 1 school readiness guides.
@@ -261,7 +262,7 @@ export function PreschoolSchoolInsightsView({
               <div className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-amber-600" />
                 <CardTitle className="text-base font-bold text-amber-950 dark:text-amber-200">
-                  Primary 1 Transition Readiness (Ages 5–6)
+                  Primary 1 Transition Readiness (Ages 5–6)<InfoTip>How ready older children are for Primary 1, based on their observed milestones. It is a guide for support, not a pass or fail.</InfoTip>
                 </CardTitle>
               </div>
               <CardDescription className="text-xs text-amber-800/80 dark:text-amber-300">
@@ -372,7 +373,7 @@ export function PreschoolSchoolInsightsView({
         <Card className="border border-slate-200 dark:border-slate-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
-              Assessment Methods Utilization
+              Assessment Methods Utilization<InfoTip>How observations were gathered: for example play, activities or conversation. A mix of methods gives a fairer picture.</InfoTip>
             </CardTitle>
             <CardDescription className="text-xs">
               Natural observation vs structured play vs oral checks vs parent input
@@ -409,7 +410,7 @@ export function PreschoolSchoolInsightsView({
             <div className="flex items-center gap-2">
               <Globe className="h-4 w-4 text-emerald-500" />
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
-                Multilingual Evidence Representation
+                Multilingual Evidence Representation<InfoTip>The languages children were observed in. Helps make sure children are assessed fairly in the languages they speak.</InfoTip>
               </CardTitle>
             </div>
             <CardDescription className="text-xs">

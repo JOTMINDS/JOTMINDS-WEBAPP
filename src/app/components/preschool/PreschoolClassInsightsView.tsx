@@ -31,6 +31,7 @@ import {
   Users, TrendingUp, Sparkles, AlertCircle, CheckCircle2,
   BookOpen, Compass, Layers, Brain, Calendar, Play
 } from 'lucide-react';
+import { InfoTip } from '../ui/info-tip';
 
 interface PreschoolClassInsightsViewProps {
   childrenList: User[];
@@ -137,7 +138,7 @@ export function PreschoolClassInsightsView({
               <Badge variant="outline" className="text-xs">Learning Areas Overview</Badge>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Class Overview & Progress
+              Class Overview & Progress<InfoTip>A summary of how the whole class is doing across the areas of development.</InfoTip>
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
               A whole-class overview across all learning areas to help you plan playful stations, group activities, and support each child.
@@ -215,7 +216,7 @@ export function PreschoolClassInsightsView({
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 gap-3">
           <div>
             <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
-              Domain Mastery & Distribution
+              Domain Mastery & Distribution<InfoTip>For each learning area, how many children are at each stage. Stage 1 Emerging: just beginning, needs a lot of help. Stage 2 Developing: sometimes shows it, often with help. Stage 3 Achieving: does it alone and consistently at the expected level. Stage 4 Extending: uses it in new situations or in more complex ways.</InfoTip>
             </CardTitle>
             <CardDescription className="text-xs">
               Continuous developmental profile across all 7 framework domains
@@ -329,7 +330,7 @@ export function PreschoolClassInsightsView({
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               <CardTitle className="text-base font-bold text-emerald-900 dark:text-emerald-200">
-                Cohort Emerging Strengths
+                Cohort Emerging Strengths<InfoTip>Areas where many children in the class are doing well.</InfoTip>
               </CardTitle>
             </div>
             <CardDescription className="text-xs text-emerald-700 dark:text-emerald-400">
@@ -357,7 +358,7 @@ export function PreschoolClassInsightsView({
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               <CardTitle className="text-base font-bold text-amber-900 dark:text-amber-200">
-                Priority Scaffolding Areas
+                Priority Scaffolding Areas<InfoTip>Areas where several children need more support. Plan extra activities for these.</InfoTip>
               </CardTitle>
             </div>
             <CardDescription className="text-xs text-amber-700 dark:text-amber-400">
@@ -403,7 +404,7 @@ export function PreschoolClassInsightsView({
           <div className="flex items-center gap-2">
             <Compass className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
-              Recommended Play & Discovery Stations
+              Recommended Play & Discovery Stations<InfoTip>Play corners to set up that match what the class needs most.</InfoTip>
             </CardTitle>
           </div>
           <CardDescription className="text-xs">

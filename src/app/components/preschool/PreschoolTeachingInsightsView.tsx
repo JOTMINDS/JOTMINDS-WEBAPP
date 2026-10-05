@@ -8,6 +8,7 @@ import {
   BookOpen, Sparkles, Compass, Lightbulb, CheckCircle2,
   Layers, Users, ShieldAlert, Heart, GraduationCap, Globe, Clock
 } from 'lucide-react';
+import { InfoTip } from '../ui/info-tip';
 
 interface PreschoolTeachingInsightsViewProps {
   childrenList: User[];
@@ -36,7 +37,7 @@ export function PreschoolTeachingInsightsView({
             <Badge variant="outline" className="text-xs">Teacher Guide</Badge>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Teaching Tips & Classroom Ideas
+            Teaching Tips & Classroom Ideas<InfoTip>Practical ideas for supporting the areas where your class needs the most help.</InfoTip>
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
             Practical everyday strategies, play learning corners, helpful guidance for each child, and teacher learning guides.

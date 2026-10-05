@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Button } from '../ui/button';
@@ -212,7 +213,7 @@ export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ pl
             <div className="space-y-1">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Overall Syllabus Progress</span>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                {track.coveredTopicsCount} of {track.totalTopics} Topics Completed ({track.completionPercentage}%)
+                {track.coveredTopicsCount} of {track.totalTopics} Topics Completed ({track.completionPercentage}%)<InfoTip title="Curriculum coverage">The share of topics you have marked as covered. Update topics as you teach them. This figure also feeds your Lesson Planner analytics.</InfoTip>
               </h3>
             </div>
             <div className="text-right">
@@ -262,7 +263,7 @@ export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ pl
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <ListTree className="w-4 h-4 text-indigo-600" /> Scheme of Work: Topics & Sub-Topics
+              <ListTree className="w-4 h-4 text-indigo-600" /> Scheme of Work: Topics & Sub-Topics<InfoTip>Your list of topics for the term or year. Tick a topic when it has been taught.</InfoTip>
             </CardTitle>
             <CardDescription className="text-xs">
               Click any topic to cycle status between Covered, In Progress, and Outstanding.

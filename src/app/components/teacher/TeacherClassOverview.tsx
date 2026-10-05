@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { User, Assessment } from '../../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
+import { InfoTip } from '../ui/info-tip';
+import { getStyleHelp } from '../../utils/glossary';
 import { Button } from '../ui/button';
 import { generateAIClassroomOverview, AIClassroomOverviewInsights } from '../../utils/aiService';
 import { 
@@ -299,7 +301,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
                 <span className="text-xs text-purple-200 font-semibold">Early Childhood Growth</span>
               </div>
               <h3 className="text-base font-bold text-white">
-                Early Years & Preschool (Ages 2–6)
+                Early Years & Preschool (Ages 2–6)<InfoTip title="Early Years">A separate play-based track for children aged 2 to 6. Teachers record observations instead of children taking tests.</InfoTip>
               </h3>
               <p className="text-xs text-purple-200/80 max-w-xl">
                 Gentle play-based observation across 7 growth areas, Primary 1 readiness guides, and caring family growth summaries.
@@ -320,7 +322,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[12px] text-muted-foreground font-medium">Total Students</p>
+                  <p className="text-[12px] text-muted-foreground font-medium">Total Students<InfoTip>Learners linked to your account, for the class selected above.</InfoTip></p>
                   <p className="text-[22px] font-bold mt-1 text-slate-900 dark:text-white">{totalStudents}</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center">
@@ -334,7 +336,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[12px] text-muted-foreground font-medium">Assessed</p>
+                  <p className="text-[12px] text-muted-foreground font-medium">Assessed<InfoTip>Students who have completed at least one assessment.</InfoTip></p>
                   <p className="text-[22px] font-bold mt-1 text-emerald-600">{studentsWithAssessments}</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center">
@@ -348,7 +350,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[12px] text-muted-foreground font-medium">Pending</p>
+                  <p className="text-[12px] text-muted-foreground font-medium">Pending<InfoTip>Students who have not completed any assessment yet. Remind them to log in and start.</InfoTip></p>
                   <p className="text-[22px] font-bold mt-1 text-amber-500">{studentsWithoutAssessments}</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950 flex items-center justify-center">
@@ -362,7 +364,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[12px] text-muted-foreground font-medium">Total Tests</p>
+                  <p className="text-[12px] text-muted-foreground font-medium">Total Tests<InfoTip>Number of completed assessments across the class. Each student can complete several types (learning, thinking, decision).</InfoTip></p>
                   <p className="text-[22px] font-bold mt-1 text-purple-600">{completedAssessments}</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950 flex items-center justify-center">
@@ -376,7 +378,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[12px] text-muted-foreground font-medium">Avg Completion</p>
+                  <p className="text-[12px] text-muted-foreground font-medium">Avg Completion<InfoTip>The share of your students who have completed at least one assessment.</InfoTip></p>
                   <p className="text-[22px] font-bold mt-1 text-indigo-600">{averageCompletion}%</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center">
@@ -393,7 +395,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-indigo-400" />
-                <CardTitle className="text-base font-bold text-white">Classroom Intelligence & Pedagogical Recommendations</CardTitle>
+                <CardTitle className="text-base font-bold text-white">Classroom Intelligence & Pedagogical Recommendations<InfoTip title="Classroom Intelligence">Teaching ideas based on the most common learning and thinking styles in this class. They update as more students finish their assessments.</InfoTip></CardTitle>
               </div>
               <Badge className="bg-indigo-500/30 text-indigo-200 border-indigo-400/30 text-xs">
                 {selectedClass === 'ALL' ? 'All Classes' : selectedClass} Context
@@ -417,7 +419,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
                   <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider block flex items-center gap-1">
-                    <Lightbulb className="w-3.5 h-3.5" /> Dominant Learning Style: {dominantLearning}
+                    <Lightbulb className="w-3.5 h-3.5" /> Dominant Learning Style: {dominantLearning}<InfoTip title="Dominant Learning Style">The learning style shared by the most students in this class.</InfoTip>
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed">
                     {aiClassroomInsights?.learningInsight || (
@@ -431,7 +433,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
 
                 <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
                   <span className="text-[11px] font-bold text-purple-300 uppercase tracking-wider block flex items-center gap-1">
-                    <Brain className="w-3.5 h-3.5" /> Thinking Orientation: {dominantThinking}
+                    <Brain className="w-3.5 h-3.5" /> Thinking Orientation: {dominantThinking}<InfoTip title="Thinking Orientation">The thinking style shared by the most students in this class.</InfoTip>
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed">
                     {aiClassroomInsights?.thinkingInsight || (
@@ -444,7 +446,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
 
                 <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
                   <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider block flex items-center gap-1">
-                    <Target className="w-3.5 h-3.5" /> AI Pedagogical Synergy
+                    <Target className="w-3.5 h-3.5" /> AI Pedagogical Synergy<InfoTip title="Pedagogical Synergy">An AI-written suggestion for combining the class's learning and thinking styles in one lesson.</InfoTip>
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed">
                     {aiClassroomInsights?.synergySummary || 'Design multi-sensory lessons with a 5-min experiential hook and 15 mins for differentiated peer application.'}
@@ -460,7 +462,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-indigo-600" />
-              <CardTitle className="text-[15px] font-bold">Assessment Module Completion Progress</CardTitle>
+              <CardTitle className="text-[15px] font-bold">Assessment Module Completion Progress<InfoTip>For each assessment type, how many students have finished it.</InfoTip></CardTitle>
             </div>
             <CardDescription className="text-xs">
               Tracking completion status across Kolb Learning, Sternberg Thinking, and Dual-Process Decision assessments.
@@ -508,7 +510,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
               <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-[15px] font-bold flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-emerald-600" /> Learning Style Distribution
+                    <BookOpen className="h-4 w-4 text-emerald-600" /> Learning Style Distribution<InfoTip>How the class splits across learning styles. Each student counts once, under their main style.</InfoTip>
                   </CardTitle>
                   <CardDescription className="text-xs">Kolb Experiential Dimensions</CardDescription>
                 </div>
@@ -549,7 +551,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
               <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-[15px] font-bold flex items-center gap-2">
-                    <Brain className="h-4 w-4 text-purple-600" /> Thinking Style Distribution
+                    <Brain className="h-4 w-4 text-purple-600" /> Thinking Style Distribution<InfoTip>How the class splits across thinking styles. Each student counts once, under their main style.</InfoTip>
                   </CardTitle>
                   <CardDescription className="text-xs">Sternberg Triarchic Dimensions</CardDescription>
                 </div>
@@ -593,7 +595,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <Card className="rounded-2xl shadow-xs border-slate-200 dark:border-slate-800">
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-[15px] font-bold flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-emerald-600" /> Learning Styles (Frequency & Share)
+                  <BookOpen className="h-4 w-4 text-emerald-600" /> Learning Styles (Frequency & Share)<InfoTip>Frequency is the number of students. Share is their percentage of the assessed class.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-2">
@@ -616,7 +618,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <Card className="rounded-2xl shadow-xs border-slate-200 dark:border-slate-800">
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-[15px] font-bold flex items-center gap-2">
-                  <Brain className="h-4 w-4 text-purple-600" /> Thinking Styles (Frequency & Share)
+                  <Brain className="h-4 w-4 text-purple-600" /> Thinking Styles (Frequency & Share)<InfoTip>Frequency is the number of students. Share is their percentage of the assessed class.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-2">
@@ -641,7 +643,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
           <Card className="rounded-2xl shadow-xs border-slate-200 dark:border-slate-800">
             <CardHeader className="p-4 pb-2">
               <CardTitle className="text-[15px] font-bold flex items-center gap-2">
-                <RadarIcon className="h-4 w-4 text-indigo-600" /> Class Multi-Dimensional Cognitive Radar Profile
+                <RadarIcon className="h-4 w-4 text-indigo-600" /> Class Multi-Dimensional Cognitive Radar Profile<InfoTip>The class average on each learning and thinking dimension. A larger shape means stronger average preferences across the class.</InfoTip>
               </CardTitle>
               <CardDescription className="text-xs">
                 Holistic view mapping learning and thinking competencies across the entire cohort.
@@ -666,14 +668,14 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <Card className="rounded-2xl shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-emerald-600" /> Learning Style Breakdown Cards
+                  <BookOpen className="w-4 h-4 text-emerald-600" /> Learning Style Breakdown Cards<InfoTip>One card per learning style with the number of students. Tap a style name's (i) to see what it means.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-2 space-y-2">
                 {learningStyleData.map(item => (
                   <div key={item.name} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="font-bold text-xs text-slate-800 dark:text-white">{item.name}</span>
+                      <span className="font-bold text-xs text-slate-800 dark:text-white">{item.name}{getStyleHelp(item.name) && <InfoTip title={item.name}>{getStyleHelp(item.name)}</InfoTip>}</span>
                       <p className="text-[11px] text-slate-500">{item.value} of {totalStudents} students</p>
                     </div>
                     <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
@@ -687,14 +689,14 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
             <Card className="rounded-2xl shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Brain className="w-4 h-4 text-purple-600" /> Thinking Style Breakdown Cards
+                  <Brain className="w-4 h-4 text-purple-600" /> Thinking Style Breakdown Cards<InfoTip>One card per thinking style with the number of students.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-2 space-y-2">
                 {thinkingStyleData.map(item => (
                   <div key={item.name} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="font-bold text-xs text-slate-800 dark:text-white">{item.name}</span>
+                      <span className="font-bold text-xs text-slate-800 dark:text-white">{item.name}{getStyleHelp(item.name) && <InfoTip title={item.name}>{getStyleHelp(item.name)}</InfoTip>}</span>
                       <p className="text-[11px] text-slate-500">{item.value} of {totalStudents} students</p>
                     </div>
                     <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">

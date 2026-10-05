@@ -22,6 +22,7 @@ import {
   Sparkles, Calendar, User as UserIcon, Globe, BookOpen, Send
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { InfoTip } from '../ui/info-tip';
 
 interface PreschoolParentsViewProps {
   childrenList: User[];
@@ -155,7 +156,7 @@ export function PreschoolParentsView({
               <Badge variant="outline" className="text-xs">Family Partnership</Badge>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Parent Partnership & Home Activities
+              Parent Partnership & Home Activities<InfoTip>Share your child's progress with families and give them simple home play ideas.</InfoTip>
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
               Share caring developmental updates with families, fun home play ideas, and simple notes from parents.
@@ -254,7 +255,7 @@ export function PreschoolParentsView({
             <Card className="border border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
-                  Everyday Home Play Routines
+                  Everyday Home Play Routines<InfoTip>Daily routines that turn normal moments at home into learning.</InfoTip>
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Low-cost, playful interactions using common household materials
@@ -292,7 +293,7 @@ export function PreschoolParentsView({
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-rose-500" />
                   <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
-                    Record Home Observation
+                    Record Home Observation<InfoTip>Add something a parent or caregiver noticed at home. It sits alongside classroom observations.</InfoTip>
                   </CardTitle>
                 </div>
                 <CardDescription className="text-xs">
@@ -412,7 +413,7 @@ export function PreschoolParentsView({
             <Card className="border border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                  Caregiver Notes Log ({homeEvents.length})
+                  Caregiver Notes Log ({homeEvents.length})<InfoTip>Observations recorded from home.</InfoTip>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 pt-0 text-xs max-h-60 overflow-y-auto">

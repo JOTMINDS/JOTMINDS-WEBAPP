@@ -18,6 +18,7 @@ import { getUserAssessments, getUserReflections, getAllUsers } from '../utils/st
 import { getUserAssessmentResults, getAllAssessmentResults, updateUserProfile } from '../utils/api';
 import { useAuth } from './AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { InfoTip } from './ui/info-tip';
 import { CardV2, CardV2Grid, StatBadge } from './ui/card-v2';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -860,7 +861,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-2xl bg-gradient-to-r from-[#6B4C9A] via-[#7B61FF] to-[#5B7DB1] bg-clip-text text-transparent">
-                        🎉 Your Complete Cognitive Profile
+                        🎉 Your Complete Cognitive Profile<InfoTip>You have finished all the core assessments. This is the full picture of how you learn, think and decide.</InfoTip>
                       </CardTitle>
                       <CardDescription className="mt-2">
                         You've completed all three core assessments! View your comprehensive profile to see how your learning, thinking, and decision styles work together.
@@ -928,7 +929,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      Step 1: Core Cognitive Assessments
+                      Step 1: Core Cognitive Assessments<InfoTip>Short assessments that show how you learn, think and make decisions. Start here. There are no right or wrong answers.</InfoTip>
                     </h2>
                     <p className="text-xs text-muted-foreground">
                       Discover your unique learning patterns, thinking archetype, and decision-making preferences.
@@ -1489,7 +1490,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      Step 2: Daily Brain Boost & Training Gym
+                      Step 2: Daily Brain Boost & Training Gym<InfoTip>Quick daily games that train memory, focus and problem solving. Play each day to build a streak and earn XP.</InfoTip>
                     </h2>
                     <p className="text-xs text-muted-foreground">
                       Train daily with age-appropriate logic challenges, lateral thinking puzzles, and Kolb daily missions.
@@ -1514,7 +1515,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <CardTitle className="text-xl sm:text-2xl">🧠 Brain Gym - Daily Challenges</CardTitle>
+                        <CardTitle className="text-xl sm:text-2xl">🧠 Brain Gym - Daily Challenges<InfoTip>Three short challenges each day. Finish them to keep your streak going.</InfoTip></CardTitle>
                         {brainGymProgress.currentStreak > 0 && (
                           <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 flex items-center gap-1">
                             <Flame className="h-3 w-3" />
@@ -1638,7 +1639,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      Step 3: Strengths, Skills & Academic Growth
+                      Step 3: Strengths, Skills & Academic Growth<InfoTip>Your strengths, skills to build and study tips, based on your assessment results.</InfoTip>
                     </h2>
                     <p className="text-xs text-muted-foreground">
                       Personalized growth plans and archetype breakdowns based on your cognitive assessments.
@@ -1733,7 +1734,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <CardTitle className="text-xl sm:text-2xl">🎯 Skill Builder</CardTitle>
+                        <CardTitle className="text-xl sm:text-2xl">🎯 Skill Builder<InfoTip>A step-by-step plan to grow a skill, with a small task each day.</InfoTip></CardTitle>
                         <Badge className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0">
                           New!
                         </Badge>
@@ -1986,7 +1987,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <h4 className="font-bold text-base text-gray-900 dark:text-white">
-                    Personalised Cognitive Recommendations & Study Tips
+                    Personalised Cognitive Recommendations & Study Tips<InfoTip>Study advice matched to your learning and thinking styles.</InfoTip>
                   </h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2146,7 +2147,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                   <div>
                     <CardTitle className="text-2xl font-bold flex items-center gap-2">
                       <Settings className="w-6 h-6 text-indigo-600" />
-                      Account & Parent Settings
+                      Account & Parent Settings<InfoTip>Manage your details and choose which parents or guardians can see your progress.</InfoTip>
                     </CardTitle>
                     <CardDescription>Manage your student profile, linked school, and parent access preferences.</CardDescription>
                   </div>
@@ -2258,7 +2259,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                   {/* Card 3: Parent Access & Supervision */}
                   <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
                     <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      <UserPlus className="w-4 h-4 text-purple-600" /> Parent Access & Supervision
+                      <UserPlus className="w-4 h-4 text-purple-600" /> Parent Access & Supervision<InfoTip>Link a parent or guardian so they can see your results and support your learning.</InfoTip>
                     </h3>
                     <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                       Allow your parent or guardian to view your cognitive profile progress, study streaks, and assessment reports.

@@ -12,6 +12,7 @@ import {
   CheckCircle2, Compass, ArrowRight, X, Play, HelpCircle, Layers
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { InfoTip } from '../ui/info-tip';
 
 interface PreschoolActivitiesViewProps {
   childrenList: User[];
@@ -83,7 +84,7 @@ export function PreschoolActivitiesView({
               <Badge variant="outline" className="text-xs">Everyday Activities</Badge>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Play-Based Learning Activities
+              Play-Based Learning Activities<InfoTip>Ready-to-use play activities. Each one is linked to the skills it helps children build.</InfoTip>
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl">
               Simple, engaging games and routines designed to support and observe young learners across thinking, speaking, motor skills, and friendships.
@@ -313,7 +314,7 @@ export function PreschoolActivitiesView({
               {/* Description */}
               <div className="space-y-1">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Activity Overview
+                  Activity Overview<InfoTip>What the activity is and what children will learn from it.</InfoTip>
                 </h4>
                 <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                   {activeActivity.description}
@@ -336,7 +337,7 @@ export function PreschoolActivitiesView({
               {/* Materials */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Required Materials Checklist
+                  Required Materials Checklist<InfoTip>Things to gather before you start.</InfoTip>
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {activeActivity.materialsNeeded.map((mat, i) => (
@@ -354,7 +355,7 @@ export function PreschoolActivitiesView({
               {/* Step-by-Step Instructions */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Teacher Guidance & Procedure
+                  Teacher Guidance & Procedure<InfoTip>Step-by-step directions for running the activity.</InfoTip>
                 </h4>
                 <div className="space-y-2">
                   {activeActivity.teacherInstructions.map((inst, i) => (
@@ -385,7 +386,7 @@ export function PreschoolActivitiesView({
               {/* Mapped Indicators With Quick Action */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Related Developmental Milestones ({mappedIndicators.length})
+                  Related Developmental Milestones ({mappedIndicators.length})<InfoTip>Skills children can show during this activity. You can record observations against them in the Assess tab.</InfoTip>
                 </h4>
                 <div className="space-y-2">
                   {mappedIndicators.map(ind => (

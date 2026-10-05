@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -167,7 +168,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             </Badge>
           </div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-indigo-400" /> Lesson Planner & Teaching Insights
+            <BookOpen className="w-6 h-6 text-indigo-400" /> Lesson Planner & Teaching Insights<InfoTip title="Lesson Planner">Work through the tabs from left to right: Create a plan, edit the document, check class insights, add activities for every learner, build assessments, teach, reflect, and review your analytics.</InfoTip>
           </h1>
           <p className="text-xs text-slate-300 mt-1">
             Find all official AI-powered Subject Specific Apps for SHS teachers. Easy access to all NaCCA curriculum resources and PLC tools.
@@ -345,7 +346,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
           <Card className="text-center p-8 space-y-4 max-w-xl mx-auto border-indigo-200 dark:border-indigo-900/50">
             <Play className="w-12 h-12 text-indigo-600 mx-auto" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Launch Lesson Prep
+              Launch Lesson Prep<InfoTip>Opens delivery mode: a checklist, a phase timer and live notes to use while you teach.</InfoTip>
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400">
               Open full-screen delivery mode with live activity timer, teaching notes, student attendance, and engagement trackers.
@@ -370,7 +371,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
           <Card className="text-center p-8 space-y-4 max-w-xl mx-auto border-purple-200 dark:border-purple-900/50">
             <CheckCircle2 className="w-12 h-12 text-purple-600 mx-auto" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Log Post-Lesson Reflection
+              Log Post-Lesson Reflection<InfoTip>Record how the lesson went. Reflections feed your analytics and, for school leaders, the school oversight view.</InfoTip>
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400">
               Record completion status, student understanding ratings (Excellent, Good, Average, Poor), and follow-up teaching notes.

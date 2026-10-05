@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { InfoTip } from './ui/info-tip';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import {
@@ -208,7 +209,7 @@ export function CognitiveGrowthDashboard({ user, onBack }: CognitiveGrowthDashbo
 
             {/* Level Road */}
             <Card>
-              <CardHeader><CardTitle className="text-sm">Level Roadmap</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm">Level Roadmap<InfoTip>The levels you can reach by earning XP (experience points). XP comes from completing assessments, Brain Gym challenges and other activities.</InfoTip></CardTitle></CardHeader>
               <CardContent>
                 <div className="flex gap-1 overflow-x-auto pb-2">
                   {COGNITIVE_LEVELS.map(l => (
@@ -229,7 +230,7 @@ export function CognitiveGrowthDashboard({ user, onBack }: CognitiveGrowthDashbo
             {/* XP Breakdown + Activity Feed */}
             <div className="grid md:grid-cols-2 gap-4">
               <Card>
-                <CardHeader><CardTitle className="text-sm">XP by Category</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm">XP by Category<InfoTip>Where your XP has come from, for example assessments or daily challenges.</InfoTip></CardTitle></CardHeader>
                 <CardContent>
                   {categoryBreakdown.length === 0 ? (
                     <p className="text-sm text-gray-400 text-center py-4">Complete activities to earn XP</p>
@@ -250,7 +251,7 @@ export function CognitiveGrowthDashboard({ user, onBack }: CognitiveGrowthDashbo
               </Card>
 
               <Card>
-                <CardHeader><CardTitle className="text-sm">Recent Activity</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm">Recent Activity<InfoTip>Your latest activities and the XP each one earned.</InfoTip></CardTitle></CardHeader>
                 <CardContent className="space-y-2 max-h-[220px] overflow-y-auto">
                   {xpProfile.activities.length === 0 ? (
                     <p className="text-sm text-gray-400 text-center py-4">No activities yet — take an assessment!</p>
@@ -383,7 +384,7 @@ export function CognitiveGrowthDashboard({ user, onBack }: CognitiveGrowthDashbo
                 {radarData.length >= 3 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-purple-500" /> Cognitive Profile</CardTitle>
+                      <CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-purple-500" /> Cognitive Profile<InfoTip>Your current score on each dimension, using your latest assessments. A higher score means a stronger preference.</InfoTip></CardTitle>
                       <CardDescription>Your current strengths across all assessed dimensions</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[280px]">
@@ -404,7 +405,7 @@ export function CognitiveGrowthDashboard({ user, onBack }: CognitiveGrowthDashbo
                 {trendLines.data.length >= 2 ? (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-green-500" /> Dimension Trends</CardTitle>
+                      <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-green-500" /> Dimension Trends<InfoTip>How your score on each dimension changes each time you retake an assessment. Small changes are normal.</InfoTip></CardTitle>
                       <CardDescription>How each cognitive dimension has changed over your assessments</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[260px]">

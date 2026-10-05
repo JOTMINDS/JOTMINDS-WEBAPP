@@ -7,6 +7,7 @@ import { calculateTeachingStyleScore } from '../../utils/teachingStyleScoring';
 import { getAllAssessments, getAssessmentsByUserId } from '../../utils/storage';
 import { Info, Target, LayoutTemplate } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { InfoTip } from '../ui/info-tip';
 
 interface TeacherAnalyticsComparisonProps {
   teacherAssessments: Assessment[];
@@ -246,7 +247,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
     <div className="p-4 lg:p-8 max-w-[1200px] mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Alignment Analysis</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Alignment Analysis<InfoTip title="Alignment Analysis">Compares your own learning, thinking and decision styles with your students. It helps you see where your natural way of teaching fits the class and where you may need to adapt.</InfoTip></h2>
           <p className="text-muted-foreground mt-1 text-lg">Compare your cognitive profile and teaching style against your class aggregate.</p>
         </div>
       </div>
@@ -275,7 +276,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
         <Card className="md:col-span-1 bg-gradient-to-br from-indigo-50 to-purple-50 border-none shadow-md">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
                 <Target className="h-12 w-12 text-indigo-600 mb-4" />
-                <h3 className="text-xl font-semibold text-slate-800 mb-2">Overall Alignment</h3>
+                <h3 className="text-xl font-semibold text-slate-800 mb-2">Overall Alignment<InfoTip title="Overall Alignment">The average share of your students who have the same style as you across learning, thinking and decision making. With several styles to choose from, even a well-matched class often scores below 50%. A low score is not bad; it shows where to add variety.</InfoTip></h3>
                 <div className="text-5xl font-extrabold text-indigo-600 mb-4">
                   {alignmentScore !== null ? `${alignmentScore}%` : 'Pending'}
                 </div>
@@ -285,7 +286,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
 
             <Card className="md:col-span-2 shadow-sm border-slate-200">
               <CardHeader>
-                <CardTitle className="text-xl">Teaching Insights Context</CardTitle>
+                <CardTitle className="text-xl">Teaching Insights Context<InfoTip>Links your Teaching Insights assessment results to your alignment score. Complete that assessment to see your top teaching strength here.</InfoTip></CardTitle>
                 <CardDescription>How your educator intelligence profile maps to student needs</CardDescription>
               </CardHeader>
               <CardContent>
@@ -324,7 +325,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
             <Card className="shadow-sm border-slate-200">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Learning Style</span>
+                  <span>Learning Style<InfoTip>How students prefer to learn (Kolb). The solid, outlined bar is your own style. Taller bars mean more of your class learns that way.</InfoTip></span>
                   {tKolbStyle && (
                     <Badge style={badgeStyle(KOLB_COLORS, tKolbStyle)}>
                       You: {tKolbStyle}
@@ -366,7 +367,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
             <Card className="shadow-sm border-slate-200">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Thinking Style</span>
+                  <span>Thinking Style<InfoTip>The type of thinking students use most: analytical, creative or practical. The outlined bar is your own style.</InfoTip></span>
                   {tThinkStyle && (
                     <Badge style={badgeStyle(THINK_COLORS, tThinkStyle)}>
                       You: {tThinkStyle}
@@ -408,7 +409,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
             <Card className="shadow-sm border-slate-200 lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Decision Making</span>
+                  <span>Decision Making<InfoTip>How students make choices, from quick and instinctive to slow and careful. The outlined bar is your own style.</InfoTip></span>
                   {tDualStyle && (
                     <Badge style={badgeStyle(DUAL_COLORS, tDualStyle)}>
                       You: {tDualStyle}

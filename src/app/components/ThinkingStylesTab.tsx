@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Sparkles, GraduationCap, Briefcase } from 'lucide-react';
+import { InfoTip } from './ui/info-tip';
 
 interface ThinkingStylesTabProps {
   onStartJHS: () => void;
@@ -17,7 +18,7 @@ export function ThinkingStylesTab({ onStartJHS, onStartSHS, onStartAdult }: Thin
       <Card className="border-4 border-[#6B4C9A] bg-gradient-to-r from-cyan-50 to-indigo-50 shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl bg-gradient-to-r from-[#6B4C9A] to-[#5B7DB1] bg-clip-text text-transparent">
-            🧠 Thinking Styles Assessments
+            🧠 Thinking Styles Assessments<InfoTip>Short assessments about how you think and solve problems. Pick the one for your age or role.</InfoTip>
           </CardTitle>
           <CardDescription className="text-base">
             Choose the age-appropriate assessment to discover your thinking profile and get personalized recommendations
@@ -186,7 +187,7 @@ export function ThinkingStylesTab({ onStartJHS, onStartSHS, onStartAdult }: Thin
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-[#6B4C9A]" />
-            Why Take Multiple Assessments?
+            Why Take Multiple Assessments?<InfoTip>Each assessment shows a different side of how you think. Together they give a fuller profile.</InfoTip>
           </CardTitle>
         </CardHeader>
         <CardContent>

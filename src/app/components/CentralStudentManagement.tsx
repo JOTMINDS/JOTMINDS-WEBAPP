@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { InfoTip } from './ui/info-tip';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
@@ -121,7 +122,7 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold uppercase tracking-wider mb-2">
             <Users className="w-3.5 h-3.5" /> Central Roster & Student Profiles
           </div>
-          <h2 className="text-2xl font-bold tracking-tight">Student Management Center</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Student Management Center<InfoTip>Your class roster. Search for a student, open their profile and see which assessments they have completed.</InfoTip></h2>
           <p className="text-white/80 text-xs md:text-sm mt-1">
             Manage your class roster, search individual learners, view cognitive profiles, and track assessment progress.
           </p>
@@ -269,7 +270,7 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
             <CardHeader className="py-3 px-4 border-b">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[#6B4C9A]" /> Student Roster ({filteredStudents.length})
+                  <Users className="w-4 h-4 text-[#6B4C9A]" /> Student Roster ({filteredStudents.length})<InfoTip>Students shown with the current search and filters applied.</InfoTip>
                 </CardTitle>
               </div>
             </CardHeader>

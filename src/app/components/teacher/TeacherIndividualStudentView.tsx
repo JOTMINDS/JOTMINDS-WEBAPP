@@ -3,6 +3,7 @@ import { User, Assessment, TeacherObservation } from '../../types';
 import { saveTeacherObservation } from '../../utils/storage';
 import { MessageSquare } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { InfoTip } from '../ui/info-tip';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
@@ -185,7 +186,7 @@ return (
               <div className="flex items-start gap-3">
                 <Users className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <h2 className="text-[15px] font-semibold mb-1">Student Roster</h2>
+                  <h2 className="text-[15px] font-semibold mb-1">Student Roster<InfoTip>Learners linked to your class. Pick a student to see their cognitive profile and teaching tips.</InfoTip></h2>
                   <p className="text-[12px] text-muted-foreground leading-relaxed">
                     {students.length} Students Total
                   </p>
@@ -329,7 +330,7 @@ return (
               <div className="xl:col-span-5 space-y-4">
                 <div className="flex items-center gap-2 px-1">
                   <Brain className="h-5 w-5 text-primary" />
-                  <h3 className="text-[16px] font-semibold text-[#1E293B]">Cognitive Profile</h3>
+                  <h3 className="text-[16px] font-semibold text-[#1E293B]">Cognitive Profile<InfoTip>How this student learns, thinks and decides, from the assessments they have completed. These are preferences, not marks.</InfoTip></h3>
                 </div>
 
                 <div className="grid gap-4">
@@ -420,7 +421,7 @@ return (
                             <div className="flex items-center gap-2">
                               <Sparkles className="h-5 w-5 text-[#3B82F6]" />
                               <CardTitle className="text-[16px] text-[#1E293B]">
-                                Quick Insights
+                                Quick Insights<InfoTip>A short summary of what stands out in this student's profile.</InfoTip>
                               </CardTitle>
                             </div>
                             <ChevronDown 
@@ -464,7 +465,7 @@ return (
                             <div className="flex items-center gap-2">
                               <Lightbulb className="h-5 w-5 text-[#10B981]" />
                               <CardTitle className="text-[16px] text-[#1E293B]">
-                                Top 3 Teaching Strategies
+                                Top 3 Teaching Strategies<InfoTip>Three ways to teach this student that suit their learning and thinking styles.</InfoTip>
                               </CardTitle>
                             </div>
                             <ChevronDown 
@@ -507,7 +508,7 @@ return (
                           <div className="flex items-center gap-2">
                             <FileText className="h-5 w-5 text-[#8B5CF6]" />
                             <CardTitle className="text-[16px] text-[#1E293B]">
-                              Educational Resources
+                              Educational Resources<InfoTip>Learning materials that match this student's styles.</InfoTip>
                             </CardTitle>
                           </div>
                           <ChevronDown 
@@ -652,7 +653,7 @@ return (
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-6 h-6 text-purple-600" />
-                <h3 className="text-xl font-extrabold text-slate-900">Record Teacher Observation</h3>
+                <h3 className="text-xl font-extrabold text-slate-900">Record Teacher Observation<InfoTip>Write what you notice about this student in class. Your notes are saved with their profile and help build a fuller picture.</InfoTip></h3>
               </div>
               <button 
                 onClick={() => setShowObservationModal(false)}

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, Assessment, AssessmentScore, Class } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { InfoTip } from './ui/info-tip';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -795,17 +796,12 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
               { label: 'Total Students', value: stats.total, color: '#5B7DB1', icon: <Users className="w-4 h-4" />, help: 'Total number of active students currently enrolled in the institution.' },
               { label: 'Assessed', value: `${stats.assessed} (${Math.round((stats.assessed / Math.max(stats.total, 1)) * 100)}%)`, color: '#1E8A6E', icon: <CheckCircle className="w-4 h-4" />, help: 'Number of students who have completed at least one assessment.' },
               { label: 'Avg Engagement', value: `${stats.avgEng}/100`, color: '#6B4C9A', icon: <Activity className="w-4 h-4" />, help: 'Average engagement score across the school based on recent activity, assessments completed, and daily streaks.' },
-              { label: 'At Risk', value: stats.riskCounts.high, color: '#DC2626', icon: <AlertTriangle className="w-4 h-4" />, help: 'Students with very low engagement scores, indicating they may need additional support.' },
+              { label: 'At Risk', value: stats.riskCounts.high, color: '#DC2626', icon: <AlertTriangle className="w-4 h-4" />, help: 'Students with very low engagement or who have been inactive for a long time. Style scores are not used. Open the Students tab to see who they are.' },
             ].map(s => (
               <Card key={s.label}><CardContent className="pt-4 text-center">
                 <div className="flex justify-center items-center gap-1.5 mb-1" style={{ color: s.color }}>
                   {s.icon}
-                  {s.help && (
-                    <Tooltip>
-                      <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" /></TooltipTrigger>
-                      <TooltipContent className="max-w-[200px] text-center">{s.help}</TooltipContent>
-                    </Tooltip>
-                  )}
+                  {s.help && <InfoTip title={s.label}>{s.help}</InfoTip>}
                 </div>
                 <div className="text-xl font-semibold" style={{ color: s.color }}>{s.value}</div>
                 <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
@@ -902,7 +898,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                 </Tooltip>
               </CardTitle>
               <p className="text-xs text-gray-500 leading-snug mb-3">
-                Students flagged for intervention based on engagement dips.
+                Students grouped by participation: how much they have completed and how recently.
               </p>
             </CardHeader>
             <CardContent>
@@ -975,13 +971,13 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                 <thead>
                   <tr className="border-b bg-gray-50 text-xs text-gray-500">
                     <th className="text-left px-4 py-2.5 cursor-pointer" onClick={() => toggleSort('name')}>Student <SortIcon col="name" /></th>
-                    <th className="text-center px-3 py-2.5">Class</th>
-                    <th className="text-center px-3 py-2.5">Progress</th>
-                    <th className="text-center px-3 py-2.5">Learning Style</th>
-                    <th className="text-center px-3 py-2.5">Thinking Style</th>
-                    <th className="text-center px-3 py-2.5">Decision Style</th>
-                    <th className="text-center px-3 py-2.5 cursor-pointer" onClick={() => toggleSort('engagement')}>Engagement <SortIcon col="engagement" /></th>
-                    <th className="text-center px-3 py-2.5 cursor-pointer" onClick={() => toggleSort('risk')}>Status <SortIcon col="risk" /></th>
+                    <th className="text-center px-3 py-2.5">Class<InfoTip>The class or grade the student is registered in.</InfoTip></th>
+                    <th className="text-center px-3 py-2.5">Progress<InfoTip>How many of the 3 core assessments (learning, thinking, decision) the student has finished.</InfoTip></th>
+                    <th className="text-center px-3 py-2.5">Learning Style<InfoTip>How the student prefers to learn, from the Kolb learning style assessment.</InfoTip></th>
+                    <th className="text-center px-3 py-2.5">Thinking Style<InfoTip>The kind of thinking the student uses most: analytical, creative or practical.</InfoTip></th>
+                    <th className="text-center px-3 py-2.5">Decision Style<InfoTip>How the student tends to make decisions, from quick and intuitive to slow and careful.</InfoTip></th>
+                    <th className="text-center px-3 py-2.5 cursor-pointer" onClick={() => toggleSort('engagement')}>Engagement<InfoTip title="Engagement">A 0 to 100 score. It rises with the number of assessment types completed, recent activity, XP and daily streaks.</InfoTip> <SortIcon col="engagement" /></th>
+                    <th className="text-center px-3 py-2.5 cursor-pointer" onClick={() => toggleSort('risk')}>Status<InfoTip title="Status">On Track, Needs Support or At Risk. Based on how much a student has completed and how recently, not on their style results.</InfoTip> <SortIcon col="risk" /></th>
                     <th className="text-right px-4 py-2.5">Action</th>
                   </tr>
                 </thead>
@@ -1196,7 +1192,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                     <Card className="border-blue-200 bg-blue-50/20">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm font-bold text-blue-950">Cohort A</CardTitle>
+                          <CardTitle className="text-sm font-bold text-blue-950">Cohort A<InfoTip>The first group you chose to compare.</InfoTip></CardTitle>
                           <select
                             value={classAId}
                             onChange={e => setClassAId(e.target.value)}
@@ -1233,7 +1229,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                     <Card className="border-purple-200 bg-purple-50/20">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm font-bold text-purple-950">Cohort B</CardTitle>
+                          <CardTitle className="text-sm font-bold text-purple-950">Cohort B<InfoTip>The second group you chose to compare.</InfoTip></CardTitle>
                           <select
                             value={classBId}
                             onChange={e => setClassBId(e.target.value)}
@@ -1271,7 +1267,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   {/* Comparative Cognitive Style Chart */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-sm font-bold">Class Cognitive Distribution Comparison</CardTitle>
+                      <CardTitle className="text-sm font-bold">Class Cognitive Distribution Comparison<InfoTip>Compares the learning, thinking and decision styles of two cohorts side by side.</InfoTip></CardTitle>
                       <p className="text-xs text-gray-500">Side-by-side comparison of dominant learning and thinking styles between {classAId} and {classBId}.</p>
                     </CardHeader>
                     <CardContent className="h-[300px]">
@@ -1341,7 +1337,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                     {/* Learning Style Breakdown */}
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-bold uppercase text-blue-900 tracking-wider">Dominant Learning Styles</CardTitle>
+                        <CardTitle className="text-xs font-bold uppercase text-blue-900 tracking-wider">Dominant Learning Styles<InfoTip>The most common learning styles in this group.</InfoTip></CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         {['Accommodating', 'Assimilating', 'Converging', 'Diverging'].map(style => {
@@ -1365,7 +1361,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                     {/* Thinking Style Breakdown */}
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-bold uppercase text-purple-900 tracking-wider">Dominant Thinking Styles</CardTitle>
+                        <CardTitle className="text-xs font-bold uppercase text-purple-900 tracking-wider">Dominant Thinking Styles<InfoTip>The most common thinking styles in this group.</InfoTip></CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         {['Analytical', 'Creative', 'Practical'].map(style => {
@@ -1389,7 +1385,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                     {/* Decision Style Breakdown */}
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-bold uppercase text-emerald-900 tracking-wider">Decision Style Processing</CardTitle>
+                        <CardTitle className="text-xs font-bold uppercase text-emerald-900 tracking-wider">Decision Style Processing<InfoTip>The most common ways of making decisions in this group.</InfoTip></CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         {['Intuitive', 'Reflective'].map(style => {
@@ -1423,12 +1419,12 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                       <table className="w-full text-xs">
                         <thead className="bg-gray-50 text-gray-500 border-b">
                           <tr>
-                            <th className="text-left px-4 py-2.5">Learner</th>
-                            <th className="text-center px-3 py-2.5">Class</th>
-                            <th className="text-center px-3 py-2.5">Learning Style</th>
-                            <th className="text-center px-3 py-2.5">Thinking Style</th>
-                            <th className="text-center px-3 py-2.5">Decision Style</th>
-                            <th className="text-center px-3 py-2.5">Risk Status</th>
+                            <th className="text-left px-4 py-2.5">Learner<InfoTip>The student being shown in this row.</InfoTip></th>
+                            <th className="text-center px-3 py-2.5">Class<InfoTip>The class or grade the student is registered in.</InfoTip></th>
+                            <th className="text-center px-3 py-2.5">Learning Style<InfoTip>How the student prefers to learn, from the Kolb learning style assessment.</InfoTip></th>
+                            <th className="text-center px-3 py-2.5">Thinking Style<InfoTip>The kind of thinking the student uses most: analytical, creative or practical.</InfoTip></th>
+                            <th className="text-center px-3 py-2.5">Decision Style<InfoTip>How the student tends to make decisions, from quick and intuitive to slow and careful.</InfoTip></th>
+                            <th className="text-center px-3 py-2.5">Risk Status<InfoTip>On Track, Needs Support or At Risk. Based on assessments completed and recent activity.</InfoTip></th>
                             <th className="text-right px-4 py-2.5">Action</th>
                           </tr>
                         </thead>
@@ -1638,7 +1634,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-between">
-                  <span>Student Engagement</span>
+                  <span>Student Engagement<InfoTip>Average engagement score for students.</InfoTip></span>
                   <Users className="w-4 h-4 text-[#1E8A6E]" />
                 </CardTitle>
               </CardHeader>
@@ -1663,7 +1659,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-between">
-                  <span>Facilitator Engagement</span>
+                  <span>Facilitator Engagement<InfoTip>Average engagement score for facilitators (teachers).</InfoTip></span>
                   <BookOpen className="w-4 h-4 text-[#E0A020]" />
                 </CardTitle>
               </CardHeader>
@@ -1688,7 +1684,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-sm font-bold">Cognitive Profile Alignment: Facilitators vs. Students</CardTitle>
+              <CardTitle className="text-sm font-bold">Cognitive Profile Alignment: Facilitators vs. Students<InfoTip>Compares what facilitators prefer with what students prefer, for each style.</InfoTip></CardTitle>
               <p className="text-xs text-gray-500 mt-1">Comparing the average dimension strengths (in percentage) of school facilitators and students.</p>
             </CardHeader>
             <CardContent className="h-[350px]">
@@ -1715,7 +1711,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             <CardHeader className="py-3 border-b">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Users className="w-4 h-4 text-purple-600" />
-                Connected School Facilitators ({teachers.length})
+                Connected School Facilitators ({teachers.length})<InfoTip>Teachers linked to this school, with their assessment progress and profile.</InfoTip>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
@@ -1724,9 +1720,9 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   <tr>
                     <th className="text-left px-4 py-2.5">Facilitator</th>
                     <th className="text-center px-3 py-2.5">Role</th>
-                    <th className="text-center px-3 py-2.5">Assessments Completed</th>
-                    <th className="text-center px-3 py-2.5">Pedagogical Profile</th>
-                    <th className="text-center px-3 py-2.5">Class Alignment</th>
+                    <th className="text-center px-3 py-2.5">Assessments Completed<InfoTip>How many assessments this facilitator has finished.</InfoTip></th>
+                    <th className="text-center px-3 py-2.5">Pedagogical Profile<InfoTip>The facilitator's teaching style from their Teaching Insights assessment.</InfoTip></th>
+                    <th className="text-center px-3 py-2.5">Class Alignment<InfoTip>How closely the facilitator's styles match the students they teach. A low match is a chance to adapt, not a fault.</InfoTip></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1782,7 +1778,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
           <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Teaching Style vs. Student Needs</CardTitle>
+                <CardTitle className="text-sm">Teaching Style vs. Student Needs<InfoTip>Where the way teachers teach differs from the way students learn best.</InfoTip></CardTitle>
                 <p className="text-xs text-gray-500 mt-1">If the student population skews towards 'Reflective' processing, do the facilitators' styles accommodate that?</p>
               </CardHeader>
               <CardContent>
@@ -1791,7 +1787,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   For example, if your students score highly in <b>Practical</b> and <b>Concrete Experience (CE)</b>, but your facilitators' cognitive profiles lean heavily towards <b>Analytical</b> or <b>Abstract Conceptualization (AC)</b>, you may need to introduce more hands-on, experiential learning opportunities into the curriculum to bridge the alignment gap.
                 </p>
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                  <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2"><Zap className="w-4 h-4" /> Recommendation Engine</h4>
+                  <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2"><Zap className="w-4 h-4" /> Recommendation Engine<InfoTip>Suggestions generated from the biggest gaps between teacher and student styles.</InfoTip></h4>
                   <p className="text-xs text-blue-800 mt-2">
                     {stats.comparisonData.some(d => d.name === 'Practical' && d['Student Avg (%)'] > d['Teacher Avg (%)'] + 15) 
                       ? "High Practical gap detected: Encourage teachers to implement project-based learning." 
@@ -1805,7 +1801,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
         {tab === 'alignment' && (<>
           <div className="mb-6 bg-indigo-50/50 text-indigo-900 p-5 rounded-xl border border-indigo-100 shadow-sm text-sm">
-            <h3 className="font-semibold mb-2 flex items-center gap-1.5 text-base"><Target className="w-5 h-5 text-indigo-600" /> School Alignment & Recommendations</h3>
+            <h3 className="font-semibold mb-2 flex items-center gap-1.5 text-base"><Target className="w-5 h-5 text-indigo-600" /> School Alignment & Recommendations<InfoTip>How well teaching styles match student styles across the school, with suggestions to close the gaps.</InfoTip></h3>
             <p className="text-indigo-800/80 leading-relaxed">
               This section automatically analyzes cognitive gaps between your teaching staff and student body. 
               Review the tailored recommendations below to better align instructional methods with student learning needs, and follow the scoring advice to boost overall engagement.
@@ -1817,7 +1813,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Zap className="w-4 h-4 text-blue-500" />
-                  Cognitive Alignment Recommendations
+                  Cognitive Alignment Recommendations<InfoTip>Suggestions where teacher styles and student styles differ the most.</InfoTip>
                 </CardTitle>
                 <p className="text-xs text-gray-500 mt-1">Generated based on the largest gaps between student needs and teacher styles.</p>
               </CardHeader>
@@ -1889,7 +1885,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-emerald-500" />
-                  Score Improvement Guide
+                  Score Improvement Guide<InfoTip>Practical steps to raise engagement and XP across the school.</InfoTip>
                 </CardTitle>
                 <p className="text-xs text-gray-500 mt-1">Actionable steps to boost school-wide engagement and Gamification XP scores.</p>
               </CardHeader>
@@ -1950,7 +1946,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-indigo-600" />
-                <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds School Executive Advisor</CardTitle>
+                <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds School Executive Advisor<InfoTip title="Executive Advisor">An AI summary of your school data: strengths, areas to watch and next steps. Check it against what you know of your school.</InfoTip></CardTitle>
               </div>
               <Button 
                 variant="outline" 
@@ -2064,7 +2060,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-red-500" />
-                  Priority Interventions & Risk Diagnostics
+                  Priority Interventions & Risk Diagnostics<InfoTip>Students who need attention first, with the reason and a suggested action.</InfoTip>
                 </CardTitle>
                 <Badge variant="outline" className="text-xs text-red-700 bg-red-50 border-red-200 font-semibold">
                   {summaries.filter(s => s.risk === 'high').length} Students Need Action

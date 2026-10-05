@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { InfoTip } from '../ui/info-tip';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -244,7 +245,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-400" /> Lesson Plan Generator
+            <BookOpen className="w-5 h-5 text-indigo-400" /> Lesson Plan Generator<InfoTip title="Lesson plan generator">Create a lesson plan three ways: let AI write it, write it yourself, or upload a plan you already have and let AI improve it. The plan follows the curriculum you choose.</InfoTip>
           </h2>
           <p className="text-xs text-slate-300 mt-1">
             Find official AI-powered Subject Specific Apps and easy access to NaCCA curriculum resources.
@@ -271,7 +272,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               AI Accelerated
             </Badge>
           </div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-white">1. AI Generated Lesson Plan</h3>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">1. AI Generated Lesson Plan<InfoTip>AI writes a full plan from the details you enter. You can edit it afterwards.</InfoTip></h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
             Auto-generate curriculum-aligned lesson phases, differentiated tasks, and objectives using AI.
           </p>
@@ -294,7 +295,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               Full Control
             </Badge>
           </div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-white">2. Manual Lesson Plan</h3>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">2. Manual Lesson Plan<InfoTip>You write the objectives yourself. A standard five-phase lesson structure is added for you to edit.</InfoTip></h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
             Type custom objectives, phases, pedagogical timings, and instructional resources manually.
           </p>
@@ -317,7 +318,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               AI Adaptation
             </Badge>
           </div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-white">3. Upload Existing Plan</h3>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">3. Upload Existing Plan<InfoTip>Paste a plan you already use. AI improves it for your class and curriculum without throwing your content away.</InfoTip></h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
             Paste or upload your existing document to receive instant AI differentiation & recommendations.
           </p>
@@ -328,7 +329,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       <Card className="shadow-md border-slate-200 dark:border-slate-800">
         <CardHeader>
           <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-            Lesson Parameters & Target Class
+            Lesson Parameters & Target Class<InfoTip>Basic details about the lesson. The more specific you are, the better the plan.</InfoTip>
           </CardTitle>
           <CardDescription className="text-xs">
             Specify the subject, topic, and duration for your target classroom. Duration is auto-calculated from schedule.
@@ -355,7 +356,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold">Curriculum Framework</Label>
+              <Label className="text-xs font-semibold">Curriculum Framework<InfoTip>Sets the format of the plan: the headings, terms and lesson structure used by that curriculum (for example NaCCA strands and indicators, or IB inquiry).</InfoTip></Label>
               <div className="mt-1">
                 <Select value={curriculumFramework} onValueChange={(val) => setCurriculumFramework(val)}>
                   <SelectTrigger className="w-full">
@@ -413,7 +414,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             </div>
             <div>
               <Label className="text-[11px] font-semibold flex items-center justify-between">
-                <span>Duration</span>
+                <span>Duration<InfoTip>Worked out from the start and end times. The AI splits this time across the lesson phases.</InfoTip></span>
                 <span className="text-[10px] text-indigo-600 font-normal">Auto-calculated</span>
               </Label>
               <div className="relative mt-1">
@@ -431,7 +432,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs font-semibold">Topic / Strand</Label>
+              <Label className="text-xs font-semibold">Topic / Strand<InfoTip>The main topic of the lesson. For NaCCA, use the strand name from the curriculum.</InfoTip></Label>
               <Input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
@@ -440,7 +441,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold">Subtopic / Sub-strand (Optional)</Label>
+              <Label className="text-xs font-semibold">Subtopic / Sub-strand (Optional)<InfoTip>A narrower focus within the topic. Helps the AI stay on target.</InfoTip></Label>
               <Input
                 value={subtopic}
                 onChange={(e) => setSubtopic(e.target.value)}
