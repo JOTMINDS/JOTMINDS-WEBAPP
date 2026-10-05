@@ -8,11 +8,9 @@ import {
   School,
   Users,
   TrendingUp,
-  TrendingDown,
   Award,
   AlertTriangle,
   CheckCircle2,
-  Clock,
   BarChart3,
   PieChart,
   Target,
@@ -299,13 +297,10 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               <CardTitle className="text-sm flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-purple-600" />
                 Avg Performance
-              <InfoTip>The average score across students' assessment dimensions. It reflects strength and preference, not academic marks. The growth rate underneath is 0 for now because growth tracking has not started.</InfoTip></CardTitle>
+              <InfoTip>The average score across students' assessment dimensions. It reflects strength and preference, not academic marks.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-purple-600">{metrics.averageCognitiveScore}%</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {metrics.averageGrowthRate}% growth rate
-              </p>
             </CardContent>
           </Card>
 
@@ -501,53 +496,6 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
 
           {/* Performance Tab */}
           <TabsContent value="performance" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card className="border-2 border-green-200 bg-gradient-to-br from-white to-green-50">
-                <CardHeader>
-                  <CardTitle className="text-green-900 flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    Improving
-                  <InfoTip>Students whose results are improving. Growth tracking over time has not started yet, so this shows 0 for now.</InfoTip></CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-green-600">{metrics.studentsImproving}</div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {Math.round((metrics.studentsImproving / metrics.totalStudents) * 100)}% of students
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 border-yellow-200 bg-gradient-to-br from-white to-yellow-50">
-                <CardHeader>
-                  <CardTitle className="text-yellow-900 flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-yellow-600" />
-                    Stagnant
-                  <InfoTip>Until growth tracking starts, every student is counted here by default. It does not mean they have stopped progressing.</InfoTip></CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-yellow-600">{metrics.studentsStagnant}</div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {Math.round((metrics.studentsStagnant / metrics.totalStudents) * 100)}% of students
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 border-red-200 bg-gradient-to-br from-white to-red-50">
-                <CardHeader>
-                  <CardTitle className="text-red-900 flex items-center gap-2">
-                    <TrendingDown className="h-5 w-5 text-red-600" />
-                    Regressing
-                  <InfoTip>Students whose results are falling. Growth tracking over time has not started yet, so this shows 0 for now.</InfoTip></CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-red-600">{metrics.studentsRegressing}</div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {Math.round((metrics.studentsRegressing / metrics.totalStudents) * 100)}% of students
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
             <Card>
               <CardHeader>
                 <CardTitle>Gamification Engagement<InfoTip>How much students take part in XP, streaks, badges and challenges.</InfoTip></CardTitle>
