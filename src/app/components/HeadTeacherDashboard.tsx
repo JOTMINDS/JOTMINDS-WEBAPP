@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -22,11 +22,8 @@ import {
 import {
   calculateSchoolMetrics,
   generateSchoolInsights,
-  calculateTeacherPerformance,
   type SchoolMetrics,
   type SchoolInsight,
-  type TeacherPerformance,
-  type ClassMetrics,
 } from '../utils/schoolAnalytics';
 import { getSchoolRosterAPI, getAllAssessmentResults } from '../utils/api';
 import { normalizeServerResults } from '../utils/assessmentApi';
@@ -51,6 +48,8 @@ import {
   Line,
 } from 'recharts';
 import { InfoTip } from './ui/info-tip';
+import { calculateStudentEngagementAndRisk } from './SchoolAnalyticsDashboard';
+import { getSavedLessonPlans } from '../utils/lessonPlannerStorage';
 
 interface Props {
   schoolId: string;
@@ -67,7 +66,6 @@ interface Props {
 export function HeadTeacherDashboard({ schoolId, schoolName, students: initialStudents, teachers: initialTeachers, classes: initialClasses, onBack, user, onViewInstitutionDashboard, onViewSettings }: Props) {
   const [metrics, setMetrics] = useState<SchoolMetrics | null>(null);
   const [insights, setInsights] = useState<SchoolInsight[]>([]);
-  const [teacherPerformances, setTeacherPerformances] = useState<TeacherPerformance[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [showTeacherStyles, setShowTeacherStyles] = useState(false);
 
@@ -162,36 +160,61 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
       
       setMetrics(schoolMetrics);
       setInsights(schoolInsights);
-
-      // Calculate class metrics for teacher performance
-      const classMetrics: ClassMetrics[] = classes.map(cls => {
-        const classStudents = students.filter(s => s.grade === cls.grade);
-        const teacher = teachers.find(t => t.id === cls.teacherId);
-
-      return {
-        classId: cls.id,
-        className: cls.name,
-        grade: cls.grade,
-        teacherId: cls.teacherId,
-        teacherName: teacher?.name || 'Unknown',
-        studentCount: classStudents.length,
-        averageEngagementScore: 65,
-        averageCognitiveScore: 72,
-        averageGrowthRate: 12,
-        activeStudentsPercentage: 80,
-        topPerformers: classStudents.slice(0, 3).map(s => s.studentName),
-        needsAttention: classStudents.slice(-2).map(s => s.studentName),
-        lastUpdated: new Date().toISOString(),
-      };
-    });
-
-      const performances = teachers.map(teacher =>
-        calculateTeacherPerformance(teacher.id, teacher.name, classMetrics)
-      );
-
-      setTeacherPerformances(performances);
     }
   }, [students, teachers, classes, schoolId, schoolName]);
+
+  // Teacher figures are calculated from each teacher's linked students and the assessment
+  // results fetched from the server. Nothing here is a placeholder.
+  const teacherPerformances = useMemo(() => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const typeGroup = (t: string) =>
+      ['kolb', 'vark', 'learning'].includes(t) ? 'learning'
+      : ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(t) ? 'thinking'
+      : (t === 'dual-process' || t === 'decision') ? 'decision'
+      : t;
+    const lessonPlans = getSavedLessonPlans();
+
+    return (teachers || []).map((teacher: any) => {
+      const teacherStudents = (students || []).filter((s: any) =>
+        s.teacherId === teacher.id || (Array.isArray(s.linkedTeachers) && s.linkedTeachers.includes(teacher.id))
+      );
+
+      let engagementSum = 0;
+      let assessedStudents = 0;
+      let atRisk = 0;
+      let last30 = 0;
+      let prev30 = 0;
+
+      teacherStudents.forEach((s: any) => {
+        const mine = studentAssessments.filter((a: any) => a.userId === s.id && a.completedAt);
+        mine.forEach((a: any) => {
+          const age = now - new Date(a.completedAt).getTime();
+          if (age >= 0 && age < 30 * DAY) last30++;
+          else if (age >= 30 * DAY && age < 60 * DAY) prev30++;
+        });
+        if (mine.length === 0) return;
+        const completedTypes = [...new Set(mine.map((a: any) => typeGroup(a.type)))] as string[];
+        const { engagementScore, risk } = calculateStudentEngagementAndRisk(s, mine, completedTypes, 0);
+        engagementSum += engagementScore;
+        assessedStudents++;
+        if (risk === 'high') atRisk++;
+      });
+
+      return {
+        teacherId: teacher.id as string,
+        teacherName: teacher.name as string,
+        classesManaged: (classes || []).filter((c: any) => c.teacherId === teacher.id).length,
+        totalStudents: teacherStudents.length,
+        assessedStudents,
+        averageEngagement: assessedStudents ? Math.round(engagementSum / assessedStudents) : null,
+        atRisk,
+        assessmentsLast30: last30,
+        assessmentsPrev30: prev30,
+        lessonsCreated: lessonPlans.filter(p => p.teacherId === teacher.id).length,
+      };
+    });
+  }, [teachers, students, classes, studentAssessments]);
 
   if (isLoading || !metrics) {
     return <div className="p-8 text-center">Loading school analytics...</div>;
@@ -549,10 +572,40 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-3 md:grid-cols-4">
+                      <div className="p-3 bg-green-50 rounded-lg">
+                        <div className="text-xs text-gray-600">
+                          Class Engagement
+                          <InfoTip title="Class Engagement">The average engagement score (0 to 100) of this teacher's students who have completed at least one assessment. It rises with the number of assessment types completed and recent activity.</InfoTip>
+                        </div>
+                        <div className="text-xl font-bold text-green-600">
+                          {teacher.averageEngagement !== null ? `${teacher.averageEngagement}%` : '—'}
+                        </div>
+                        <div className="text-[11px] text-gray-500 mt-0.5">
+                          {teacher.assessedStudents} of {teacher.totalStudents} students assessed
+                        </div>
+                      </div>
                       <div className="p-3 bg-blue-50 rounded-lg">
+                        <div className="text-xs text-gray-600">
+                          Assessments (30 days)
+                          <InfoTip title="Assessment activity">Assessments completed by this teacher's students in the last 30 days, compared with the 30 days before. It shows whether activity is rising or falling.</InfoTip>
+                        </div>
+                        <div className="text-xl font-bold text-blue-600">{teacher.assessmentsLast30}</div>
+                        <div className="text-[11px] text-gray-500 mt-0.5">
+                          {teacher.assessmentsLast30 - teacher.assessmentsPrev30 > 0 ? '+' : ''}
+                          {teacher.assessmentsLast30 - teacher.assessmentsPrev30} vs previous 30 days
+                        </div>
+                      </div>
+                      <div className="p-3 bg-red-50 rounded-lg">
+                        <div className="text-xs text-gray-600">
+                          At Risk
+                          <InfoTip title="At Risk">Students with very low engagement or who have been inactive for a long time. Based on participation, not on style results.</InfoTip>
+                        </div>
+                        <div className="text-xl font-bold text-red-600">{teacher.atRisk}</div>
+                      </div>
+                      <div className="p-3 bg-purple-50 rounded-lg">
                         <div className="text-xs text-gray-600">Lessons Created</div>
                         <div className="text-xl font-bold text-purple-600">
-                          {teacher.differentiatedLessonsCreated}
+                          {teacher.lessonsCreated}
                         </div>
                       </div>
                     </div>
