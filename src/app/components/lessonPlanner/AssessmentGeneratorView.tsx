@@ -44,7 +44,8 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
       subject: plan?.subject || '',
       topic: plan?.topic || 'Topic',
       uploadText,
-      gradeClass: plan?.gradeClass || 'JHS 2'
+      gradeClass: plan?.gradeClass || 'JHS 2',
+      curriculumFramework: plan?.curriculumFramework
     });
 
     setIsGenerating(false);

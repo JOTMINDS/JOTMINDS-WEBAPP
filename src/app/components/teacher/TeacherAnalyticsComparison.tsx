@@ -26,12 +26,23 @@ const THINK_COLORS: Record<string, string> = {
   'Analytical': '#8B5CF6',
   'Creative': '#EC4899',
   'Practical': '#10B981',
+  'Reflective': '#3B82F6',
+  'Holistic': '#F59E0B',
+};
+
+const FALLBACK_COLOR = '#64748B';
+const badgeStyle = (colors: Record<string, string>, key: string) => {
+  const c = colors[key] || FALLBACK_COLOR;
+  return { backgroundColor: c + '20', color: c };
 };
 
 const DUAL_COLORS: Record<string, string> = {
   'Intuitive': '#F59E0B',
   'Reflective': '#3B82F6',
   'Balanced': '#8B5CF6',
+  'Spontaneous': '#EC4899',
+  'Data-driven': '#10B981',
+  'Collaborative': '#14B8A6',
 };
 
 export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessments, students, teacherProfile }: TeacherAnalyticsComparisonProps) {
@@ -53,13 +64,22 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
     return Array.from(mergedMap.values());
   }, [teacherAssessments, teacherProfile?.id, teacherProfile?.email]);
 
+  const normaliseStyle = (raw: unknown): string => {
+    if (!raw || typeof raw !== 'string') return '';
+    const v = raw.trim();
+    if (!v || ['unknown', 'pending', 'n/a', 'none'].includes(v.toLowerCase())) return '';
+    return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+  };
+
+  const sameId = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+
   const getLatestAssessment = (types: string[], sourceAssessments: Assessment[]) => {
     const filtered = sourceAssessments.filter(a => a && types.includes(a.type));
     return filtered.sort((a, b) => new Date(b.completedAt || '').getTime() - new Date(a.completedAt || '').getTime())[0];
   };
 
   const getLatestForUser = (types: string[], userId: string, sourceAssessments: Assessment[]) => {
-    const filtered = sourceAssessments.filter(a => a && types.includes(a.type) && a.userId === userId);
+    const filtered = sourceAssessments.filter(a => a && types.includes(a.type) && sameId(a.userId, userId));
     return filtered.sort((a, b) => new Date(b.completedAt || '').getTime() - new Date(a.completedAt || '').getTime())[0];
   };
 
@@ -67,13 +87,10 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
     if (assessment?.score) {
       const s = assessment.score;
       const raw = s.kolb?.style || (s as any).learning?.style || (s as any).style || (s as any).primaryStyle;
-      if (raw && typeof raw === 'string') return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+      const n = normaliseStyle(raw);
+      if (n) return n;
     }
-    if ((user as any)?.learningStyle && typeof (user as any).learningStyle === 'string') {
-      const raw = (user as any).learningStyle;
-      return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-    }
-    return '';
+    return normaliseStyle((user as any)?.learningStyle);
   };
 
   const extractThinkStyle = (assessment?: Assessment, user?: User): string => {
@@ -81,26 +98,20 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
       const s = assessment.score;
       const scoreRaw = s.sternberg || s['jhs-thinking'] || s['shs-thinking'] || s['adult-thinking'] || s['child-thinking'] || (s as any).thinking;
       const raw = scoreRaw?.style || scoreRaw?.primaryStyle || scoreRaw?.dominantStyle || (s as any).style || (s as any).primaryStyle;
-      if (raw && typeof raw === 'string') return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+      const n = normaliseStyle(raw);
+      if (n) return n;
     }
-    if ((user as any)?.thinkingStyle && typeof (user as any).thinkingStyle === 'string') {
-      const raw = (user as any).thinkingStyle;
-      return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-    }
-    return '';
+    return normaliseStyle((user as any)?.thinkingStyle);
   };
 
   const extractDualStyle = (assessment?: Assessment, user?: User): string => {
     if (assessment?.score) {
       const s = assessment.score;
       const raw = s.dualProcess?.style || (s as any).decision?.style || s['dual-process']?.style || (s as any).style || (s as any).primaryStyle;
-      if (raw && typeof raw === 'string') return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+      const n = normaliseStyle(raw);
+      if (n) return n;
     }
-    if ((user as any)?.decisionStyle && typeof (user as any).decisionStyle === 'string') {
-      const raw = (user as any).decisionStyle;
-      return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-    }
-    return '';
+    return normaliseStyle((user as any)?.decisionStyle);
   };
 
   const tKolb = getLatestAssessment(['kolb', 'learning'], allTeacherAssessments);
@@ -124,8 +135,10 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
 
     students.forEach(student => {
       const userAssessments: Assessment[] = [
-        ...studentAssessments.filter(a => a && a.userId === student.id),
-        ...(Array.isArray((student as any).assessments) ? (student as any).assessments : [])
+        ...studentAssessments
+          .filter(a => a && (sameId(a.userId, student.id) || sameId((a as any).userEmail || (a as any).email, student.email)))
+          .map(a => ({ ...a, userId: student.id })),
+        ...(Array.isArray((student as any).assessments) ? (student as any).assessments : []).map((a: Assessment) => ({ ...a, userId: student.id }))
       ];
 
       // 1. Learning Style
@@ -313,7 +326,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                 <CardTitle className="flex items-center justify-between">
                   <span>Learning Style</span>
                   {tKolbStyle && (
-                    <Badge style={{ backgroundColor: KOLB_COLORS[tKolbStyle] + '20', color: KOLB_COLORS[tKolbStyle] }}>
+                    <Badge style={badgeStyle(KOLB_COLORS, tKolbStyle)}>
                       You: {tKolbStyle}
                     </Badge>
                   )}
@@ -355,7 +368,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                 <CardTitle className="flex items-center justify-between">
                   <span>Thinking Style</span>
                   {tThinkStyle && (
-                    <Badge style={{ backgroundColor: THINK_COLORS[tThinkStyle] + '20', color: THINK_COLORS[tThinkStyle] }}>
+                    <Badge style={badgeStyle(THINK_COLORS, tThinkStyle)}>
                       You: {tThinkStyle}
                     </Badge>
                   )}
@@ -397,7 +410,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                 <CardTitle className="flex items-center justify-between">
                   <span>Decision Making</span>
                   {tDualStyle && (
-                    <Badge style={{ backgroundColor: DUAL_COLORS[tDualStyle] + '20', color: DUAL_COLORS[tDualStyle] }}>
+                    <Badge style={badgeStyle(DUAL_COLORS, tDualStyle)}>
                       You: {tDualStyle}
                     </Badge>
                   )}

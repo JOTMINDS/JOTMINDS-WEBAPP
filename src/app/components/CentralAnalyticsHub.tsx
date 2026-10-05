@@ -182,8 +182,19 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
       const hasCompletedAssessment = studentAssessments.length > 0;
       let riskLevel: 'high' | 'medium' | 'low' | 'none' = 'none';
       if (hasCompletedAssessment) {
-        if (gaps.length >= 3) riskLevel = 'high';
-        else if (gaps.length > 0) riskLevel = 'medium';
+        // Style dimensions are preferences, not abilities, so low dimensions are not a risk
+        // signal. Risk reflects how much of the assessment set the student has completed
+        // (learning, thinking, decision) and how recently.
+        const types = new Set(studentAssessments.map(a => {
+          if (['kolb', 'vark', 'learning'].includes(a.type)) return 'learning';
+          if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(a.type)) return 'thinking';
+          if (a.type === 'dual-process' || a.type === 'decision') return 'decision';
+          return a.type;
+        }));
+        const latest = Math.max(0, ...studentAssessments.map(a => a.completedAt ? new Date(a.completedAt).getTime() : 0));
+        const daysSince = latest > 0 ? (Date.now() - latest) / 86400000 : 0;
+        if (daysSince >= 60 && types.size < 3) riskLevel = 'high';
+        else if (types.size < 2 || daysSince >= 60) riskLevel = 'medium';
         else riskLevel = 'low';
       }
 

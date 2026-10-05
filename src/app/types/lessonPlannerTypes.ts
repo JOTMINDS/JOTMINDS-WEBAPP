@@ -125,6 +125,8 @@ export interface LessonPlan {
   curriculumFramework?: 'National' | 'Cambridge' | 'IB' | 'School Custom' | string;
   curriculumTopicId?: string;
   objectives: LearningObjectives;
+  /** Framework-specific sections (e.g. NaCCA content standards, IB statement of inquiry) */
+  curriculumAlignment?: Array<{ label: string; items: string[] }>;
   phases: LessonPhase[];
   differentiatedInstruction?: DifferentiatedInstruction;
   assessment?: GeneratedAssessment;
@@ -195,11 +197,12 @@ export interface TeacherPerformanceMetric {
     lessonsPlanned: number;
     lessonsDelivered: number;
     assessmentsCreated: number;
-    averageStudentEngagement: number; // 1 - 5 scale
+    reflectionsLogged: number;
+    averageStudentEngagement: number | null; // 1 - 5 scale, null when no reflections yet
   };
   annual: {
     curriculumCoveragePct: number;
-    studentOutcomeTrendPct: number;
+    completedAsPlannedPct: number | null; // from post-lesson reflections, null when none
     teachingEffectivenessScore: number; // 0 - 100
   };
 }

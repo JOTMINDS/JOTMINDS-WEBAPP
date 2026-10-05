@@ -162,54 +162,42 @@ export function calculateStudentEngagementAndRisk(
   }
 
   // 1. Engagement Score Calculation
-  let engScore = 0;
-  if (localEng && localEng.engagementScore > 0) {
-    engScore = localEng.engagementScore;
-  } else {
-    // Platform-derived engagement: completing assessments represents direct cognitive engagement
-    const baseByTypes = completedTypes.length >= 3 ? 80 : completedTypes.length === 2 ? 65 : 45;
-    
-    let recencyBonus = 0;
-    if (timestamps.length > 0) {
-      if (daysSince <= 14) {
-        recencyBonus = 10;
-      } else if (daysSince <= 35) {
-        recencyBonus = 5;
-      } else if (daysSince >= 45 && completedTypes.length === 1) {
-        recencyBonus = -18;
-      } else if (daysSince >= 60) {
-        recencyBonus = -20;
-      }
+  // Platform-derived engagement: completing assessments is direct engagement. Stored
+  // engagement metrics can only raise this score, never drag a student who has completed
+  // their assessments down into "at risk".
+  const baseByTypes = completedTypes.length >= 3 ? 80 : completedTypes.length === 2 ? 65 : 45;
+
+  let recencyBonus = 0;
+  if (timestamps.length > 0) {
+    if (daysSince <= 14) {
+      recencyBonus = 10;
+    } else if (daysSince <= 35) {
+      recencyBonus = 5;
+    } else if (daysSince >= 60) {
+      recencyBonus = -20;
+    } else if (daysSince >= 45 && completedTypes.length === 1) {
+      recencyBonus = -18;
     }
-
-    const xpBonus = gamProfile?.xp ? Math.min(10, Math.floor(gamProfile.xp / 100)) : 0;
-    const streakBonus = gamProfile?.currentStreak ? Math.min(5, gamProfile.currentStreak * 2) : 0;
-
-    engScore = Math.max(15, Math.min(100, baseByTypes + recencyBonus + xpBonus + streakBonus));
   }
 
-  // 2. Normalized Dimension Gaps
-  const dimensionScores: number[] = [];
-  const KOLB_DIMS = ['CE', 'RO', 'AC', 'AE', 'Concrete Experience', 'Reflective Observation', 'Abstract Conceptualization', 'Active Experimentation'];
-  const STERNBERG_DIMS = ['Analytical', 'Creative', 'Practical'];
-  assessments.forEach(a => {
-    extractDimensionScores(a).forEach(({ name, score }) => {
-      const max = KOLB_DIMS.includes(name) ? 48 : STERNBERG_DIMS.includes(name) ? 30 : 100;
-      const pct = Math.min(100, Math.round((score / max) * 100));
-      dimensionScores.push(pct);
-    });
-  });
+  const xpBonus = gamProfile?.xp ? Math.min(10, Math.floor(gamProfile.xp / 100)) : 0;
+  const streakBonus = gamProfile?.currentStreak ? Math.min(5, gamProfile.currentStreak * 2) : 0;
 
-  const criticalGaps = dimensionScores.filter(pct => pct < 35).length;
+  const derivedScore = Math.max(15, Math.min(100, baseByTypes + recencyBonus + xpBonus + streakBonus));
+  const storedScore = localEng && localEng.engagementScore > 0 ? localEng.engagementScore : 0;
+  const engScore = Math.max(derivedScore, storedScore);
 
-  // 3. Multi-Factor Risk Classification
+  // 2. Risk Classification
+  // Kolb / Sternberg / decision-style scores describe preferences, not ability, so a low
+  // dimension is NOT a deficit and is not used here. Risk reflects participation only:
+  //   high   - has barely engaged or has gone inactive
+  //   medium - partially complete (only one assessment type) or going quiet
+  //   low    - on track
   let risk: 'high' | 'medium' | 'low' = 'low';
-  if (engScore < 30 || criticalGaps >= 3 || (normalizedAvgScore > 0 && normalizedAvgScore < 30)) {
+  if (engScore < 30) {
     risk = 'high';
-  } else if (engScore < 65 || criticalGaps > 0 || (normalizedAvgScore > 0 && normalizedAvgScore < 50)) {
+  } else if (engScore < 50) {
     risk = 'medium';
-  } else {
-    risk = 'low';
   }
 
   return { engagementScore: engScore, risk };
@@ -632,7 +620,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       list.push({
         type: 'warning',
         title: `${stats.riskCounts.high} student${stats.riskCounts.high > 1 ? 's' : ''} at high risk`,
-        body: `${pct(stats.riskCounts.high)} of students have low engagement or severe cognitive gaps. Schedule individual check-ins.`
+        body: `${pct(stats.riskCounts.high)} of students have very low engagement or have gone inactive. Schedule individual check-ins.`
       });
     } else if (stats.riskCounts.low > 0) {
       list.push({
@@ -905,8 +893,8 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   <TooltipContent className="max-w-[280px]">
                     <p className="mb-1 text-sm font-semibold border-b pb-1 mb-2">Risk Categories</p>
                     <ul className="text-xs space-y-1.5">
-                      <li><strong className="text-[#DC2626]">At Risk:</strong> Severe drop in engagement, action recommended.</li>
-                      <li><strong className="text-[#E0A020]">Needs Support:</strong> Noticeable drop in engagement.</li>
+                      <li><strong className="text-[#DC2626]">At Risk:</strong> Very low engagement or inactive for a long time. Action recommended.</li>
+                      <li><strong className="text-[#E0A020]">Needs Support:</strong> Only part of the assessments completed, or activity is slowing.</li>
                       <li><strong className="text-[#1E8A6E]">On Track:</strong> Healthy and consistent engagement.</li>
                       <li><strong className="text-gray-400">Not Started:</strong> Pending onboarding or first assessment.</li>
                     </ul>

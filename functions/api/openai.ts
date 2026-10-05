@@ -2,7 +2,7 @@ const ALLOWED_MODELS = ['gpt-4o-mini'];
 const MAX_BODY_CHARS = 200_000;
 const MAX_MESSAGES = 60;
 const DEFAULT_MAX_TOKENS = 1200;
-const MAX_TOKENS_CAP = 2000;
+const MAX_TOKENS_CAP = 4000;
 
 const ALLOWED_ORIGIN_PATTERNS = [
   /^https:\/\/([a-z0-9-]+\.)*jotminds\.com$/,

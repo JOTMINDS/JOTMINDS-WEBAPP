@@ -56,21 +56,6 @@ export const initialCurriculumTrack: CurriculumTrack = {
   topics: []
 };
 
-export const initialPerformanceMetric: TeacherPerformanceMetric = {
-  monthly: {
-    monthName: 'August 2026',
-    lessonsPlanned: 24,
-    lessonsDelivered: 22,
-    assessmentsCreated: 18,
-    averageStudentEngagement: 4.4
-  },
-  annual: {
-    curriculumCoveragePct: 82,
-    studentOutcomeTrendPct: 14,
-    teachingEffectivenessScore: 91
-  }
-};
-
 // ─── STORAGE HELPER FUNCTIONS ──────────────────────────────────────────────────
 
 export function getSavedLessonPlans(teacherId?: string): LessonPlan[] {
@@ -166,15 +151,58 @@ export function saveCurriculumTrack(track: CurriculumTrack): void {
   localStorage.setItem(STORAGE_KEYS.CURRICULUM_TRACKS, JSON.stringify(track));
 }
 
-export function getTeacherPerformanceMetrics(): TeacherPerformanceMetric {
-  if (typeof window === 'undefined') return initialPerformanceMetric;
-  const saved = localStorage.getItem(STORAGE_KEYS.PERFORMANCE_METRICS);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {}
-  }
-  return initialPerformanceMetric;
+const DELIVERED_STATUSES = ['delivered', 'reviewed', 'completed'];
+const UNDERSTANDING_TO_RATING: Record<string, number> = { Excellent: 5, Good: 4, Average: 3, Poor: 2 };
+
+/**
+ * Derives the teacher's planner analytics from their real lesson plans, reflections and
+ * curriculum tracker. Nothing here is a stored or placeholder figure.
+ */
+export function getTeacherPerformanceMetrics(teacherId?: string): TeacherPerformanceMetric {
+  const now = new Date();
+  const plans = getSavedLessonPlans(teacherId);
+  const reflections = getPostLessonReflections(teacherId);
+
+  const inThisMonth = (iso?: string) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    return !isNaN(d.getTime()) && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  };
+
+  const monthPlans = plans.filter(p => inThisMonth(p.createdAt));
+  const monthReflections = reflections.filter(r => inThisMonth(r.reflectedAt));
+  const ratings = monthReflections
+    .map(r => UNDERSTANDING_TO_RATING[r.studentUnderstandingLevel])
+    .filter((n): n is number => typeof n === 'number');
+
+  const delivered = plans.filter(p => DELIVERED_STATUSES.includes(p.status)).length;
+  const deliveryRate = plans.length ? delivered / plans.length : 0;
+  const reflectionRate = delivered ? Math.min(1, reflections.length / delivered) : 0;
+  const differentiatedRate = plans.length ? plans.filter(p => p.differentiatedInstruction).length / plans.length : 0;
+
+  const track = getCurriculumTrack();
+  const completedAsPlannedPct = reflections.length
+    ? Math.round((reflections.filter(r => r.completedAsPlanned).length / reflections.length) * 100)
+    : null;
+
+  return {
+    monthly: {
+      monthName: now.toLocaleDateString('default', { month: 'long', year: 'numeric' }),
+      lessonsPlanned: monthPlans.length,
+      lessonsDelivered: monthPlans.filter(p => DELIVERED_STATUSES.includes(p.status)).length,
+      assessmentsCreated: monthPlans.filter(p => p.assessment).length,
+      reflectionsLogged: monthReflections.length,
+      averageStudentEngagement: ratings.length
+        ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
+        : null,
+    },
+    annual: {
+      curriculumCoveragePct: Math.min(100, Math.max(0, Math.round(track.completionPercentage || 0))),
+      completedAsPlannedPct,
+      // Usage score: 50% delivery, 25% reflection, 25% differentiation across all saved plans
+      teachingEffectivenessScore: Math.round((deliveryRate * 0.5 + reflectionRate * 0.25 + differentiatedRate * 0.25) * 100),
+    },
+  };
 }
 
 export function getCopilotChatHistory(): CopilotChatMessage[] {

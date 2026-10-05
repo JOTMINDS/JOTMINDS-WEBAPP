@@ -85,6 +85,8 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       subject,
       gradeClass,
       topic,
+      subtopic,
+      curriculumFramework,
       durationMinutes,
       existingPlanText: mode === "upload" ? existingPlanText : undefined,
       classSummary
@@ -121,7 +123,8 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
           `Apply ${topic} to solve practical real-life scenarios relevant to ${gradeClass} learners.`
         ]
       },
-      phases: aiResult?.phases || [
+      curriculumAlignment: Array.isArray(aiResult?.curriculumAlignment) ? aiResult.curriculumAlignment : undefined,
+      phases: (Array.isArray(aiResult?.phases) && aiResult.phases.length ? aiResult.phases : null) || [
         {
           name: 'Introduction',
           durationMinutes: 5,
@@ -140,7 +143,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
           name: 'Guided Practice',
           durationMinutes: 10,
           activity: `Peer Pair Work: Differentiated task cards addressing core, support, and extension groups.`,
-          teachingNotes: 'Rove and assist the 5 students flagged for abstract concept support.',
+          teachingNotes: 'Move around the room and help learners who find abstract ideas difficult.',
           materialsNeeded: ['Task cards']
         },
         {
@@ -158,23 +161,23 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
           materialsNeeded: []
         }
       ],
-      differentiatedInstruction: {
+      differentiatedInstruction: aiResult?.differentiatedInstruction?.coreActivity ? aiResult.differentiatedInstruction : {
         coreActivity: {
           title: `Standard ${topic} Problem Solving`,
-          description: `Solve 4 standard ${topic} exercises independently.`,
-          targetGroup: 'Average Proficiency Learners (60% of class)'
+          description: `1. Give each learner 4 standard ${topic} exercises. 2. Learners work on their own. 3. Check answers together as a class.`,
+          targetGroup: 'Learners working at the expected level'
         },
         supportActivity: {
-          title: `Visual Step-by-Step Guided Task`,
-          description: `Solve 2 scaffolded ${topic} problems using visual templates and formula cards.`,
-          targetGroup: 'Learners needing abstract support (5 students)',
-          scaffoldingNotes: ['Provide formula reference sheet', 'Color-code variables']
+          title: `Guided Step-by-Step Task`,
+          description: `1. Give learners 2 smaller ${topic} problems with a worked example. 2. Let them follow the example step by step. 3. Check in with them after each problem.`,
+          targetGroup: 'Learners who need extra help',
+          scaffoldingNotes: ['Give a reference sheet with the key steps', 'Use different colours for each part of the problem']
         },
         advancedActivity: {
-          title: `Real-World Application & Modeling`,
-          description: `Formulate a real-life word problem statement representing ${topic} and solve it.`,
-          targetGroup: 'High Achievers & Fast Finishers (6 students)',
-          extensionTasks: ['Create challenge problem for a classmate']
+          title: `Real-World Challenge`,
+          description: `1. Ask learners to write their own real-life problem about ${topic}. 2. They solve it. 3. They swap with a partner to check.`,
+          targetGroup: 'Learners ready for a challenge',
+          extensionTasks: ['Create a challenge problem for a classmate']
         }
       },
       status: 'generated',

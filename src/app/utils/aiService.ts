@@ -250,8 +250,77 @@ Keep answers concise, warm, structured, and highly practical. Use markdown.`
   }
 }
 
+type LessonPlanRequest = {
+  subject: string;
+  gradeClass: string;
+  topic: string;
+  subtopic?: string;
+  curriculumFramework?: string;
+  durationMinutes?: number;
+  classSummary?: any;
+  existingPlanText?: string;
+};
+
+/**
+ * Lesson format rules per curriculum. Each framework names its own sections, so the plan
+ * is asked to use that framework's terminology rather than a generic template.
+ */
+function getCurriculumFormatGuide(framework?: string): { name: string; guide: string; alignmentLabels: string[] } {
+  const f = (framework || '').toLowerCase();
+  if (f.includes('national') || f.includes('nacca') || /\bges\b/.test(f)) {
+    return {
+      name: 'Ghana National Curriculum (NaCCA / GES)',
+      alignmentLabels: ['Strand', 'Sub-strand', 'Content Standard', 'Indicators', 'Core Competencies', 'Teaching & Learning Resources'],
+      guide: `Follow the NaCCA / GES lesson plan format:
+- Organise by Strand, Sub-strand, Content Standard and Learning Indicators (use NaCCA codes such as B7.1.1.1.1 when you know them for this grade and subject, otherwise describe them without inventing codes).
+- Objectives must be written as learning indicators ("By the end of the lesson, the learner will be able to ...").
+- Name the Core Competencies developed (Critical Thinking and Problem Solving, Creativity and Innovation, Communication and Collaboration, Cultural Identity and Global Citizenship, Personal Development and Leadership, Digital Literacy).
+- The three-part lesson is Phase 1: Starter, Phase 2: Main (New Learning), Phase 3: Plenary / Reflection. Map them onto the phases as: Introduction = Starter, Main Lesson + Guided Practice = Main, Assessment + Conclusion = Plenary / Reflection.
+- Include Teaching & Learning Resources and a Key Assessment of learning.
+- Use local, Ghanaian examples and contexts.`
+    };
+  }
+  if (f.includes('british') || f.includes('cambridge') || f.includes('edexcel') || f.includes('pearson')) {
+    return {
+      name: 'British Curriculum (Cambridge / Pearson Edexcel)',
+      alignmentLabels: ['Syllabus Reference', 'Learning Objectives', 'Success Criteria', 'Key Vocabulary', 'Command Words'],
+      guide: `Follow the Cambridge / Edexcel lesson plan format:
+- Use Learning Objectives (with the syllabus reference where known) plus student-friendly Success Criteria ("I can ...").
+- Include Key Vocabulary and the exam Command Words students must practise (describe, explain, evaluate, compare ...).
+- Structure as Starter, Main Activities, Plenary, mapped onto the phases as: Introduction = Starter, Main Lesson + Guided Practice = Main Activities, Assessment + Conclusion = Plenary.
+- Include a check-for-understanding with exam-style questions and note Assessment for Learning strategies.`
+    };
+  }
+  if (f.includes('baccalaureate') || /\bib\b/.test(f)) {
+    return {
+      name: 'International Baccalaureate (IB)',
+      alignmentLabels: ['Statement of Inquiry', 'Key Concept', 'Related Concepts', 'Global Context', 'Inquiry Questions', 'ATL Skills', 'Learner Profile Attributes'],
+      guide: `Follow the IB inquiry-based lesson plan format:
+- Include a Statement of Inquiry, Key Concept, Related Concepts and Global Context, plus Factual, Conceptual and Debatable inquiry questions.
+- Identify Approaches to Learning (ATL) skills and the IB Learner Profile attributes developed.
+- Structure the lesson as Engage, Explore, Explain / Apply, Reflect, mapped onto the phases as: Introduction = Engage, Main Lesson = Explore, Guided Practice = Explain / Apply, Assessment + Conclusion = Reflect.
+- Objectives are written as what students will inquire into and be able to do.`
+    };
+  }
+  if (f.includes('oxford')) {
+    return {
+      name: 'Oxford International Curriculum',
+      alignmentLabels: ['Learning Intentions', 'Success Criteria', 'Key Vocabulary', 'Cross-curricular Links'],
+      guide: `Follow the Oxford International lesson plan format:
+- Open with Learning Intentions and student-friendly Success Criteria.
+- Include Key Vocabulary and Cross-curricular Links.
+- Structure as Hook, Teach, Practise, Review, mapped onto the phases as: Introduction = Hook, Main Lesson = Teach, Guided Practice = Practise, Assessment + Conclusion = Review.`
+    };
+  }
+  return {
+    name: framework && framework !== 'Other' ? framework : 'the curriculum the teacher selected',
+    alignmentLabels: ['Learning Outcomes', 'Key Vocabulary', 'Resources'],
+    guide: `Use clear, standard lesson-plan sections: learning outcomes, key vocabulary, resources, a structured sequence of activities and a closing check for understanding.`
+  };
+}
+
 export async function generateAILessonPlan(
-  subjectOrPayload: string | { subject: string; gradeClass: string; topic: string; durationMinutes?: number; classSummary?: any; existingPlanText?: string },
+  subjectOrPayload: string | LessonPlanRequest,
   topic?: string,
   grade?: string,
   curriculum?: string,
@@ -262,46 +331,81 @@ export async function generateAILessonPlan(
   assessmentQuestions: { question: string; answer: string }[];
   summary: string;
 } | any | null> {
-  const subjectStr = typeof subjectOrPayload === 'string' ? subjectOrPayload : subjectOrPayload.subject;
-  const topicStr = topic || (typeof subjectOrPayload === 'object' ? subjectOrPayload.topic : '');
-  const gradeStr = grade || (typeof subjectOrPayload === 'object' ? subjectOrPayload.gradeClass : '');
+  const payload = typeof subjectOrPayload === 'object' ? subjectOrPayload : null;
+  const subjectStr = payload ? payload.subject : subjectOrPayload;
+  const topicStr = topic || payload?.topic || '';
+  const gradeStr = grade || payload?.gradeClass || '';
+  const framework = curriculum || payload?.curriculumFramework;
+  const duration = payload?.durationMinutes || 45;
+  const format = getCurriculumFormatGuide(framework);
 
-  const prompt = `Generate a comprehensive differentiated lesson plan for:
+  const prompt = `Generate a complete, ready-to-teach lesson plan.
+
 Subject: ${subjectStr}
 Topic: ${topicStr}
-Grade/Level: ${gradeStr}
-Curriculum Standard: ${curriculum || 'Standard'}
+${payload?.subtopic ? `Subtopic: ${payload.subtopic}\n` : ''}Grade/Level: ${gradeStr}
+Curriculum: ${format.name}
+Total lesson time: ${duration} minutes
 ${customQuestions ? `Custom Assessment Questions requested by teacher: ${customQuestions}` : ''}
-${typeof subjectOrPayload === 'object' && subjectOrPayload.existingPlanText ? `CRITICAL INSTRUCTION: The teacher provided an EXISTING lesson plan. You MUST tailor and enhance this exact plan to fit the class demands (using the cognitive profile summary) and curriculum. Do not ignore the existing content, rebuild upon it!
+${payload?.existingPlanText ? `CRITICAL INSTRUCTION: The teacher provided an EXISTING lesson plan. You MUST tailor and enhance this exact plan to fit the class and curriculum. Do not ignore the existing content, build on it.
 EXISTING PLAN CONTENT:
-${subjectOrPayload.existingPlanText}` : ''}
-${typeof subjectOrPayload === 'object' ? `Class Summary Data: ${JSON.stringify(subjectOrPayload.classSummary)}` : ''}
+${payload.existingPlanText}` : ''}
+${payload?.classSummary ? `Class Summary Data: ${JSON.stringify(payload.classSummary)}` : ''}
 
-Respond strictly with valid JSON with this structure:
+CURRICULUM FORMAT (follow this strictly, the plan must look like a ${format.name} lesson plan):
+${format.guide}
+
+Write in plain, simple English that a busy teacher can scan quickly. Be specific to ${topicStr}; do not write generic filler.
+
+Respond strictly with valid JSON in this structure:
 {
-  "summary": "Brief 2-sentence overview of the lesson",
-  "objectives": ["Objective 1", "Objective 2", "Objective 3"],
+  "summary": "2 sentence overview of the lesson",
+  "objectives": ["3-4 measurable objectives written in the style this curriculum uses"],
+  "curriculumAlignment": [
+    { "label": "one of: ${format.alignmentLabels.join(' | ')}", "items": ["specific item(s) for this lesson"] }
+  ],
+  "phases": [
+    { "name": "Introduction", "durationMinutes": 0, "activity": "What the teacher and learners do, step by step", "teachingNotes": "Short teaching tip", "materialsNeeded": ["item"] },
+    { "name": "Main Lesson", "durationMinutes": 0, "activity": "...", "teachingNotes": "...", "materialsNeeded": [] },
+    { "name": "Guided Practice", "durationMinutes": 0, "activity": "...", "teachingNotes": "...", "materialsNeeded": [] },
+    { "name": "Assessment", "durationMinutes": 0, "activity": "...", "teachingNotes": "...", "materialsNeeded": [] },
+    { "name": "Conclusion", "durationMinutes": 0, "activity": "...", "teachingNotes": "...", "materialsNeeded": [] }
+  ],
   "differentiationStrategies": [
-    { "style": "Visual Learners", "activity": "Specific activity description" },
-    { "style": "Auditory Learners", "activity": "Specific activity description" },
-    { "style": "Kinesthetic Learners", "activity": "Specific activity description" },
-    { "style": "Analytical Thinkers", "activity": "Specific activity description" }
+    { "style": "Visual Learners", "activity": "Specific activity" },
+    { "style": "Auditory Learners", "activity": "Specific activity" },
+    { "style": "Kinesthetic Learners", "activity": "Specific activity" },
+    { "style": "Analytical Thinkers", "activity": "Specific activity" }
   ],
   "assessmentQuestions": [
-    { "question": "Question 1", "answer": "Answer 1" },
-    { "question": "Question 2", "answer": "Answer 2" },
-    { "question": "Question 3", "answer": "Answer 3" }
+    { "question": "Question 1", "answer": "Answer 1" }
   ]
-}`;
+}
+Rules: the five phase names must be exactly as shown and in that order; phase durationMinutes must be whole numbers that add up to exactly ${duration}; give at least 5 assessmentQuestions.`;
 
   const res = await callOpenAI([
-    { role: 'system', content: 'You are an expert curriculum designer and educational consultant specializing in differentiated instruction and African/international curricula.' },
+    { role: 'system', content: `You are an expert curriculum designer who writes lesson plans in the exact format of the curriculum the teacher selected (${format.name}).` },
     { role: 'user', content: prompt }
-  ], true, 1200);
+  ], true, 3500);
 
   if (!res) return null;
   try {
-    return JSON.parse(res);
+    const parsed = JSON.parse(res);
+    // Make phase times add up to the requested duration even if the model drifts
+    if (Array.isArray(parsed.phases) && parsed.phases.length) {
+      const sum = parsed.phases.reduce((t: number, p: any) => t + (Number(p.durationMinutes) || 0), 0);
+      if (sum !== duration && sum > 0) {
+        let used = 0;
+        parsed.phases.forEach((p: any, i: number) => {
+          if (i === parsed.phases.length - 1) p.durationMinutes = Math.max(1, duration - used);
+          else {
+            p.durationMinutes = Math.max(1, Math.round((Number(p.durationMinutes) / sum) * duration));
+            used += p.durationMinutes;
+          }
+        });
+      }
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -670,16 +774,37 @@ export async function generateAIDifferentiatedInstruction(payload: {
   subject: string;
   topic: string;
   gradeClass: string;
+  curriculumFramework?: string;
   classSummary?: any;
 }): Promise<any | null> {
   try {
-    const prompt = `Generate differentiated instruction strategies:
-Payload: ${JSON.stringify(payload)}
-Return JSON with structured strategies.`;
+    const prompt = `Create three levels of classroom activity for this lesson so every learner can take part.
+
+Subject: ${payload.subject}
+Topic: ${payload.topic}
+Grade/Class: ${payload.gradeClass}
+${payload.curriculumFramework ? `Curriculum: ${payload.curriculumFramework}\n` : ''}${payload.classSummary ? `Class profile: ${JSON.stringify(payload.classSummary)}\n` : ''}
+WRITING RULES (important):
+- Use short, simple sentences and everyday words. No education jargon.
+- Each description is 2-4 numbered or clearly separated steps the teacher can follow, starting with an action verb (e.g. "1. Give each pair a ... 2. Ask them to ...").
+- Say exactly what the learners do and what they produce.
+- targetGroup describes who the activity is for in plain words (e.g. "Learners who need extra help"). Do not invent student numbers or percentages.
+- Scaffolding notes and extension tasks are short, one-line tips.
+
+Return JSON in exactly this structure:
+{
+  "coreActivity": { "title": "short title", "description": "steps", "targetGroup": "Learners working at the expected level" },
+  "supportActivity": { "title": "short title", "description": "steps", "targetGroup": "Learners who need extra help", "scaffoldingNotes": ["tip 1", "tip 2", "tip 3"] },
+  "advancedActivity": { "title": "short title", "description": "steps", "targetGroup": "Learners ready for a challenge", "extensionTasks": ["task 1", "task 2"] },
+  "alternativeActivities": [
+    { "title": "short title", "description": "steps", "targetGroup": "who it suits", "type": "Visual | Auditory | Kinesthetic | Reading/Writing" }
+  ]
+}
+Give 3-4 alternativeActivities, one for each learning style.`;
     const res = await callOpenAI([
-      { role: 'system', content: 'You are an expert in differentiated instruction.' },
+      { role: 'system', content: 'You are a practical teaching coach. You write differentiated activities that are easy to read and easy to run in a real classroom.' },
       { role: 'user', content: prompt }
-    ], true, 800);
+    ], true, 2200);
     if (res) return JSON.parse(res);
   } catch (err) {
     console.error('Failed to generate Differentiated Instruction:', err);
@@ -691,35 +816,60 @@ export async function generateAILessonAssessment(payload: {
   subject: string;
   topic: string;
   gradeClass: string;
+  curriculumFramework?: string;
   uploadText?: string;
 }): Promise<any | null> {
-  try {
-    const prompt = `Generate a multi-format lesson assessment suite for:
-Subject: ${payload.subject}
+  const context = `Subject: ${payload.subject}
 Topic: ${payload.topic}
 Grade/Class: ${payload.gradeClass}
-${payload.uploadText ? `Teacher Uploaded Reference Materials / Custom Assessment Base:
+${payload.curriculumFramework ? `Curriculum: ${payload.curriculumFramework}\n` : ''}${payload.uploadText ? `Teacher Uploaded Reference Materials / Custom Assessment Base:
 ${payload.uploadText}
-Please adapt, organize, and expand upon the teacher's uploaded assessment materials to create structured MCQs, short answers, discussion items, practical exercises, and homework.` : ''}
+Adapt and expand on the teacher's uploaded material rather than ignoring it.\n` : ''}`;
+  const system = 'You are an expert assessment designer creating quizzes and homework aligned to national and international curricula. Questions must be accurate, unambiguous and suited to the grade level.';
 
-Return JSON with this structure:
-{
-  "title": "${payload.topic} Assessment Suite",
-  "mcqs": [{ "id": "m1", "type": "mcq", "question": "Question text", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "Why A is correct" }],
-  "shortAnswer": [{ "id": "s1", "type": "short_answer", "question": "Question text", "correctAnswer": "Model answer", "explanation": "Marking scheme note" }],
-  "discussion": [{ "id": "d1", "type": "discussion", "question": "Deep thinking prompt", "explanation": "Facilitation guide" }],
-  "practicalExercises": [{ "id": "p1", "type": "practical", "question": "Hands-on activity task", "explanation": "Success criteria" }],
-  "homework": [{ "id": "h1", "type": "homework", "question": "Take-home extension problem", "explanation": "Target completion time: 20 mins" }]
-}`;
+  // Two smaller calls instead of one big one: a single response is limited in length,
+  // so asking for everything at once only ever produced a few questions.
+  const objectiveCall = async () => {
     const res = await callOpenAI([
-      { role: 'system', content: 'You are an expert assessment designer creating differentiated quizzes and homework aligned to national and international curricula.' },
-      { role: 'user', content: prompt }
-    ], true, 1200);
-    if (res) return JSON.parse(res);
-  } catch (err) {
-    console.error('Failed to generate Lesson Assessment:', err);
-  }
-  return null;
+      { role: 'system', content: system },
+      { role: 'user', content: `Write multiple choice questions for this lesson.
+${context}
+Write EXACTLY 10 multiple choice questions, ordered from easy to hard, each with 4 options.
+Return JSON: { "mcqs": [{ "id": "m1", "type": "mcq", "question": "Question text", "options": ["A", "B", "C", "D"], "correctAnswer": "the full text of the correct option", "explanation": "Why it is correct" }] }` }
+    ], true, 3500);
+    return res ? JSON.parse(res) : null;
+  };
+
+  const writtenCall = async () => {
+    const res = await callOpenAI([
+      { role: 'system', content: system },
+      { role: 'user', content: `Write written, discussion, practical and homework tasks for this lesson.
+${context}
+Write EXACTLY: 6 short answer questions, 4 discussion prompts, 3 practical exercises and 3 homework tasks.
+Return JSON: {
+  "shortAnswer": [{ "id": "s1", "type": "short_answer", "question": "Question text", "correctAnswer": "Model answer", "explanation": "Marking scheme note" }],
+  "discussion": [{ "id": "d1", "type": "discussion", "question": "Thinking prompt", "explanation": "Facilitation guide" }],
+  "practicalExercises": [{ "id": "p1", "type": "practical", "question": "Hands-on task", "explanation": "Success criteria" }],
+  "homework": [{ "id": "h1", "type": "homework", "question": "Take-home task", "explanation": "Target completion time" }]
+}` }
+    ], true, 3500);
+    return res ? JSON.parse(res) : null;
+  };
+
+  const [objective, written] = await Promise.all([
+    objectiveCall().catch(err => { console.error('Failed to generate MCQs:', err); return null; }),
+    writtenCall().catch(err => { console.error('Failed to generate written assessment items:', err); return null; }),
+  ]);
+
+  if (!objective && !written) return null;
+  return {
+    title: `${payload.topic} Assessment Suite`,
+    mcqs: objective?.mcqs || [],
+    shortAnswer: written?.shortAnswer || [],
+    discussion: written?.discussion || [],
+    practicalExercises: written?.practicalExercises || [],
+    homework: written?.homework || [],
+  };
 }
 
 export async function chatWithLessonCopilot(message: string, history: any[], context?: any): Promise<string | null> {

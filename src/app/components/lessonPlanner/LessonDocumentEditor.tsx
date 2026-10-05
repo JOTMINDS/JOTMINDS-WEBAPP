@@ -30,9 +30,18 @@ export const LessonDocumentEditor: React.FC<LessonDocumentEditorProps> = ({ plan
       plan.objectives?.skills?.forEach((o) => docText += `- Skills: ${o}\n`);
       plan.objectives?.applications?.forEach((o) => docText += `- Application: ${o}\n`);
       
+      plan.curriculumAlignment?.forEach((sec) => {
+        if (!sec?.items?.length) return;
+        docText += `\n## ${sec.label}\n`;
+        sec.items.forEach((item) => docText += `- ${item}\n`);
+      });
+
       docText += `\n## Lesson Phases\n`;
       plan.phases?.forEach((p) => {
-        docText += `### ${p.name} (${p.durationMinutes} mins)\n${p.activity}\n\n`;
+        docText += `### ${p.name} (${p.durationMinutes} mins)\n${p.activity}\n`;
+        if (p.teachingNotes) docText += `*Teaching note:* ${p.teachingNotes}\n`;
+        if (p.materialsNeeded?.length) docText += `*Materials:* ${p.materialsNeeded.join(', ')}\n`;
+        docText += `\n`;
       });
       
       setContent(docText);

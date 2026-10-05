@@ -5,7 +5,7 @@ import { Progress } from '../ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { TrendingUp, Award, Calendar, CheckCircle2, FileText, Star, Target, Info } from 'lucide-react';
 import { TeacherPerformanceMetric } from '../../types/lessonPlannerTypes';
-import { getTeacherPerformanceMetrics, getSavedLessonPlans, initialPerformanceMetric } from '../../utils/lessonPlannerStorage';
+import { getTeacherPerformanceMetrics, getSavedLessonPlans } from '../../utils/lessonPlannerStorage';
 
 interface TeacherPerformanceAnalyticsViewProps {
   user?: any;
@@ -13,24 +13,13 @@ interface TeacherPerformanceAnalyticsViewProps {
 
 export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyticsViewProps> = ({ user }) => {
   const hasPlans = getSavedLessonPlans(user?.id).length > 0;
-  
-  const metrics: TeacherPerformanceMetric = hasPlans 
-    ? getTeacherPerformanceMetrics()
-    : {
-        ...initialPerformanceMetric,
-        monthly: {
-          monthName: new Date().toLocaleDateString('default', { month: 'long', year: 'numeric' }),
-          lessonsPlanned: 0,
-          lessonsDelivered: 0,
-          assessmentsCreated: 0,
-          averageStudentEngagement: 0
-        },
-        annual: {
-          teachingEffectivenessScore: 0,
-          curriculumCoveragePct: 0,
-          studentOutcomeTrendPct: 0
-        }
-      };
+  const metrics: TeacherPerformanceMetric = getTeacherPerformanceMetrics(user?.id);
+  const deliveryRate = metrics.monthly.lessonsPlanned
+    ? Math.round((metrics.monthly.lessonsDelivered / metrics.monthly.lessonsPlanned) * 100)
+    : 0;
+  const score = metrics.annual.teachingEffectivenessScore;
+  const scoreLabel = score >= 80 ? 'Exemplary' : score >= 60 ? 'Strong' : score >= 35 ? 'Developing' : 'Getting Started';
+  const coverage = metrics.annual.curriculumCoveragePct;
 
   if (!hasPlans) {
     return (
@@ -56,7 +45,7 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
               Lesson Planner Analytics
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
-              {metrics.annual.teachingEffectivenessScore} / 100 Integration Score
+              {score} / 100 Usage Score
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -98,7 +87,7 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
             </Popover>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Lessons Delivered</span>
             <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{metrics.monthly.lessonsDelivered}</span>
-            <p className="text-[10px] text-slate-500">91% Delivery Rate</p>
+            <p className="text-[10px] text-slate-500">{deliveryRate}% of this month's lessons</p>
           </CardContent>
         </Card>
 
@@ -125,12 +114,12 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
                 <Info className="w-4 h-4" />
               </PopoverTrigger>
               <PopoverContent className="w-64 text-xs">
-                Average engagement metric based on your post-lesson reflections and evaluations of student responsiveness.
+                Average student understanding from this month's post-lesson reflections (Excellent = 5, Good = 4, Average = 3, Poor = 2).
               </PopoverContent>
             </Popover>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Avg Engagement Score</span>
-            <span className="text-2xl font-black text-amber-500">{metrics.monthly.averageStudentEngagement} / 5.0</span>
-            <p className="text-[10px] text-slate-500">Student classroom rating</p>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block pr-6">Avg Student Understanding</span>
+            <span className="text-2xl font-black text-amber-500">{metrics.monthly.averageStudentEngagement !== null ? `${metrics.monthly.averageStudentEngagement} / 5.0` : '—'}</span>
+            <p className="text-[10px] text-slate-500">{metrics.monthly.reflectionsLogged} reflection{metrics.monthly.reflectionsLogged === 1 ? '' : 's'} this month</p>
           </CardContent>
         </Card>
       </div>
@@ -146,7 +135,7 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-black text-slate-900 dark:text-white">{metrics.annual.curriculumCoveragePct}%</span>
-              <Badge className="bg-indigo-600 text-white text-xs">On Track</Badge>
+              <Badge className="bg-indigo-600 text-white text-xs">{coverage === 0 ? 'Not started' : coverage >= 100 ? 'Complete' : 'In progress'}</Badge>
             </div>
             <Progress value={metrics.annual.curriculumCoveragePct} className="h-2 bg-slate-100 dark:bg-slate-800" />
           </CardContent>
@@ -155,30 +144,30 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-emerald-500" /> Student Outcome Trend
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Completed As Planned
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">+{metrics.annual.studentOutcomeTrendPct}%</span>
-              <Badge className="bg-emerald-600 text-white text-xs">Positive Growth</Badge>
+              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{metrics.annual.completedAsPlannedPct !== null ? `${metrics.annual.completedAsPlannedPct}%` : '—'}</span>
             </div>
-            <p className="text-xs text-slate-500">Formative & Summative assessment score improvement over baseline.</p>
+            <p className="text-xs text-slate-500">Share of reflected lessons you delivered as planned. Log post-lesson reflections to populate this.</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Award className="w-4 h-4 text-purple-500" /> Teaching Effectiveness Score
+              <Award className="w-4 h-4 text-purple-500" /> Planner Usage Score
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-black text-purple-600 dark:text-purple-400">{metrics.annual.teachingEffectivenessScore} / 100</span>
-              <Badge className="bg-purple-600 text-white text-xs">Exemplary</Badge>
+              <span className="text-2xl font-black text-purple-600 dark:text-purple-400">{score} / 100</span>
+              <Badge className="bg-purple-600 text-white text-xs">{scoreLabel}</Badge>
             </div>
-            <Progress value={metrics.annual.teachingEffectivenessScore} className="h-2 bg-slate-100 dark:bg-slate-800" />
+            <p className="text-xs text-slate-500">Blend of lessons delivered (50%), reflections logged (25%) and differentiated plans (25%).</p>
+            <Progress value={score} className="h-2 bg-slate-100 dark:bg-slate-800" />
           </CardContent>
         </Card>
       </div>

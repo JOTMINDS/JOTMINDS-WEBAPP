@@ -16,6 +16,22 @@ interface DifferentiatedInstructionViewProps {
   onUpdateInstruction?: (diff: DifferentiatedInstruction) => void;
 }
 
+/** Shows "1. do this 2. do that" text as a numbered list so it is quick to scan. */
+const Steps: React.FC<{ text: string }> = ({ text }) => {
+  const parts = (text || '').split(/\s*(?:^|\s)\d+[.)]\s+/).map(t => t.trim()).filter(Boolean);
+  if (parts.length < 2) return <>{text}</>;
+  return (
+    <ol className="space-y-1.5 list-none">
+      {parts.map((step, i) => (
+        <li key={i} className="flex items-start gap-2">
+          <span className="flex-shrink-0 w-4 h-4 mt-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-[10px] font-bold flex items-center justify-center">{i + 1}</span>
+          <span>{step}</span>
+        </li>
+      ))}
+    </ol>
+  );
+};
+
 export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionViewProps> = ({
   plan,
   onUpdateInstruction
@@ -23,77 +39,53 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
   const [instruction, setInstruction] = useState<DifferentiatedInstruction>(
     plan?.differentiatedInstruction || {
       coreActivity: {
-        title: 'Standard Topic Activity',
-        description: 'Complete standard exercises independently.',
-        targetGroup: 'Average Proficiency Learners (60% of class)'
+        title: `Practise ${plan?.topic || 'the topic'}`,
+        description: `1. Give each learner a set of exercises on ${plan?.topic || 'the topic'}. 2. Learners work on their own. 3. Check the answers together as a class.`,
+        targetGroup: 'Learners working at the expected level'
       },
       supportActivity: {
-        title: 'Visual Scaffolded Balance Solving',
-        description: 'Complete scaffolded problems with visual templates and step-by-step guidance.',
-        targetGroup: 'Learners needing abstract support (5 students flagged)',
+        title: 'Step-by-Step Guided Task',
+        description: `1. Show a fully worked example on ${plan?.topic || 'the topic'}. 2. Give learners a smaller task with the same steps. 3. Check in with them after each question.`,
+        targetGroup: 'Learners who need extra help',
         scaffoldingNotes: [
-          'Provide physical/visual balance scale diagram.',
-          'Color-code variable x in blue and constants in red.',
-          'Rove and offer prompt hints instead of direct answers.'
+          'Give a reference sheet with the key steps.',
+          'Use pictures or diagrams to show each idea.',
+          'Give a hint instead of the answer.'
         ]
       },
       advancedActivity: {
-        title: 'Real-World Word Problem Modeling',
-        description: 'Formulate and solve a real-world problem based on the topic.',
-        targetGroup: 'High Achievers & Fast Finishers (6 students)',
+        title: 'Real-Life Challenge',
+        description: `1. Ask learners to write their own real-life problem about ${plan?.topic || 'the topic'}. 2. They solve it. 3. They swap with a partner to check each other's work.`,
+        targetGroup: 'Learners ready for a challenge',
         extensionTasks: [
-          'Create a custom challenge task for a peer.',
-          'Create a visual representation of the concept.'
+          'Make a challenge question for a classmate.',
+          'Draw a picture or chart that explains the idea.'
         ]
       },
       alternativeActivities: [
         {
-          title: 'Kinesthetic Modeling',
-          description: 'Students use physical blocks and a balance scale to physically add/remove blocks, mirroring algebra steps hands-on.',
-          targetGroup: 'Kinesthetic / Tactile Learners',
+          title: 'Hands-On Practice',
+          description: `1. Give learners real objects to handle. 2. Ask them to show each step of ${plan?.topic || 'the topic'} with the objects. 3. They explain what they did.`,
+          targetGroup: 'Learners who learn by doing',
           type: 'Kinesthetic'
         },
         {
-          title: 'Interactive Digital Task',
-          description: 'Use an interactive gamified app where students manipulate digital scales and drag variables to isolate x.',
-          targetGroup: 'Tech-Savvy / Gamification Motivated',
-          type: 'Digital'
-        },
-        {
-          title: 'Auditory Discussion & Peer Explanation Relay',
-          description: 'Students pair up to explain each step aloud to their partner before writing it down, cementing logical sequencing.',
-          targetGroup: 'Auditory / Verbal Learners',
+          title: 'Talk It Through',
+          description: '1. Put learners in pairs. 2. One explains each step out loud. 3. The partner listens, asks questions, then they swap.',
+          targetGroup: 'Learners who learn by listening and talking',
           type: 'Auditory'
         },
         {
-          title: 'Visual Flowchart Concept Mapping',
-          description: 'Students map out a decision tree for the core concepts using flow diagrams.',
-          targetGroup: 'Visual / Graphic Organizers',
+          title: 'Draw a Diagram',
+          description: '1. Ask learners to draw a diagram or mind map of the main ideas. 2. Use colours for each part. 3. Learners present their diagram to a partner.',
+          targetGroup: 'Learners who learn by seeing',
           type: 'Visual'
         },
         {
-          title: 'Musical / Rhythmic Memorization',
-          description: 'Create a short mnemonic or chant to remember key rules.',
-          targetGroup: 'Musical / Rhythmic Learners',
-          type: 'Musical'
-        },
-        {
-          title: 'Independent Research & Real-World Application',
-          description: 'Research how the topic is used in real-world professions and present findings.',
-          targetGroup: 'Independent / Self-Directed Learners',
-          type: 'Research'
-        },
-        {
-          title: 'Group Debate on Methods',
-          description: 'Form teams to debate different problem-solving approaches to a complex scenario.',
-          targetGroup: 'Social / Interpersonal Learners',
-          type: 'Interpersonal'
-        },
-        {
-          title: 'Nature-Based Data Collection',
-          description: 'Collect environmental data outside and find patterns related to the topic.',
-          targetGroup: 'Naturalistic / Outdoors Learners',
-          type: 'Naturalistic'
+          title: 'Write It Up',
+          description: '1. Ask learners to write a short summary in their own words. 2. They list 3 key words and what they mean. 3. They read it to a partner.',
+          targetGroup: 'Learners who learn by reading and writing',
+          type: 'Reading/Writing'
         }
       ]
     }
@@ -107,12 +99,13 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
 
   const handleReGenerate = async () => {
     setIsGenerating(true);
-    toast.info('The system is generating fresh 3-tier differentiated learning activities...');
+    toast.info('Creating new activities for every learner...');
 
     const res = await generateAIDifferentiatedInstruction({
       subject: plan?.subject || '',
       topic: plan?.topic || 'Topic',
-      gradeClass: plan?.gradeClass || 'JHS 2'
+      gradeClass: plan?.gradeClass || 'JHS 2',
+      curriculumFramework: plan?.curriculumFramework
     });
 
     setIsGenerating(false);
@@ -133,17 +126,17 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
-              Module 3 • Differentiated Instruction
+              Module 3 • Activities for Every Learner
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
-              3-Tier Learner Scaffolding
+              3 Levels of Activity
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Layers className="w-5 h-5 text-indigo-400" /> Multi-Tier Differentiated Activities
+            <Layers className="w-5 h-5 text-indigo-400" /> Activities for Every Learner
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Tailored learning activities for Average, Struggling (Support), and Gifted (Advanced) learners.
+            Three levels of activity so every learner can take part: extra support, main activity and challenge.
           </p>
         </div>
 
@@ -153,7 +146,7 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
           className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md"
         >
           {isGenerating ? <Loader className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
-          Refresh Differentiated Activities
+          Refresh Activities
         </Button>
       </div>
 
@@ -165,7 +158,7 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <Badge className="bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-300 px-2.5 py-0.5 text-[11px]">
-                  Tier 1 • Support
+                  Extra Support
                 </Badge>
                 <HelpCircle className="w-4 h-4 text-amber-600" />
               </div>
@@ -177,14 +170,14 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-lg border border-amber-200/60 dark:border-amber-900/50">
-                {instruction.supportActivity.description}
-              </p>
+              <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-lg border border-amber-200/60 dark:border-amber-900/50">
+                <Steps text={instruction.supportActivity.description} />
+              </div>
 
               {instruction.supportActivity.scaffoldingNotes?.length > 0 && (
                 <div className="space-y-1.5">
                   <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider block">
-                    Teacher Scaffolding Notes:
+                    Tips to help these learners:
                   </span>
                   <ul className="space-y-1">
                     {instruction.supportActivity.scaffoldingNotes.map((note, i) => (
@@ -206,7 +199,7 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <Badge className="bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border-indigo-300 px-2.5 py-0.5 text-[11px]">
-                  Tier 2 • Core Activity
+                  Main Activity
                 </Badge>
                 <Users className="w-4 h-4 text-indigo-600" />
               </div>
@@ -218,9 +211,9 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-lg border border-indigo-200/60 dark:border-indigo-900/50">
-                {instruction.coreActivity.description}
-              </p>
+              <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-lg border border-indigo-200/60 dark:border-indigo-900/50">
+                <Steps text={instruction.coreActivity.description} />
+              </div>
             </CardContent>
           </div>
         </Card>
@@ -231,7 +224,7 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <Badge className="bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-300 px-2.5 py-0.5 text-[11px]">
-                  Tier 3 • Advanced
+                  Challenge
                 </Badge>
                 <Zap className="w-4 h-4 text-emerald-600" />
               </div>
@@ -243,14 +236,14 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-lg border border-emerald-200/60 dark:border-emerald-900/50">
-                {instruction.advancedActivity.description}
-              </p>
+              <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-lg border border-emerald-200/60 dark:border-emerald-900/50">
+                <Steps text={instruction.advancedActivity.description} />
+              </div>
 
               {instruction.advancedActivity.extensionTasks?.length > 0 && (
                 <div className="space-y-1.5">
                   <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider block">
-                    Extension Challenges:
+                    Extra challenges:
                   </span>
                   <ul className="space-y-1">
                     {instruction.advancedActivity.extensionTasks.map((task, i) => (
@@ -286,13 +279,13 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
                     {alt.title}
                   </CardTitle>
                   <CardDescription className="text-[11px] text-slate-500 font-medium">
-                    Target: {alt.targetGroup}
+                    Good for: {alt.targetGroup}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
-                    {alt.description}
-                  </p>
+                  <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
+                    <Steps text={alt.description} />
+                  </div>
                 </CardContent>
               </Card>
             ))}

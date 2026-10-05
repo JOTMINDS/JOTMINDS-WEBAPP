@@ -117,7 +117,17 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
     
     if (aiResult) {
       const newPlan: LessonPlan = {
-        ...aiResult,
+        subject,
+        gradeClass,
+        topic,
+        durationMinutes: 40,
+        date: new Date().toISOString().slice(0, 10),
+        objectives: Array.isArray(aiResult.objectives)
+          ? { knowledge: aiResult.objectives, skills: [], applications: [] }
+          : aiResult.objectives,
+        curriculumAlignment: aiResult.curriculumAlignment,
+        phases: aiResult.phases || [],
+        differentiatedInstruction: aiResult.differentiatedInstruction,
         id: `lp-ai-${Date.now()}`,
         teacherId: user?.id || 'unknown',
         status: 'draft',
