@@ -365,7 +365,7 @@ export function calculateTeacherPerformance(
   classes: ClassMetrics[]
 ): TeacherPerformance {
   const teacherClasses = classes.filter(c => c.teacherId === teacherId);
-  const totalStudents = teacherClasses.reduce((sum, c) => c.studentCount, 0);
+  const totalStudents = teacherClasses.reduce((sum, c) => sum + c.studentCount, 0);
 
   const averageClassEngagement =
     teacherClasses.reduce((sum, c) => c.averageEngagementScore, 0) / teacherClasses.length || 0;

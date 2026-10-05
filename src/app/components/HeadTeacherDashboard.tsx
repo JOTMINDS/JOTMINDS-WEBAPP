@@ -545,40 +545,11 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                           {teacher.classesManaged} classes • {teacher.totalStudents} students
                         </CardDescription>
                       </div>
-                      <Badge
-                        variant={
-                          teacher.performanceRating === 'excellent'
-                            ? 'default'
-                            : teacher.performanceRating === 'needs_improvement'
-                            ? 'destructive'
-                            : 'secondary'
-                        }
-                      >
-                        {teacher.performanceRating.replace('_', ' ')}
-                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-3 md:grid-cols-4">
                       <div className="p-3 bg-blue-50 rounded-lg">
-                        <div className="text-xs text-gray-600">Class Engagement</div>
-                        <div className="text-xl font-bold text-blue-600">
-                          {teacher.averageClassEngagement}%
-                        </div>
-                      </div>
-                      <div className="p-3 bg-green-50 rounded-lg">
-                        <div className="text-xs text-gray-600">Student Growth</div>
-                        <div className="text-xl font-bold text-green-600">
-                          {teacher.averageStudentGrowth}%
-                        </div>
-                      </div>
-                      <div className="p-3 bg-orange-50 rounded-lg">
-                        <div className="text-xs text-gray-600">Needs Support</div>
-                        <div className="text-xl font-bold text-orange-600">
-                          {teacher.studentsNeedingSupport}
-                        </div>
-                      </div>
-                      <div className="p-3 bg-purple-50 rounded-lg">
                         <div className="text-xs text-gray-600">Lessons Created</div>
                         <div className="text-xl font-bold text-purple-600">
                           {teacher.differentiatedLessonsCreated}
