@@ -10,15 +10,12 @@ import { InstitutionMembers } from './InstitutionDashboard/InstitutionMembers';
 import { TeacherClassManagement } from './TeacherClassManagement';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
-import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap, Brain, Sparkles, School, Target } from 'lucide-react';
+import { ArrowRight, History, RefreshCcw, Calendar, AlertCircle, Eye, ArrowLeft, ClipboardList, Download, Users, BarChart3, GraduationCap, Brain, Sparkles, School } from 'lucide-react';
 import { exportReportToPDF } from '../utils/pdfGenerator';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
-import { 
-  TeacherClassOverview,
-  TeacherAnalyticsComparison
-} from './teacher';
+import { TeacherClassOverview } from './teacher';
 import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
 import { JTIAReport } from './JTIAReport';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
@@ -51,7 +48,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'manage-classes' | 'students' | 'preschool' | 'analytics' | 'alignment' | 'lesson-planner' | 'jtia'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'manage-classes' | 'students' | 'preschool' | 'analytics' | 'lesson-planner' | 'jtia'>('overview');
   const [loading, setLoading] = useState(true);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
@@ -369,7 +366,6 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         { id: 'students', label: 'Students', icon: Eye, badge: students.length },
         { id: 'preschool', label: 'Early Years (Preschool)', icon: Sparkles, badge: 'Ages 2–6' },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-        { id: 'alignment', label: 'Alignment Analysis', icon: Target },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
         { id: 'jtia', label: 'Teaching Insights', icon: GraduationCap },
       ]
@@ -380,7 +376,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'preschool' ? 'Early Years & Preschool' : activeTab === 'alignment' ? 'Alignment Analysis' : activeTab.replace('-', ' ')}
+          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'preschool' ? 'Early Years & Preschool' : activeTab.replace('-', ' ')}
         </h2>
         {user.school && (
           <Badge variant="outline" className="border-purple-600 text-purple-700">
@@ -423,7 +419,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       <div className="max-w-5xl mx-auto w-full space-y-6">
 
         {/* Students connected banner — visible on class-related tabs */}
-        {['overview', 'students', 'analytics', 'alignment'].includes(activeTab) && (
+        {['overview', 'students', 'analytics'].includes(activeTab) && (
           <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg, #5B7DB1, #6B4C9A)' }}>
             <span className="text-xl" aria-hidden>👥</span>
             <div>
@@ -481,19 +477,6 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             <CentralAnalyticsHub students={students as any} assessments={[...allAssessments, ...allMyAssessments]} user={user} />
           </div>
         )}
-
-        {(activeTab as string) === 'alignment' && (
-          <div className="space-y-8">
-            <TeacherAnalyticsComparison 
-              teacherAssessments={allMyAssessments}
-              studentAssessments={allAssessments}
-              students={students as any}
-              teacherProfile={user}
-            />
-          </div>
-        )}
-
-
 
         {activeTab === 'jtia' && (
           <div className="space-y-8">
