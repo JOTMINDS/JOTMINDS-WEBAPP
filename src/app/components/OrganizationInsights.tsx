@@ -15,6 +15,7 @@ import { getAssessmentsByUserId } from '../utils/storage';
 import { ScrollArea } from './ui/scroll-area';
 import { TeamSynergy } from './TeamSynergy';
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
+import { InfoTip } from './ui/info-tip';
 
 interface OrganizationInsightsProps {
   professionals: User[];
@@ -188,7 +189,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-indigo-600" />
-            <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds Organization Executive Advisor</CardTitle>
+            <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds Organization Executive Advisor<InfoTip>An AI summary of your organisation's data with strengths, risks and next steps. Check it against what you know of your people.</InfoTip></CardTitle>
           </div>
           <Button 
             variant="outline" 
@@ -215,7 +216,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
                 <div className="p-3 bg-white/90 rounded-lg border border-green-100">
                   <h4 className="text-xs font-bold text-green-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5 text-green-600" /> Organizational Synergies
-                  </h4>
+                  <InfoTip>Ways your team's styles work well together.</InfoTip></h4>
                   <ul className="space-y-1.5 text-xs text-gray-700">
                     {aiOrgReport.keyStrengths.map((str, idx) => (
                       <li key={idx} className="flex items-start gap-1.5">
@@ -229,7 +230,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
                 <div className="p-3 bg-white/90 rounded-lg border border-amber-100">
                   <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Strategic Alerts & Growth Areas
-                  </h4>
+                  <InfoTip>Gaps or risks worth your attention, such as people who have not been assessed.</InfoTip></h4>
                   <ul className="space-y-1.5 text-xs text-gray-700">
                     {aiOrgReport.strategicAlerts.map((alt, idx) => (
                       <li key={idx} className="flex items-start gap-1.5">
@@ -245,7 +246,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
                 <div className="p-3 bg-indigo-100/50 rounded-lg border border-indigo-200">
                   <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                     <Target className="w-3.5 h-3.5 text-indigo-700" /> Executive Leadership & Workplace Strategy
-                  </h4>
+                  <InfoTip>Suggested leadership approaches based on your team's profile.</InfoTip></h4>
                   <p className="text-xs text-indigo-950 leading-relaxed">{aiOrgReport.pedagogicalAlignment}</p>
                 </div>
               )}
@@ -266,7 +267,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Team Members
-            </CardTitle>
+            <InfoTip>Everyone linked to your organisation.</InfoTip></CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -280,7 +281,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Assessment Completion
-            </CardTitle>
+            <InfoTip>The share of team members who have completed the thinking style assessment.</InfoTip></CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -296,7 +297,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Dominant Thinking Style
-            </CardTitle>
+            <InfoTip>The thinking style that is most common in your team.</InfoTip></CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -310,7 +311,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
         </Card>
         <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cognitive Diversity</CardTitle>
+            <CardTitle className="text-sm font-medium">Cognitive Diversity<InfoTip>High when your team includes more than two different thinking styles. A diverse team brings different ways of solving problems.</InfoTip></CardTitle>
             <Brain className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -341,7 +342,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
             {/* Insights Panel */}
             <Card className="col-span-7 md:col-span-3">
               <CardHeader>
-                <CardTitle>Strategic Insights</CardTitle>
+                <CardTitle>Strategic Insights<InfoTip>Short observations about your team that you can act on.</InfoTip></CardTitle>
                 <CardDescription>
                   Cognitive observations based on current data.
                 </CardDescription>
@@ -375,7 +376,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="h-5 w-5 text-indigo-600" />
                   Cognitive Style Distribution
-                </CardTitle>
+                <InfoTip>How your team splits across thinking styles.</InfoTip></CardTitle>
                 <CardDescription>
                   Breakdown of Analytical, Creative, and Practical thinking styles.
                 </CardDescription>
@@ -418,7 +419,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
             <CardHeader>
                 <div className="flex flex-col md:flex-row justify-between gap-4">
                     <div>
-                        <CardTitle>Team Directory</CardTitle>
+                        <CardTitle>Team Directory<InfoTip>Everyone in the team with their completed assessments.</InfoTip></CardTitle>
                         <CardDescription>
                             View individual cognitive style results.
                         </CardDescription>
@@ -492,7 +493,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-yellow-600" />
                 Learning Styles
-              </CardTitle>
+              <InfoTip>How your team splits across learning styles.</InfoTip></CardTitle>
               <CardDescription>
                 How your team members process information and learn new skills.
               </CardDescription>
@@ -530,7 +531,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
               <CardTitle className="flex items-center gap-2">
                 <Scale className="h-5 w-5 text-blue-600" />
                 Decision Making Patterns (Dual Process)
-              </CardTitle>
+              <InfoTip>How many team members decide mostly by intuition and how many by careful reflection.</InfoTip></CardTitle>
               <CardDescription>
                 Understanding the balance between Intuitive and Reflective decision making.
               </CardDescription>

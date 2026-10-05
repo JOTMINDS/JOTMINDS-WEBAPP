@@ -23,6 +23,7 @@ import {
   deleteInstitutionInvitation
 } from '../../utils/institution';
 import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, saveTeacherAssignment, saveClass } from '../../utils/storage';
+import { InfoTip } from '../ui/info-tip';
 
 interface InstitutionMembersProps {
   institution: Institution;
@@ -673,7 +674,7 @@ export function InstitutionMembers({
         <div className="mt-6 mb-4">
           <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-500" /> Pending Connection Requests ({pendingMembers.length})
-          </h3>
+          <InfoTip>People who used your institution code and are waiting for you to accept them.</InfoTip></h3>
           {/* Batch actions */}
           <div className="flex items-center gap-3 mb-3">
             <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
@@ -845,7 +846,7 @@ export function InstitutionMembers({
 
       {activeMembers.length > 0 && (
         <div className="mt-6 mb-4 space-y-3">
-          <h3 className="text-md font-semibold text-gray-800">Members ({activeMembers.length})</h3>
+          <h3 className="text-md font-semibold text-gray-800">Members ({activeMembers.length})<InfoTip>Everyone connected to your institution.</InfoTip></h3>
           
           {/* Admin group */}
           {adminMembers.length > 0 && renderRoleGroup(adminMembers, 'Admin', 'admin', ROLE_COLORS.admin)}
@@ -862,7 +863,7 @@ export function InstitutionMembers({
             <div className="flex justify-between items-center pb-3 border-b mb-4">
               <div className="flex items-center gap-2">
                 <GraduationCap className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-bold text-gray-900">Assign Teacher to Class</h3>
+                <h3 className="font-bold text-gray-900">Assign Teacher to Class<InfoTip>Link this teacher to a class so they can see its students.</InfoTip></h3>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setAssignClassTeacher(null)} className="h-8 w-8 p-0 text-gray-400">
                 <X className="w-4 h-4" />

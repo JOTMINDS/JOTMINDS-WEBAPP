@@ -7,6 +7,7 @@ import { ArrowLeft, Heart, Lightbulb, Brain, Target, BookOpen, MessageCircle, Us
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { calculateAge } from '../utils/dateUtils';
 import { formatDate } from '../utils/dateFormat';
+import { InfoTip } from './ui/info-tip';
 
 interface ParentChildCognitiveReportProps {
   child: User;
@@ -430,7 +431,7 @@ export function ParentChildCognitiveReport({ child, assessments, onBack }: Paren
               <h4 className="flex items-center gap-2 mb-3 text-pink-900">
                 <Sparkles className="h-5 w-5" />
                 Summary
-              </h4>
+              <InfoTip>A short description of how your child learns, thinks and decides.</InfoTip></h4>
               <p className="text-gray-700 leading-relaxed">
                 {getChildSummary()}
               </p>
@@ -466,7 +467,7 @@ export function ParentChildCognitiveReport({ child, assessments, onBack }: Paren
               <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center mb-3">
                 <thinkingDesc.icon className="h-6 w-6 text-purple-600" />
               </div>
-              <CardTitle className="text-xl">Thinking Style</CardTitle>
+              <CardTitle className="text-xl">Thinking Style<InfoTip>The kind of thinking your child uses most.</InfoTip></CardTitle>
               <Badge variant="outline" className="w-fit mt-2">{thinkingStyle || specializedStyle}</Badge>
             </CardHeader>
             <CardContent>
@@ -485,7 +486,7 @@ export function ParentChildCognitiveReport({ child, assessments, onBack }: Paren
               <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center mb-3">
                 <decisionDesc.icon className="h-6 w-6 text-orange-600" />
               </div>
-              <CardTitle className="text-xl">Decision-Making Style</CardTitle>
+              <CardTitle className="text-xl">Decision-Making Style<InfoTip>How your child usually makes choices.</InfoTip></CardTitle>
               <Badge variant="outline" className="w-fit mt-2">{decisionStyle || specializedStyle}</Badge>
             </CardHeader>
             <CardContent>
@@ -504,7 +505,7 @@ export function ParentChildCognitiveReport({ child, assessments, onBack }: Paren
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-green-600" />
               Key Takeaways for Parents
-            </CardTitle>
+            <InfoTip>The most important points to remember, in plain language.</InfoTip></CardTitle>
             <CardDescription>
               Practical ways to support {child.name}'s learning and development
             </CardDescription>
@@ -572,7 +573,7 @@ export function ParentChildCognitiveReport({ child, assessments, onBack }: Paren
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
               Parenting Tips
-            </CardTitle>
+            <InfoTip>Everyday ways to support your child at home, matched to their profile.</InfoTip></CardTitle>
             <CardDescription>
               Specific strategies to help {child.name} thrive
             </CardDescription>
@@ -605,7 +606,7 @@ export function ParentChildCognitiveReport({ child, assessments, onBack }: Paren
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-indigo-600" />
               Summary for Parents
-            </CardTitle>
+            <InfoTip>A one-page overview you can read quickly or share with your child's teacher.</InfoTip></CardTitle>
           </CardHeader>
           <CardContent>
             {specializedAssessment && !learningStyle ? (

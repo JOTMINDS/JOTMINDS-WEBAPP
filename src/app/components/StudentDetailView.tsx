@@ -21,6 +21,7 @@ import { formatDate } from '../utils/dateFormat';
 import { generatePDF } from '../utils/pdfGenerator';
 import { toast } from 'sonner';
 import { diagnoseStudentRisk } from '../utils/riskDiagnostic';
+import { InfoTip } from './ui/info-tip';
 
 interface StudentDetailViewProps {
   student: User;
@@ -306,7 +307,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-green-600" />
                   Learning Style
-                </CardTitle>
+                <InfoTip>How this student prefers to learn.</InfoTip></CardTitle>
               </CardHeader>
               <CardContent>
                 {latestLearning ? (
@@ -329,7 +330,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="h-5 w-5 text-purple-600" />
                   Thinking Style
-                </CardTitle>
+                <InfoTip>The kind of thinking this student uses most.</InfoTip></CardTitle>
               </CardHeader>
               <CardContent>
                 {latestThinking ? (
@@ -365,7 +366,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-orange-600" />
                   Decision Style
-                </CardTitle>
+                <InfoTip>How this student usually makes decisions.</InfoTip></CardTitle>
               </CardHeader>
               <CardContent>
                 {latestDecision ? (
@@ -390,7 +391,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
                 <div>
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Compass className="w-5 h-5 text-indigo-600" /> Experiential Learning Dimensions Interpretation
-                  </CardTitle>
+                  <InfoTip>What this student's Kolb scores mean in practice. Each dimension is scored out of 48.</InfoTip></CardTitle>
                   <CardDescription className="text-xs">
                     Multidimensional cognitive analysis for {student.name}
                   </CardDescription>
@@ -681,7 +682,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
               <Compass className="w-5 h-5 text-indigo-600" />
               <h3 className="text-base font-bold text-slate-900">
                 Cognitive Root-Cause Analysis
-              </h3>
+              <InfoTip>The reasons behind this student's status, such as missing assessments, a long gap in activity, or a strong lean toward one way of learning.</InfoTip></h3>
               <Badge variant="outline" className="text-xs font-medium text-slate-600 ml-auto">
                 {diagnostic.rootCauses.length} Factor{diagnostic.rootCauses.length !== 1 ? 's' : ''} Identified
               </Badge>
@@ -736,7 +737,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
               <Zap className="w-5 h-5 text-amber-500" />
               <h3 className="text-base font-bold text-slate-900">
                 Prescriptive Interventions & Remediation
-              </h3>
+              <InfoTip>Suggested actions for the teacher, student and school.</InfoTip></h3>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -745,7 +746,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
                 <div>
                   <div className="flex items-center gap-2 pb-2.5 border-b border-blue-100 mb-3">
                     <GraduationCap className="w-4 h-4 text-blue-600" />
-                    <h4 className="text-xs font-bold text-blue-950 uppercase tracking-wider">Instructional Strategies (Teacher)</h4>
+                    <h4 className="text-xs font-bold text-blue-950 uppercase tracking-wider">Instructional Strategies (Teacher)<InfoTip>Things you can do in class for this student.</InfoTip></h4>
                   </div>
                   <div className="space-y-2.5">
                     {diagnostic.interventions.filter(i => i.target === 'Teacher').length > 0 ? (
@@ -773,7 +774,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
                 <div>
                   <div className="flex items-center gap-2 pb-2.5 border-b border-purple-100 mb-3">
                     <Brain className="w-4 h-4 text-purple-600" />
-                    <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wider">Metacognitive Habits (Student)</h4>
+                    <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wider">Metacognitive Habits (Student)<InfoTip>Habits the student can practise to learn better, such as planning before starting.</InfoTip></h4>
                   </div>
                   <div className="space-y-2.5">
                     {diagnostic.interventions.filter(i => i.target === 'Student').length > 0 ? (
@@ -801,7 +802,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
                 <div>
                   <div className="flex items-center gap-2 pb-2.5 border-b border-indigo-100 mb-3">
                     <School className="w-4 h-4 text-indigo-600" />
-                    <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Institutional Support (School)</h4>
+                    <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Institutional Support (School)<InfoTip>Support the school can offer, such as counselling or follow-up.</InfoTip></h4>
                   </div>
                   <div className="space-y-2.5">
                     {diagnostic.interventions.filter(i => i.target === 'Counselor / School').length > 0 ? (
@@ -834,7 +835,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-yellow-600" />
                 Personalized Teaching Strategies
-              </CardTitle>
+              <InfoTip>Teaching ideas matched to this student's profile.</InfoTip></CardTitle>
               <CardDescription>
                 Evidence-based strategies tailored to {student.name}'s cognitive profile
               </CardDescription>
@@ -868,7 +869,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-orange-600" />
                 Areas for Additional Support
-              </CardTitle>
+              <InfoTip>Where this student may benefit from extra help.</InfoTip></CardTitle>
               <CardDescription>
                 Dimensions where {student.name} may need extra guidance
               </CardDescription>
@@ -893,7 +894,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-green-600" />
                 Assessment History
-              </CardTitle>
+              <InfoTip>Assessments this student has completed, newest first.</InfoTip></CardTitle>
               <CardDescription>
                 Track {student.name}'s assessment journey over time
               </CardDescription>
@@ -973,7 +974,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-blue-600" />
                 Teacher Notes & Observations
-              </CardTitle>
+              <InfoTip>Your own notes about this student.</InfoTip></CardTitle>
               <CardDescription>
                 Record your observations and notes about {student.name}'s progress
               </CardDescription>

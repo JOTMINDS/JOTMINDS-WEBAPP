@@ -52,6 +52,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+import { InfoTip } from './ui/info-tip';
 
 interface Props {
   schoolId: string;
@@ -268,7 +269,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               <CardTitle className="text-sm flex items-center gap-2">
                 <Users className="h-4 w-4 text-blue-600" />
                 Total Students
-              </CardTitle>
+              <InfoTip>Students linked to your school. The line underneath shows how many were active in the last 7 days.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">{metrics.totalStudents}</div>
@@ -283,7 +284,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               <CardTitle className="text-sm flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-600" />
                 Avg Engagement
-              </CardTitle>
+              <InfoTip>The average engagement score across students: how often and how consistently they use the platform. The line underneath is the total number of sessions.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-600">{metrics.averageEngagementScore}%</div>
@@ -298,7 +299,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               <CardTitle className="text-sm flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-purple-600" />
                 Avg Performance
-              </CardTitle>
+              <InfoTip>The average score across students' assessment dimensions. It reflects strength and preference, not academic marks. The growth rate underneath is 0 for now because growth tracking has not started.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-purple-600">{metrics.averageCognitiveScore}%</div>
@@ -313,7 +314,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               <CardTitle className="text-sm flex items-center gap-2">
                 <UserCheck className="h-4 w-4 text-orange-600" />
                 Teachers
-              </CardTitle>
+              <InfoTip>Teachers linked to your school. The line underneath is the number of classes.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-orange-600">{metrics.totalTeachers}</div>
@@ -331,7 +332,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               <CardTitle className="flex items-center gap-2 text-red-900">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
                 Critical Insights Requiring Attention
-              </CardTitle>
+              <InfoTip>The most important things the data shows about your school right now, such as groups at risk or low usage.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {insights
@@ -418,7 +419,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               {/* Performance Distribution */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Performance Distribution</CardTitle>
+                  <CardTitle>Performance Distribution<InfoTip>How many students fall into each performance level.</InfoTip></CardTitle>
                   <CardDescription>Students by performance level</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -449,7 +450,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               {/* Feature Adoption */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Feature Adoption</CardTitle>
+                  <CardTitle>Feature Adoption<InfoTip>How many students use each platform feature, such as assessments, Brain Gym or reflections.</InfoTip></CardTitle>
                   <CardDescription>Platform feature usage by students</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -471,7 +472,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
             {/* Engagement Metrics */}
             <Card>
               <CardHeader>
-                <CardTitle>Engagement Metrics</CardTitle>
+                <CardTitle>Engagement Metrics<InfoTip>How students are using the platform. Challenge completion is the challenges finished out of 10 per student.</InfoTip></CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
@@ -506,7 +507,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                   <CardTitle className="text-green-900 flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-green-600" />
                     Improving
-                  </CardTitle>
+                  <InfoTip>Students whose results are improving. Growth tracking over time has not started yet, so this shows 0 for now.</InfoTip></CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-4xl font-bold text-green-600">{metrics.studentsImproving}</div>
@@ -521,7 +522,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                   <CardTitle className="text-yellow-900 flex items-center gap-2">
                     <Clock className="h-5 w-5 text-yellow-600" />
                     Stagnant
-                  </CardTitle>
+                  <InfoTip>Until growth tracking starts, every student is counted here by default. It does not mean they have stopped progressing.</InfoTip></CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-4xl font-bold text-yellow-600">{metrics.studentsStagnant}</div>
@@ -536,7 +537,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                   <CardTitle className="text-red-900 flex items-center gap-2">
                     <TrendingDown className="h-5 w-5 text-red-600" />
                     Regressing
-                  </CardTitle>
+                  <InfoTip>Students whose results are falling. Growth tracking over time has not started yet, so this shows 0 for now.</InfoTip></CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-4xl font-bold text-red-600">{metrics.studentsRegressing}</div>
@@ -549,7 +550,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
 
             <Card>
               <CardHeader>
-                <CardTitle>Gamification Engagement</CardTitle>
+                <CardTitle>Gamification Engagement<InfoTip>How much students take part in XP, streaks, badges and challenges.</InfoTip></CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
@@ -716,7 +717,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
           <TabsContent value="grades" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Performance by Grade</CardTitle>
+                <CardTitle>Performance by Grade<InfoTip>The average performance score for each grade or level.</InfoTip></CardTitle>
                 <CardDescription>Average scores and engagement across grades</CardDescription>
               </CardHeader>
               <CardContent>
@@ -756,7 +757,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
           <TabsContent value="students" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Student Reports</CardTitle>
+                <CardTitle>Student Reports<InfoTip>Reports you can generate or download for students.</InfoTip></CardTitle>
                 <CardDescription>
                   Every student in the school. Each row shows the teacher they're assigned to (if any). Click a student to open their full cognitive report.
                 </CardDescription>

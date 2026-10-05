@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { Users, CheckCircle2, ChevronRight, BrainCircuit, Info } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
+import { InfoTip } from './ui/info-tip';
 
 interface TeamSynergyProps {
   professionals: any[]; // The processed professionals list containing scores
@@ -97,7 +98,7 @@ export function TeamSynergy({ professionals }: TeamSynergyProps) {
       {/* Selection Column */}
       <Card className="md:col-span-1 border-indigo-100 dark:border-indigo-900/50">
         <CardHeader>
-          <CardTitle className="text-lg">Select Team</CardTitle>
+          <CardTitle className="text-lg">Select Team<InfoTip>Choose the team you want to analyse.</InfoTip></CardTitle>
           <CardDescription>Select 2-5 members to analyze synergy.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -150,7 +151,7 @@ export function TeamSynergy({ professionals }: TeamSynergyProps) {
                 <CardTitle className="flex items-center gap-2">
                   <BrainCircuit className="h-5 w-5 text-indigo-600" />
                   Team Synergy Report
-                </CardTitle>
+                <InfoTip>How the thinking, learning and decision styles in this team combine.</InfoTip></CardTitle>
                 <CardDescription>
                   Analyzing {selectedTeam.length} members
                 </CardDescription>
@@ -167,7 +168,7 @@ export function TeamSynergy({ professionals }: TeamSynergyProps) {
                   <div>
                     <h4 className="font-semibold text-sm mb-3 flex items-center gap-2 text-green-700 dark:text-green-400">
                       Potential Strengths
-                    </h4>
+                    <InfoTip>What this mix of styles is likely to do well.</InfoTip></h4>
                     <ul className="space-y-2">
                       {synergyReport.strengths.map((s, i) => (
                         <li key={i} className="text-sm flex items-start gap-2">
@@ -180,7 +181,7 @@ export function TeamSynergy({ professionals }: TeamSynergyProps) {
                   <div>
                     <h4 className="font-semibold text-sm mb-3 flex items-center gap-2 text-orange-700 dark:text-orange-400">
                       Potential Friction Points
-                    </h4>
+                    <InfoTip>Where different styles may clash or miss each other. Awareness helps teams avoid these.</InfoTip></h4>
                     <ul className="space-y-2">
                       {synergyReport.weaknesses.map((w, i) => (
                         <li key={i} className="text-sm flex items-start gap-2">
@@ -196,7 +197,7 @@ export function TeamSynergy({ professionals }: TeamSynergyProps) {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Cognitive Composition</CardTitle>
+                <CardTitle className="text-sm">Cognitive Composition<InfoTip>The share of each style in the team.</InfoTip></CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">

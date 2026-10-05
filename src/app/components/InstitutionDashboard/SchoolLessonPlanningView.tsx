@@ -14,6 +14,7 @@ import {
 } from '../../utils/lessonPlannerStorage';
 import { LessonPlan, PostLessonReflection } from '../../types/lessonPlannerTypes';
 import { InstitutionMember } from '../../utils/institution';
+import { InfoTip } from '../ui/info-tip';
 
 interface SchoolLessonPlanningViewProps {
   institutionId?: string;
@@ -92,7 +93,7 @@ export const SchoolLessonPlanningView: React.FC<SchoolLessonPlanningViewProps> =
               <span className="p-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30">
                 <BookOpen className="w-5 h-5" />
               </span>
-              <h2 className="text-xl font-bold">Faculty Lesson Planning & Delivery</h2>
+              <h2 className="text-xl font-bold">Faculty Lesson Planning & Delivery<InfoTip>Lesson plans your teachers have saved and delivered. Use it to see what is being taught and how it went.</InfoTip></h2>
             </div>
             <p className="text-xs text-indigo-200/80 max-w-2xl">
               Track pedagogical preparation, monitor delivered lessons, and inspect faculty reflections and curriculum coverage across all grades.

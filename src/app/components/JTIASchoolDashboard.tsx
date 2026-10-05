@@ -16,6 +16,7 @@ import {
 import { JTIASchoolAggregatedInsights, generateSchoolJTIAInsights, JTIAReportData } from '../utils/jtiaScoring';
 import { JTIADomain, jtiaDomainDescriptions } from '../utils/jtiaQuestions';
 import { generateSchoolJTIAAIInsights } from '../utils/aiService';
+import { InfoTip } from './ui/info-tip';
 
 interface JTIASchoolDashboardProps {
   reports?: JTIAReportData[];
@@ -125,7 +126,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
           <div>
             <h3 className="font-extrabold text-emerald-300 text-base md:text-lg">
               Designed for Development, Not Ranking
-            </h3>
+            <InfoTip>These results are for growth. They are not used to rank or grade teachers.</InfoTip></h3>
             <p className="text-xs md:text-sm text-slate-300 mt-1 max-w-3xl">
               The Teaching Insights Assessment does not rank or compare teachers against one another. This dashboard aggregates anonymized institutional patterns exclusively to guide targeted professional development, celebrate school strengths, and elevate learning experiences.
             </p>
@@ -236,7 +237,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
             <CardTitle className="text-lg font-bold flex items-center gap-2">
               <BarChart2 className="w-5 h-5 text-emerald-600" />
               Institutional Intelligence Map
-            </CardTitle>
+            <InfoTip>A map of your teachers' strengths across the five Teaching Insights domains.</InfoTip></CardTitle>
             <CardDescription>
               Average across 5 core teaching intelligence domains
             </CardDescription>
@@ -262,7 +263,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <Target className="w-5 h-5 text-amber-600" />
                   Evidence-Based PD Priorities
-                </CardTitle>
+                <InfoTip>Professional development topics recommended from the biggest capability gaps across your school.</InfoTip></CardTitle>
                 <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 text-xs">
                   {aiPdPriorities ? 'Live School Strategy' : 'Algorithmic Priorities'}
                 </Badge>
@@ -315,7 +316,7 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
             <CardTitle className="text-lg font-bold flex items-center gap-2">
               <Layers className="w-5 h-5 text-indigo-600" />
               School-Wide Competency Heatmap
-            </CardTitle>
+            <InfoTip>Average score for each teaching competency across your school, so you can spot strong and weak areas.</InfoTip></CardTitle>
             <CardDescription>
               Detailed breakdown of all 30 teaching sub-competencies across the 5 domains.
             </CardDescription>

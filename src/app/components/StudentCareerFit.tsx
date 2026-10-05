@@ -8,6 +8,7 @@ import { Button } from './ui/button';
 import { Target, ArrowRight, Brain, AlertTriangle } from 'lucide-react';
 import { CandidateComparisonPanel } from './CandidateComparisonPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { InfoTip } from './ui/info-tip';
 
 interface StudentCareerFitProps {
   cognitiveProfile: CognitiveProfile;
@@ -35,7 +36,7 @@ export function StudentCareerFit({ cognitiveProfile, userName }: StudentCareerFi
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Career Match Scanner</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Career Match Scanner<InfoTip>Shows careers that suit your cognitive profile.</InfoTip></h2>
           <p className="text-gray-500">Discover which career paths naturally align with your cognitive blueprint.</p>
         </div>
       </div>
@@ -87,7 +88,7 @@ export function StudentCareerFit({ cognitiveProfile, userName }: StudentCareerFi
       <Dialog open={!!selectedCareer} onOpenChange={(open) => !open && setSelectedCareer(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Career Fit Analysis</DialogTitle>
+            <DialogTitle>Career Fit Analysis<InfoTip>How well this career fits your strengths.</InfoTip></DialogTitle>
             <DialogDescription>
               Detailed breakdown of your cognitive alignment with this career path.
             </DialogDescription>

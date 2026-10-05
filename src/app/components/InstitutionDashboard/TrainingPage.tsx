@@ -14,6 +14,7 @@ import { InstitutionMember } from '../../utils/institution';
 import { getAllClasses, getAllUsers, getAssignmentsForTeacher, getAssessmentsByUserId } from '../../utils/storage';
 import { extractDimensionScores } from '../../utils/cognitiveXP';
 import { generateTrainingResourcePDF } from '../../utils/pdfGenerator';
+import { InfoTip } from '../ui/info-tip';
 
 interface ResourceItem {
   id: string;
@@ -251,7 +252,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
               <span className="p-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30">
                 <GraduationCap className="w-5 h-5" />
               </span>
-              <h2 className="text-xl font-bold">Faculty Training, Alignment & Recruitment Intelligence</h2>
+              <h2 className="text-xl font-bold">Faculty Training, Alignment & Recruitment Intelligence<InfoTip>Training suggestions and staffing insights built from your teachers' profiles.</InfoTip></h2>
             </div>
             <p className="text-xs text-indigo-200/80 max-w-2xl">
               Flag faculty pedagogical gaps, tailor professional development recommendations, and plan school staffing decisions using student cognitive data.
@@ -317,7 +318,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-indigo-950">
                 <Target className="w-4 h-4 text-indigo-600" />
                 Institutional Staffing & Recruitment Advisory
-              </CardTitle>
+              <InfoTip>Suggestions on what kind of teachers to recruit or develop, based on your students' needs and your current staff.</InfoTip></CardTitle>
               <CardDescription className="text-xs">
                 General best-practice guidance for staffing decisions - not yet personalized to this school's data.
               </CardDescription>
@@ -355,7 +356,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Users className="w-4 h-4 text-indigo-600" />
                 Teacher Risk & Gap Evaluations ({facultyGaps.length} Faculty Members)
-              </CardTitle>
+              <InfoTip>Flags teachers who have not yet completed the Teaching Insights assessment or have no classes assigned, with training modules to suggest. High means unassessed, Medium means unassigned. These are prompts for support, not judgements.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-xs">
@@ -478,7 +479,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
               </div>
               <CardTitle className="text-base font-bold text-gray-900 mt-1">
                 School Portal Setup & Student Code Distribution Walkthrough
-              </CardTitle>
+              <InfoTip>A step-by-step video guide to setting up your school and giving students their codes.</InfoTip></CardTitle>
               <CardDescription className="text-xs text-gray-600">
                 Interactive video orientation covering administrator setup, class creation, and cognitive report exports.
               </CardDescription>
@@ -651,7 +652,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                   </div>
                   <h4 className="font-bold text-base text-white mb-1">
                     Interactive Platform Walkthrough Guide
-                  </h4>
+                  <InfoTip>A guided tour of the main features.</InfoTip></h4>
                   <p className="text-xs text-indigo-200/90 max-w-md mb-4 leading-relaxed">
                     Online video stream is undergoing scheduled server updates. Explore the core platform workflow below:
                   </p>

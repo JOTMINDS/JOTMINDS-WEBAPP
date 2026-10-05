@@ -18,6 +18,7 @@ import {
   saveInstitution
 } from '../../utils/institution';
 import { getAllClasses } from '../../utils/storage';
+import { InfoTip } from '../ui/info-tip';
 
 interface InstitutionOverviewProps {
   institution: Institution;
@@ -119,7 +120,7 @@ export function InstitutionOverview({
   return (
     <div className="space-y-5">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900">Overview</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">Overview<InfoTip>A summary of your institution: members, classes and activity.</InfoTip></h2>
         <p className="text-muted-foreground mt-1 text-sm">
           Welcome to your Institution Portal. This dashboard provides a central overview of your school's performance, member management, and cognitive insights. Use the sidebar to navigate between student and teacher analytics, review performance reports, or adjust your settings.
         </p>
@@ -341,7 +342,7 @@ export function InstitutionOverview({
       {/* Admin Team */}
       <Card>
         <CardContent className="pt-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">Admin Team</h3>
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">Admin Team<InfoTip>People with administrator access to your institution.</InfoTip></h3>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-[#5B7DB1] flex items-center justify-center text-white text-xs shrink-0">
@@ -392,7 +393,7 @@ export function InstitutionOverview({
                   <MapPin className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-gray-900">Update Campus Location</h3>
+                  <h3 className="font-bold text-sm text-gray-900">Update Campus Location<InfoTip>The location shown on your institution's profile.</InfoTip></h3>
                   <p className="text-[11px] text-gray-500">Official geographical location of this school</p>
                 </div>
               </div>

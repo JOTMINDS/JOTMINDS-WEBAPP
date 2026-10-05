@@ -36,6 +36,7 @@ import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
 import { generateAIParentSupportTips, getCachedAIResult, setCachedAIResult } from '../utils/aiService';
+import { InfoTip } from './ui/info-tip';
 
 interface ParentDashboardProps {
   user: User;
@@ -527,7 +528,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                 <Brain className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold mb-1">Strongly Recommended: Know Your Own Cognitive Style</h3>
+                <h3 className="text-xl font-bold mb-1">Strongly Recommended: Know Your Own Cognitive Style<InfoTip>When you understand how you learn and think, it is easier to see how your child differs from you and to support them well.</InfoTip></h3>
                 <p className="text-purple-100 max-w-2xl text-sm md:text-base">
                   Take a quick self-assessment to discover your own thinking style. We'll use this to generate personalized 
                   <strong> Parent-Child Cognitive Match Insights</strong>, helping you understand how to best support your child's unique needs.
@@ -555,7 +556,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                 <CardTitle className="flex items-center gap-2">
                   <UserPlus className="h-5 w-5" />
                   Request Access to Child's Account
-                </CardTitle>
+                <InfoTip>Enter your child's email to send an access request. Children aged 10 or younger are approved automatically. Older children must approve it. Once linked, you can see their results and get guidance.</InfoTip></CardTitle>
                 <CardDescription>
                   Enter your child's email address to send an access request. <strong>Children 10 years old or younger will be automatically approved.</strong> Older students will need to approve the request.
                 </CardDescription>
@@ -621,7 +622,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
             ) : (
               <Card>
                 <CardHeader>
-                  <CardTitle>Linked Children Overview</CardTitle>
+                  <CardTitle>Linked Children Overview<InfoTip>Children whose accounts are linked to yours, with a summary of their progress.</InfoTip></CardTitle>
                   <CardDescription>
                     You have {children.length} {children.length === 1 ? 'child' : 'children'} linked to your account
                   </CardDescription>
@@ -677,7 +678,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
 
             <Card>
               <CardHeader>
-                <CardTitle>My Self-Assessments</CardTitle>
+                <CardTitle>My Self-Assessments<InfoTip>Assessments you take yourself. They show your own learning, thinking and decision styles.</InfoTip></CardTitle>
                 <CardDescription>
                   Take or retake your own cognitive assessment to generate personalized Parent-Child Cognitive Match Insights.
                 </CardDescription>
@@ -791,7 +792,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                           <div className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-3">
                               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-                                <h4 className="text-sm mb-2 text-blue-900 dark:text-blue-200">Learning Style</h4>
+                                <h4 className="text-sm mb-2 text-blue-900 dark:text-blue-200">Learning Style<InfoTip>How your child prefers to take in and practise new information.</InfoTip></h4>
                                 {kolbAssessment ? (
                                   <Badge>{kolbAssessment.score.kolb?.style}</Badge>
                                 ) : (
@@ -799,7 +800,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                 )}
                               </div>
                               <div className="p-4 bg-green-50 rounded-lg">
-                                <h4 className="text-sm mb-2">Thinking Style</h4>
+                                <h4 className="text-sm mb-2">Thinking Style<InfoTip>The kind of thinking your child uses most when solving problems.</InfoTip></h4>
                                 {sternbergAssessment ? (
                                   <Badge>{sternbergAssessment.score.sternberg?.style}</Badge>
                                 ) : (
@@ -807,7 +808,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                 )}
                               </div>
                               <div className="p-4 bg-amber-50 rounded-lg">
-                                <h4 className="text-sm mb-2">Decision Style</h4>
+                                <h4 className="text-sm mb-2">Decision Style<InfoTip>How your child usually makes choices: quickly by instinct or slowly with care.</InfoTip></h4>
                                 {dualProcessAssessment ? (
                                   <Badge>{dualProcessAssessment.score.dualProcess?.style}</Badge>
                                 ) : (
@@ -822,7 +823,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                 <h4 className="text-sm mb-3 font-medium flex items-center gap-2">
                                   <Brain className="h-4 w-4 text-purple-500" />
                                   Additional Assessments
-                                </h4>
+                                <InfoTip>Other assessments your child has completed, such as age-specific thinking assessments.</InfoTip></h4>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                   {otherAssessments.map((assessment) => {
                                     // Extract result details based on assessment type
@@ -905,14 +906,14 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                             <CardTitle className="flex items-center gap-2">
                               <BookOpen className="h-5 w-5" />
                               Education Guidance for Ghana
-                            </CardTitle>
+                            <InfoTip>Suggestions for school tracks and further study in Ghana based on your child's profile. These are ideas to explore, not decisions.</InfoTip></CardTitle>
                             <CardDescription>
                               Recommended paths based on {child.name}'s thinking styles
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-4">
                             <div>
-                              <h4 className="mb-2">Recommended SHS Tracks</h4>
+                              <h4 className="mb-2">Recommended SHS Tracks<InfoTip>Senior High School programmes that may suit your child's strengths.</InfoTip></h4>
                               <div className="flex flex-wrap gap-2">
                                 {ghanaMapping.shsTrack.map(track => (
                                   <Badge key={track} variant="secondary">{track}</Badge>
@@ -920,7 +921,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                               </div>
                             </div>
                             <div>
-                              <h4 className="mb-2">Suggested Tertiary Focus</h4>
+                              <h4 className="mb-2">Suggested Tertiary Focus<InfoTip>Types of university or college study that may suit your child in future.</InfoTip></h4>
                               <div className="flex flex-wrap gap-2">
                                 {ghanaMapping.tertiaryFocus.map(area => (
                                   <Badge key={area} variant="outline">{area}</Badge>
@@ -928,7 +929,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                               </div>
                             </div>
                             <div>
-                              <h4 className="mb-2">Career Suggestions</h4>
+                              <h4 className="mb-2">Career Suggestions<InfoTip>Careers that match your child's strengths. They are starting points for conversation.</InfoTip></h4>
                               <ul className="list-disc list-inside space-y-1 text-sm">
                                 {ghanaMapping.careerSuggestions.map(career => (
                                   <li key={career}>{career}</li>
@@ -985,7 +986,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                     <h4 className="mb-2 flex items-center gap-2">
                                       <Lightbulb className="h-4 w-4" />
                                       Learning Style Support
-                                    </h4>
+                                    <InfoTip>Ways to help your child learn at home that suit their learning style.</InfoTip></h4>
                                     <ul className="space-y-2 text-sm">
                                       {getSupportTips(kolbAssessment).slice(0, 3).map((tip, idx) => (
                                         <li key={idx}>• {tip}</li>
@@ -1017,7 +1018,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                   <h4 className="mb-2 flex items-center gap-2">
                                     <Lightbulb className="h-4 w-4" />
                                     Thinking Style Support
-                                  </h4>
+                                  <InfoTip>Ways to help your child when they are solving problems, based on their thinking style.</InfoTip></h4>
                                   <ul className="space-y-2 text-sm">
                                     {getSupportTips(sternbergAssessment).map((tip, idx) => (
                                       <li key={idx}>• {tip}</li>
@@ -1030,7 +1031,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                   <h4 className="mb-2 flex items-center gap-2">
                                     <Lightbulb className="h-4 w-4" />
                                     Decision-Making Support
-                                  </h4>
+                                  <InfoTip>Ways to help your child make choices with confidence.</InfoTip></h4>
                                   <ul className="space-y-2 text-sm">
                                     {getSupportTips(dualProcessAssessment).map((tip, idx) => (
                                       <li key={idx}>• {tip}</li>
@@ -1039,7 +1040,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                 </div>
                               )}
                               <div className="p-4 bg-purple-50 rounded-lg">
-                                <h4 className="mb-2">General Support Tips</h4>
+                                <h4 className="mb-2">General Support Tips<InfoTip>Tips that help most children, whatever their style.</InfoTip></h4>
                                 <ul className="space-y-2 text-sm">
                                   <li>• Set up a dedicated, distraction-free study zone in your home</li>
                                   <li>• Focus on praising their effort and hard work, not just their grades</li>
@@ -1093,7 +1094,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                     <CardTitle className="flex items-center gap-2">
                       <Eye className="h-5 w-5" />
                       Parent Observation Assessment
-                    </CardTitle>
+                    <InfoTip>Give your own view of your child's learning habits, thinking and decision making. It sits alongside their own assessment results.</InfoTip></CardTitle>
                     <CardDescription>
                       Provide your perspective on your child's learning habits, thinking patterns, and decision-making behaviors
                     </CardDescription>
@@ -1141,7 +1142,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                           {latestObservation && (
                             <>
                               <div className="pt-3 border-t">
-                                <h4 className="text-sm font-medium mb-2">Latest Observation</h4>
+                                <h4 className="text-sm font-medium mb-2">Latest Observation<InfoTip>The most recent observation you submitted for this child.</InfoTip></h4>
                                 <div className="text-xs text-muted-foreground mb-3">
                                   Completed on {formatDate(latestObservation.completedAt)}
                                 </div>
@@ -1331,7 +1332,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                     <CardTitle className="text-2xl font-bold flex items-center gap-2">
                       <Brain className="h-6 w-6 text-purple-600" />
                       My Parent Cognitive Assessment & Insights
-                    </CardTitle>
+                    <InfoTip>Your own results and what they mean for how you support your child.</InfoTip></CardTitle>
                     <CardDescription>
                       Take or retake your self-assessment to discover your cognitive style and view your personal insights report anytime.
                     </CardDescription>
@@ -1422,7 +1423,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                   <GitCompare className="h-6 w-6 text-indigo-600" />
                   3-Way Alignment Analytics Dashboard
-                </CardTitle>
+                <InfoTip>Puts three views side by side: your own cognitive profile, what you observe in your child, and your child's own assessment results. Differences are useful talking points, not problems.</InfoTip></CardTitle>
                 <CardDescription>
                   Compare Parent Cognitive Profile vs Parent Observation vs Child's Assessment Results side-by-side to understand alignment and growth areas.
                 </CardDescription>
@@ -1514,7 +1515,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                   <MessageSquare className="h-6 w-6 text-blue-600" />
                   Teacher Observations & Concerns
-                </CardTitle>
+                <InfoTip>Feedback, classroom observations and suggested home actions your child's teacher has shared.</InfoTip></CardTitle>
                 <CardDescription>
                   View feedback, classroom observations, and recommended home actions shared by your child's teacher.
                 </CardDescription>
@@ -1570,7 +1571,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                   <Settings className="h-6 w-6 text-purple-600" />
                   Parent Profile & Settings
-                </CardTitle>
+                <InfoTip>Your account details and privacy settings.</InfoTip></CardTitle>
                 <CardDescription>
                   Manage your parent account profile details, avatar, contact information, and Kids Mode PIN.
                 </CardDescription>
@@ -1620,7 +1621,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
 
                   {/* Security & Parent Gate PIN */}
                   <div className="space-y-4 p-5 bg-slate-50 rounded-2xl border">
-                    <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider">Kids Mode Security</h4>
+                    <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider">Kids Mode Security<InfoTip>A 4-digit PIN that protects your parent analytics, so a child cannot leave Kids Mode without it.</InfoTip></h4>
                     <div className="space-y-3 text-sm">
                       <p className="text-xs text-slate-600">
                         Set a 4-digit PIN to protect parent analytics and prevent children from exiting Kids Mode without verification.

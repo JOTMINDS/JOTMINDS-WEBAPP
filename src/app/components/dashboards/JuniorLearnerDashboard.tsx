@@ -1,5 +1,6 @@
 import React from 'react';
 import { Book, TrendingUp, Award, Target, BarChart3, Users } from 'lucide-react';
+import { InfoTip } from '../ui/info-tip';
 
 interface JuniorLearnerDashboardProps {
   studentName: string;
@@ -97,7 +98,7 @@ export function JuniorLearnerDashboard({
               <h2 className="text-gray-900 mb-4 flex items-center gap-2">
                 <Target className="w-5 h-5 text-blue-600" />
                 Available Assessments
-              </h2>
+              <InfoTip>Fun activities that help us learn how you like to think and learn. There are no wrong answers.</InfoTip></h2>
               
               <div className="space-y-3">
                 <AssessmentCard
@@ -129,7 +130,7 @@ export function JuniorLearnerDashboard({
               <h2 className="text-gray-900 mb-4 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-purple-600" />
                 Your Insights
-              </h2>
+              <InfoTip>What we have learned about you so far.</InfoTip></h2>
               
               <div className="space-y-4">
                 <InsightCard
@@ -152,7 +153,7 @@ export function JuniorLearnerDashboard({
           <div className="space-y-6">
             {/* Your Strengths */}
             <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl shadow-md p-6 border border-green-200">
-              <h3 className="text-gray-900 mb-4">🌟 Your Strengths</h3>
+              <h3 className="text-gray-900 mb-4">🌟 Your Strengths<InfoTip>Things you are really good at.</InfoTip></h3>
               <div className="space-y-2">
                 {strengthsIdentified.map((strength, index) => (
                   <div
@@ -167,7 +168,7 @@ export function JuniorLearnerDashboard({
 
             {/* Progress This Week */}
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-              <h3 className="text-gray-900 mb-4">📈 This Week</h3>
+              <h3 className="text-gray-900 mb-4">📈 This Week<InfoTip>What you did this week.</InfoTip></h3>
               <div className="space-y-3">
                 <ProgressItem label="Assessments" value={2} max={3} />
                 <ProgressItem label="Insights Reviewed" value={5} max={5} />
@@ -177,7 +178,7 @@ export function JuniorLearnerDashboard({
 
             {/* Gamification */}
             <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl shadow-md p-6 border border-purple-200">
-              <h3 className="text-gray-900 mb-3">🏆 Badges & Rewards</h3>
+              <h3 className="text-gray-900 mb-3">🏆 Badges & Rewards<InfoTip>Prizes you win for finishing activities and keeping your streak.</InfoTip></h3>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="bg-white rounded-lg p-2 text-center border border-purple-200">
                   <span className="text-2xl">🎯</span>

@@ -13,6 +13,7 @@ import { Separator } from './ui/separator';
 import { saveReview } from '../utils/storage';
 import { formatDate } from '../utils/dateFormat';
 import { generateAIProfessionalProfile } from '../utils/aiService';
+import { InfoTip } from './ui/info-tip';
 
 interface SupervisorReviewProps {
   employeeName: string;
@@ -182,7 +183,7 @@ export function SupervisorReview({
             <div className="flex-1">
               <CardTitle className="text-2xl mb-2 text-purple-900">
                 Supervisor Assessment & Review
-              </CardTitle>
+              <InfoTip>Add your own view of this person alongside their self-assessment.</InfoTip></CardTitle>
               <CardDescription className="text-base text-gray-600">
                 Provide feedback and align {employeeName}'s cognitive profile with organizational goals
               </CardDescription>
@@ -271,7 +272,7 @@ export function SupervisorReview({
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <CardTitle>Supervisor Evaluation Form</CardTitle>
+              <CardTitle>Supervisor Evaluation Form<InfoTip>Rate what you have observed. Your rating is kept with their profile.</InfoTip></CardTitle>
               <CardDescription>
                 Complete this assessment to provide structured feedback and support professional development
               </CardDescription>
@@ -470,7 +471,7 @@ export function SupervisorReview({
       {/* Guidelines */}
       <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
         <CardHeader>
-          <CardTitle className="text-base">Review Guidelines</CardTitle>
+          <CardTitle className="text-base">Review Guidelines<InfoTip>How to write fair, useful reviews.</InfoTip></CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="text-sm space-y-2 text-muted-foreground">

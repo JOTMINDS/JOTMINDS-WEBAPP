@@ -18,6 +18,7 @@ import { getAssessmentsByUserId } from '../utils/storage';
 import { getAllAssessmentResults } from '../utils/api';
 import { normalizeServerResults } from '../utils/assessmentApi';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
+import { InfoTip } from './ui/info-tip';
 
 interface SchoolTeacherStylesViewProps {
   admin: User;
@@ -552,7 +553,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
 
           <div className="grid md:grid-cols-2 gap-4">
             <Card>
-              <CardHeader><CardTitle className="text-sm">School Teaching Profile</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm">School Teaching Profile<InfoTip>A summary of the teaching profiles of your staff.</InfoTip></CardTitle></CardHeader>
               <CardContent className="h-[230px]">
                 {schoolRadar.length < 3 ? <div className="h-full flex items-center justify-center text-gray-400 text-sm">Not enough teaching assessments</div>
                   : <ResponsiveContainer width="100%" height="100%"><RadarChart data={schoolRadar}>
@@ -565,7 +566,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-sm">Staff Thinking Styles</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm">Staff Thinking Styles<InfoTip>How your teachers split across analytical, creative and practical thinking.</InfoTip></CardTitle></CardHeader>
               <CardContent className="h-[230px]">
                 {!thinkingDist.length ? <div className="h-full flex items-center justify-center text-gray-400 text-sm">No thinking assessments yet</div>
                   : <ResponsiveContainer width="100%" height="100%"><PieChart>
@@ -739,7 +740,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
               <div className="flex items-start gap-3">
                 <Target className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-blue-900 mb-1">Understanding Educator Alignment</h3>
+                  <h3 className="font-semibold text-blue-900 mb-1">Understanding Educator Alignment<InfoTip>How closely your teachers' styles match your students' styles. A low match is a chance to adapt.</InfoTip></h3>
                   <p className="text-sm text-blue-800 mb-3">
                     Educator Alignment measures the harmony between a teacher's natural cognitive processing (how they learn and think) and their enacted teaching style (how they run their classroom).
                   </p>
@@ -858,7 +859,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                 <CardTitle className="text-base flex items-center gap-2 text-blue-900">
                   <Info className="w-5 h-5 text-blue-600" />
                   💡 Clear Actionable Teaching Recommendations
-                </CardTitle>
+                <InfoTip>Practical suggestions from the gaps between teacher and student styles.</InfoTip></CardTitle>
                 <CardDescription className="text-xs text-blue-700">
                   Practical steps for school leaders to support teachers and maximize classroom impact
                 </CardDescription>

@@ -54,6 +54,7 @@ import { CentralStudentManagement } from './CentralStudentManagement';
 import { SupervisorReview } from './SupervisorReview';
 import { ProfessionalCognitiveResults } from './ProfessionalCognitiveResults';
 import { calculateProfessionalCognitiveProfile, getProfessionalInsights } from '../utils/professionalCognitiveScoring';
+import { InfoTip } from './ui/info-tip';
 
 interface SupervisorDashboardProps {
   user: User;
@@ -688,7 +689,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
 
               <div className="group bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:bg-white dark:hover:bg-slate-900 hover:-translate-y-1 transition-all duration-300 cursor-default">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Assessed</h3>
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Assessed<InfoTip>Team members who have completed at least one assessment.</InfoTip></h3>
                   <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
                     <CheckCircle2 className="h-4 w-4" />
                   </div>
@@ -706,7 +707,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
 
               <div className="group bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:bg-white dark:hover:bg-slate-900 hover:-translate-y-1 transition-all duration-300 cursor-default">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Fully Assessed</h3>
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Fully Assessed<InfoTip>Team members who have completed all the core assessments.</InfoTip></h3>
                   <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                     <TrendingUp className="h-4 w-4" />
                   </div>
@@ -719,7 +720,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
 
               <div className="group bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:bg-white dark:hover:bg-slate-900 hover:-translate-y-1 transition-all duration-300 cursor-default">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Reviews</h3>
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Reviews<InfoTip>The number of supervisor reviews you have written.</InfoTip></h3>
                   <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
                     <FileText className="h-4 w-4" />
                   </div>
@@ -735,7 +736,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
               <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Recent Activity</h3>
+                    <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Recent Activity<InfoTip>The latest assessments and reviews from your team.</InfoTip></h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Recently active team members</p>
                   </div>
                   <Button variant="ghost" onClick={() => setActiveTab('professionals')} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30">
@@ -813,7 +814,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                       <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <Users className="h-5 w-5 text-indigo-600 flex-shrink-0" />
-                          <h3 className="text-lg font-bold text-slate-900 dark:text-white truncate">Team Members</h3>
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white truncate">Team Members<InfoTip>People you supervise. Open a person to see their profile or write a review.</InfoTip></h3>
                         </div>
                         <div className="flex flex-wrap items-center gap-1">
                           <Button size="sm" variant="ghost" className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2" onClick={handleNudgeAllPending} disabled={isNudgingAll} title="Nudge Pending">
@@ -947,7 +948,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                         <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
                           <UserCheck className="h-10 w-10 text-slate-300 dark:text-slate-600" />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Select a Team Member</h3>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Select a Team Member<InfoTip>Choose someone to view their results or review them.</InfoTip></h3>
                         <p className="text-slate-500 dark:text-slate-400">
                           Choose a {professionalTerm.toLowerCase()} from the list to view their assessments and add reviews.
                         </p>
@@ -989,7 +990,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
                   <CardTitle className="flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-indigo-600" />
                     Organization Code
-                  </CardTitle>
+                  <InfoTip>A code people use to join your team. Share it only with the people you want to invite.</InfoTip></CardTitle>
                   <CardDescription>
                     Share this code with team members to join your organization
                   </CardDescription>
@@ -1039,7 +1040,7 @@ export function SupervisorDashboard({ user, onLogout, onViewSettings }: Supervis
           <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
             <Card className="w-full max-w-md shadow-xl">
               <CardHeader>
-                <CardTitle>Invite Team Member</CardTitle>
+                <CardTitle>Invite Team Member<InfoTip>Send an invitation so someone can join your team.</InfoTip></CardTitle>
                 <CardDescription>
                   Send an email invitation to join your organization.
                 </CardDescription>
@@ -1263,7 +1264,7 @@ function ProfessionalReviewSection({
       {reviews.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Review History</CardTitle>
+            <CardTitle>Review History<InfoTip>Reviews you have written before, newest first.</InfoTip></CardTitle>
             <CardDescription>
               {reviews.length} review{reviews.length > 1 ? 's' : ''} completed
             </CardDescription>

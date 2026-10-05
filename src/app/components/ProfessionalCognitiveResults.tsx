@@ -11,6 +11,7 @@ import { Download, ArrowLeft, CheckCircle2, Target, TrendingUp, Briefcase, Messa
 import { exportReportToPDF } from '../utils/pdfGenerator';
 import { generateAICognitiveExecutiveSummary, generateAIProfessionalProfile, AIProfessionalProfileInsights } from '../utils/aiService';
 import { getRoleProfiles } from '../utils/api';
+import { InfoTip } from './ui/info-tip';
 
 interface ProfessionalCognitiveResultsProps {
   profile: ProfessionalCognitiveProfile;
@@ -261,7 +262,7 @@ export function ProfessionalCognitiveResults({
                     <CardHeader className="pb-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Brain className="h-5 w-5 text-[#6B4C9A]" />
-                        <CardTitle className="text-lg text-[#6B4C9A] dark:text-cyan-300">Learning Preferences</CardTitle>
+                        <CardTitle className="text-lg text-[#6B4C9A] dark:text-cyan-300">Learning Preferences<InfoTip>How you prefer to take in and apply new information.</InfoTip></CardTitle>
                       </div>
                       <div className="font-semibold text-gray-900 dark:text-gray-100">{profile.learning.style}</div>
                       <Badge variant="outline" className="text-xs w-fit">{profile.learning.anchors}</Badge>
@@ -322,7 +323,7 @@ export function ProfessionalCognitiveResults({
                     <CardHeader className="pb-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Lightbulb className="h-5 w-5 text-[#7B61FF]" />
-                        <CardTitle className="text-lg text-[#7B61FF] dark:text-violet-300">Thinking Orientation</CardTitle>
+                        <CardTitle className="text-lg text-[#7B61FF] dark:text-violet-300">Thinking Orientation<InfoTip>The thinking approach you use most: analytical, creative or practical.</InfoTip></CardTitle>
                       </div>
                       <div className="font-semibold text-gray-900 dark:text-gray-100">{profile.thinking.style}</div>
                       <Badge variant="outline" className="text-xs w-fit">{profile.thinking.anchors}</Badge>
@@ -377,7 +378,7 @@ export function ProfessionalCognitiveResults({
                     <CardHeader className="pb-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Scale className="h-5 w-5 text-[#5B7DB1]" />
-                        <CardTitle className="text-lg text-[#5B7DB1] dark:text-indigo-300">Decision-Making Behavior</CardTitle>
+                        <CardTitle className="text-lg text-[#5B7DB1] dark:text-indigo-300">Decision-Making Behavior<InfoTip>How you usually make decisions: fast and intuitive or slow and reflective.</InfoTip></CardTitle>
                       </div>
                       <div className="font-semibold text-gray-900 dark:text-gray-100">{profile.decisionMaking.style}</div>
                       <Badge variant="outline" className="text-xs w-fit">{profile.decisionMaking.anchors}</Badge>
@@ -431,7 +432,7 @@ export function ProfessionalCognitiveResults({
                   <CardTitle className="text-xl flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
                     Key Insights & Strengths
-                  </CardTitle>
+                  <InfoTip>What stands out most in your profile.</InfoTip></CardTitle>
                   <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300 text-xs">
                     {aiInsights ? 'Live AI Analysis' : 'Cognitive Synthesis'}
                   </Badge>
@@ -465,7 +466,7 @@ export function ProfessionalCognitiveResults({
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                     Classroom & Organizational Leadership Insights
-                  </CardTitle>
+                  <InfoTip>What your profile suggests about how you lead and work with others.</InfoTip></CardTitle>
                   <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-300 text-xs">
                     {aiInsights ? 'Dynamic Synthesis' : 'Synthesis'}
                   </Badge>
@@ -491,7 +492,7 @@ export function ProfessionalCognitiveResults({
                 <CardTitle className="text-xl flex items-center gap-2">
                   <Target className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                   Competency Fit Summary
-                </CardTitle>
+                <InfoTip>How your profile lines up with common workplace competencies. A guide, not a verdict.</InfoTip></CardTitle>
                 <CardDescription>How cognitive strengths align with key role competencies</CardDescription>
               </CardHeader>
               <CardContent>
@@ -525,7 +526,7 @@ export function ProfessionalCognitiveResults({
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     Development Tips & Growth Actions
-                  </CardTitle>
+                  <InfoTip>Practical steps to build on your strengths and stretch other areas.</InfoTip></CardTitle>
                   <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-300 text-xs">
                     {aiInsights ? 'Live AI Strategies' : 'Recommendations'}
                   </Badge>
@@ -560,7 +561,7 @@ export function ProfessionalCognitiveResults({
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Briefcase className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                     Ideal Roles & Career Paths
-                  </CardTitle>
+                  <InfoTip>Roles that tend to suit your profile. Use them as ideas to explore.</InfoTip></CardTitle>
                   <Badge variant="outline" className="bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300 text-xs">
                     {aiInsights ? 'AI Career Archetype' : 'Mapped Roles'}
                   </Badge>

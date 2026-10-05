@@ -9,6 +9,7 @@ import { Class, User, EducationLevel } from '../types';
 import { getAllClasses, saveClass, deleteClass, getAllUsers, saveUser, isStudentConnectedToTeacher } from '../utils/storage';
 import { assignMemberToClass, fetchInstitutionClassesAPI, saveInstitutionClassAPI } from '../utils/api';
 import { toast } from 'sonner';
+import { InfoTip } from './ui/info-tip';
 
 interface TeacherClassManagementProps {
   teacher: User;
@@ -168,7 +169,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
       <div className="bg-gradient-to-r from-[#1E8A6E] to-[#156e57] rounded-2xl p-6 text-white shadow-md">
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <School className="w-6 h-6" /> Class Management
-        </h2>
+        <InfoTip>Create classes and add students to them. Students in your classes appear in your dashboards.</InfoTip></h2>
         <p className="text-white/80 mt-1">
           Create and manage your classes.
         </p>
@@ -178,7 +179,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
         <div className="md:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Create New Class</CardTitle>
+              <CardTitle>Create New Class<InfoTip>Start a new class. You can add students after it is created.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -227,7 +228,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
 
         <div className="md:col-span-2 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <h3 className="text-xl font-semibold">Your Classes</h3>
+            <h3 className="text-xl font-semibold">Your Classes<InfoTip>Classes you manage.</InfoTip></h3>
             <span className="text-xs text-slate-500">{classes.length} total classes</span>
           </div>
 
@@ -391,7 +392,7 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
       {isStudentModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
-            <h3 className="text-xl font-bold mb-4 flex-shrink-0">Assign Students</h3>
+            <h3 className="text-xl font-bold mb-4 flex-shrink-0">Assign Students<InfoTip>Add students to this class.</InfoTip></h3>
             <p className="text-sm text-gray-500 mb-4 flex-shrink-0">
               Select students to assign to this class. Note that selecting a student will remove them from their current class if they are already assigned elsewhere.
             </p>

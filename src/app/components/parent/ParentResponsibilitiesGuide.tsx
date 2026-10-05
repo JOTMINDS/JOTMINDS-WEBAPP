@@ -2,6 +2,7 @@ import React from 'react';
 import { Shield, Eye, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { getParentResponsibilities, getMonitoringLevelDescription } from '../../types/age-feature-configs';
 import { AgeCategory } from '../../types/age-consent-types';
+import { InfoTip } from '../ui/info-tip';
 
 interface ParentResponsibilitiesGuideProps {
   ageCategory: AgeCategory;
@@ -67,7 +68,7 @@ export function ParentResponsibilitiesGuide({
           <h3 className="text-gray-900 mb-4 flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-600" />
             Your Responsibilities
-          </h3>
+          <InfoTip>What a parent or guardian is asked to do on JotMinds. It depends on your child's age.</InfoTip></h3>
           
           <div className="space-y-3">
             {responsibilities.responsibilities.map((responsibility, index) => (
@@ -83,7 +84,7 @@ export function ParentResponsibilitiesGuide({
       {/* Quick Actions */}
       {!responsibilities.notApplicable && (
         <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-md p-6 border border-purple-200">
-          <h3 className="text-gray-900 mb-4">Quick Actions</h3>
+          <h3 className="text-gray-900 mb-4">Quick Actions<InfoTip>Shortcuts for the most common parent tasks.</InfoTip></h3>
           
           <div className="grid md:grid-cols-2 gap-3">
             <QuickActionButton icon="👁️" text="View Child's Progress" />
@@ -145,7 +146,7 @@ function ResponsibilityLevel({
             <AlertCircle className="w-6 h-6 text-gray-600" />
           </div>
           <div>
-            <h3 className="text-gray-900 mb-2">Not Applicable (Ages 19+)</h3>
+            <h3 className="text-gray-900 mb-2">Not Applicable (Ages 19+)<InfoTip>Learners aged 19 and over have full control of their own account and data. No parental involvement is needed.</InfoTip></h3>
             <p className="text-gray-700">
               No parental involvement or oversight is required. The user has complete account independence 
               and full control over their data and activities.
@@ -164,7 +165,7 @@ function ResponsibilityLevel({
             <Shield className="w-6 h-6 text-red-600" />
           </div>
           <div>
-            <h3 className="text-gray-900 mb-2">Required (Ages 6-12)</h3>
+            <h3 className="text-gray-900 mb-2">Required (Ages 6-12)<InfoTip>Parent oversight is required at this age. Younger children cannot use the platform independently. At 11 to 12 you must monitor activity, review results and keep the account secure.</InfoTip></h3>
             {ageCategory === AgeCategory.JUNIOR_LEARNER && childAge >= 11 && childAge <= 12 ? (
               <p className="text-gray-700">
                 <strong>Full parental consent and oversight required.</strong> As your child is {childAge} years old, 
@@ -190,7 +191,7 @@ function ResponsibilityLevel({
             <AlertCircle className="w-6 h-6 text-amber-600" />
           </div>
           <div>
-            <h3 className="text-gray-900 mb-2">Recommended (Ages 13-15)</h3>
+            <h3 className="text-gray-900 mb-2">Recommended (Ages 13-15)<InfoTip>Learners can use the platform on their own, but periodic monitoring and reviewing results together is recommended.</InfoTip></h3>
             <p className="text-gray-700">
               <strong>Parental oversight strongly recommended.</strong> While your child can use the platform 
               independently, we recommend periodic monitoring and reviewing results together to support 
@@ -210,7 +211,7 @@ function ResponsibilityLevel({
             <Info className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h3 className="text-gray-900 mb-2">Optional (Ages 16-18)</h3>
+            <h3 className="text-gray-900 mb-2">Optional (Ages 16-18)<InfoTip>You may request access if your child agrees, but it is not required.</InfoTip></h3>
             <p className="text-gray-700">
               <strong>Parental oversight is optional.</strong> Your child can manage their account independently. 
               You may request access if your child grants permission, but it's not required.
@@ -299,7 +300,7 @@ function AgeSpecificGuidance({
     <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 mb-6">
       <h3 className="text-gray-900 mb-4 flex items-center gap-2">
         💡 Age-Appropriate Guidance
-      </h3>
+      <InfoTip>Tips on how involved to be at your child's age.</InfoTip></h3>
       
       <div className="space-y-2">
         {guidance.map((item, index) => (

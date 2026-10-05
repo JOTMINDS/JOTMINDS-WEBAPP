@@ -8,6 +8,7 @@ import { Textarea } from '../ui/textarea';
 import { getAdminSettings, saveAdminSettings, JotMindsAdminSettings } from '../../utils/adminSettingsApi';
 import { Save, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { InfoTip } from '../ui/info-tip';
 
 export const AdminSettings: React.FC = () => {
   const [settings, setSettings] = useState<JotMindsAdminSettings | null>(null);
@@ -36,7 +37,7 @@ export const AdminSettings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Platform Settings</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Platform Settings<InfoTip>Settings that affect everyone on the platform. Change with care.</InfoTip></h2>
           <p className="text-muted-foreground">
             Configure assessments, scoring bands, and report texts dynamically.
           </p>
@@ -50,7 +51,7 @@ export const AdminSettings: React.FC = () => {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Feature Toggles</CardTitle>
+            <CardTitle>Feature Toggles<InfoTip>Turn features on or off for all users.</InfoTip></CardTitle>
             <CardDescription>Enable or disable major platform features.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -92,7 +93,7 @@ export const AdminSettings: React.FC = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Scoring Thresholds</CardTitle>
+            <CardTitle>Scoring Thresholds<InfoTip>The cut-off scores used to label results. Changing them changes what users see.</InfoTip></CardTitle>
             <CardDescription>Configure the score boundaries for preference levels.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -151,7 +152,7 @@ export const AdminSettings: React.FC = () => {
 
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Report Texts & Disclaimers</CardTitle>
+            <CardTitle>Report Texts & Disclaimers<InfoTip>The standard wording shown on reports.</InfoTip></CardTitle>
             <CardDescription>Update the language used across generated reports.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

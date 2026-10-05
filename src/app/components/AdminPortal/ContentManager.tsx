@@ -1,13 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { FileText, Database, Layers, CheckCircle2 } from 'lucide-react';
+import { InfoTip } from '../ui/info-tip';
 
 export const ContentManager: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Content Library</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Content Library<InfoTip>Content used across the platform.</InfoTip></h2>
           <p className="text-slate-500">Manage platform educational content and reference databases</p>
         </div>
       </div>
@@ -18,7 +19,7 @@ export const ContentManager: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Database className="w-5 h-5 text-indigo-500" />
               Career Clusters
-            </CardTitle>
+            <InfoTip>Groups of related careers used by career matching.</InfoTip></CardTitle>
             <CardDescription>Industry pathways and professions database</CardDescription>
           </CardHeader>
           <CardContent>
@@ -37,7 +38,7 @@ export const ContentManager: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-emerald-500" />
               Brain Gym Library
-            </CardTitle>
+            <InfoTip>The challenges available in Brain Gym.</InfoTip></CardTitle>
             <CardDescription>Exercises and cognitive training modules</CardDescription>
           </CardHeader>
           <CardContent>
@@ -56,7 +57,7 @@ export const ContentManager: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-purple-500" />
               AI Prompt Templates
-            </CardTitle>
+            <InfoTip>The instructions sent to the AI to create insights and plans. Changing them changes what the AI writes.</InfoTip></CardTitle>
             <CardDescription>System prompts for generated reports</CardDescription>
           </CardHeader>
           <CardContent>

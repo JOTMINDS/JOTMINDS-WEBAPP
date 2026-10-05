@@ -12,6 +12,7 @@ import { recordCareerExploration, recordCareerFavorite } from '../utils/gamifica
 import { useAuth } from './AuthContext';
 import { celebrateLevelUp, celebrateBadgeUnlock } from '../utils/confettiAnimations';
 import { getCareerDisclaimer } from '../utils/reportTextVariations';
+import { InfoTip } from './ui/info-tip';
 
 interface Career {
   title: string;
@@ -964,7 +965,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              <CardTitle>Dynamic Career Matcher</CardTitle>
+              <CardTitle>Dynamic Career Matcher<InfoTip>Ranks careers by how well they fit your profile. Use it to explore, not to decide.</InfoTip></CardTitle>
             </div>
             <Button
               size="sm"
@@ -1026,7 +1027,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
             <CardTitle className="flex items-center gap-2">
               <Heart className="h-5 w-5 fill-current text-red-500" />
               Your Favorites
-            </CardTitle>
+            <InfoTip>Careers you have saved.</InfoTip></CardTitle>
             <CardDescription>Careers you've bookmarked for later</CardDescription>
           </CardHeader>
           <CardContent>
@@ -1150,7 +1151,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                     <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
                     <h3 className="font-semibold text-green-900 dark:text-green-100">
                       Why This Suits You
-                    </h3>
+                    <InfoTip>How this career lines up with your strengths.</InfoTip></h3>
                   </div>
                   <p className="text-green-800 dark:text-green-200">
                     {selectedCareer.whySuitsYou}
@@ -1162,7 +1163,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                       What You'll Do
-                    </h3>
+                    <InfoTip>A typical day-to-day description of the work.</InfoTip></h3>
                     <p className="text-gray-600 dark:text-gray-400">
                       {selectedCareer.detailedDescription}
                     </p>
@@ -1176,7 +1177,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <TrendingUp className="w-5 h-5 text-blue-600" />
-                        <h4 className="font-semibold">Career Growth Path</h4>
+                        <h4 className="font-semibold">Career Growth Path<InfoTip>How people usually progress in this career.</InfoTip></h4>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {selectedCareer.careerGrowth}
@@ -1192,7 +1193,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                       <Briefcase className="w-5 h-5 text-purple-600" />
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         Work Environment
-                      </h3>
+                      <InfoTip>Where and how people in this career usually work.</InfoTip></h3>
                     </div>
                     <p className="text-gray-600 dark:text-gray-400 bg-purple-50 dark:bg-purple-950 p-3 rounded-lg">
                       {selectedCareer.workEnvironment}
@@ -1204,7 +1205,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                     Skills Needed
-                  </h3>
+                  <InfoTip>Skills this career needs.</InfoTip></h3>
                   <div className="flex flex-wrap gap-2">
                     {selectedCareer.skillsNeeded.map((skill, index) => (
                       <Badge key={index} variant="secondary">
@@ -1220,7 +1221,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                     <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                       How to Build These Skills
-                    </h3>
+                    <InfoTip>Ways to start building the skills now.</InfoTip></h3>
                   </div>
                   <ul className="space-y-2">
                     {selectedCareer.howToBuildSkills.map((step, index) => (
@@ -1239,7 +1240,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                       <Lightbulb className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                       <h3 className="font-semibold text-yellow-900 dark:text-yellow-100">
                         Interview Preparation Tips
-                      </h3>
+                      <InfoTip>Tips for interviews in this field.</InfoTip></h3>
                     </div>
                     <ul className="space-y-2">
                       {selectedCareer.interviewTips.map((tip, index) => (
@@ -1259,7 +1260,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                       <Clock className="w-5 h-5 text-indigo-600" />
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         A Day in the Life
-                      </h3>
+                      <InfoTip>A sample day in this career.</InfoTip></h3>
                     </div>
                     <div className="bg-indigo-50 dark:bg-indigo-950 p-4 rounded-lg space-y-2">
                       {selectedCareer.dayInLife.map((activity, index) => (
@@ -1279,7 +1280,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                       <LinkIcon className="w-5 h-5 text-teal-600" />
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         Learning Resources
-                      </h3>
+                      <InfoTip>Places to learn more.</InfoTip></h3>
                     </div>
                     <div className="space-y-2">
                       {selectedCareer.resourceLinks.map((link, index) => (
@@ -1303,7 +1304,7 @@ export function CareerRecommendations({ cognitiveStyle, assessmentType, onNaviga
                   <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                     <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
                       🇬🇭 Relevance in Ghana
-                    </h3>
+                    <InfoTip>How this career fits the job market in Ghana.</InfoTip></h3>
                     <p className="text-sm text-blue-800 dark:text-blue-200">
                       {selectedCareer.ghanaRelevance}
                     </p>

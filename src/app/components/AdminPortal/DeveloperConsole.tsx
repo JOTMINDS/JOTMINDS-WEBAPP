@@ -2,13 +2,14 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Terminal, Database, Server, Cpu, Wifi } from 'lucide-react';
 import { projectId } from '../../utils/supabase/info';
+import { InfoTip } from '../ui/info-tip';
 
 export const DeveloperConsole: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Developer Console</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Developer Console<InfoTip>Technical details for developers. Not needed for everyday use.</InfoTip></h2>
           <p className="text-slate-500">System health and environment configuration</p>
         </div>
       </div>
@@ -19,7 +20,7 @@ export const DeveloperConsole: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Database className="w-5 h-5 text-indigo-500" />
               Supabase Project
-            </CardTitle>
+            <InfoTip>The database and backend project that stores the platform's data.</InfoTip></CardTitle>
             <CardDescription>Primary database and backend services</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -47,7 +48,7 @@ export const DeveloperConsole: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Server className="w-5 h-5 text-purple-500" />
               Frontend Hosting
-            </CardTitle>
+            <InfoTip>Where the website is hosted.</InfoTip></CardTitle>
             <CardDescription>Cloudflare Pages deployment</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

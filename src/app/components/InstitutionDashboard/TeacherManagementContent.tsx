@@ -11,6 +11,7 @@ import { normalizeServerResults } from '../../utils/assessmentApi';
 import { generatePDF } from '../../utils/pdfGenerator';
 import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher } from '../../utils/storage';
 import { User } from '../../types';
+import { InfoTip } from '../ui/info-tip';
 
 interface TeacherManagementContentProps {
   teacher: User;
@@ -186,7 +187,7 @@ export function TeacherManagementContent({
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teaching Insights Assessment
-                </h4>
+                <InfoTip>The teacher's own assessment of their teaching practice across five domains.</InfoTip></h4>
                 {jtiaAssmt ? (
                   <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
                     Completed
@@ -241,7 +242,7 @@ export function TeacherManagementContent({
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-[#6B4C9A]" /> Teaching Insights Profile
-              </h4>
+              <InfoTip>The teacher's results from the Teaching Insights assessment. They are for development, not ranking.</InfoTip></h4>
               {jtiaAssmt && (jtiaAssmt.report || jtiaAssmt.results || jtiaAssmt.score?.jtia) ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-purple-50 border border-purple-100 p-4 rounded-lg">
@@ -266,7 +267,7 @@ export function TeacherManagementContent({
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#1E8A6E]" /> Assigned Students ({students.length})
-              </h4>
+              <InfoTip>Students in the classes this teacher is linked to.</InfoTip></h4>
               {students.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="bg-white border rounded-lg p-3 text-center">
@@ -300,7 +301,7 @@ export function TeacherManagementContent({
           <div className="bg-white p-5 rounded-lg border border-gray-200">
             <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-[#6B4C9A]" /> Assessment History
-            </h4>
+            <InfoTip>Assessments this teacher has completed, newest first.</InfoTip></h4>
             
             {isLoadingAssessments ? (
               <div className="text-center py-8 text-gray-500 text-sm border rounded-lg bg-gray-50">

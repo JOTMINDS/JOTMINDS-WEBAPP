@@ -24,6 +24,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { formatDate } from '../utils/dateFormat';
 import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
+import { InfoTip } from './ui/info-tip';
 
 interface ProfessionalDashboardProps {
   user: User;
@@ -475,7 +476,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
             <div className="grid gap-4 md:grid-cols-3">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm">Total Assessments</CardTitle>
+                  <CardTitle className="text-sm">Total Assessments<InfoTip>How many assessments you have completed so far.</InfoTip></CardTitle>
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -488,7 +489,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm">Organization Type</CardTitle>
+                  <CardTitle className="text-sm">Organization Type<InfoTip>The kind of organisation your account belongs to.</InfoTip></CardTitle>
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -501,7 +502,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm">Completion Rate</CardTitle>
+                  <CardTitle className="text-sm">Completion Rate<InfoTip>The share of the three core assessments you have completed: learning style, thinking style and decision style.</InfoTip></CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -524,7 +525,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                   <CardHeader className="relative">
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-2xl mb-1 text-slate-900">Cognitive Intelligence Score</CardTitle>
+                        <CardTitle className="text-2xl mb-1 text-slate-900">Cognitive Intelligence Score<InfoTip>A combined score from all your completed assessments. It reflects strength and preference, not academic ability or a limit on what you can do. Open the score guide to see how it is built.</InfoTip></CardTitle>
                         <CardDescription className="text-sm text-slate-600">
                           Comprehensive evaluation across all three psychometric frameworks
                         </CardDescription>
@@ -640,7 +641,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                                       <GraduationCap className="h-5 w-5 text-blue-600" />
                                     </div>
                                     <div>
-                                      <p className="font-semibold">Learning Agility</p>
+                                      <p className="font-semibold">Learning Agility<InfoTip>How readily you learn from experience and adapt. Based on your learning style assessment.</InfoTip></p>
                                       <p className="text-xs text-muted-foreground">{kolb?.score?.kolb?.style || 'Assessed'}</p>
                                     </div>
                                   </div>
@@ -669,7 +670,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                                       <Lightbulb className="h-5 w-5 text-green-600" />
                                     </div>
                                     <div>
-                                      <p className="font-semibold">Thinking Diversity</p>
+                                      <p className="font-semibold">Thinking Diversity<InfoTip>How many different thinking approaches you use: analytical, creative and practical. Based on your thinking style assessment.</InfoTip></p>
                                       <p className="text-xs text-muted-foreground">{sternberg?.score?.sternberg?.style || 'Assessed'}</p>
                                     </div>
                                   </div>
@@ -698,7 +699,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                                       <TrendingUp className="h-5 w-5 text-purple-600" />
                                     </div>
                                     <div>
-                                      <p className="font-semibold">Decision Intelligence</p>
+                                      <p className="font-semibold">Decision Intelligence<InfoTip>How you balance quick instinct with careful thought when you decide. Based on your decision style assessment.</InfoTip></p>
                                       <p className="text-xs text-muted-foreground">{dualProcess?.score?.dualProcess?.style || 'Assessed'}</p>
                                     </div>
                                   </div>
@@ -733,7 +734,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                     <CardTitle className="flex items-center gap-2">
                       <BarChart3 className="h-5 w-5 text-[#7B61FF]" />
                       Comprehensive Cognitive Dimensions
-                    </CardTitle>
+                    <InfoTip>Your score on each dimension from your learning, thinking and decision assessments. A higher score means a stronger preference.</InfoTip></CardTitle>
                     <CardDescription>
                       Detailed breakdown of all 9 cognitive dimensions across the three frameworks
                     </CardDescription>
@@ -777,7 +778,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                 <div className="grid md:grid-cols-2 gap-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Multi-Dimensional Profile</CardTitle>
+                      <CardTitle>Multi-Dimensional Profile<InfoTip>Your dimension scores drawn on one chart so you can see your shape at a glance.</InfoTip></CardTitle>
                       <CardDescription>Radar view of all cognitive dimensions</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -810,7 +811,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Top Cognitive Strengths</CardTitle>
+                      <CardTitle>Top Cognitive Strengths<InfoTip>The dimensions where you scored highest.</InfoTip></CardTitle>
                       <CardDescription>Your highest performing dimensions</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -970,7 +971,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                       </Badge>
                       <p className="text-sm text-muted-foreground mt-2">
                         Learning Agility Assessment
-                      </p>
+                      <InfoTip>The learning style assessment (Kolb). It shows how you take in and use experience.</InfoTip></p>
                     </div>
                   </CardContent>
                 </Card>
@@ -989,7 +990,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                       </Badge>
                       <p className="text-sm text-muted-foreground mt-2">
                         Thinking Diversity Assessment
-                      </p>
+                      <InfoTip>The thinking style assessment (Sternberg). It shows whether you lean analytical, creative or practical.</InfoTip></p>
                     </div>
                   </CardContent>
                 </Card>
@@ -1008,7 +1009,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
                       </Badge>
                       <p className="text-sm text-muted-foreground mt-2">
                         Decision Intelligence Assessment
-                      </p>
+                      <InfoTip>The decision style assessment (dual-process). It shows how you balance intuition and reflection.</InfoTip></p>
                     </div>
                   </CardContent>
                 </Card>

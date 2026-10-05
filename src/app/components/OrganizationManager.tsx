@@ -12,6 +12,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getAuthToken } from '../utils/api';
 import { Loader, Plus, Trash2, Copy, CheckCircle2, AlertCircle, Building2, GraduationCap, Users, ArrowLeft, MoreHorizontal, Settings } from 'lucide-react';
 import { User } from '../types';
+import { InfoTip } from './ui/info-tip';
 
 interface Organization {
   id?: string;
@@ -257,7 +258,7 @@ export function OrganizationManager({ mode = 'organizations', users = [] }: Orga
 
         <Card>
           <CardHeader>
-            <CardTitle>Member Roster</CardTitle>
+            <CardTitle>Member Roster<InfoTip>People linked to this organisation.</InfoTip></CardTitle>
             <CardDescription>Users associated with this {isInstitution ? 'institution' : 'organization'}.</CardDescription>
           </CardHeader>
           <CardContent>

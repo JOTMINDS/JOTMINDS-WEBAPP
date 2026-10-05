@@ -6,6 +6,7 @@ import { assignMemberToClass, sendClassAssignmentEmail } from '../../utils/api';
 import { EnrollStudentModal } from './EnrollStudentModal';
 import { toast } from 'sonner';
 import { AlertTriangle, CheckCircle2, Trash2, Users, GraduationCap, Clock } from 'lucide-react';
+import { InfoTip } from '../ui/info-tip';
 
 interface ClassManagementProps {
   institutionMembers?: InstitutionMember[];
@@ -384,7 +385,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Class Management</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Class Management<InfoTip>Create classes, assign a class teacher and subject teachers, and add students.</InfoTip></h2>
           <p className="text-xs text-gray-500 mt-1">Review teacher classes, approve creations, assign educators, and manage enrolled learners grouped by educational level.</p>
         </div>
         <button
@@ -474,9 +475,9 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
               <th className="p-4 font-semibold text-gray-600">Class Name</th>
               <th className="p-4 font-semibold text-gray-600">Level</th>
               <th className="p-4 font-semibold text-gray-600">Academic Year</th>
-              <th className="p-4 font-semibold text-gray-600">Class Teacher</th>
+              <th className="p-4 font-semibold text-gray-600">Class Teacher<InfoTip>The main teacher responsible for the class.</InfoTip></th>
               <th className="p-4 font-semibold text-gray-600">Students</th>
-              <th className="p-4 font-semibold text-gray-600">Subject Teachers</th>
+              <th className="p-4 font-semibold text-gray-600">Subject Teachers<InfoTip>Teachers who teach a subject to this class but are not the main class teacher.</InfoTip></th>
               <th className="p-4 font-semibold text-gray-600 text-right">Actions</th>
             </tr>
           </thead>
@@ -718,7 +719,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       {isSubjectModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Assign Subject Teacher</h3>
+            <h3 className="text-xl font-bold mb-4">Assign Subject Teacher<InfoTip>Link a teacher to this class for one subject. A class can have several subject teachers.</InfoTip></h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subject Name</label>
@@ -765,7 +766,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       {isStudentModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
-            <h3 className="text-xl font-bold mb-1 flex-shrink-0">Assign Students</h3>
+            <h3 className="text-xl font-bold mb-1 flex-shrink-0">Assign Students<InfoTip>Add students to this class.</InfoTip></h3>
             <p className="text-sm text-gray-500 mb-3 flex-shrink-0">
               Select or deselect students to add or remove them from this class.
             </p>
@@ -860,7 +861,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                <h4 className="text-sm font-semibold text-blue-800 uppercase tracking-wider mb-2">Class Code</h4>
+                <h4 className="text-sm font-semibold text-blue-800 uppercase tracking-wider mb-2">Class Code<InfoTip>A code students can use to join this class.</InfoTip></h4>
                 {activeClass.classCode ? (
                   <div className="flex items-center gap-3">
                     <span className="text-2xl font-mono text-blue-900 font-bold bg-white px-3 py-1 rounded border border-blue-200">

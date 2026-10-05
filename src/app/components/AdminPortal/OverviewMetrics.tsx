@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Users, ClipboardList, TrendingUp, ShieldCheck, GraduationCap, Building2, Briefcase, UserCheck, Bot } from 'lucide-react';
 import { DataExport } from './DataExport';
+import { InfoTip } from '../ui/info-tip';
 
 interface OverviewMetricsProps {
   stats: any;
@@ -24,7 +25,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Users</CardTitle>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Users<InfoTip>Everyone with an account on the platform.</InfoTip></CardTitle>
               <Users className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
@@ -36,7 +37,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Assessments</CardTitle>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Assessments<InfoTip>Total assessments completed on the platform.</InfoTip></CardTitle>
               <ClipboardList className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
@@ -48,7 +49,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Students</CardTitle>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Students<InfoTip>Accounts registered as students.</InfoTip></CardTitle>
               <GraduationCap className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
@@ -60,7 +61,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Teachers</CardTitle>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Teachers<InfoTip>Accounts registered as teachers.</InfoTip></CardTitle>
               <UserCheck className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
@@ -72,7 +73,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Parents</CardTitle>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Parents<InfoTip>Accounts registered as parents.</InfoTip></CardTitle>
               <Users className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
@@ -84,7 +85,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Professionals</CardTitle>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Professionals<InfoTip>Accounts registered as professionals.</InfoTip></CardTitle>
               <Briefcase className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
@@ -96,7 +97,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Organizations & Schools</CardTitle>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Organizations & Schools<InfoTip>Organisation and school accounts.</InfoTip></CardTitle>
               <Building2 className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
@@ -108,7 +109,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
         <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-white dark:bg-gray-900">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Platform Admins</CardTitle>
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Platform Admins<InfoTip>Accounts with administrator access.</InfoTip></CardTitle>
               <ShieldCheck className="w-4 h-4 text-slate-400" />
             </div>
           </CardHeader>
@@ -122,7 +123,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="shadow-sm border-none bg-white dark:bg-gray-900">
           <CardHeader>
-            <CardTitle className="text-lg">User Distribution by Role</CardTitle>
+            <CardTitle className="text-lg">User Distribution by Role<InfoTip>How the user base splits between roles.</InfoTip></CardTitle>
             <CardDescription>Breakdown of platform demographics</CardDescription>
           </CardHeader>
           <CardContent>
@@ -157,7 +158,7 @@ export const OverviewMetrics: React.FC<OverviewMetricsProps> = ({ stats }) => {
             <CardTitle className="text-lg flex items-center gap-2">
               <ShieldCheck className="w-5 h-5" />
               System Health
-            </CardTitle>
+            <InfoTip>Whether the main platform services are up.</InfoTip></CardTitle>
             <CardDescription className="text-indigo-100">All core services are operating normally</CardDescription>
           </CardHeader>
           <CardContent>

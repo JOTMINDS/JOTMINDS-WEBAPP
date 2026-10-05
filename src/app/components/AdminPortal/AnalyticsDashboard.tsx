@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { LineChart, BarChart, PieChart, Activity } from 'lucide-react';
 import { useAdminData } from '../../hooks/useAdminData';
+import { InfoTip } from '../ui/info-tip';
 
 export const AnalyticsDashboard: React.FC = () => {
   const { stats } = useAdminData();
@@ -10,7 +11,7 @@ export const AnalyticsDashboard: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Platform Analytics</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Platform Analytics<InfoTip>Usage figures for the whole platform.</InfoTip></h2>
           <p className="text-slate-500">Business intelligence and user growth metrics</p>
         </div>
       </div>
@@ -21,7 +22,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <LineChart className="w-5 h-5 text-indigo-500" />
               User Growth Trend
-            </CardTitle>
+            <InfoTip>How the number of users has changed over time.</InfoTip></CardTitle>
             <CardDescription>Estimated registration volume over time</CardDescription>
           </CardHeader>
           <CardContent className="h-64 flex items-center justify-center border-t border-slate-100 dark:border-gray-800">
@@ -38,7 +39,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <PieChart className="w-5 h-5 text-purple-500" />
               Current Demographics
-            </CardTitle>
+            <InfoTip>The current mix of users.</InfoTip></CardTitle>
             <CardDescription>Live breakdown by account type</CardDescription>
           </CardHeader>
           <CardContent className="border-t border-slate-100 dark:border-gray-800 pt-6">

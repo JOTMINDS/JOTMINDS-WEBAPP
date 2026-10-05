@@ -14,6 +14,7 @@ import { generateSchoolSummaryPDF } from '../utils/pdfGenerator';
 import { getStudentCognitiveStyles, calculateStudentEngagementAndRisk } from './SchoolAnalyticsDashboard';
 import { getEngagementMetrics } from '../utils/engagementTracking';
 import { extractDimensionScores } from '../utils/cognitiveXP';
+import { InfoTip } from './ui/info-tip';
 
 export const formatAssessmentType = (type: string) => {
   if (!type || type === 'unknown') return 'Assessment';
@@ -303,7 +304,7 @@ export function InstitutionReporting({
               <span className="p-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30">
                 <FileText className="w-5 h-5" />
               </span>
-              <h2 className="text-xl font-bold">School Reporting & Intelligence Export</h2>
+              <h2 className="text-xl font-bold">School Reporting & Intelligence Export<InfoTip>Create and download reports on your learners' assessments for your own records or for staff meetings.</InfoTip></h2>
             </div>
             <p className="text-xs text-indigo-200/80 max-w-2xl">
               Export verified cognitive profiles, student style breakdowns, and faculty metrics in formatted PDF and clean CSV spreadsheets.
@@ -454,7 +455,7 @@ export function InstitutionReporting({
         <CardHeader className="pb-3 border-b">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
             <Filter className="w-4 h-4 text-indigo-600" /> Report Filters & Scoping
-          </CardTitle>
+          <InfoTip>Choose which learners and what time period the report covers.</InfoTip></CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -509,7 +510,7 @@ export function InstitutionReporting({
           <div className="flex justify-between items-center">
             <CardTitle className="text-sm font-bold text-gray-900">
               Report Data Preview ({filteredReports.length} Learners)
-            </CardTitle>
+            <InfoTip>A preview of the learners included, based on your filters.</InfoTip></CardTitle>
             <span className="text-xs text-gray-500">Live Scoped Dataset</span>
           </div>
         </CardHeader>
@@ -666,7 +667,7 @@ export function InstitutionReporting({
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                     First 10 Records Preview
-                  </h4>
+                  <InfoTip>The first ten rows of the report. The download contains all rows.</InfoTip></h4>
                   <span className="text-xs text-gray-400">
                     Showing 10 of {filteredReports.length} records
                   </span>

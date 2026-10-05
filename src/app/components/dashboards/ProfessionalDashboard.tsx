@@ -1,5 +1,6 @@
 import React from 'react';
 import { Briefcase, TrendingUp, Target, Users, Zap, BarChart2, Award, ArrowRight } from 'lucide-react';
+import { InfoTip } from '../ui/info-tip';
 
 interface ProfessionalDashboardProps {
   userName: string;
@@ -92,7 +93,7 @@ export function ProfessionalDashboard({
                 <h2 className="text-gray-900 flex items-center gap-2">
                   <Target className="w-5 h-5 text-indigo-600" />
                   Career Routing & Development
-                </h2>
+                <InfoTip>Matches your profile to career paths and shows how to grow toward them.</InfoTip></h2>
                 <button className="text-indigo-600 hover:text-indigo-700 text-sm flex items-center gap-1">
                   View All <ArrowRight className="w-4 h-4" />
                 </button>
@@ -127,7 +128,7 @@ export function ProfessionalDashboard({
 
             {/* Assessment Suite */}
             <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-              <h2 className="text-gray-900 mb-4">Full Assessment Suite</h2>
+              <h2 className="text-gray-900 mb-4">Full Assessment Suite<InfoTip>All the assessments available to you. Complete them for a fuller profile.</InfoTip></h2>
               
               <div className="space-y-3">
                 <ProfessionalAssessmentCard
@@ -164,7 +165,7 @@ export function ProfessionalDashboard({
               <h2 className="text-gray-900 mb-4 flex items-center gap-2">
                 <Zap className="w-5 h-5 text-yellow-600" />
                 Productivity Tools
-              </h2>
+              <InfoTip>Tools to help you plan and focus.</InfoTip></h2>
               
               <div className="grid md:grid-cols-2 gap-4">
                 <ProductivityTool
@@ -195,7 +196,7 @@ export function ProfessionalDashboard({
           <div className="space-y-6">
             {/* Quick Insights */}
             <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-              <h3 className="text-gray-900 mb-4">💡 Quick Insights</h3>
+              <h3 className="text-gray-900 mb-4">💡 Quick Insights<InfoTip>Short takeaways from your results.</InfoTip></h3>
               
               <div className="space-y-3">
                 <InsightBadge
@@ -223,7 +224,7 @@ export function ProfessionalDashboard({
 
             {/* Top Strengths */}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg shadow-sm p-6 border border-purple-200">
-              <h3 className="text-gray-900 mb-4">🌟 Top Strengths</h3>
+              <h3 className="text-gray-900 mb-4">🌟 Top Strengths<InfoTip>The areas where you scored highest.</InfoTip></h3>
               
               <div className="space-y-2">
                 <StrengthItem strength="You excel at strategic thinking" level={95} />
@@ -239,7 +240,7 @@ export function ProfessionalDashboard({
 
             {/* Recommended Actions */}
             <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg shadow-sm p-6 border border-green-200">
-              <h3 className="text-gray-900 mb-4">📋 Recommended Actions</h3>
+              <h3 className="text-gray-900 mb-4">📋 Recommended Actions<InfoTip>Suggested next steps based on your profile.</InfoTip></h3>
               
               <div className="space-y-3">
                 <ActionItem
@@ -262,7 +263,7 @@ export function ProfessionalDashboard({
 
             {/* Progress This Month */}
             <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-              <h3 className="text-gray-900 mb-4">📈 This Month</h3>
+              <h3 className="text-gray-900 mb-4">📈 This Month<InfoTip>Your activity this month.</InfoTip></h3>
               
               <div className="space-y-3">
                 <ProgressBar label="Assessments" value={3} max={5} />

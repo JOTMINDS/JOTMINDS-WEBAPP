@@ -13,6 +13,7 @@ import {
 import { toast } from 'sonner';
 import { saveUser, saveCurrentUser } from '../../utils/storage';
 import { createClient } from '../../utils/supabase/client';
+import { InfoTip } from '../ui/info-tip';
 
 interface AdministratorSettingsViewProps {
   user: User;
@@ -148,7 +149,7 @@ export function AdministratorSettingsView({
               <span className="p-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30">
                 <Shield className="w-5 h-5" />
               </span>
-              <h2 className="text-xl font-bold">Administrator Profile & Security Console</h2>
+              <h2 className="text-xl font-bold">Administrator Profile & Security Console<InfoTip>Your own administrator details and security settings.</InfoTip></h2>
             </div>
             <p className="text-xs text-indigo-200/80 max-w-2xl">
               Manage executive administrative authority, contact credentials, institutional security permissions, and alert preferences.
@@ -168,7 +169,7 @@ export function AdministratorSettingsView({
             <CardHeader className="pb-3 border-b">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-indigo-600" /> Executive Identity Details
-              </CardTitle>
+              <InfoTip>Your name and role as shown to your institution.</InfoTip></CardTitle>
               <CardDescription className="text-xs">
                 These details identify you across the institutional directory and official PDF reports.
               </CardDescription>
@@ -233,7 +234,7 @@ export function AdministratorSettingsView({
                 <div>
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
                     <Lock className="w-4 h-4 text-indigo-600" /> Account Security & Password
-                  </CardTitle>
+                  <InfoTip>Change your password and keep your account safe.</InfoTip></CardTitle>
                   <CardDescription className="text-xs">
                     Ensure your administrator account is protected with a secure password.
                   </CardDescription>
@@ -307,7 +308,7 @@ export function AdministratorSettingsView({
             <CardHeader className="pb-3 border-b border-indigo-100">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-indigo-950">
                 <Building className="w-4 h-4 text-indigo-600" /> Bound Institution
-              </CardTitle>
+              <InfoTip>The institution this administrator account is linked to.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent className="pt-3 space-y-2 text-xs">
               <p className="font-bold text-gray-900 text-sm">{institution?.name || 'Your Educational Institution'}</p>
@@ -345,7 +346,7 @@ export function AdministratorSettingsView({
             <CardHeader className="pb-3 border-b">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Bell className="w-4 h-4 text-indigo-600" /> Alert Subscriptions
-              </CardTitle>
+              <InfoTip>Choose which alerts you receive.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent className="pt-3 space-y-3 text-xs">
               <label className="flex items-start gap-2.5 cursor-pointer">

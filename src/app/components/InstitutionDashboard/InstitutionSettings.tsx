@@ -14,6 +14,7 @@ import {
   generateOTP,
   verifyOTP
 } from '../../utils/institution';
+import { InfoTip } from '../ui/info-tip';
 
 interface InstitutionSettingsProps {
   institution: Institution;
@@ -191,7 +192,7 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
       {/* Logo */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">School Logo</CardTitle>
+          <CardTitle className="text-sm">School Logo<InfoTip>The logo shown on your institution profile and reports.</InfoTip></CardTitle>
         </CardHeader>
         <CardContent className="flex items-start gap-4">
           <div
@@ -225,7 +226,7 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
       {/* Institution details */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Institution Details</CardTitle>
+          <CardTitle className="text-sm">Institution Details<InfoTip>The name and type of your institution.</InfoTip></CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -293,7 +294,7 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
       {/* Contact details */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Contact Information</CardTitle>
+          <CardTitle className="text-sm">Contact Information<InfoTip>How people can reach your institution.</InfoTip></CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -318,7 +319,7 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
             <Shield className="w-4 h-4" />Assigned Administrator
-          </CardTitle>
+          <InfoTip>The person responsible for managing this institution account.</InfoTip></CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
@@ -353,7 +354,7 @@ export function InstitutionSettings({ institution, onInstitutionUpdate }: Instit
       {isVerifyingEmail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Verify Email Change</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Verify Email Change<InfoTip>Confirms the new email address before it replaces the old one.</InfoTip></h3>
             <p className="text-sm text-gray-500 mb-4">
               We've sent a 6-digit OTP verification code to <strong>{editEmail}</strong> to confirm this change.
             </p>

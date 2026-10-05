@@ -1,13 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Trophy, Star, Target, Crown } from 'lucide-react';
+import { InfoTip } from '../ui/info-tip';
 
 export const GamificationAdmin: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Gamification Rules</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Gamification Rules<InfoTip>Settings for XP, badges and streaks that students see.</InfoTip></h2>
           <p className="text-slate-500">Configure points, badges, and platform rewards</p>
         </div>
       </div>
@@ -18,7 +19,7 @@ export const GamificationAdmin: React.FC = () => {
             <CardTitle className="flex items-center gap-2 text-amber-500">
               <Trophy className="w-5 h-5" />
               Achievements
-            </CardTitle>
+            <InfoTip>Badges students can earn.</InfoTip></CardTitle>
             <CardDescription>Unlockable student milestones</CardDescription>
           </CardHeader>
           <CardContent>
@@ -33,7 +34,7 @@ export const GamificationAdmin: React.FC = () => {
             <CardTitle className="flex items-center gap-2 text-indigo-500">
               <Star className="w-5 h-5" />
               Points System
-            </CardTitle>
+            <InfoTip>How many XP points each action earns.</InfoTip></CardTitle>
             <CardDescription>Reward values for activities</CardDescription>
           </CardHeader>
           <CardContent>
@@ -48,7 +49,7 @@ export const GamificationAdmin: React.FC = () => {
             <CardTitle className="flex items-center gap-2 text-emerald-500">
               <Target className="w-5 h-5" />
               Challenges
-            </CardTitle>
+            <InfoTip>Daily and weekly challenges.</InfoTip></CardTitle>
             <CardDescription>Time-limited platform events</CardDescription>
           </CardHeader>
           <CardContent>
@@ -63,7 +64,7 @@ export const GamificationAdmin: React.FC = () => {
             <CardTitle className="flex items-center gap-2 text-purple-500">
               <Crown className="w-5 h-5" />
               Leaderboards
-            </CardTitle>
+            <InfoTip>Rankings shown to students.</InfoTip></CardTitle>
             <CardDescription>Global and institutional ranks</CardDescription>
           </CardHeader>
           <CardContent>

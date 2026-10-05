@@ -36,6 +36,7 @@ import {
 } from '../utils/teacherIntelligence';
 import { getStudentsForTeacher } from '../utils/api';
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { InfoTip } from './ui/info-tip';
 
 interface Props {
   teacherId: string;
@@ -190,7 +191,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
             <div className="grid gap-4 md:grid-cols-4">
               <Card>
                 <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Students</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Students<InfoTip>Students linked to your class.</InfoTip></CardTitle>
                   <span title="Total number of students in the class based on recent assessment data"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></span>
                 </CardHeader>
                 <CardContent>
@@ -200,7 +201,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
 
               <Card>
                 <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">High Performers</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">High Performers<InfoTip>Students whose average cognitive dimension score is above 75. These scores show strengths and preferences, not exam marks.</InfoTip></CardTitle>
                   <span title="Students with an average cognitive score above 75 (High Effectiveness)"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></span>
                 </CardHeader>
                 <CardContent>
@@ -215,7 +216,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
 
               <Card>
                 <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Mid Performers</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Mid Performers<InfoTip>Students whose average cognitive dimension score is between 50 and 75.</InfoTip></CardTitle>
                   <span title="Students with an average cognitive score between 50 and 75 (Steady Growth Trend)"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></span>
                 </CardHeader>
                 <CardContent>
@@ -230,7 +231,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
 
               <Card>
                 <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Needs Support</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Needs Support<InfoTip>Students whose average cognitive dimension score is below 50. Dimension scores show preferences, not ability, so treat this as a prompt to look closer, not a verdict.</InfoTip></CardTitle>
                   <span title="Students with an average cognitive score below 50, often indicating lower engagement score or need for tailored support"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></span>
                 </CardHeader>
                 <CardContent>
@@ -250,7 +251,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
                 <CardTitle className="flex items-center gap-2">
                   <Lightbulb className="h-5 w-5 text-yellow-500" />
                   Quick Insights
-                </CardTitle>
+                <InfoTip>Short observations about your class based on the data.</InfoTip></CardTitle>
                 <CardDescription>Key observations about your classroom</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -278,7 +279,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
             {/* Class Cognitive Profile */}
             <Card>
               <CardHeader>
-                <CardTitle>Class Cognitive Profile</CardTitle>
+                <CardTitle>Class Cognitive Profile<InfoTip>The most common styles and average scores for your class.</InfoTip></CardTitle>
                 <CardDescription>Average cognitive dimensions across all students</CardDescription>
               </CardHeader>
               <CardContent>
@@ -303,7 +304,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Learning Styles</CardTitle>
+                  <CardTitle>Learning Styles<InfoTip>How your class splits across learning styles.</InfoTip></CardTitle>
                   <CardDescription>How your students prefer to learn</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -334,7 +335,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
               {/* Thinking Styles Distribution */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Thinking Styles</CardTitle>
+                  <CardTitle>Thinking Styles<InfoTip>How your class splits across thinking styles.</InfoTip></CardTitle>
                   <CardDescription>How your students approach problems</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -366,7 +367,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
             {/* Performance Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle>Performance Distribution</CardTitle>
+                <CardTitle>Performance Distribution<InfoTip>How many students fall in each band of average cognitive score.</InfoTip></CardTitle>
                 <CardDescription>Student performance levels</CardDescription>
               </CardHeader>
               <CardContent>
@@ -391,7 +392,7 @@ export function TeacherAnalyticsDashboard({ teacherId, classId, students: initia
             {/* Cognitive Dimensions Bar Chart */}
             <Card>
               <CardHeader>
-                <CardTitle>Class Cognitive Dimensions</CardTitle>
+                <CardTitle>Class Cognitive Dimensions<InfoTip>The class average on each cognitive dimension.</InfoTip></CardTitle>
                 <CardDescription>Average scores across all dimensions</CardDescription>
               </CardHeader>
               <CardContent>
@@ -542,7 +543,7 @@ function StudentRecommendationsModal({
             <h3 className="font-semibold mb-2 flex items-center gap-2">
               <Brain className="h-4 w-4" />
               Teaching Approaches
-            </h3>
+            <InfoTip>Ways of teaching that suit this student's profile.</InfoTip></h3>
             <ul className="space-y-1">
               {recommendations.recommendations.teachingApproaches.map((approach, i) => (
                 <li key={i} className="text-sm flex items-start gap-2">
@@ -558,7 +559,7 @@ function StudentRecommendationsModal({
             <h3 className="font-semibold mb-2 flex items-center gap-2">
               <Target className="h-4 w-4" />
               Learning Activities
-            </h3>
+            <InfoTip>Activities that suit how this student learns.</InfoTip></h3>
             <ul className="space-y-1">
               {recommendations.recommendations.learningActivities.map((activity, i) => (
                 <li key={i} className="text-sm flex items-start gap-2">
@@ -575,7 +576,7 @@ function StudentRecommendationsModal({
               <h3 className="font-semibold mb-2 flex items-center gap-2">
                 <UserPlus className="h-4 w-4" />
                 Suggested Peer Pairings
-              </h3>
+              <InfoTip>Students who may work well together because their strengths complement each other.</InfoTip></h3>
               <div className="space-y-2">
                 {recommendations.peerPairingsSuggestions.map((pairing, i) => (
                   <div key={i} className="p-3 bg-gray-50 rounded-lg border">
@@ -702,7 +703,7 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Generate Differentiated Lesson Plan
-          </CardTitle>
+          <InfoTip>Creates a lesson plan with activities for different learning styles in your class.</InfoTip></CardTitle>
           <CardDescription>
             Create a lesson plan tailored to your classroom's cognitive distribution
           </CardDescription>
@@ -766,7 +767,7 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
           </div>
           
           <div className="border-t pt-4 mt-4">
-            <h3 className="font-semibold mb-3">Assessment Questions</h3>
+            <h3 className="font-semibold mb-3">Assessment Questions<InfoTip>Check-for-understanding questions for the lesson.</InfoTip></h3>
             <div className="flex items-center gap-3 mb-3">
               <input 
                 type="checkbox" 
@@ -822,7 +823,7 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
       {/* Upload Existing Plan Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Upload Your Lesson Plan</CardTitle>
+          <CardTitle>Upload Your Lesson Plan<InfoTip>Paste a plan you already have and the AI will adapt it to your class.</InfoTip></CardTitle>
           <CardDescription>Upload your existing lesson plan and we will help you enhance it</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -849,7 +850,7 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
       {history.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Lesson Plan History</CardTitle>
+            <CardTitle>Lesson Plan History<InfoTip>Plans you generated before.</InfoTip></CardTitle>
             <CardDescription>Previously generated lesson plans</CardDescription>
           </CardHeader>
           <CardContent>
@@ -880,7 +881,7 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h3 className="font-semibold mb-2">Objectives</h3>
+              <h3 className="font-semibold mb-2">Objectives<InfoTip>What learners should be able to do by the end of the lesson.</InfoTip></h3>
               <ul className="list-disc list-inside space-y-1">
                 {lessonPlan.objectives.map((obj: string, i: number) => (
                   <li key={i} className="text-sm">{obj}</li>
@@ -889,7 +890,7 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">Differentiated Activities</h3>
+              <h3 className="font-semibold mb-2">Differentiated Activities<InfoTip>Versions of the activity for different learners in your class.</InfoTip></h3>
               <Tabs defaultValue="visual">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="visual">Visual</TabsTrigger>

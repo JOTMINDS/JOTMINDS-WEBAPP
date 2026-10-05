@@ -30,6 +30,7 @@ import { GhanaEducationGuidance } from './GhanaEducationGuidance';
 import { AcademicSuccessTips } from './AcademicSuccessTips';
 import { useEffect } from 'react';
 import { getOrganizationalAssessmentText, getPersonalDevelopmentText, GLOBAL_DISCLAIMER } from '../utils/reportTextVariations';
+import { InfoTip } from './ui/info-tip';
 
 interface AssessmentReportProps {
   assessment: Assessment;
@@ -524,7 +525,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
                 <h3 className="flex items-center gap-2 text-lg font-bold">
                   <BarChart3 className="h-5 w-5 text-indigo-600" /> Your Scores Overview
-                </h3>
+                <InfoTip>Your score on each dimension. A higher score means a stronger preference, not a better or worse result.</InfoTip></h3>
                 <Button
                   size="sm"
                   variant="outline"
@@ -766,7 +767,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               <div className="flex-1">
                 <CardTitle className="text-2xl mb-2" style={{ color: colors.primary.main }}>
                   Executive Summary
-                </CardTitle>
+                <InfoTip>A short summary of your results.</InfoTip></CardTitle>
                 <CardDescription className="text-base" style={{ color: colors.neutral.gray600 }}>
                   {isOrganizational 
                     ? 'At-a-glance overview for organizational assessment and talent development'
@@ -783,7 +784,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                 <h4 className="flex items-center gap-2 text-indigo-900 dark:text-indigo-300">
                   <Target className="h-4 w-4" />
                   Primary Cognitive Profile
-                </h4>
+                <InfoTip>Your strongest style in this assessment.</InfoTip></h4>
                 <Badge variant="default" className="text-base px-3 py-1 bg-indigo-600">
                   {mainStyle}
                 </Badge>
@@ -854,7 +855,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                   <h4 className="flex items-center gap-2 mb-3 text-[rgb(104,36,174)] dark:text-purple-200 text-[16px]">
                     <Users className="h-4 w-4" />
                     Organizational Fit Assessment
-                  </h4>
+                  <InfoTip>How your profile lines up with workplace needs. It is a guide, not a verdict.</InfoTip></h4>
                   <div className="text-indigo-900 font-medium">{Array.isArray((insights as any)?.organizationalFit?.recommendedRoles) ? (insights as any).organizationalFit.recommendedRoles.join(', ') : typeof (insights as any)?.organizationalFit?.recommendedRoles === 'string' ? (insights as any).organizationalFit.recommendedRoles : ''}</div>
                   <div className="space-y-2">
                     {(((insights as any)?.organizationalFit?.details || (Array.isArray((insights as any)?.organizationalFit) ? (insights as any)?.organizationalFit : []))).map((fit: string, index: number) => (
@@ -873,7 +874,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                   <h4 className="flex items-center gap-2 mb-2">
                     <Briefcase className="h-4 w-4" />
                     Overall Assessment
-                  </h4>
+                  <InfoTip>A short overall reading of your results.</InfoTip></h4>
                   <p className="text-sm opacity-95">
                     {aiInsights?.summary || getOrganizationalAssessmentText(
                       assessment.type,
@@ -890,7 +891,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                 <h4 className="flex items-center gap-2 mb-2">
                   <Lightbulb className="h-4 w-4" />
                   Your Development Path
-                </h4>
+                <InfoTip>Suggested next steps to grow.</InfoTip></h4>
                 <p className="text-sm opacity-95">
                   {aiInsights?.summary || getPersonalDevelopmentText(mainStyle, insights.improvements[0] || '')}
                 </p>
@@ -972,7 +973,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                             <h4 className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-2 mb-2 mt-4">
                               <AlertTriangle className="h-4 w-4" />
                               Areas for Growth
-                            </h4>
+                            <InfoTip>Skills that you could build further. They are not weaknesses.</InfoTip></h4>
                             <ul className="space-y-2">
                               {insights.weaknesses.map((weakness, i) => (
                                 <li key={i} className="flex items-start gap-2 text-sm">
@@ -988,7 +989,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                           <h4 className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-2 mb-2">
                             <Target className="h-4 w-4" />
                             Actionable Strategies
-                          </h4>
+                          <InfoTip>Practical things you can do this week.</InfoTip></h4>
                           <div className="space-y-3">
                             {insights.improvements.map((improvement, i) => (
                               <div key={i} className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md text-sm border border-blue-100 dark:border-blue-800/30">
@@ -1178,7 +1179,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                 }}>
                   <h4 className="flex items-center gap-2 mb-2">
                     <Lightbulb className="h-6 w-6" style={{ color: colors.info.main }} />
-                    <span style={{ color: colors.neutral.gray700 }}>Personal Development Tip</span>
+                    <span style={{ color: colors.neutral.gray700 }}>Personal Development Tip<InfoTip>One tip to try first.</InfoTip></span>
                   </h4>
                   <p className="text-sm" style={{ color: colors.neutral.gray700 }}>
                     Focus on leveraging your strengths while gradually working on your areas for development. 
@@ -1197,7 +1198,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               <CardTitle className="flex items-center gap-2" style={{ color: colors.primary.main }}>
                 <BookOpen className="h-5 w-5" />
                 Ghana Education Guidance
-              </CardTitle>
+              <InfoTip>Study and school options in Ghana that fit your strengths. They are ideas to explore, not decisions.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent style={{ 
               padding: `${componentSpacing.cardPadding}px`, 
@@ -1206,7 +1207,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               gap: `${componentSpacing.results.sectionGap}px` 
             }}>
               <div>
-                <h4 className="mb-2">Recommended SHS Tracks</h4>
+                <h4 className="mb-2">Recommended SHS Tracks<InfoTip>Senior High School programmes that may suit your strengths.</InfoTip></h4>
                 <div className="flex flex-wrap gap-2">
                   {ghanaMapping.shsTrack.map((track) => (
                     <Badge key={track} variant="secondary">
@@ -1217,7 +1218,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               </div>
 
               <div>
-                <h4 className="mb-2">Suggested Tertiary Focus Areas</h4>
+                <h4 className="mb-2">Suggested Tertiary Focus Areas<InfoTip>Types of university or college study that may suit you.</InfoTip></h4>
                 <div className="flex flex-wrap gap-2">
                   {ghanaMapping.tertiaryFocus.map((area) => (
                     <Badge key={area} variant="outline">
@@ -1231,7 +1232,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                 <h4 className="flex items-center gap-2 mb-2">
                   <Briefcase className="h-4 w-4" />
                   Career Suggestions
-                </h4>
+                <InfoTip>Careers that match your strengths. Use them as starting points.</InfoTip></h4>
                 <ul className="list-disc list-inside space-y-1">
                   {ghanaMapping.careerSuggestions.map((career) => (
                     <li key={career}>{career}</li>
@@ -1260,7 +1261,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               <CardTitle className="flex items-center gap-2" style={{ color: colors.primary.main }}>
                 <Briefcase className="h-5 w-5" />
                 Organizational Insights
-              </CardTitle>
+              <InfoTip>What your profile suggests about how you work in a team.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent style={{ 
               padding: `${componentSpacing.cardPadding}px`, 
@@ -1269,7 +1270,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
               gap: `${componentSpacing.results.sectionGap}px` 
             }}>
               <div>
-                <h4 className="mb-2">Applications for Your Role</h4>
+                <h4 className="mb-2">Applications for Your Role<InfoTip>Ways to use your strengths in your current role.</InfoTip></h4>
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   {(aiInsights?.organizationalApplications || [
                     'Apply your cognitive style to team collaboration and project management',
@@ -1288,7 +1289,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                 <h4 className="flex items-center gap-2 mb-2" style={{ color: colors.neutral.gray700 }}>
                   <Lightbulb className="h-4 w-4" style={{ color: colors.info.main }} />
                   Professional Development Tip
-                </h4>
+                <InfoTip>One tip to try first at work.</InfoTip></h4>
                 <p className="text-sm" style={{ color: colors.neutral.gray600 }}>
                   {aiInsights?.professionalDevelopmentTip || 'Understanding your cognitive profile can help you communicate more effectively with colleagues who think differently, make better decisions under pressure, and create more innovative solutions to organizational challenges.'}
                 </p>
@@ -1453,7 +1454,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
             <CardTitle className="flex items-center gap-2" style={{ color: colors.primary.main }}>
               <FileText className="h-5 w-5" />
               Personal Reflection
-            </CardTitle>
+            <InfoTip>Your own notes about these results. Writing them down helps you remember and act.</InfoTip></CardTitle>
             <CardDescription>
               {getReflectionDescription()}
             </CardDescription>

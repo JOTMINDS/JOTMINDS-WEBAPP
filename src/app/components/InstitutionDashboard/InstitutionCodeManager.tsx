@@ -15,6 +15,7 @@ import {
   getInstitutionById,
   saveInstitution
 } from '../../utils/institution';
+import { InfoTip } from '../ui/info-tip';
 
 interface InstitutionCodeManagerProps {
   institution: Institution;
@@ -181,7 +182,7 @@ export function InstitutionCodeManager({
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
             <Clock className="w-4 h-4" />Code Expiry
-          </CardTitle>
+          <InfoTip>How long the current institution code stays valid. After this date, new people cannot join with it.</InfoTip></CardTitle>
           <CardDescription>Set how long the current code remains valid</CardDescription>
         </CardHeader>
         <CardContent>
@@ -220,7 +221,7 @@ export function InstitutionCodeManager({
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
             <RefreshCw className="w-4 h-4" />Regenerate Code
-          </CardTitle>
+          <InfoTip>Creates a new institution code. The old code stops working straight away. People already linked keep their accounts, but new members need the new code.</InfoTip></CardTitle>
           <CardDescription>Create a new institution code. The old code will immediately stop working.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -290,7 +291,7 @@ export function InstitutionCodeManager({
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
             <Share2 className="w-4 h-4" />How to Share the Code
-          </CardTitle>
+          <InfoTip>Give the code to teachers and students so they can connect to your institution when they register.</InfoTip></CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {[

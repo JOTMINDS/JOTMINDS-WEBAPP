@@ -11,6 +11,7 @@ import { calculateProfessionalCognitiveProfile } from '../utils/professionalCogn
 import { RoleProfilesManager } from './RoleProfilesManager';
 import { CandidateComparisonPanel } from './CandidateComparisonPanel';
 import { MultiCandidateRanking } from './MultiCandidateRanking';
+import { InfoTip } from './ui/info-tip';
 
 interface RoleFitDashboardProps {
   orgId: string;
@@ -50,7 +51,7 @@ export function RoleFitDashboard({ orgId, professionals }: RoleFitDashboardProps
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Hiring & Promotions (Role Matcher)</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Hiring & Promotions (Role Matcher)<InfoTip>Compare people's cognitive profiles with the profile a role needs. Use it as one input to hiring and promotion decisions, not the only one.</InfoTip></h2>
           <p className="text-muted-foreground">Compare team members against standard cognitive role profiles.</p>
         </div>
         <Button onClick={() => setShowRoleBuilder(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
@@ -81,7 +82,7 @@ export function RoleFitDashboard({ orgId, professionals }: RoleFitDashboardProps
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1 space-y-4">
-            <h3 className="font-semibold text-sm uppercase tracking-wider text-slate-500">Available Roles</h3>
+            <h3 className="font-semibold text-sm uppercase tracking-wider text-slate-500">Available Roles<InfoTip>Role profiles you can match people against.</InfoTip></h3>
             <div className="space-y-2">
               {roleProfiles.map(role => (
                 <button

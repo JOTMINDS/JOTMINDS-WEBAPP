@@ -1,5 +1,6 @@
 import React from 'react';
 import { Star, Trophy, Heart, Sparkles, Lock } from 'lucide-react';
+import { InfoTip } from '../ui/info-tip';
 
 interface SupervisedDashboardProps {
   childName: string;
@@ -71,7 +72,7 @@ export function SupervisedDashboard({
               <h2 className="text-white flex items-center gap-2">
                 <Trophy className="w-8 h-8" />
                 Your Badges
-              </h2>
+              <InfoTip>Prizes you win for finishing activities.</InfoTip></h2>
               <span className="text-6xl">{badgesEarned}</span>
             </div>
             <p className="text-yellow-100">
@@ -88,7 +89,7 @@ export function SupervisedDashboard({
               <h2 className="text-white flex items-center gap-2">
                 <Sparkles className="w-8 h-8" />
                 Activities
-              </h2>
+              <InfoTip>Things to do on JotMinds. A grown-up may need to help you start.</InfoTip></h2>
               <span className="text-6xl">{activitiesCompleted}</span>
             </div>
             <p className="text-purple-100">

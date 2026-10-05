@@ -8,6 +8,7 @@ import { getSternbergPairing, getKolbPairing, getDualProcessPairing, AdultStyle,
 import { ArrowLeft, Brain, Sparkles, Target, Zap, AlertCircle } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend } from 'recharts';
 import { ParentObservationAssessment } from '../types';
+import { InfoTip } from './ui/info-tip';
 
 interface ParentChildPairingAnalyticsProps {
   child: User;
@@ -163,7 +164,7 @@ export function ParentChildPairingAnalytics({
           <CardContent className="p-8">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
-                <h3 className="text-2xl font-bold mb-2">The Dynamic Duo</h3>
+                <h3 className="text-2xl font-bold mb-2">The Dynamic Duo<InfoTip>How your style and your child's style fit together. Similar styles usually understand each other easily. Different styles can learn from each other.</InfoTip></h3>
                 <p className="text-purple-100 leading-relaxed">
                   You are a <strong className="text-white capitalize">{parentStyle}</strong> thinker. 
                   Understanding how this interacts with {child.name}'s unique learning, thinking, and decision-making styles 
@@ -197,7 +198,7 @@ export function ParentChildPairingAnalytics({
           {/* 3-Way Comparison Chart */}
           <Card className="border-2 border-purple-100">
             <CardHeader className="bg-purple-50/50">
-              <CardTitle>3-Way Alignment Overview</CardTitle>
+              <CardTitle>3-Way Alignment Overview<InfoTip>Compares your self-assessment, your observations of your child and their own self-assessment.</InfoTip></CardTitle>
               <CardDescription>Comparing your self-assessment, your observations of {child.name}, and their self-assessment.</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
@@ -220,7 +221,7 @@ export function ParentChildPairingAnalytics({
               <div className="mt-6 bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                   <Sparkles className="w-4 h-4" /> 3-Way Alignment Insights
-                </h4>
+                <InfoTip>What the comparison suggests, and how to use it.</InfoTip></h4>
                 <p className="text-sm text-blue-800">
                   {parentObservation 
                     ? `When comparing all three perspectives, we look for harmony. Where your observation matches ${child.name}'s self-assessment, you have a clear shared understanding. Where they differ, it's a great opportunity for conversation. Your own style (${parentStyle}) adds the third dimension—showing how you naturally approach the same challenges.`

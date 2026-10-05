@@ -7,6 +7,7 @@ import { generateParentObservationPDF } from '../utils/parentObservationPdfGener
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { useAuth } from './AuthContext';
+import { InfoTip } from './ui/info-tip';
 
 interface ParentObservationResultsProps {
   assessment: ParentObservationAssessment;
@@ -163,7 +164,7 @@ export function ParentObservationResults({
                 <Eye className="h-5 w-5 text-white" />
               </div>
               Overall Cognitive Profile
-            </CardTitle>
+            <InfoTip>A summary of what you observed about your child at home.</InfoTip></CardTitle>
             <CardDescription>Based on your observations of {child.name}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -236,7 +237,7 @@ export function ParentObservationResults({
         {/* Summary Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Quick Reference Summary</CardTitle>
+            <CardTitle>Quick Reference Summary<InfoTip>A short list of the main points from your observation.</InfoTip></CardTitle>
             <CardDescription>
               A consolidated view of {child.name}'s cognitive profile from your perspective
             </CardDescription>
@@ -282,7 +283,7 @@ export function ParentObservationResults({
         {/* Actions */}
         <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
           <CardHeader>
-            <CardTitle>What's Next?</CardTitle>
+            <CardTitle>What's Next?<InfoTip>Suggested next steps after this observation.</InfoTip></CardTitle>
             <CardDescription>
               Learn how your observations compare with {child.name}'s self-assessment
             </CardDescription>
