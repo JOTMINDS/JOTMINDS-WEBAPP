@@ -20,10 +20,9 @@ import {
   Settings,
 } from 'lucide-react';
 import {
-  calculateSchoolMetrics,
-  generateSchoolInsights,
-  type SchoolMetrics,
-  type SchoolInsight,
+  calculateRealSchoolMetrics,
+  generateRealSchoolInsights,
+  assessmentGroup,
 } from '../utils/schoolAnalytics';
 import { getSchoolRosterAPI, getAllAssessmentResults } from '../utils/api';
 import { normalizeServerResults } from '../utils/assessmentApi';
@@ -48,7 +47,7 @@ import {
   Line,
 } from 'recharts';
 import { InfoTip } from './ui/info-tip';
-import { calculateStudentEngagementAndRisk } from './SchoolAnalyticsDashboard';
+import { calculateStudentEngagementAndRisk, getStudentCognitiveStyles } from './SchoolAnalyticsDashboard';
 import { getSavedLessonPlans } from '../utils/lessonPlannerStorage';
 
 interface Props {
@@ -64,8 +63,6 @@ interface Props {
 }
 
 export function HeadTeacherDashboard({ schoolId, schoolName, students: initialStudents, teachers: initialTeachers, classes: initialClasses, onBack, user, onViewInstitutionDashboard, onViewSettings }: Props) {
-  const [metrics, setMetrics] = useState<SchoolMetrics | null>(null);
-  const [insights, setInsights] = useState<SchoolInsight[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [showTeacherStyles, setShowTeacherStyles] = useState(false);
 
@@ -153,26 +150,26 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
     return () => { cancelled = true; };
   }, [students]);
 
-  useEffect(() => {
-    if (students.length > 0) {
-      const schoolMetrics = calculateSchoolMetrics(schoolId, schoolName, students, teachers, classes);
-      const schoolInsights = generateSchoolInsights(schoolMetrics);
-      
-      setMetrics(schoolMetrics);
-      setInsights(schoolInsights);
-    }
-  }, [students, teachers, classes, schoolId, schoolName]);
+  // School-wide figures come from the roster and the assessment results fetched from the
+  // server. Nothing is read from this browser's local storage and nothing is a placeholder.
+  const metrics = useMemo(() => calculateRealSchoolMetrics({
+    schoolId,
+    schoolName,
+    students,
+    teachers,
+    classes,
+    assessments: studentAssessments,
+    scoreStudent: (student, mine, types) => calculateStudentEngagementAndRisk(student, mine, types, 0),
+    getStyles: getStudentCognitiveStyles,
+  }), [schoolId, schoolName, students, teachers, classes, studentAssessments]);
+  const insights = useMemo(() => generateRealSchoolInsights(metrics), [metrics]);
 
   // Teacher figures are calculated from each teacher's linked students and the assessment
   // results fetched from the server. Nothing here is a placeholder.
   const teacherPerformances = useMemo(() => {
     const DAY = 24 * 60 * 60 * 1000;
     const now = Date.now();
-    const typeGroup = (t: string) =>
-      ['kolb', 'vark', 'learning'].includes(t) ? 'learning'
-      : ['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(t) ? 'thinking'
-      : (t === 'dual-process' || t === 'decision') ? 'decision'
-      : t;
+    const typeGroup = assessmentGroup;
     const lessonPlans = getSavedLessonPlans();
 
     return (teachers || []).map((teacher: any) => {
@@ -216,7 +213,7 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
     });
   }, [teachers, students, classes, studentAssessments]);
 
-  if (isLoading || !metrics) {
+  if (isLoading || (students.length > 0 && studentResultsLoading)) {
     return <div className="p-8 text-center">Loading school analytics...</div>;
   }
 
@@ -241,20 +238,23 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
 
   const COLORS = ['#5B7DB1', '#6B4C9A', '#10b981', '#f59e0b'];
 
-  const performanceData = [
-    { name: 'Excellent', value: metrics.performanceDistribution.excellent, color: '#10b981' },
-    { name: 'Good', value: metrics.performanceDistribution.good, color: '#5B7DB1' },
-    { name: 'Average', value: metrics.performanceDistribution.average, color: '#f59e0b' },
-    { name: 'Needs Support', value: metrics.performanceDistribution.needsSupport, color: '#ef4444' },
+  const statusData = [
+    { name: 'On Track', value: metrics.riskCounts.low, color: '#10b981' },
+    { name: 'Needs Support', value: metrics.riskCounts.medium, color: '#f59e0b' },
+    { name: 'At Risk', value: metrics.riskCounts.high, color: '#ef4444' },
+    { name: 'Not Started', value: metrics.riskCounts.unassessed, color: '#9ca3af' },
   ];
 
-  const featureAdoptionData = [
-    { feature: 'Assessments', users: metrics.featureAdoption.assessments },
-    { feature: 'Brain Gym', users: metrics.featureAdoption.brainGym },
-    { feature: 'Career Exp', users: metrics.featureAdoption.careerExploration },
-    { feature: 'Profile', users: metrics.featureAdoption.profileImprovement },
-    { feature: 'Gamification', users: metrics.featureAdoption.gamification },
+  const completionData = [
+    { assessment: 'Learning Style', students: metrics.completion.learning },
+    { assessment: 'Thinking Style', students: metrics.completion.thinking },
+    { assessment: 'Decision Style', students: metrics.completion.decision },
   ];
+
+  const toBars = (counts: Record<string, number>) =>
+    Object.entries(counts).map(([name, students]) => ({ name, students })).sort((x, y) => y.students - x.students);
+
+  const activityChange = metrics.assessmentsLast30 - metrics.assessmentsPrev30;
 
   return (
     <div className="min-h-screen bg-background">
@@ -289,13 +289,13 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Users className="h-4 w-4 text-blue-600" />
-                Total Students
-              <InfoTip>Students linked to your school. The line underneath shows how many were active in the last 7 days.</InfoTip></CardTitle>
+                Total Students<InfoTip>Students linked to your school. The line underneath shows how many have completed at least one assessment.</InfoTip>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">{metrics.totalStudents}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {metrics.activeStudents} active (last 7 days)
+                {metrics.assessedStudents} assessed
               </p>
             </CardContent>
           </Card>
@@ -304,13 +304,13 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-600" />
-                Avg Engagement
-              <InfoTip>The average engagement score across students: how often and how consistently they use the platform. The line underneath is the total number of sessions.</InfoTip></CardTitle>
+                Avg Engagement<InfoTip>The average engagement score (0 to 100) of students who have completed at least one assessment. It rises with the number of assessment types completed and recent activity. The line underneath is how many students completed an assessment in the last 30 days.</InfoTip>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-600">{metrics.averageEngagementScore}%</div>
+              <div className="text-3xl font-bold text-green-600">{metrics.averageEngagementScore !== null ? `${metrics.averageEngagementScore}%` : '—'}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {metrics.totalSessions.toLocaleString()} total sessions
+                {metrics.activeStudents30} active in last 30 days
               </p>
             </CardContent>
           </Card>
@@ -319,11 +319,14 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-purple-600" />
-                Avg Performance
-              <InfoTip>The average score across students' assessment dimensions. It reflects strength and preference, not academic marks.</InfoTip></CardTitle>
+                At Risk<InfoTip>Students with very low engagement or who have been inactive for a long time. Based on participation, not on style results. The line underneath is students who need support: part of the assessments done, or activity slowing.</InfoTip>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-purple-600">{metrics.averageCognitiveScore}%</div>
+              <div className="text-3xl font-bold text-purple-600">{metrics.riskCounts.high}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {metrics.riskCounts.medium} need support
+              </p>
             </CardContent>
           </Card>
 
@@ -331,8 +334,8 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <UserCheck className="h-4 w-4 text-orange-600" />
-                Teachers
-              <InfoTip>Teachers linked to your school. The line underneath is the number of classes.</InfoTip></CardTitle>
+                Teachers<InfoTip>Teachers linked to your school. The line underneath is the number of classes.</InfoTip>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-orange-600">{metrics.totalTeachers}</div>
@@ -422,39 +425,37 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6 overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-5 overflow-x-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
+            <TabsTrigger value="styles">Styles</TabsTrigger>
             <TabsTrigger value="teachers">Teachers</TabsTrigger>
             <TabsTrigger value="students">Students</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
-            <TabsTrigger value="grades">Grades</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              {/* Performance Distribution */}
+              {/* Student Status */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Performance Distribution<InfoTip>How many students fall into each performance level.</InfoTip></CardTitle>
-                  <CardDescription>Students by performance level</CardDescription>
+                  <CardTitle>Student Status<InfoTip>Every student grouped by participation. On Track: recent assessments and healthy engagement. Needs Support: only part of the assessments done, or activity slowing. At Risk: very low engagement or long inactive. Not Started: no assessment yet. This is based on participation, not on style results.</InfoTip></CardTitle>
+                  <CardDescription>Students grouped by participation</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RecharPieChart>
                         <Pie
-                          data={performanceData}
+                          data={statusData.filter(d => d.value > 0)}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
                           label={(entry) => `${entry.name}: ${entry.value}`}
                           outerRadius={80}
-                          fill="#8884d8"
                           dataKey="value"
                         >
-                          {performanceData.map((entry, index) => (
+                          {statusData.filter(d => d.value > 0).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
@@ -465,21 +466,21 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
                 </CardContent>
               </Card>
 
-              {/* Feature Adoption */}
+              {/* Assessment Completion */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Feature Adoption<InfoTip>How many students use each platform feature, such as assessments, Brain Gym or reflections.</InfoTip></CardTitle>
-                  <CardDescription>Platform feature usage by students</CardDescription>
+                  <CardTitle>Assessment Completion<InfoTip>How many students have finished each of the three core assessments.</InfoTip></CardTitle>
+                  <CardDescription>Students who have completed each assessment (out of {metrics.totalStudents})</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={featureAdoptionData}>
+                      <BarChart data={completionData}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="feature" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
+                        <XAxis dataKey="assessment" tick={{ fontSize: 11 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                         <Tooltip />
-                        <Bar dataKey="users" fill="#5B7DB1" />
+                        <Bar dataKey="students" fill="#5B7DB1" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -487,72 +488,65 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
               </Card>
             </div>
 
-            {/* Engagement Metrics */}
+            {/* Assessment Activity */}
             <Card>
               <CardHeader>
-                <CardTitle>Engagement Metrics<InfoTip>How students are using the platform. Challenge completion is the challenges finished out of 10 per student.</InfoTip></CardTitle>
+                <CardTitle>Assessment Activity<InfoTip>Assessments completed by your students. The last 30 days are compared with the 30 days before, so you can see whether activity is rising or falling.</InfoTip></CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="text-sm text-gray-600">Total Sessions</div>
-                    <div className="text-2xl font-bold text-blue-600">
-                      {metrics.totalSessions.toLocaleString()}
-                    </div>
+                    <div className="text-sm text-gray-600">Total Assessments</div>
+                    <div className="text-2xl font-bold text-blue-600">{metrics.totalAssessments.toLocaleString()}</div>
                   </div>
                   <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                    <div className="text-sm text-gray-600">Total Time Spent</div>
-                    <div className="text-2xl font-bold text-purple-600">
-                      {metrics.totalTimeSpent.toLocaleString()}h
+                    <div className="text-sm text-gray-600">Last 30 Days</div>
+                    <div className="text-2xl font-bold text-purple-600">{metrics.assessmentsLast30}</div>
+                    <div className="text-[11px] text-gray-500 mt-0.5">
+                      {activityChange > 0 ? '+' : ''}{activityChange} vs previous 30 days
                     </div>
                   </div>
                   <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div className="text-sm text-gray-600">Challenge Completion</div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {metrics.challengeCompletionRate}%
-                    </div>
+                    <div className="text-sm text-gray-600">Fully Assessed Students</div>
+                    <div className="text-2xl font-bold text-green-600">{metrics.fullyAssessedStudents}</div>
+                    <div className="text-[11px] text-gray-500 mt-0.5">finished all 3 core assessments</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Performance Tab */}
-          <TabsContent value="performance" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gamification Engagement<InfoTip>How much students take part in XP, streaks, badges and challenges.</InfoTip></CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Award className="h-5 w-5 text-yellow-600" />
-                      <div className="text-sm text-gray-600">Total Badges</div>
+          {/* Styles Tab */}
+          <TabsContent value="styles" className="space-y-4">
+            {[
+              { title: 'Learning Styles', tip: 'How your students prefer to learn (Kolb). Each student is counted once, under their main style.', data: toBars(metrics.styles.learning), fill: '#5B7DB1' },
+              { title: 'Thinking Styles', tip: 'The kind of thinking each student uses most. Each student is counted once.', data: toBars(metrics.styles.thinking), fill: '#6B4C9A' },
+              { title: 'Decision Styles', tip: 'How students tend to make decisions. Each student is counted once.', data: toBars(metrics.styles.decision), fill: '#10b981' },
+            ].map(section => (
+              <Card key={section.title}>
+                <CardHeader>
+                  <CardTitle>{section.title}<InfoTip>{section.tip}</InfoTip></CardTitle>
+                  <CardDescription>Only students who have completed the assessment are counted</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {section.data.length === 0 ? (
+                    <div className="text-sm text-gray-500 py-6 text-center">No results yet.</div>
+                  ) : (
+                    <div className="h-[260px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={section.data}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                          <Tooltip />
+                          <Bar dataKey="students" fill={section.fill} />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {metrics.totalBadgesEarned.toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Target className="h-5 w-5 text-purple-600" />
-                      <div className="text-sm text-gray-600">Total XP</div>
-                    </div>
-                    <div className="text-2xl font-bold text-purple-600">
-                      {metrics.totalXPEarned.toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="h-5 w-5 text-blue-600" />
-                      <div className="text-sm text-gray-600">Avg Level</div>
-                    </div>
-                    <div className="text-2xl font-bold text-blue-600">{metrics.averageLevel}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
           </TabsContent>
 
           {/* Teachers Tab */}
@@ -617,6 +611,11 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
 
           {/* Insights Tab */}
           <TabsContent value="insights" className="space-y-4">
+            {insights.length === 0 && (
+              <div className="text-sm text-gray-500 py-8 text-center">
+                No insights yet. They appear once students have been added.
+              </div>
+            )}
             {insights.map(insight => (
               <Card
                 key={insight.id}
@@ -686,45 +685,6 @@ export function HeadTeacherDashboard({ schoolId, schoolName, students: initialSt
           </TabsContent>
 
           {/* Grades Tab */}
-          <TabsContent value="grades" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance by Grade<InfoTip>The average performance score for each grade or level.</InfoTip></CardTitle>
-                <CardDescription>Average scores and engagement across grades</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {metrics.gradeMetrics.map(grade => (
-                    <div key={grade.grade} className="p-4 bg-gray-50 rounded-lg border">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold">{grade.grade}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {grade.studentCount} students
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="p-3 bg-white rounded-lg border">
-                          <div className="text-xs text-gray-600">Average Score</div>
-                          <div className="text-2xl font-bold text-primary">
-                            {grade.averageScore}%
-                          </div>
-                        </div>
-                        <div className="p-3 bg-white rounded-lg border">
-                          <div className="text-xs text-gray-600">Engagement Score</div>
-                          <div className="text-2xl font-bold text-blue-600">
-                            {grade.engagementScore}%
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Students Tab — roster summary + per-student report drill-down */}
           <TabsContent value="students" className="space-y-4">
             <Card>
