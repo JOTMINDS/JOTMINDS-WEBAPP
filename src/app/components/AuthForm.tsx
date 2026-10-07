@@ -1180,8 +1180,8 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Pre-school">Pre-school / Early Years (Crèche, Nursery, KG)</SelectItem>
-                            <SelectItem value="Elementary">Elementary (Primary School)</SelectItem>
+                            <SelectItem value="Pre-school">Preschool (Crèche, Nursery, KG)</SelectItem>
+                            <SelectItem value="Elementary">Elementary (Primary 1–6)</SelectItem>
                             <SelectItem value="JHS">JHS (Junior High School)</SelectItem>
                             <SelectItem value="SHS">SHS (Senior High School)</SelectItem>
                             <SelectItem value="Tertiary">Tertiary</SelectItem>

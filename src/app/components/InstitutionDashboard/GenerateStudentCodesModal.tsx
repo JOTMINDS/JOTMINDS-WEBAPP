@@ -308,6 +308,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
   };
 
   const levelColors: Record<string, string> = {
+    'Early Years': 'bg-pink-100 text-pink-800 border-pink-200',
     'Elementary': 'bg-green-100 text-green-800 border-green-200',
     'JHS': 'bg-blue-100 text-blue-800 border-blue-200',
     'SHS': 'bg-purple-100 text-purple-800 border-purple-200',
@@ -430,7 +431,8 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Elementary">Elementary (Primary)</SelectItem>
+                          <SelectItem value="Early Years">Preschool (Crèche, Nursery, KG)</SelectItem>
+                    <SelectItem value="Elementary">Elementary (Primary)</SelectItem>
                           <SelectItem value="JHS">JHS (Junior High)</SelectItem>
                           <SelectItem value="SHS">SHS (Senior High)</SelectItem>
                           <SelectItem value="Tertiary">Tertiary (University/College)</SelectItem>
@@ -471,6 +473,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                     <SelectValue placeholder="Select Education Level *" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="Early Years">Preschool (Crèche, Nursery, KG)</SelectItem>
                     <SelectItem value="Elementary">Elementary (Primary)</SelectItem>
                     <SelectItem value="JHS">JHS (Junior High)</SelectItem>
                     <SelectItem value="SHS">SHS (Senior High)</SelectItem>

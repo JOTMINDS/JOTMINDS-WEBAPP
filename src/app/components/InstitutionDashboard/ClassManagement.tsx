@@ -434,8 +434,8 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       <div className="flex flex-wrap gap-2 mb-4 pb-2 border-b">
         {[
           { id: 'all', label: 'All Levels' },
-          { id: 'Early Years', label: 'Pre-school / Early Years' },
-          { id: 'Primary', label: 'Elementary / Primary' },
+          { id: 'Early Years', label: 'Preschool' },
+          { id: 'Primary', label: 'Elementary' },
           { id: 'JHS', label: 'Junior High School (JHS)' },
           { id: 'SHS', label: 'Senior High School (SHS)' },
           { id: 'Tertiary', label: 'Tertiary' },
@@ -507,7 +507,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                       let label: string = lvl;
                       if (['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'].includes(lvl)) {
                         color = 'bg-pink-50 text-pink-800 border-pink-200';
-                        label = 'Pre-school / Early Years';
+                        label = 'Preschool';
                       } else if (['Primary', 'Elementary'].includes(lvl)) {
                         color = 'bg-emerald-50 text-emerald-800 border-emerald-200';
                         label = 'Elementary';
@@ -675,8 +675,8 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E8A6E]"
                 >
                   <option value="">-- Select Level --</option>
-                  <option value="Early Years">Pre-school / Early Years (Crèche, Nursery, KG)</option>
-                  <option value="Elementary">Elementary / Primary (Basic 1-6)</option>
+                  <option value="Early Years">Preschool (Crèche, Nursery, KG)</option>
+                  <option value="Elementary">Elementary (Primary 1–6)</option>
                   <option value="JHS">Junior High School (JHS 1-3)</option>
                   <option value="SHS">Senior High School (SHS 1-3)</option>
                   <option value="Tertiary">Tertiary (University/College)</option>

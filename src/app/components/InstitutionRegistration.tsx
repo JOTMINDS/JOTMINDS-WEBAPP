@@ -26,8 +26,8 @@ interface InstitutionRegistrationProps {
 type Step = 1 | 2 | 3 | 4 | 5;
 
 const INSTITUTION_TYPES: { value: InstitutionType; label: string }[] = [
-  { value: 'Pre-school', label: 'Pre-school / Early Years (Crèche, Nursery, KG)' },
-  { value: 'Elementary', label: 'Elementary / Primary (Basic 1–6)' },
+  { value: 'Pre-school', label: 'Preschool (Crèche, Nursery, KG)' },
+  { value: 'Elementary', label: 'Elementary (Primary 1–6)' },
   { value: 'JHS', label: 'Junior High School (JHS 1–3)' },
   { value: 'SHS', label: 'Senior High School (SHS 1–3)' },
   { value: 'Primary-JHS', label: 'Primary — JHS (Nursery/KG to JHS 3)' },

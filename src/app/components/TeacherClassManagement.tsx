@@ -206,8 +206,8 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
                     <SelectValue placeholder="Select level..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Early Years">Pre-school / Early Years (Crèche, Nursery, KG)</SelectItem>
-                    <SelectItem value="Elementary">Elementary / Primary (Basic 1-6)</SelectItem>
+                    <SelectItem value="Early Years">Preschool (Crèche, Nursery, KG)</SelectItem>
+                    <SelectItem value="Elementary">Elementary (Primary 1–6)</SelectItem>
                     <SelectItem value="JHS">Junior High School (JHS 1-3)</SelectItem>
                     <SelectItem value="SHS">Senior High School (SHS 1-3)</SelectItem>
                     <SelectItem value="Tertiary">Tertiary (University/College)</SelectItem>
@@ -236,8 +236,8 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
           <div className="flex flex-wrap gap-1.5 pb-1">
             {[
               { id: 'all', label: 'All Levels' },
-              { id: 'Early Years', label: 'Pre-school / Early Years', aliases: ['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'] },
-              { id: 'Elementary', label: 'Elementary / Primary', aliases: ['Elementary', 'Primary'] },
+              { id: 'Early Years', label: 'Preschool', aliases: ['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'] },
+              { id: 'Elementary', label: 'Elementary', aliases: ['Elementary', 'Primary'] },
               { id: 'JHS', label: 'Junior High (JHS)', aliases: ['JHS'] },
               { id: 'SHS', label: 'Senior High (SHS)', aliases: ['SHS'] },
               { id: 'Tertiary', label: 'Tertiary', aliases: ['Tertiary'] },
@@ -277,8 +277,8 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
               const filteredClasses = levelFilter === 'all'
                 ? classes
                 : classes.filter(c => {
-                    if (levelFilter === 'Early Years') return ['Early Years', 'Nursery', 'Kindergarten'].includes(c.educationLevel || '');
-                    if (levelFilter === 'Primary') return ['Primary', 'Elementary'].includes(c.educationLevel || '');
+                    if (levelFilter === 'Early Years') return ['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten'].includes(c.educationLevel || '');
+                    if (levelFilter === 'Elementary' || levelFilter === 'Primary') return ['Primary', 'Elementary'].includes(c.educationLevel || '');
                     if (levelFilter === 'JHS') return c.educationLevel === 'JHS';
                     if (levelFilter === 'SHS') return c.educationLevel === 'SHS';
                     if (levelFilter === 'Tertiary') return c.educationLevel === 'Tertiary';
@@ -298,10 +298,10 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
               // Group classes by educational level
               const levelGroups: Record<string, typeof filteredClasses> = {};
               filteredClasses.forEach(c => {
-                let groupKey = 'Elementary / Primary';
+                let groupKey = 'Elementary';
                 const lvl = c.educationLevel || '';
-                if (['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'].includes(lvl)) groupKey = 'Pre-school / Early Years';
-                else if (['Primary', 'Elementary'].includes(lvl)) groupKey = 'Elementary / Primary';
+                if (['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'].includes(lvl)) groupKey = 'Preschool';
+                else if (['Primary', 'Elementary'].includes(lvl)) groupKey = 'Elementary';
                 else if (lvl === 'JHS') groupKey = 'Junior High School (JHS)';
                 else if (lvl === 'SHS') groupKey = 'Senior High School (SHS)';
                 else if (lvl === 'Tertiary') groupKey = 'Tertiary';
@@ -312,8 +312,8 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
               });
 
               const levelBadgeColors: Record<string, string> = {
-                'Pre-school / Early Years': 'bg-pink-100 text-pink-800 border-pink-200',
-                'Elementary / Primary': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                'Preschool': 'bg-pink-100 text-pink-800 border-pink-200',
+                'Elementary': 'bg-emerald-100 text-emerald-800 border-emerald-200',
                 'Junior High School (JHS)': 'bg-blue-100 text-blue-800 border-blue-200',
                 'Senior High School (SHS)': 'bg-purple-100 text-purple-800 border-purple-200',
                 'Tertiary': 'bg-amber-100 text-amber-800 border-amber-200',

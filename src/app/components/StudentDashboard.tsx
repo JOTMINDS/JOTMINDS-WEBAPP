@@ -512,6 +512,9 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
       switch (user.educationLevel) {
         case 'Elementary':
           return 'Children'; // Ages 6-10 typically
+        case 'Pre-school':
+        case 'Early Years':
+          return null; // Preschool: no self-report assessment
         case 'JHS':
           return 'JHS'; // Ages 11-14 typically
         case 'SHS':
