@@ -33,6 +33,8 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
   const [otpToken, setOtpToken] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [signupOtpSent, setSignupOtpSent] = useState(false);
+  const [signupOtp, setSignupOtp] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,6 +169,21 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
         // Sign up
         if (!organizationName || !position) {
           setError('Organization name and position are required for supervisors.');
+          setLoading(false);
+          return;
+        }
+
+        // Email ownership: the server refuses /signup unless the email's code was verified.
+        const cleanSignupEmail = email.trim().toLowerCase();
+        if (!signupOtpSent) {
+          await generateOTP(cleanSignupEmail, 'signup');
+          setSignupOtpSent(true);
+          setLoading(false);
+          return;
+        }
+        const emailVerified = await verifyOTP(cleanSignupEmail, signupOtp);
+        if (!emailVerified) {
+          setError('Invalid or expired 6-digit verification code. Please check your inbox and try again.');
           setLoading(false);
           return;
         }
@@ -354,6 +371,23 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
                 )
               )}
 
+              {!isLogin && signupOtpSent && (
+                <div className="space-y-2">
+                  <Label htmlFor="signupOtp">6-Digit Verification Code <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="signupOtp"
+                    type="text"
+                    placeholder="123456"
+                    value={signupOtp}
+                    onChange={(e) => setSignupOtp(e.target.value)}
+                    required
+                    className="font-mono tracking-widest"
+                    maxLength={6}
+                  />
+                  <p className="text-xs text-muted-foreground">Enter the code sent to {email}</p>
+                </div>
+              )}
+
               {!isLogin && (
                 <>
                   <div className="space-y-2">
@@ -437,9 +471,9 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
                 </Alert>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading || (isLogin && loginMethod === 'otp' && otpSent && otpToken.length !== 6)}>
+              <Button type="submit" className="w-full" disabled={loading || (isLogin && loginMethod === 'otp' && otpSent && otpToken.length !== 6) || (!isLogin && signupOtpSent && signupOtp.length !== 6)}>
                 {loading ? 'Processing...' : (
-                  isLogin ? (loginMethod === 'otp' && !otpSent ? 'Send Code' : 'Login to Portal') : 'Register Organization'
+                  isLogin ? (loginMethod === 'otp' && !otpSent ? 'Send Code' : 'Login to Portal') : (signupOtpSent ? 'Register Organization' : 'Send Verification Code')
                 )}
               </Button>
 
@@ -447,7 +481,7 @@ export function SupervisorAuthForm({ onLogin, onBackToMain }: SupervisorAuthForm
                 type="button"
                 variant="ghost"
                 className="w-full"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => { setIsLogin(!isLogin); setSignupOtpSent(false); setSignupOtp(''); }}
               >
                 {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
               </Button>

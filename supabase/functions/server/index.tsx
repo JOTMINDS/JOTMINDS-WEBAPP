@@ -242,9 +242,19 @@ app.post('/make-server-fc8eb847/verify-otp', async (c) => {
     
     if (stored.otp === otp.trim()) {
       await kv.del(`otp:${email.toLowerCase()}`);
+      // Proof of email ownership that /signup requires (required by /signup).
+      await kv.set(`otpverified:${email.trim().toLowerCase()}`, { verifiedAt: Date.now() });
       return c.json({ verified: true });
     }
-    
+
+    // Cap wrong guesses so a 6-digit code can't be brute-forced within its 10 minutes.
+    const attempts = (stored.attempts ?? 0) + 1;
+    if (attempts >= 5) {
+      await kv.del(`otp:${email.toLowerCase()}`);
+      return c.json({ verified: false, error: 'Too many incorrect attempts. Request a new code.' });
+    }
+    await kv.set(`otp:${email.toLowerCase()}`, { ...stored, attempts });
+
     return c.json({ verified: false, error: 'Incorrect code' });
   } catch (error: any) {
     console.error('[verify-otp] Server error:', error);
@@ -1624,6 +1634,15 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
+    // Email ownership: the account is created with email_confirm: true, so the
+    // OTP step is the only proof the caller controls this address. Always
+    // require that /verify-otp succeeded for it in the last 15 minutes.
+    const otpVerifiedKey = `otpverified:${String(email).trim().toLowerCase()}`;
+    const otpMarker = await kv.get(otpVerifiedKey);
+    if (!otpMarker || Date.now() - otpMarker.verifiedAt > 15 * 60 * 1000) {
+      return c.json({ error: 'Email not verified. Please verify your email with the code we sent you before signing up.' }, 403);
+    }
+
     // Enforce phone number uniqueness if provided
     if (phone) {
       const existingPhoneUser = await kv.get(`phone:${phone}`);
@@ -1845,6 +1864,8 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         isVerified: false
       }
     });
+
+    if (!error) await kv.del(otpVerifiedKey);
 
     if (error) {
       console.log(`Error creating user during signup: ${error.message}`);
