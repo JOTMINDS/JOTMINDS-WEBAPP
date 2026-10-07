@@ -29,6 +29,8 @@ import { CentralStudentManagement } from './CentralStudentManagement';
 import { CentralAnalyticsHub } from './CentralAnalyticsHub';
 import { PreschoolContainer } from './preschool/PreschoolContainer';
 import { isPreschoolChild } from '../utils/preschoolEngine';
+import { TabTitle } from './ui/tab-title';
+import { TEACHER_TAB_HELP } from '../utils/tabHelp';
 
 interface TeacherDashboardNewProps {
   user: User;
@@ -376,7 +378,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'preschool' ? 'Early Years & Preschool' : activeTab.replace('-', ' ')}
+          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'preschool' ? 'Early Years & Preschool' : activeTab.replace('-', ' ')}<TabTitle help={TEACHER_TAB_HELP[activeTab]}>{null}</TabTitle>
         </h2>
         {user.school && (
           <Badge variant="outline" className="border-purple-600 text-purple-700">

@@ -52,6 +52,8 @@ import { InstitutionReporting } from '../InstitutionReporting';
 import { SchoolTeacherStylesView } from '../SchoolTeacherStylesView';
 import { PreschoolContainer } from '../preschool/PreschoolContainer';
 import { isPreschoolChild } from '../../utils/preschoolEngine';
+import { TabTitle } from '../ui/tab-title';
+import { INSTITUTION_TAB_HELP } from '../../utils/tabHelp';
 
 interface InstitutionDashboardProps {
   user: User;
@@ -446,6 +448,10 @@ export function InstitutionDashboard({
     >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* tabs */}
+        <div className="flex items-center text-lg font-bold text-slate-900 dark:text-white">
+          {institutionNavGroups.flatMap((g: any) => g.items).find((i: any) => i.id === tab)?.label}
+          <TabTitle help={INSTITUTION_TAB_HELP[tab]}>{null}</TabTitle>
+        </div>
         {tab === 'overview' && (
           <InstitutionOverview
             institution={institution}

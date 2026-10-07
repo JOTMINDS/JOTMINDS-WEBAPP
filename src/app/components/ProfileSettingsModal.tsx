@@ -10,6 +10,7 @@ import { updateUserProfile, updateInstitutionProfile, assignInstitutionAdmin, Or
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getAuthToken } from '../utils/api';
+import { TabIntro } from './ui/tab-title';
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
@@ -259,6 +260,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
               </TabsList>
 
               <TabsContent value="personal">
+            <TabIntro label="Personal" help="Your own details. They are used on your profile and reports." />
                 <form id="profile-form" onSubmit={handlePersonalSave} className="space-y-5">
                   <div className="flex flex-col items-center gap-3 mb-6">
                     <div className="w-24 h-24 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800/50 relative group">
@@ -344,6 +346,7 @@ export function ProfileSettingsModal({ isOpen, onClose, user, onProfileUpdate }:
               </TabsContent>
 
               <TabsContent value="institution" className="space-y-8">
+            <TabIntro label="Institution" help="The school or organisation linked to your account." />
                 <form id="institution-form" onSubmit={handleInstitutionSave} className="space-y-5">
                   <div className="flex items-start gap-6">
                     <div className="flex flex-col items-center gap-3">

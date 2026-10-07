@@ -2,6 +2,8 @@ import React from 'react';
 import { useAuth } from '../AuthContext';
 import { Menu, Search, Bell, Moon, Sun, User, LogOut } from 'lucide-react';
 import { Button } from '../ui/button';
+import { TabTitle } from '../ui/tab-title';
+import { SUPER_ADMIN_TAB_HELP } from '../../utils/tabHelp';
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -29,7 +31,7 @@ export function TopNav({ title, onMenuClick, onLogout }: TopNavProps) {
           <Menu className="h-5 w-5" />
         </Button>
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white capitalize">
-          {title.replace('-', ' ')}
+          {title.replace('-', ' ')}<TabTitle help={SUPER_ADMIN_TAB_HELP[title]}>{null}</TabTitle>
         </h2>
       </div>
 

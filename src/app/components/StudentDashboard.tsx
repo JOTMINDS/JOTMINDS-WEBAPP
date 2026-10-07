@@ -78,6 +78,8 @@ import { StudentCareerFit } from './StudentCareerFit';
 import { getCognitiveProfile, CognitiveProfile } from '../utils/cognitiveProfileApi';
 import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
+import { TabTitle } from './ui/tab-title';
+import { STUDENT_TAB_HELP } from '../utils/tabHelp';
 
 interface StudentDashboardProps {
   user: User;
@@ -510,11 +512,11 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
     // This accounts for students who might be younger/older than typical for their grade
     if (user.educationLevel) {
       switch (user.educationLevel) {
-        case 'Elementary':
-          return 'Children'; // Ages 6-10 typically
         case 'Pre-school':
         case 'Early Years':
           return null; // Preschool: no self-report assessment
+        case 'Elementary':
+          return 'Children'; // Ages 6-10 typically
         case 'JHS':
           return 'JHS'; // Ages 11-14 typically
         case 'SHS':
@@ -785,7 +787,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab.replace('-', ' ')}
+          {activeTab.replace('-', ' ')}<TabTitle help={STUDENT_TAB_HELP[activeTab]}>{null}</TabTitle>
         </h2>
         {user.className && (
           <Badge variant="outline" className="border-[#1E8A6E] text-[#1E8A6E]">

@@ -16,6 +16,7 @@ import {
   listItemBankItems, createItemBankItem, updateItemBankItem, setItemBankItemStatus,
   listItemBankAssessments, createItemBankAssessment, updateItemBankAssessment, getAssessmentPool, attachItemToAssessment, detachItemFromAssessment,
 } from '../../../utils/api';
+import { TabIntro } from '../../ui/tab-title';
 
 type SubTab = 'domains' | 'constructs' | 'items' | 'assessments';
 const ITEM_TYPES = ['forced_choice', 'situational_judgment', 'ranking', 'multi_select', 'confidence_slider', 'timed_task', 'open_response', 'information_selection', 'resource_allocation', 'simulation'];
@@ -38,6 +39,16 @@ export function ItemBankStudioView() {
           <TabsTrigger value="assessments">Assessments</TabsTrigger>
         </TabsList>
       </Tabs>
+      {(() => {
+        const intro: Record<string, [string, string]> = {
+        domains: ['Domains', 'The broad areas an assessment measures.'],
+        constructs: ['Constructs', 'The specific skills or traits inside each domain.'],
+        items: ['Items', 'The individual questions. Each is linked to a construct.'],
+        assessments: ['Assessments', 'Sets of items grouped into the assessments users take.']
+        };
+        const t = intro[tab];
+        return t ? <TabIntro label={t[0]} help={t[1]} /> : null;
+      })()}
       {tab === 'domains' && <DomainsTab />}
       {tab === 'constructs' && <ConstructsTab />}
       {tab === 'items' && <ItemsTab />}

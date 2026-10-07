@@ -40,6 +40,7 @@ import {
   Legend,
   Cell
 } from 'recharts';
+import { TabIntro } from './ui/tab-title';
 
 interface JHSThinkingResultsProps {
   results: JHSResults;
@@ -177,6 +178,7 @@ export function JHSThinkingResults({
 
           {/* Tab 1: Thinking Power Breakdown */}
           <TabsContent value="breakdown" className="space-y-6">
+            <TabIntro label="Thinking Powers" help="Your score on each thinking power. A higher score means a stronger preference, not a better result." />
             
             {/* Charts Row */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -313,6 +315,7 @@ export function JHSThinkingResults({
 
           {/* Tab 2: SHS Program Recommendations */}
           <TabsContent value="programs" className="space-y-6">
+            <TabIntro label="School Programs" help="School programmes that suit your strengths. Use them as ideas to explore, not decisions." />
             
             {/* Header Message */}
             <Card className="bg-gradient-to-r from-blue-100 to-purple-100 border-2" style={{ borderColor: primaryStyle.color }}>
@@ -476,6 +479,7 @@ export function JHSThinkingResults({
 
           {/* Tab 3: Growth Tips */}
           <TabsContent value="tips" className="space-y-6">
+            <TabIntro label="How to Improve" help="Practical ways to build your thinking powers." />
             
             {/* Motivation Message */}
             <Card className="bg-gradient-to-r from-purple-100 to-pink-100">

@@ -40,6 +40,7 @@ import {
   getUnlockableLevels,
   type UnlockableLevel,
 } from '../utils/adaptiveChallenges';
+import { TabIntro } from './ui/tab-title';
 
 interface Props {
   userId: string;
@@ -261,6 +262,7 @@ export function CognitiveWorkoutDashboard({ userId, onBack, onStartLesson, onSta
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4">
+            <TabIntro label="Overview" help="Today's workout, recommendations for you and your streak milestones." />
             {/* Recommendations */}
             {recommendations.length > 0 && (
               <Card>
@@ -368,6 +370,7 @@ export function CognitiveWorkoutDashboard({ userId, onBack, onStartLesson, onSta
 
           {/* Skills Tab */}
           <TabsContent value="skills" className="space-y-4">
+            <TabIntro label="Skills" help="The cognitive skills you are training and your progress in each." />
             <div className="grid gap-4">
               {masteryProgress.skills.map(skill => (
                 <Card key={skill.id}>
@@ -429,6 +432,7 @@ export function CognitiveWorkoutDashboard({ userId, onBack, onStartLesson, onSta
 
           {/* Lessons Tab */}
           <TabsContent value="lessons" className="space-y-4">
+            <TabIntro label="Lessons" help="Short lessons that teach and practise a skill." />
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {availableLessons.map(lesson => {
                 const isCompleted = completedLessons.includes(lesson.id);
@@ -500,6 +504,7 @@ export function CognitiveWorkoutDashboard({ userId, onBack, onStartLesson, onSta
 
           {/* Levels Tab */}
           <TabsContent value="levels" className="space-y-4">
+            <TabIntro label="Levels" help="The levels you can reach as you earn XP." />
             <div className="grid gap-4">
               {unlockableLevels.map(level => (
                 <Card

@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { BookOpen, Brain, Target, Users, GraduationCap, Briefcase, Info, ArrowRight, Lightbulb } from 'lucide-react';
 import { ReactNode } from 'react';
+import { TabIntro } from './ui/tab-title';
 
 interface FrameworkInfoProps {
   trigger?: ReactNode;
@@ -157,6 +158,7 @@ export function FrameworkInfo({ trigger, defaultOpen = false, userRole }: Framew
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
+            <TabIntro label="Overview" help="What the cognitive assessment measures and why." />
             <Card>
               <CardHeader>
                 <CardTitle>Three Distinct but Connected Frameworks</CardTitle>
@@ -205,6 +207,7 @@ export function FrameworkInfo({ trigger, defaultOpen = false, userRole }: Framew
           </TabsContent>
 
           <TabsContent value="frameworks" className="space-y-4">
+            <TabIntro label="Frameworks" help="The three research frameworks behind your results: learning style, thinking style and decision style." />
             {frameworks.map((framework, index) => {
               const Icon = framework.icon;
               return (
@@ -265,6 +268,7 @@ export function FrameworkInfo({ trigger, defaultOpen = false, userRole }: Framew
           </TabsContent>
 
           <TabsContent value="cycle" className="space-y-4">
+            <TabIntro label="The Cycle" help="How the three styles work together: taking in information, processing it, and deciding." />
             <Card>
               <CardHeader>
                 <CardTitle>The Complete Cognitive Cycle</CardTitle>
@@ -363,6 +367,7 @@ export function FrameworkInfo({ trigger, defaultOpen = false, userRole }: Framew
           </TabsContent>
 
           <TabsContent value="why" className="space-y-4">
+            <TabIntro label="Why All Three?" help="Why one assessment is not enough and how the three together give a fuller picture." />
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

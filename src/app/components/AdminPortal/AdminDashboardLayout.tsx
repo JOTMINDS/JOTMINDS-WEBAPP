@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { cn } from '../ui/utils';
+import { TabTitle } from '../ui/tab-title';
+import { ADMIN_TAB_HELP } from '../../utils/tabHelp';
 
 interface AdminDashboardLayoutProps {
   onBack: () => void;
@@ -176,7 +178,7 @@ export const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({
         <header className="hidden md:flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm dark:bg-gray-950/50 border-b sticky top-0 z-30">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
-              {getCurrentLabel()}
+              {getCurrentLabel()}<TabTitle help={ADMIN_TAB_HELP[activeTab]}>{null}</TabTitle>
             </h1>
           </div>
           <div className="flex items-center gap-4">

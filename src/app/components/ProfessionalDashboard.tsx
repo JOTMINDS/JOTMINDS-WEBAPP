@@ -25,6 +25,8 @@ import { formatDate } from '../utils/dateFormat';
 import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
 import { InfoTip } from './ui/info-tip';
+import { TabTitle } from './ui/tab-title';
+import { PROFESSIONAL_TAB_HELP } from '../utils/tabHelp';
 
 interface ProfessionalDashboardProps {
   user: User;
@@ -428,7 +430,7 @@ export function ProfessionalDashboard({ user, onLogout }: ProfessionalDashboardP
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab.replace('-', ' ')}
+          {activeTab.replace('-', ' ')}<TabTitle help={PROFESSIONAL_TAB_HELP[activeTab]}>{null}</TabTitle>
         </h2>
         {user.position && (
           <Badge variant="outline" className="border-indigo-600 text-indigo-700">

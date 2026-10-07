@@ -40,6 +40,7 @@ import {
   type DataInventory,
 } from '../utils/privacyConsent';
 import { formatDate } from '../utils/dateFormat';
+import { TabIntro } from './ui/tab-title';
 
 interface Props {
   userId: string;
@@ -195,6 +196,7 @@ export function PrivacyDashboard({ userId, onBack }: Props) {
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-4">
+            <TabIntro label="Settings" help="Control who can see your data and how it is used." />
             <Card>
               <CardHeader>
                 <CardTitle>Privacy Settings</CardTitle>
@@ -356,6 +358,7 @@ export function PrivacyDashboard({ userId, onBack }: Props) {
 
           {/* Consents Tab */}
           <TabsContent value="consents" className="space-y-4">
+            <TabIntro label="Consents" help="The permissions you have given. You can change them at any time." />
             <Card>
               <CardHeader>
                 <CardTitle>Consent Management</CardTitle>
@@ -466,6 +469,7 @@ export function PrivacyDashboard({ userId, onBack }: Props) {
 
           {/* Data Tab */}
           <TabsContent value="data" className="space-y-4">
+            <TabIntro label="Your Data" help="What data we hold about you. You can download a copy or delete your account." />
             <Card>
               <CardHeader>
                 <CardTitle>Your Data Inventory</CardTitle>
@@ -553,6 +557,7 @@ export function PrivacyDashboard({ userId, onBack }: Props) {
 
           {/* Access Logs Tab */}
           <TabsContent value="access" className="space-y-4">
+            <TabIntro label="Access Logs" help="A record of who has viewed your data and when." />
             <Card>
               <CardHeader>
                 <CardTitle>Data Access History</CardTitle>
@@ -592,6 +597,7 @@ export function PrivacyDashboard({ userId, onBack }: Props) {
 
           {/* Requests Tab */}
           <TabsContent value="requests" className="space-y-4">
+            <TabIntro label="Requests" help="Data export and deletion requests you have made, and their status." />
             {/* Export Requests */}
             {exportRequests.length > 0 && (
               <Card>

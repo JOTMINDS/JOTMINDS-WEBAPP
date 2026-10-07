@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Plus, Trash2, FileEdit, Loader, Briefcase, GraduationCap, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { listContent, createContent, updateContent, deleteContent } from '../../../utils/api';
+import { TabIntro } from '../../ui/tab-title';
 
 type ContentType = 'career' | 'scholarship' | 'resource';
 
@@ -104,6 +105,15 @@ export function ContentManagementView() {
           <TabsTrigger value="resource">Resources</TabsTrigger>
         </TabsList>
       </Tabs>
+      {(() => {
+        const intro: Record<string, [string, string]> = {
+        career: ['Careers', 'Career entries used by career matching.'],
+        scholarship: ['Scholarships', 'Scholarship listings shown to students.'],
+        resource: ['Resources', 'Learning resources shown across the platform.']
+        };
+        const t = intro[type];
+        return t ? <TabIntro label={t[0]} help={t[1]} /> : null;
+      })()}
 
       <Card>
         <CardContent className="p-0">

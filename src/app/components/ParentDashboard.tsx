@@ -37,6 +37,8 @@ import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
 import { generateAIParentSupportTips, getCachedAIResult, setCachedAIResult } from '../utils/aiService';
 import { InfoTip } from './ui/info-tip';
+import { TabTitle } from './ui/tab-title';
+import { PARENT_TAB_HELP } from '../utils/tabHelp';
 
 interface ParentDashboardProps {
   user: User;
@@ -481,7 +483,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab.replace('-', ' ')}
+          {activeTab.replace('-', ' ')}<TabTitle help={PARENT_TAB_HELP[activeTab]}>{null}</TabTitle>
         </h2>
         <Badge variant="secondary" className="text-xs">Parent Portal</Badge>
       </div>
