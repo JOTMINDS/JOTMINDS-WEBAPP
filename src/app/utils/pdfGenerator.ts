@@ -543,16 +543,22 @@ export async function exportReportToPDF(elementId: string, filename: string = 'J
   if (!element) return false;
 
   try {
-    // Hide buttons or elements not meant for PDF (using a specific class if necessary)
+    // Hide buttons or elements not meant for PDF
     const noPrintElements = element.querySelectorAll('.no-print');
     noPrintElements.forEach(el => (el as HTMLElement).style.display = 'none');
 
-    const canvas = await html2canvas(element, {
+    // Force background white to avoid dark mode UI blending into the document
+    const originalBg = element.style.backgroundColor;
+    element.style.backgroundColor = '#ffffff';
+
+    const canvas = await html2canvas(element as HTMLElement, {
       scale: 2, // Higher quality
       useCORS: true,
       logging: false,
+      backgroundColor: '#ffffff'
     });
 
+    element.style.backgroundColor = originalBg;
     noPrintElements.forEach(el => (el as HTMLElement).style.display = '');
 
     const imgData = canvas.toDataURL('image/png');
@@ -564,66 +570,98 @@ export async function exportReportToPDF(elementId: string, filename: string = 'J
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
+    const margin = 12;
+    const headerHeight = 25;
+    const footerHeight = 12;
+    const contentWidth = pdfWidth - (margin * 2);
+    
     const imgProps = pdf.getImageProperties(imgData);
-    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
 
+    const maxContentHeight = pdfHeight - headerHeight - footerHeight - 5; // 5mm padding
     let heightLeft = imgHeight;
     let position = 0;
 
-    // Load watermark image
-    const addWatermark = async () => {
-      return new Promise<void>((resolve) => {
-        const img = new Image();
-        img.src = '/logo.png'; // Assuming logo is in public folder
-        img.onload = () => {
-          try {
-            const totalPages = Math.ceil(imgHeight / pdfHeight);
-            for (let i = 1; i <= totalPages; i++) {
-              pdf.setPage(i);
-              
-              try {
-                pdf.saveGraphicsState();
-                pdf.setGState(new (pdf as any).GState({opacity: 0.1}));
-              } catch (e) {
-                console.warn('GState not supported or failed', e);
-              }
-              
-              const watermarkSize = 100;
-              pdf.addImage(img, 'PNG', (pdfWidth - watermarkSize) / 2, (pdfHeight - watermarkSize) / 2, watermarkSize, watermarkSize);
-              
-              try {
-                pdf.restoreGraphicsState();
-              } catch (e) {
-                // Ignore
-              }
-            }
-          } catch (e) {
-            console.error('Error adding watermark', e);
-          } finally {
-            resolve();
-          }
-        };
-        img.onerror = () => {
-          console.warn("Watermark image not found, proceeding without it.");
-          resolve();
-        };
-      });
+    const logo = await loadLogo();
+    let pageNum = 1;
+    const totalPages = Math.ceil(imgHeight / maxContentHeight);
+
+    const drawPageDecorations = (page: number) => {
+      // 1. Watermark across the page
+      if (logo) {
+        try {
+          pdf.saveGraphicsState();
+          pdf.setGState(new (pdf as any).GState({opacity: 0.05}));
+          const watermarkSize = 140;
+          pdf.addImage(logo, 'PNG', (pdfWidth - watermarkSize) / 2, (pdfHeight - watermarkSize) / 2, watermarkSize, watermarkSize);
+          pdf.restoreGraphicsState();
+        } catch (e) {
+          console.warn('Watermark failed', e);
+        }
+      }
+
+      // 2. Header Band (Brand Indigo)
+      pdf.setFillColor(...BRAND.indigo);
+      pdf.rect(0, 0, pdfWidth, headerHeight, 'F');
+      
+      // Thin accent strip under the band (Brand Coral)
+      pdf.setFillColor(...BRAND.coral);
+      pdf.rect(0, headerHeight, pdfWidth, 1.5, 'F');
+
+      // 3. Header Text & Logo
+      if (logo && logo.naturalWidth > 0) {
+        const logoH = 14;
+        const logoW = (logo.naturalWidth / logo.naturalHeight) * logoH;
+        pdf.addImage(logo, 'PNG', margin, (headerHeight - logoH) / 2, logoW, logoH);
+      }
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.text('Cognitive Analytics Report', pdfWidth - margin, (headerHeight / 2) + 2, { align: 'right' });
+
+      // 4. Footer
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, pdfHeight - footerHeight, pdfWidth, footerHeight, 'F');
+
+      pdf.setDrawColor(...BRAND.hairline);
+      pdf.line(margin, pdfHeight - footerHeight, pdfWidth - margin, pdfHeight - footerHeight);
+      
+      pdf.setTextColor(...BRAND.muted);
+      pdf.setFontSize(8);
+      pdf.text(`Generated on ${new Date().toLocaleDateString()} | Page ${page} of ${totalPages}`, margin, pdfHeight - 5);
+      pdf.text('Your brain has a manual, we built it.', pdfWidth - margin, pdfHeight - 5, { align: 'right' });
     };
 
     // First page
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-    heightLeft -= pdfHeight;
+    // Draw image first so we can mask the top and bottom if needed
+    pdf.addImage(imgData, 'PNG', margin, headerHeight + 5, contentWidth, imgHeight);
+    
+    // Mask header and footer areas in case image overlaps
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(0, 0, pdfWidth, headerHeight + 5, 'F');
+    pdf.rect(0, pdfHeight - footerHeight, pdfWidth, footerHeight, 'F');
+    
+    drawPageDecorations(pageNum);
+    heightLeft -= maxContentHeight;
 
-    // Add new pages if the content is long without cutting off content
+    // Subsequent pages
     while (heightLeft > 0) {
-      position -= pdfHeight;
+      position = position - maxContentHeight;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdfHeight;
+      
+      pdf.addImage(imgData, 'PNG', margin, headerHeight + 5 + position, contentWidth, imgHeight);
+      
+      // Mask header and footer areas
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, 0, pdfWidth, headerHeight + 5, 'F');
+      pdf.rect(0, pdfHeight - footerHeight, pdfWidth, footerHeight, 'F');
+      
+      pageNum++;
+      drawPageDecorations(pageNum);
+      
+      heightLeft -= maxContentHeight;
     }
-
-    // Add watermarks
-    await addWatermark();
 
     pdf.save(filename);
     return true;

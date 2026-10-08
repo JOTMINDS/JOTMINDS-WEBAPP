@@ -21,8 +21,7 @@ import {
   TeacherAppHeader, 
   TeacherTabBar, 
   TeacherClassOverview, 
-  TeacherIndividualStudentView,
-  TeacherAnalyticsComparison
+  TeacherIndividualStudentView
 } from './teacher';
 import { getInstitutionForMember } from '../utils/institution';
 import { TeacherManagementContent } from './InstitutionDashboard/TeacherManagementContent';
@@ -50,7 +49,7 @@ export function TeacherDashboard({
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
   const [activeStudentTab, setActiveStudentTab] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'manage-class' | 'jtia' | 'lesson-planner' | 'analytics-compare'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'individual' | 'my-style' | 'manage-class' | 'jtia' | 'lesson-planner'>('overview');
   const [institutionId, setInstitutionId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -674,18 +673,6 @@ export function TeacherDashboard({
             assessments={allAssessments}
           />
         </div>
-        )}
-
-        {/* Alignment Analysis Tab */}
-        {activeTab === 'analytics-compare' && (
-          <div className="space-y-6">
-            <TeacherAnalyticsComparison
-              teacherAssessments={getAllAssessments().filter(a => a.userId === user.id)}
-              studentAssessments={allAssessments}
-              students={students}
-              teacherProfile={user}
-            />
-          </div>
         )}
 
         {/* General Teaching Resources */}

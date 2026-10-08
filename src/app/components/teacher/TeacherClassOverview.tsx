@@ -62,6 +62,24 @@ const COLORS = {
 
 const CHART_PALETTE = ['#2563EB', '#16A34A', '#8B5CF6', '#F97316', '#06B6D4', '#EC4899', '#10B981'];
 
+function ExpandableText({ text, maxLength = 120 }: { text: string; maxLength?: number }) {
+  const [expanded, setExpanded] = useState(false);
+  
+  if (!text) return null;
+  if (text.length <= maxLength) return <span>{text}</span>;
+  
+  return (
+    <span>
+      {expanded ? text : `${text.slice(0, maxLength).trim()}... `}
+      <button 
+        onClick={() => setExpanded(!expanded)} 
+        className="text-indigo-300 hover:text-indigo-100 text-[10px] font-bold ml-1 transition-colors bg-white/10 px-1.5 py-0.5 rounded cursor-pointer"
+      >
+        {expanded ? 'Show less' : 'Read more'}
+      </button>
+    </span>
+  );
+}
 export function TeacherClassOverview({ students: rawStudents, assessments: rawAssessments, onSelectTab }: TeacherClassOverviewProps) {
   const [selectedClass, setSelectedClass] = useState<string>('ALL');
   const [graphViewMode, setGraphViewMode] = useState<'donut' | 'bar' | 'radar' | 'cards'>('donut');
@@ -422,12 +440,12 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
                     <Lightbulb className="w-3.5 h-3.5" /> Dominant Learning Style: {dominantLearning}<InfoTip title="Dominant Learning Style">The learning style shared by the most students in this class.</InfoTip>
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed">
-                    {aiClassroomInsights?.learningInsight || (
+                    <ExpandableText text={aiClassroomInsights?.learningInsight || (
                       dominantLearning === 'Diverging' ? 'Students learn best through open brainstorms, roleplays, and collaborative group discussions.' :
                       dominantLearning === 'Assimilating' ? 'Emphasize concise theoretical frameworks, structured readings, and systematic logical lectures.' :
                       dominantLearning === 'Converging' ? 'Provide hands-on problem-solving exercises, laboratory experiments, and direct technical challenges.' :
                       'Employ differentiated multi-modal lessons balancing visual diagrams and practical problems.'
-                    )}
+                    )} />
                   </p>
                 </div>
 
@@ -436,11 +454,11 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
                     <Brain className="w-3.5 h-3.5" /> Thinking Orientation: {dominantThinking}<InfoTip title="Thinking Orientation">The thinking style shared by the most students in this class.</InfoTip>
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed">
-                    {aiClassroomInsights?.thinkingInsight || (
+                    <ExpandableText text={aiClassroomInsights?.thinkingInsight || (
                       dominantThinking === 'Analytical' ? 'Incorporate comparison matrices, data interpretation tasks, and critical evaluation rubrics.' :
                       dominantThinking === 'Creative' ? 'Invite divergent thinking questions, design challenges, and open-ended synthesis projects.' :
                       'Ground each concept in everyday applications, local Ghanaian case studies, and career links.'
-                    )}
+                    )} />
                   </p>
                 </div>
 
@@ -449,7 +467,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
                     <Target className="w-3.5 h-3.5" /> AI Pedagogical Synergy<InfoTip title="Pedagogical Synergy">An AI-written suggestion for combining the class's learning and thinking styles in one lesson.</InfoTip>
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed">
-                    {aiClassroomInsights?.synergySummary || 'Design multi-sensory lessons with a 5-min experiential hook and 15 mins for differentiated peer application.'}
+                    <ExpandableText text={aiClassroomInsights?.synergySummary || 'Design multi-sensory lessons with a 5-min experiential hook and 15 mins for differentiated peer application.'} />
                   </p>
                 </div>
               </div>

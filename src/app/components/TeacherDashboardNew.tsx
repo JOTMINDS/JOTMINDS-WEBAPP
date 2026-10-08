@@ -378,7 +378,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'preschool' ? 'Early Years & Preschool' : activeTab.replace('-', ' ')}<TabTitle help={TEACHER_TAB_HELP[activeTab]}>{null}</TabTitle>
+          {activeTab === 'jtia' ? 'Teaching Insights' : activeTab === 'preschool' ? 'Early Years Developmental Intelligence' : activeTab.replace('-', ' ')}<TabTitle help={TEACHER_TAB_HELP[activeTab]}>{null}</TabTitle>
         </h2>
         {user.school && (
           <Badge variant="outline" className="border-purple-600 text-purple-700">
@@ -479,6 +479,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
             <CentralAnalyticsHub students={students as any} assessments={[...allAssessments, ...allMyAssessments]} user={user} />
           </div>
         )}
+
 
         {activeTab === 'jtia' && (
           <div className="space-y-8">
