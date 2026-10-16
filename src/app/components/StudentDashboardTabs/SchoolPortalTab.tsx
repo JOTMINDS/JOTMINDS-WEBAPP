@@ -14,11 +14,14 @@ interface SchoolPortalTabProps {
   assessments: Assessment[];
 }
 
+import { getFriendlyStyleName } from '../../utils/styleWording';
+
 export function SchoolPortalTab({ user, assessments }: SchoolPortalTabProps) {
   const [selectedLesson, setSelectedLesson] = useState<number | null>(1);
 
   const latestKolb = assessments.filter(a => a.type === 'kolb' || (a.type as string) === 'learning')[0];
-  const learningStyle = (latestKolb?.score as any)?.kolb?.style || 'Assimilating';
+  const rawLearningStyle = (latestKolb?.score as any)?.kolb?.style || 'Assimilating';
+  const learningStyle = getFriendlyStyleName(rawLearningStyle);
 
   const classLessons = [
     {

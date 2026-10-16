@@ -741,7 +741,7 @@ export function generateStudyPlan(
   return {
     id: `study-session-${Date.now()}`,
     title: `${duration}-Minute Personalized Study Session`,
-    description: `AI-optimized study plan based on your cognitive profile`,
+    description: `Personalized study plan based on your cognitive profile`,
     duration,
     activities,
     reasoning: `This plan is tailored to your learning style and cognitive strengths. The ${warmupTime}-${mainLearningTime}-${practiceTime} structure follows evidence-based learning principles.`,

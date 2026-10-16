@@ -3,6 +3,8 @@
  * Generates varied, theory-driven, but non-clinical phrasing for assessment reports.
  */
 
+import { getFriendlyStyleName } from './styleWording';
+
 // Helper to pick a random item from an array
 const sample = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
@@ -11,24 +13,24 @@ export const getOrganizationalAssessmentText = (
   mainStyle: string,
   fitRequirement: string
 ): string => {
-  const style = mainStyle.toLowerCase();
+  const friendlyStyle = getFriendlyStyleName(mainStyle);
   const fit = fitRequirement.toLowerCase() || 'diverse capabilities';
 
   const variations = {
     kolb: [
-      `This individual demonstrates ${style} learning agility, making them well-suited for roles requiring ${fit}. Focus on leveraging their natural strengths while developing complementary skills for maximum organizational value.`,
-      `With a tendency towards ${style} processing, this profile suggests a strong fit for environments that demand ${fit}. Consider pairing them with team members who have complementary approaches to maximize overall effectiveness.`,
-      `Their profile points toward an inclination for ${style} learning. They are likely to thrive in positions where ${fit} is a priority. Targeted development can help them expand their repertoire of learning strategies.`
+      `This individual demonstrates strong ${friendlyStyle} capabilities, making them well-suited for roles requiring ${fit}. Focus on leveraging their practical strengths while developing complementary skills for maximum organizational value.`,
+      `With an inclination towards ${friendlyStyle} workflows, this profile suggests a strong fit for environments that demand ${fit}. Consider pairing them with team members who have complementary approaches to maximize overall effectiveness.`,
+      `Their profile points toward an inclination for a ${friendlyStyle} approach. They are likely to thrive in positions where ${fit} is a priority. Targeted development can help them expand their repertoire of strategies.`
     ],
     sternberg: [
-      `With a ${style} thinking orientation, this profile indicates strong capabilities in ${fit}. Strategic placement in appropriate roles and targeted development can maximize both individual and organizational performance.`,
-      `This individual's answers suggest a preference for ${style} problem-solving, which aligns well with tasks involving ${fit}. They can provide significant value when allowed to apply this preferred cognitive strategy.`,
-      `Demonstrating a primary inclination for ${style} processing, they are well-equipped to handle responsibilities that center on ${fit}. Encourage cross-functional collaboration to leverage their unique perspective.`
+      `With a ${friendlyStyle} thinking orientation, this profile indicates strong capabilities in ${fit}. Strategic placement in appropriate roles and targeted development can maximize both individual and organizational performance.`,
+      `This individual's answers suggest a preference for ${friendlyStyle} problem-solving, which aligns well with tasks involving ${fit}. They can provide significant value when allowed to apply this preferred cognitive strategy.`,
+      `Demonstrating a primary inclination for a ${friendlyStyle} approach, they are well-equipped to handle responsibilities that center on ${fit}. Encourage cross-functional collaboration to leverage their unique perspective.`
     ],
     'dual-process': [
-      `The ${style} decision-making profile suggests effective performance in ${fit}. Consider role alignment and training to optimize decision quality across different business scenarios.`,
-      `Their approach indicates a natural lean toward ${style} judgments, making them highly capable in situations requiring ${fit}. Providing the right context will enable them to make optimal choices.`,
-      `With an inclination for ${style} cognitive processing, this individual shows potential for excelling in areas demanding ${fit}. Awareness of their decision-making style is key to their continued professional growth.`
+      `The ${friendlyStyle} decision-making profile suggests effective performance in ${fit}. Consider role alignment and training to optimize decision quality across different business scenarios.`,
+      `Their approach indicates a natural lean toward ${friendlyStyle} judgment, making them highly capable in situations requiring ${fit}. Providing the right context will enable them to make optimal choices.`,
+      `With an inclination for a ${friendlyStyle} approach, this individual shows potential for excelling in areas demanding ${fit}. Awareness of their decision-making style is key to their continued professional growth.`
     ]
   };
 
@@ -40,13 +42,13 @@ export const getPersonalDevelopmentText = (
   mainStyle: string,
   improvement: string
 ): string => {
-  const style = mainStyle;
+  const friendlyStyle = getFriendlyStyleName(mainStyle);
   const area = improvement?.toLowerCase() || 'developing new strategies';
 
   const variations = [
-    `Your ${style} profile is a strength to build upon. Focus on ${area} while leveraging your natural abilities. The detailed analysis below provides specific strategies for your growth journey.`,
-    `Your answers indicate a primary preference for ${style}. While this is a valuable asset, paying attention to ${area} can round out your capabilities. Explore the insights below to discover how to expand your potential.`,
-    `You typically lean towards a ${style} approach. You can enhance your effectiveness by working on ${area}. The customized strategies provided here will serve as a guide for your continued development.`
+    `Your ${friendlyStyle} approach is a natural strength to build upon. Focus on ${area} while leveraging your everyday abilities. The detailed analysis below provides specific strategies for your growth journey.`,
+    `Your answers indicate a primary preference for a ${friendlyStyle} approach. While this is a valuable asset, paying attention to ${area} can round out your capabilities. Explore the insights below to discover how to expand your potential.`,
+    `You typically lean towards a ${friendlyStyle} approach. You can enhance your effectiveness by working on ${area}. The customized strategies provided here will serve as a guide for your continued development.`
   ];
 
   return sample(variations);

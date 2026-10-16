@@ -221,7 +221,7 @@ export const tertiaryPrograms: TertiaryProgram[] = [
     name: "BS Computer Science",
     description: "Study algorithms, programming, software development, and computational theory",
     thinkingStyles: ['analytical', 'practical'],
-    careerPaths: ['Software Engineer', 'Data Scientist', 'AI Specialist', 'Systems Architect'],
+    careerPaths: ['Software Engineer', 'Data Scientist', 'Machine Learning Specialist', 'Systems Architect'],
     universities: ['UP Diliman', 'Ateneo de Manila', 'DLSU Manila', 'ADMU'],
     skills: ['Programming', 'Algorithm design', 'Problem-solving', 'Systems thinking']
   },

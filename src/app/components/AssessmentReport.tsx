@@ -7,6 +7,7 @@ import { Label } from './ui/label';
 import { Assessment, UserRole, AssessmentScore } from '../types';
 import { saveReflection, getAllReflections, generateId } from '../utils/storage';
 import { getGhanaMapping, getStyleDescription } from '../utils/scoring';
+import { getFriendlyStyleInfo, getFriendlyStyleName, getFriendlyStyleDisplay, getFriendlyStyleSubtitle } from '../utils/styleWording';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { saveReflection as saveReflectionToServer } from '../utils/api';
 
@@ -238,29 +239,29 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
     if (assessment?.score?.kolb?.scores) {
       return [
         { 
-          name: 'Concrete Experience (Hands-On)', 
-          shortName: 'Hands-On (CE)',
+          name: 'Hands-On Experience (Concrete Experience)', 
+          shortName: 'Hands-On',
           value: assessment.score.kolb.scores.CE || 0,
           color: '#1FC8E1',
-          description: 'Learning through direct action, feeling, and practical experience'
+          description: 'Learning through direct action, feeling, and real-world practical experience'
         },
         { 
-          name: 'Reflective Observation (Thoughtful)', 
-          shortName: 'Observing (RO)',
+          name: 'Thoughtful Observation (Reflective Observation)', 
+          shortName: 'Observing',
           value: assessment.score.kolb.scores.RO || 0,
           color: '#7B61FF',
-          description: 'Learning through watching carefully, listening, and reflecting'
+          description: 'Learning through watching carefully, listening, and reflecting on ideas'
         },
         { 
-          name: 'Abstract Conceptualization (Logic)', 
-          shortName: 'Concepts (AC)',
+          name: 'Logical Concepts (Abstract Conceptualization)', 
+          shortName: 'Concepts',
           value: assessment.score.kolb.scores.AC || 0,
           color: '#FF715B',
           description: 'Learning through theories, logical analysis, and clear models'
         },
         { 
-          name: 'Active Experimentation (Action)', 
-          shortName: 'Action (AE)',
+          name: 'Practical Action (Active Experimentation)', 
+          shortName: 'Action',
           value: assessment.score.kolb.scores.AE || 0,
           color: '#2C2E83',
           description: 'Learning through testing ideas out, experimenting, and doing'
@@ -373,6 +374,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
   };
 
   const mainStyle = getMainStyle();
+  const friendlyStyleInfo = getFriendlyStyleInfo(mainStyle);
   const styleInfo = getStyleDescription(assessment.type as any, mainStyle);
   const chartData = getChartData().filter(item => {
     // Filter out any items with NaN or undefined values
@@ -405,6 +407,11 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
 
   // Use AI insights if available, otherwise fallback
   const insights = aiInsights || fallbackInsights;
+  
+  // Dynamic friendly wordings (AI first, then plain-language fallback)
+  const friendlyStyleName = aiInsights?.friendlyStyleName || aiInsights?.archetype?.name || friendlyStyleInfo.friendlyName;
+  const friendlyStyleSubtitle = aiInsights?.styleSubtitle || friendlyStyleInfo.subtitle;
+  const effectiveDescription = aiInsights?.plainEnglishDescription || aiInsights?.summary || styleInfo || friendlyStyleInfo.plainEnglishDescription;
   
   // Calculate max value for proper chart scaling
   const maxValue = Math.max(...chartData.map(item => item.value), 15); // minimum of 15 for visibility
@@ -513,12 +520,26 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                   Assessment completed on {formatDateTime(assessment.completedAt)}
                 </CardDescription>
               </div>
-              <Badge className="text-base sm:text-lg px-3 sm:px-4 py-1.5 sm:py-2 self-start">{mainStyle}</Badge>
+              <div className="flex flex-col items-start sm:items-end gap-1">
+                <Badge className="text-base sm:text-lg px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold shadow-sm">
+                  {friendlyStyleName}
+                </Badge>
+                {mainStyle && mainStyle !== friendlyStyleName && (
+                  <span className="text-[11px] text-muted-foreground font-medium">
+                    Theory framework: {mainStyle}
+                  </span>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <p className="text-muted-foreground">{styleInfo}</p>
+              {friendlyStyleSubtitle && (
+                <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-1.5">
+                  {friendlyStyleSubtitle}
+                </p>
+              )}
+              <p className="text-muted-foreground leading-relaxed">{effectiveDescription}</p>
             </div>
 
             <div>
@@ -780,17 +801,29 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
           <CardContent style={{ padding: `${componentSpacing.cardPadding}px`, display: 'flex', flexDirection: 'column', gap: `${componentSpacing.results.contentGap}px` }}>
             {/* Primary Profile */}
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-4 border border-indigo-200 dark:border-indigo-700">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="flex items-center gap-2 text-indigo-900 dark:text-indigo-300">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h4 className="flex items-center gap-2 text-indigo-900 dark:text-indigo-300 font-bold">
                   <Target className="h-4 w-4" />
                   Primary Cognitive Profile
-                <InfoTip>Your strongest style in this assessment.</InfoTip></h4>
-                <Badge variant="default" className="text-base px-3 py-1 bg-indigo-600">
-                  {mainStyle}
-                </Badge>
+                <InfoTip>Your dominant learning and thinking approach in clear everyday language.</InfoTip></h4>
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="text-sm sm:text-base px-3 py-1 bg-indigo-600 text-white font-medium">
+                    {friendlyStyleName}
+                  </Badge>
+                  {mainStyle && mainStyle !== friendlyStyleName && (
+                    <Badge variant="outline" className="text-xs text-indigo-700 dark:text-indigo-300 border-indigo-300">
+                      {mainStyle}
+                    </Badge>
+                  )}
+                </div>
               </div>
+              {friendlyStyleSubtitle && (
+                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 mb-1.5">
+                  {friendlyStyleSubtitle}
+                </p>
+              )}
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                {styleInfo}
+                {effectiveDescription}
               </p>
             </div>
 
@@ -878,7 +911,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                   <p className="text-sm opacity-95">
                     {aiInsights?.summary || getOrganizationalAssessmentText(
                       assessment.type,
-                      mainStyle,
+                      friendlyStyleName,
                       (Array.isArray((insights as any)?.organizationalFit) ? (insights as any)?.organizationalFit[0] : (insights as any)?.organizationalFit?.details?.[0])?.split?.(':')[1]?.trim() || ''
                     )}
                   </p>
@@ -893,7 +926,7 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
                   Your Development Path
                 <InfoTip>Suggested next steps to grow.</InfoTip></h4>
                 <p className="text-sm opacity-95">
-                  {aiInsights?.summary || getPersonalDevelopmentText(mainStyle, insights.improvements[0] || '')}
+                  {aiInsights?.summary || getPersonalDevelopmentText(friendlyStyleName, insights.improvements[0] || '')}
                 </p>
               </div>
             )}

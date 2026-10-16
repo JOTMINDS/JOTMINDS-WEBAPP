@@ -8,7 +8,7 @@ export const FAQSection: React.FC = () => {
     {
       question: 'What is JotMinds and how does it work?',
       answer:
-        'JotMinds is an AI-powered human intelligence platform that decodes how people learn, think, make decisions, and grow. Through validated cognitive assessments—grounded in experiential learning (Kolb), triarchic thinking (Sternberg), and dual-process decision theory—JotMinds generates actionable, personalized profiles for individuals, educators, and organizations.',
+        'JotMinds is a human intelligence platform that decodes how people learn, think, make decisions, and grow. Through validated cognitive assessments—grounded in experiential learning (Kolb), triarchic thinking (Sternberg), and dual-process decision theory—JotMinds generates actionable, personalized profiles for individuals, educators, and organizations.',
     },
     {
       question: 'Who can use JotMinds?',

@@ -45,7 +45,7 @@ export const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({
     {
       items: [
         { id: 'assessment-engine', label: 'Assessment Engine', icon: <Brain className="w-5 h-5" /> },
-        { id: 'ai-management', label: 'AI Management', icon: <Bot className="w-5 h-5" /> },
+        { id: 'ai-management', label: 'Engine Management', icon: <Bot className="w-5 h-5" /> },
         { id: 'content', label: 'Content Management', icon: <BookOpen className="w-5 h-5" /> },
         { id: 'gamification', label: 'Gamification', icon: <Trophy className="w-5 h-5" /> },
       ]

@@ -6,6 +6,7 @@ import { InfoTip } from '../ui/info-tip';
 import { getStyleHelp } from '../../utils/glossary';
 import { Button } from '../ui/button';
 import { generateAIClassroomOverview, AIClassroomOverviewInsights } from '../../utils/aiService';
+import { getFriendlyStyleDisplay, getFriendlyStyleName, formatKolbStyle, getFriendlyStyleInfo } from '../../utils/styleWording';
 import { 
   Users, 
   TrendingUp, 
@@ -214,13 +215,13 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
 
   // Radar Data for Multidimensional Profiling
   const radarData = [
-    { dimension: 'Accommodating', score: learningStyleDistribution['Accommodating'] || 0, fullMark: totalStudents },
-    { dimension: 'Diverging', score: learningStyleDistribution['Diverging'] || 0, fullMark: totalStudents },
-    { dimension: 'Converging', score: learningStyleDistribution['Converging'] || 0, fullMark: totalStudents },
-    { dimension: 'Assimilating', score: learningStyleDistribution['Assimilating'] || 0, fullMark: totalStudents },
-    { dimension: 'Analytical', score: thinkingStyleDistribution['Analytical'] || 0, fullMark: totalStudents },
-    { dimension: 'Creative', score: thinkingStyleDistribution['Creative'] || 0, fullMark: totalStudents },
-    { dimension: 'Practical', score: thinkingStyleDistribution['Practical'] || 0, fullMark: totalStudents },
+    { dimension: 'Hands-On Explorer (Accommodating)', score: learningStyleDistribution['Accommodating'] || 0, fullMark: totalStudents },
+    { dimension: 'Creative Brainstormer (Diverging)', score: learningStyleDistribution['Diverging'] || 0, fullMark: totalStudents },
+    { dimension: 'Practical Problem-Solver (Converging)', score: learningStyleDistribution['Converging'] || 0, fullMark: totalStudents },
+    { dimension: 'Logical Thinker (Assimilating)', score: learningStyleDistribution['Assimilating'] || 0, fullMark: totalStudents },
+    { dimension: 'Critical Thinker (Analytical)', score: thinkingStyleDistribution['Analytical'] || 0, fullMark: totalStudents },
+    { dimension: 'Innovative Creator (Creative)', score: thinkingStyleDistribution['Creative'] || 0, fullMark: totalStudents },
+    { dimension: 'Real-World Achiever (Practical)', score: thinkingStyleDistribution['Practical'] || 0, fullMark: totalStudents },
   ];
 
   // Derive Top Dominant Styles for Pedagogical Insights
@@ -437,14 +438,15 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
                   <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider block flex items-center gap-1">
-                    <Lightbulb className="w-3.5 h-3.5" /> Dominant Learning Style: {dominantLearning}<InfoTip title="Dominant Learning Style">The learning style shared by the most students in this class.</InfoTip>
+                    <Lightbulb className="w-3.5 h-3.5" /> Dominant Learning Style: {dominantLearning !== 'Unknown' && dominantLearning !== 'Diverse' ? getFriendlyStyleDisplay(dominantLearning) : dominantLearning}<InfoTip title="Dominant Learning Style">The learning style shared by the most students in this class.</InfoTip>
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed">
                     <ExpandableText text={aiClassroomInsights?.learningInsight || (
-                      dominantLearning === 'Diverging' ? 'Students learn best through open brainstorms, roleplays, and collaborative group discussions.' :
-                      dominantLearning === 'Assimilating' ? 'Emphasize concise theoretical frameworks, structured readings, and systematic logical lectures.' :
-                      dominantLearning === 'Converging' ? 'Provide hands-on problem-solving exercises, laboratory experiments, and direct technical challenges.' :
-                      'Employ differentiated multi-modal lessons balancing visual diagrams and practical problems.'
+                      dominantLearning === 'Diverging' ? 'Students learn best through open brainstorms, roleplays, and collaborative group discussions (Creative Brainstormers).' :
+                      dominantLearning === 'Assimilating' ? 'Emphasize concise theoretical frameworks, structured readings, and systematic logical lectures (Logical Thinkers).' :
+                      dominantLearning === 'Converging' ? 'Provide hands-on problem-solving exercises, laboratory experiments, and direct technical challenges (Practical Problem-Solvers).' :
+                      dominantLearning === 'Accommodating' ? 'Integrate active, real-world exploration, experimentation, and dynamic trial-and-error (Hands-On Explorers).' :
+                      'Employ differentiated multi-modal lessons balancing visual diagrams, real-world exploration, and practical problems.'
                     )} />
                   </p>
                 </div>
@@ -464,7 +466,7 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
 
                 <div className="p-3.5 bg-white/10 rounded-xl border border-white/10 space-y-1">
                   <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider block flex items-center gap-1">
-                    <Target className="w-3.5 h-3.5" /> AI Pedagogical Synergy<InfoTip title="Pedagogical Synergy">An AI-written suggestion for combining the class's learning and thinking styles in one lesson.</InfoTip>
+                    <Target className="w-3.5 h-3.5" /> Pedagogical Synergy<InfoTip title="Pedagogical Synergy">A tailored suggestion for combining the class's learning and thinking styles in one lesson.</InfoTip>
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed">
                     <ExpandableText text={aiClassroomInsights?.synergySummary || 'Design multi-sensory lessons with a 5-min experiential hook and 15 mins for differentiated peer application.'} />
@@ -558,7 +560,13 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
                       contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '12px' }}
                       formatter={(value: number) => [`${value} student${value !== 1 ? 's' : ''} (${totalStudents > 0 ? Math.round((value / totalStudents) * 100) : 0}%)`, 'Count']}
                     />
-                    <Legend wrapperStyle={{ fontSize: '12px' }} layout="horizontal" verticalAlign="bottom" align="center" />
+                    <Legend 
+                      wrapperStyle={{ fontSize: '12px' }} 
+                      layout="horizontal" 
+                      verticalAlign="bottom" 
+                      align="center"
+                      formatter={(val: string) => val === 'Unknown' ? 'Unknown' : formatKolbStyle(val, false)}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -620,7 +628,14 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={learningStyleData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 11 }} 
+                      tickFormatter={(val: string) => val === 'Unknown' ? 'Unknown' : formatKolbStyle(val, false)}
+                      interval={0} 
+                      angle={-15} 
+                      textAnchor="end" 
+                    />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip 
                       contentStyle={{ borderRadius: '12px', fontSize: '12px' }}
@@ -693,7 +708,10 @@ export function TeacherClassOverview({ students: rawStudents, assessments: rawAs
                 {learningStyleData.map(item => (
                   <div key={item.name} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="font-bold text-xs text-slate-800 dark:text-white">{item.name}{getStyleHelp(item.name) && <InfoTip title={item.name}>{getStyleHelp(item.name)}</InfoTip>}</span>
+                      <span className="font-bold text-xs text-slate-800 dark:text-white">
+                        {item.name === 'Unknown' ? 'Unknown' : formatKolbStyle(item.name)}
+                        {getStyleHelp(item.name) && <InfoTip title={item.name}>{getStyleHelp(item.name)}</InfoTip>}
+                      </span>
                       <p className="text-[11px] text-slate-500">{item.value} of {totalStudents} students</p>
                     </div>
                     <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">

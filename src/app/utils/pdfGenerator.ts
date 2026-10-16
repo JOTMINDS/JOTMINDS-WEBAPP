@@ -4,6 +4,7 @@ import { Assessment, GhanaMapping } from '../types';
 import { getStyleDescription } from './scoring';
 import { getAssessmentInsights } from './insights';
 import { registerPoppins } from './pdfFonts';
+import { getFriendlyStyleDisplay } from './styleWording';
 
 // ── JotMinds brand palette (RGB) ──────────────────────────────────────────────
 const BRAND = {
@@ -127,8 +128,8 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
   
   doc.setFont(font, 'bold');
   doc.setFontSize(14);
-  doc.setTextColor(...BRAND.indigo);
-  doc.text(isJTIA ? `Pedagogical Profile: ${mainStyle}` : `Your Style: ${mainStyle || 'N/A'}`, margin + 6, yPos + 10);
+  const friendlyStyle = !isJTIA ? getFriendlyStyleDisplay(mainStyle) : mainStyle;
+  doc.text(isJTIA ? `Pedagogical Profile: ${mainStyle}` : `Your Style: ${friendlyStyle || 'N/A'}`, margin + 6, yPos + 10);
   
   let description = '';
   if (isJTIA) {

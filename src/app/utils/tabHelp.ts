@@ -77,7 +77,7 @@ export const ADMIN_TAB_HELP: TabHelpMap = {
   institutions: 'Schools and institutions on the platform and their codes.',
   organizations: 'Organisation accounts and their members.',
   'assessment-engine': 'The assessments, questions and scoring that users take. Changes here affect everyone.',
-  'ai-management': 'Settings and prompts for the AI features, and how much they are used.',
+  'ai-management': 'Settings and prompts for system features, and engine usage metrics.',
   content: 'Content used across the platform, such as career data and Brain Gym challenges.',
   gamification: 'XP, badges, streaks and challenges that students see.',
   analytics: 'Usage figures for the whole platform.',

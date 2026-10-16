@@ -690,7 +690,7 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
                         <Badge style={{ backgroundColor: RISK_COLORS[riskLevel] + '20', color: RISK_COLORS[riskLevel] }} className="text-[10px]">{RISK_LABELS[riskLevel]}</Badge>
                         {strengths.slice(0, 1).map(s => <Badge key={s} className="bg-green-50 text-green-700 text-[10px]">💪 {s}</Badge>)}
                         {gaps.slice(0, 1).map(g => <Badge key={g} className="bg-red-50 text-red-700 text-[10px]">⚠️ {g}</Badge>)}
-                        {aiInterventions[pUser.id] && <Badge className="bg-purple-100 text-purple-700 text-[10px]">✨ Live AI</Badge>}
+                        {aiInterventions[pUser.id] && <Badge className="bg-purple-100 text-purple-700 text-[10px]">✨ Tailored</Badge>}
                       </div>
                     </div>
                     {expandedStudent === pUser.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
@@ -700,17 +700,17 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
                       {loadingInterventions[pUser.id] ? (
                         <div className="flex items-center gap-2 py-3 text-xs text-indigo-600 animate-pulse">
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Generating AI targeted intervention strategies...</span>
+                          <span>Generating targeted intervention strategies...</span>
                         </div>
                       ) : (
                         <>
                           <div className="flex items-center justify-between">
                             <p className="text-xs font-semibold text-gray-700">
-                              {aiInterventions[pUser.id] ? 'AI Targeted Instructional Strategies:' : 'Recommended Actions:'}
+                              {aiInterventions[pUser.id] ? 'Targeted Instructional Strategies:' : 'Recommended Actions:'}
                             </p>
                             {aiInterventions[pUser.id] && (
                               <Badge variant="outline" className="text-[10px] text-purple-700 border-purple-200">
-                                AI Differentiated Model
+                                Differentiated Model
                               </Badge>
                             )}
                           </div>

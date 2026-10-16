@@ -798,7 +798,7 @@ function AppContent() {
 
     case 'ai-coach':
       if (!user) return null;
-      if (!isFeatureEnabled('ai-coach')) return <FeatureDisabledNotice featureName="AI Learning Coach" onBack={handleBackToDashboard} />;
+      if (!isFeatureEnabled('ai-coach')) return <FeatureDisabledNotice featureName="Learning Coach" onBack={handleBackToDashboard} />;
       return (
         <AILearningCoach
           userId={user.id}

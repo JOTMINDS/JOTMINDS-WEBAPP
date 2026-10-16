@@ -227,7 +227,7 @@ export const careerPaths: CareerPath[] = [
     keySkills: ['Python/R programming', 'Statistical analysis', 'Machine learning', 'Data visualization', 'SQL', 'Business intelligence'],
     careerProgression: ['Junior Data Analyst', 'Data Analyst', 'Senior Data Analyst', 'Data Scientist', 'Lead Data Scientist'],
     averageSalaryRange: '₱40,000 - ₱150,000/month',
-    growthOpportunities: ['AI/ML specialization', 'Chief Data Officer', 'Data consulting', 'Research positions']
+    growthOpportunities: ['Machine Learning specialization', 'Chief Data Officer', 'Data consulting', 'Research positions']
   },
   {
     name: "Software Engineer / Developer",

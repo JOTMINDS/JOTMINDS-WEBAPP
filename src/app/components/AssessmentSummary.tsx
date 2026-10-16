@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext';
 import { FeedbackPrompt } from './FeedbackPrompt';
 import { exportReportToPDF } from '../utils/pdfGenerator';
 import { toast } from 'sonner';
+import { getFriendlyStyleInfo, getFriendlyStyleDisplay } from '../utils/styleWording';
 
 interface AssessmentSummaryProps {
   type: 'learning' | 'thinking' | 'decision';
@@ -100,7 +101,11 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
       'visual': 'Visual',
       'auditory': 'Auditory',
       'kinesthetic': 'Kinesthetic',
-      'reading/writing': 'Reading/Writing'
+      'reading/writing': 'Reading/Writing',
+      'accommodating': 'Accommodating',
+      'assimilating': 'Assimilating',
+      'converging': 'Converging',
+      'diverging': 'Diverging'
     };
     return mapping[style.toLowerCase()] || style;
   };
@@ -119,9 +124,11 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
 
   // 3. Normalize dominant and secondary styles
   const dominantStyle = formatStyleName(insights?.dominantStyle || sortedResults[0]?.[0] || 'balanced');
+  const dominantInfo = getFriendlyStyleInfo(dominantStyle);
   const secondaryStyle = insights?.secondaryStyle 
     ? formatStyleName(insights.secondaryStyle) 
     : (sortedResults[1]?.[1] > 0 ? sortedResults[1]?.[0] : null);
+  const secondaryInfo = secondaryStyle ? getFriendlyStyleInfo(secondaryStyle) : null;
 
   const strengths = insights?.strengths || [];
   const weaknesses = insights?.weaknesses || [];
@@ -142,37 +149,56 @@ export const AssessmentSummary: React.FC<AssessmentSummaryProps> = ({
         {/* Dominant Style */}
         <Card className="mb-6 shadow-lg" style={{ borderTop: '4px solid #5B7DB1' }}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" style={{ color: '#5B7DB1' }} />
-              Your Primary Style: {dominantStyle}
+            <CardTitle className="flex items-center gap-2 flex-wrap">
+              <TrendingUp className="w-5 h-5 text-[#5B7DB1]" />
+              <span>Your Primary Style: <strong>{dominantInfo.friendlyName}</strong></span>
+              {dominantStyle !== dominantInfo.friendlyName && (
+                <Badge variant="outline" className="text-xs text-muted-foreground ml-1">
+                  Theory: {dominantStyle}
+                </Badge>
+              )}
             </CardTitle>
-            <CardDescription>
-              {secondaryStyle && `Secondary: ${secondaryStyle}`}
+            <CardDescription className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-1">
+              {dominantInfo.subtitle}
             </CardDescription>
+            {secondaryInfo && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Secondary preference: {secondaryInfo.friendlyName} ({secondaryStyle})
+              </p>
+            )}
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {sortedResults.map(([style, percentage]) => (
-                <div key={style} className="flex items-center gap-3">
-                  <div className="w-32 flex-shrink-0">{style}</div>
-                  <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${percentage}%`,
-                        background: style === dominantStyle 
-                          ? 'linear-gradient(90deg, #5B7DB1 0%, #6B4C9A 100%)'
-                          : '#E5E7EB'
-                      }}
-                    />
+            <div className="space-y-3">
+              {sortedResults.map(([style, percentage]) => {
+                const itemInfo = getFriendlyStyleInfo(style);
+                const isDominant = style === dominantStyle;
+                return (
+                  <div key={style} className="flex items-center gap-3">
+                    <div className="w-48 flex-shrink-0 text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                      {itemInfo.friendlyName}
+                      {itemInfo.key !== itemInfo.friendlyName && (
+                        <span className="text-[11px] text-muted-foreground font-normal ml-1">({itemInfo.key})</span>
+                      )}
+                    </div>
+                    <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${percentage}%`,
+                          background: isDominant 
+                            ? 'linear-gradient(90deg, #5B7DB1 0%, #6B4C9A 100%)'
+                            : '#E5E7EB'
+                        }}
+                      />
+                    </div>
+                    <div className="w-12 text-right">
+                      <Badge variant={isDominant ? 'default' : 'secondary'}>
+                        {percentage}%
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="w-12 text-right">
-                    <Badge variant={style === dominantStyle ? 'default' : 'secondary'}>
-                      {percentage}%
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

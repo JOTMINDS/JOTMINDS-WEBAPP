@@ -1,5 +1,6 @@
 import { AssessmentScore } from '../types';
 import { JTIAAIRecommendations, JTIASchoolAggregatedInsights, generatePersonalizedRecommendations } from './jtiaScoring';
+import { getFriendlyStyleInfo, getFriendlyStyleName, getFriendlyStyleDisplay } from './styleWording';
 
 // We now securely proxy through our Cloudflare Pages Function
 const getBaseUrl = () => {
@@ -78,6 +79,10 @@ export interface AIInsightsResponse {
     tagline: string;
   };
   summary?: string;
+  friendlyStyleName?: string;
+  styleSubtitle?: string;
+  plainEnglishDescription?: string;
+  learningFocus?: string;
   organizationalFit?: string[];
   continuousReview?: string[];
   organizationalApplications?: string[];
@@ -154,25 +159,46 @@ export async function generateAIInsights(
 
     const isOrganizational = !!(payload as any).context?.isOrganizational;
 
-    const prompt = `Analyze this cognitive assessment data and generate professional insights:
+    const rawScores = payload.scores || (payload as any).scoresOrRequest;
+    const dominantStyle = (rawScores as any)?.kolb?.style || (rawScores as any)?.sternberg?.style || (rawScores as any)?.dualProcess?.style || payload.type;
+    const fallbackStyleInfo = getFriendlyStyleInfo(dominantStyle);
+
+    const prompt = `Analyze this cognitive assessment data and generate professional, human-centered insights:
 Scores and Profile: ${JSON.stringify({
-    scores: payload.scores || (payload as any).scoresOrRequest,
+    scores: rawScores,
     type: payload.type,
     role: payload.role,
     age: (payload as any).age,
     context: (payload as any).context
   })}
 
+CRITICAL ASSESSMENT WORDING GUIDELINES:
+- Real-world users (students, parents, teachers, and professionals) often do NOT understand confusing academic jargon like "Accommodating", "Assimilating", "Converging", "Diverging", "Abstract Conceptualization", or "Reflective Observation".
+- You must generate and handle ALL user-facing wordings using intuitive, clear, everyday language.
+- For instance:
+  * "Accommodating" must be phrased as "Hands-On Explorer" (or "Active Experimenter / Practical Doer")
+  * "Assimilating" must be phrased as "Logical Thinker" (or "Concept Builder / Systematic Thinker")
+  * "Converging" must be phrased as "Practical Problem-Solver" (or "Applied Solution Finder")
+  * "Diverging" must be phrased as "Creative Brainstormer" (or "Imaginative Observer")
+- Generate a "friendlyStyleName": An inspiring, user-friendly phrase replacing academic terms.
+- Generate a "styleSubtitle": A 1-sentence plain-English explanation of how they learn or think best.
+- Generate a "plainEnglishDescription": A 2-3 sentence conversational breakdown of their style in everyday words that any student or parent can immediately grasp.
+- Ensure all strengths, growth areas, archetype, and summaries completely avoid alienating academic jargon.
+
 Return strictly valid JSON matching this schema:
 {
-  "strengths": ["Strength 1", "Strength 2", "Strength 3"],
-  "weaknesses": ["Growth area 1", "Growth area 2", "Growth area 3"],
-  "improvements": ["Action 1", "Action 2"],
+  "friendlyStyleName": "Inspiring, clear, accessible name (e.g. Hands-On Explorer, Logical Thinker)",
+  "styleSubtitle": "One clear sentence explaining how they learn or think best",
+  "plainEnglishDescription": "A warm, 2-3 sentence explanation of their style in everyday language",
+  "learningFocus": "Key learning or study focus area in everyday terms",
+  "strengths": ["Strength 1 in clear, everyday language", "Strength 2", "Strength 3"],
+  "weaknesses": ["Growth area 1 in encouraging language", "Growth area 2", "Growth area 3"],
+  "improvements": ["Practical action 1", "Practical action 2"],
   "archetype": {
-    "name": "E.g. The Analytical Architect",
+    "name": "E.g. The Strategic Builder",
     "tagline": "A short inspiring tagline"
   },
-  "summary": "A 2-sentence professional summary."${isOrganizational ? `,
+  "summary": "A 2-sentence professional, relatable summary without clinical jargon."${isOrganizational ? `,
   "organizationalFit": ["Ideal for: <specific roles/functions>", "Team contribution: <specific contribution>", "Leadership style: <specific style>"],
   "continuousReview": ["Monitor: <specific thing to track>", "Develop: <specific skill/area>", "Leverage: <specific strength to apply>"],
   "organizationalApplications": ["<specific workplace application 1 tailored to this exact framework and style>", "<application 2>", "<application 3>"],
@@ -180,11 +206,20 @@ Return strictly valid JSON matching this schema:
 }`;
 
     const res = await callOpenAI([
-      { role: 'system', content: `You are an expert cognitive psychologist${isOrganizational ? ' and organizational development consultant' : ''}. Always provide highly unique, creative phrasing tailored to the exact scores and framework given. Vary your vocabulary and avoid repetitive or generic insights. Never reuse boilerplate phrasing across different profiles.` },
+      { role: 'system', content: `You are an expert cognitive psychologist and educational communications specialist${isOrganizational ? ' and organizational development consultant' : ''}. Your mission is to make cognitive science accessible, inspiring, and completely jargon-free. Translate all academic labels into clear, empowering everyday language. Never use alienating jargon like 'Accommodating' or 'Assimilating' in user-facing texts without translating them into friendly phrases like 'Hands-On Explorer' or 'Logical Thinker'.` },
       { role: 'user', content: prompt }
-    ], true, isOrganizational ? 1200 : 800);
+    ], true, isOrganizational ? 1200 : 850);
 
-    if (res) return JSON.parse(res);
+    if (res) {
+      const parsed = JSON.parse(res);
+      return {
+        ...parsed,
+        friendlyStyleName: parsed.friendlyStyleName || parsed.archetype?.name || fallbackStyleInfo.friendlyName,
+        styleSubtitle: parsed.styleSubtitle || fallbackStyleInfo.subtitle,
+        plainEnglishDescription: parsed.plainEnglishDescription || parsed.summary || fallbackStyleInfo.plainEnglishDescription,
+        learningFocus: parsed.learningFocus || fallbackStyleInfo.bestWayToLearn
+      };
+    }
   } catch (error) {
     console.error('Failed to generate AI insights:', error);
   }
@@ -198,7 +233,7 @@ export async function sendAIChatMessage(
   try {
     const systemMsg = {
       role: 'system',
-      content: `You are the JotMinds AI Learning Coach, an encouraging, empathetic, and expert educational AI assistant.
+      content: `You are the JotMinds Learning Coach, an encouraging, empathetic, and expert educational mentor. Never refer to yourself as an AI or use the label AI in your responses.
 You provide personalized study strategies, learning advice, and cognitive guidance.
 ${userProfile ? `User Profile context: ${JSON.stringify(userProfile)}` : ''}
 
@@ -230,7 +265,7 @@ export async function askAICoach(
   try {
     const systemMsg = {
       role: 'system',
-      content: `You are an expert educational AI coach. Use this profile context to personalize your advice:
+      content: `You are an expert educational mentor and learning specialist. Never refer to yourself as an AI or use the label AI in your responses. Use this profile context to personalize your advice:
 Profile: ${JSON.stringify(profile)}
 Options: ${JSON.stringify(options)}
 Keep answers concise, warm, structured, and highly practical. Use markdown.`
@@ -435,7 +470,7 @@ Return JSON with format:
 }`;
 
   const res = await callOpenAI([
-    { role: 'system', content: 'You are an AI career counselor and educational psychologist specializing in cognitive talent matching.' },
+    { role: 'system', content: 'You are an expert career counselor and educational psychologist specializing in cognitive talent matching. Never refer to yourself as an AI or use the label AI in your responses.' },
     { role: 'user', content: prompt }
   ], true, 1000);
 
@@ -589,14 +624,18 @@ function getLocalExecutiveSummaryFallback(userProfile: any): {
   const name = userProfile?.name || 'This professional';
   const role = userProfile?.position || userProfile?.organization || 'educator and professional';
   
-  const learning = userProfile?.learning || userProfile?.results?.learning?.style || 'Adaptive';
-  const thinking = userProfile?.thinking || userProfile?.results?.thinking?.style || 'Strategic';
-  const decision = userProfile?.decision || userProfile?.results?.decision?.style || 'Balanced';
+  const rawLearning = userProfile?.learning || userProfile?.results?.learning?.style || 'Adaptive';
+  const rawThinking = userProfile?.thinking || userProfile?.results?.thinking?.style || 'Strategic';
+  const rawDecision = userProfile?.decision || userProfile?.results?.decision?.style || 'Balanced';
   const motivation = userProfile?.motivation || 'Intrinsic';
 
+  const learning = getFriendlyStyleName(rawLearning);
+  const thinking = getFriendlyStyleName(rawThinking);
+  const decision = getFriendlyStyleName(rawDecision);
+
   return {
-    narrativeSummary: `${name} exhibits a distinguished cognitive profile combining ${learning} learning preferences with strong ${thinking} problem-solving capabilities. Approaching complex scenarios with a ${decision} mindset and anchored by ${motivation.toLowerCase()} drivers, they synthesize insights systematically and excel at translating conceptual models into practical outcomes in their role as an ${role}.`,
-    keyTakeaway: `Thrives when provided autonomy to apply ${thinking.toLowerCase()} problem-solving techniques aligned with ${learning.toLowerCase()} experiential learning cycles.`,
+    narrativeSummary: `${name} exhibits an empowering cognitive profile combining ${learning} strengths with keen ${thinking} problem-solving capabilities. Approaching complex scenarios with a ${decision} mindset and anchored by ${motivation.toLowerCase()} drivers, they synthesize insights systematically and excel at translating conceptual models into practical outcomes in their role as an ${role}.`,
+    keyTakeaway: `Thrives when provided autonomy to apply ${thinking.toLowerCase()} problem-solving techniques aligned with ${learning.toLowerCase()} learning workflows.`,
     personalizedMantra: `Transform cognitive insight into practical excellence through purposeful inquiry and continuous growth.`
   };
 }
@@ -610,18 +649,23 @@ export async function generateAICognitiveExecutiveSummary(
 }> {
   const fallback = getLocalExecutiveSummaryFallback(userProfile);
   try {
-    const prompt = `Generate a rich executive summary for this user cognitive profile:
+    const prompt = `Generate a rich, inspiring executive summary for this user cognitive profile:
 Profile Data: ${JSON.stringify(userProfile)}
+
+CRITICAL ASSESSMENT WORDING GUIDELINE:
+- Everyday users do NOT understand confusing academic jargon like "Accommodating", "Assimilating", "Converging", "Diverging", "Abstract Conceptualization", or "Reflective Observation".
+- Always translate these into clear, human-centered phrases (e.g., "Hands-On Explorer", "Logical Thinker", "Practical Problem-Solver", "Creative Brainstormer", "Deliberate Thinker").
+- Explain how they think and learn in warm, conversational, inspiring English that any student, parent, or manager immediately relates to.
 
 Return JSON format:
 {
-  "narrativeSummary": "A inspiring 3-sentence summary of who they are cognitively and how they learn/work best",
-  "keyTakeaway": "Single most important insight for teachers/parents/managers",
+  "narrativeSummary": "An inspiring 3-sentence summary of who they are cognitively and how they learn/work best using everyday accessible language",
+  "keyTakeaway": "Single most important insight for teachers/parents/managers in plain language",
   "personalizedMantra": "A motivating 1-line quote tailored to their cognitive strengths"
 }`;
 
     const res = await callOpenAI([
-      { role: 'system', content: 'You are a master cognitive psychologist synthesizing assessment results into professional narrative summaries. Be extremely creative and vary your vocabulary significantly to ensure each summary feels totally unique.' },
+      { role: 'system', content: 'You are a master cognitive psychologist synthesizing assessment results into professional narrative summaries. Ensure every summary is completely free of alienating clinical jargon and uses empowering everyday language.' },
       { role: 'user', content: prompt }
     ], true, 700);
 
@@ -920,7 +964,7 @@ Return ONLY JSON with this exact format:
 
   const systemMsg = { 
     role: 'system', 
-    content: 'You are an expert educational psychologist. ALWAYS output unique, highly creative insights tailored to the exact student metrics provided. Avoid generic phrases like "Incorporate hands-on activities" unless specifically warranted, and phrase them creatively.' 
+    content: 'You are an expert educational psychologist. ALWAYS output unique, highly creative insights tailored to the exact student metrics provided. Always use warm, human-friendly terms for learning and thinking styles (e.g. Hands-On Explorer, Logical Thinker, Practical Problem-Solver, Creative Brainstormer) rather than clinical academic jargon like Accommodating or Assimilating. Avoid generic phrases like "Incorporate hands-on activities" unless specifically warranted, and phrase them creatively.' 
   };
 
   const res = await callOpenAI([systemMsg, { role: 'user', content: prompt }], true, 1000);
@@ -945,11 +989,13 @@ Return ONLY JSON format:
     "Specific parenting tip 3",
     "Specific parenting tip 4"
   ]
-}`;
+}
+
+IMPORTANT: Write in warm, encouraging, everyday language that parents easily connect with. Use accessible terms like 'Hands-On Explorer' or 'Logical Thinker' rather than confusing academic terms like 'Accommodating' or 'Assimilating'.`;
 
   const systemMsg = { 
     role: 'system', 
-    content: 'You are an expert child psychologist and family learning advisor. Always provide highly creative, non-repeating tips for parents.' 
+    content: 'You are an expert child psychologist and family learning advisor. Always provide highly creative, non-repeating tips for parents using clear, accessible, everyday language.' 
   };
 
   const res = await callOpenAI([systemMsg, { role: 'user', content: prompt }], true, 600);
@@ -1027,7 +1073,7 @@ export async function chatWithJotti(message: string, history: any[], context?: s
 
     const systemMsg = {
       role: 'system',
-      content: `You are Jotti, an expert, friendly AI Teaching Assistant for the JotMinds platform. 
+      content: `You are Jotti, an expert, friendly Teaching Assistant for the JotMinds platform. Never refer to yourself as an AI or use the label AI in your responses. Speak naturally as a supportive educational specialist.
 ${contextInstructions}
 Context Data: ${JSON.stringify(contextData || {})}`
     };
@@ -1114,19 +1160,23 @@ export async function generateAIStudentRecommendations(params: {
   const cached = getCachedAIResult<AIStudentRecommendationItem[]>(cacheKey);
   if (cached && cached.length > 0) return cached;
 
+  const friendlyLearning = getFriendlyStyleName(params.learningStyle);
+  const friendlyThinking = getFriendlyStyleName(params.thinkingStyle);
+  const friendlyDecision = getFriendlyStyleName(params.decisionStyle);
+
   const fallback: AIStudentRecommendationItem[] = [
     {
       id: 1,
       category: 'learning',
       title: 'Active Concept Synthesis',
-      description: `Based on your ${params.learningStyle} learning style, convert theoretical reading into structured visual mind maps or flowcharts to maximize retention.`,
+      description: `Based on your ${friendlyLearning} learning approach, convert theoretical reading into structured visual mind maps or hands-on practice problems to maximize retention.`,
       tag: 'Study Strategy'
     },
     {
       id: 2,
       category: 'exam',
       title: 'Timed Revision Sprints',
-      description: `Leverage your ${params.thinkingStyle} thinking preference by practicing problem-solving under timed 25-minute Pomodoro intervals.`,
+      description: `Leverage your ${friendlyThinking} thinking preference by practicing problem-solving under timed 25-minute Pomodoro intervals.`,
       tag: 'Exam Prep'
     },
     {
@@ -1140,14 +1190,14 @@ export async function generateAIStudentRecommendations(params: {
       id: 4,
       category: 'exam',
       title: 'Reflective Decision Pause',
-      description: `With your ${params.decisionStyle} decision style, avoid rushing multiple-choice questions. Re-read the question stems carefully and eliminate two obviously incorrect choices first.`,
+      description: `With your ${friendlyDecision} decision style, avoid rushing multiple-choice questions. Re-read the question stems carefully and eliminate two obviously incorrect choices first.`,
       tag: 'Exam Technique'
     },
     {
       id: 5,
       category: 'career',
       title: 'Subject & Career Alignment',
-      description: `Your combination of ${params.thinkingStyle} thinking and ${params.learningStyle} learning thrives in technical and creative problem-solving fields.`,
+      description: `Your combination of ${friendlyThinking} thinking and ${friendlyLearning} learning thrives in technical and creative problem-solving fields.`,
       tag: 'Future Readiness'
     },
     {
@@ -1162,10 +1212,15 @@ export async function generateAIStudentRecommendations(params: {
   try {
     const prompt = `Generate 6 highly personalized, creative, and actionable study and exam preparation recommendations for a student:
 Student: ${params.name || 'Student'}
-Learning Style: ${params.learningStyle}
-Thinking Style: ${params.thinkingStyle}
-Decision Style: ${params.decisionStyle}
+Learning Style: ${friendlyLearning} (${params.learningStyle})
+Thinking Style: ${friendlyThinking} (${params.thinkingStyle})
+Decision Style: ${friendlyDecision} (${params.decisionStyle})
 Education Level: ${params.educationLevel || 'General'}
+
+CRITICAL WORDING GUIDELINE:
+- Everyday students and parents do not understand confusing academic jargon like "Accommodating", "Assimilating", "Converging", or "Diverging".
+- Write all titles and descriptions in friendly, empowering, and accessible everyday English.
+- Use friendly descriptors such as "Hands-On Explorer", "Logical Thinker", "Practical Problem-Solver", "Creative Brainstormer".
 
 Return strictly JSON in this format:
 {
@@ -1251,15 +1306,19 @@ export async function generateAIProfessionalProfile(profile: any): Promise<AIPro
   const cached = getCachedAIResult<AIProfessionalProfileInsights>(cacheKey);
   if (cached) return cached;
 
-  const learning = profile?.learning?.style || 'Analytical Learner';
-  const thinking = profile?.thinking?.style || 'Creative-Analytical';
-  const decision = profile?.decisionMaking?.style || 'Balanced Decision Maker';
+  const rawLearning = profile?.learning?.style || 'Analytical Learner';
+  const rawThinking = profile?.thinking?.style || 'Creative-Analytical';
+  const rawDecision = profile?.decisionMaking?.style || 'Balanced Decision Maker';
+
+  const learningInfo = getFriendlyStyleInfo(rawLearning);
+  const thinkingInfo = getFriendlyStyleInfo(rawThinking);
+  const decisionInfo = getFriendlyStyleInfo(rawDecision);
 
   const fallback: AIProfessionalProfileInsights = {
     strengths: [
-      `High adaptability through ${learning.toLowerCase()} approach`,
-      `Synthesizes complexity with ${thinking.toLowerCase()} methodology`,
-      `Contextual precision driven by ${decision.toLowerCase()} framework`
+      `High adaptability through a ${learningInfo.friendlyName.toLowerCase()} approach (${learningInfo.shortTag})`,
+      `Synthesizes complexity with ${thinkingInfo.friendlyName.toLowerCase()} methodology`,
+      `Contextual precision driven by ${decisionInfo.friendlyName.toLowerCase()} decision agility`
     ],
     developmentAreas: [
       'Expand cross-functional experimentation across contrasting cognitive modes',
@@ -1274,12 +1333,21 @@ export async function generateAIProfessionalProfile(profile: any): Promise<AIPro
       'Product & Innovation Manager',
       'Organizational Development Consultant'
     ],
-    leadershipInsight: `As a professional combining ${learning.toLowerCase()} and ${thinking.toLowerCase()} competencies, your ${decision.toLowerCase()} approach empowers strategic adaptability, constructive cross-functional alignment, and contextual problem-solving across complex team challenges.`
+    leadershipInsight: `As a professional combining ${learningInfo.friendlyName.toLowerCase()} and ${thinkingInfo.friendlyName.toLowerCase()} competencies, your ${decisionInfo.friendlyName.toLowerCase()} approach empowers strategic adaptability, constructive cross-functional alignment, and contextual problem-solving across complex team challenges.`
   };
 
   try {
     const prompt = `Analyze this professional's cognitive assessment profile and generate executive career insights:
 Profile Data: ${JSON.stringify(profile)}
+
+CRITICAL ASSESSMENT WORDING GUIDELINE:
+- Users and executives do not understand academic jargon like "Accommodating", "Assimilating", "Converging", or "Diverging".
+- Translate these learning modes into accessible, empowering capabilities:
+  * "Accommodating" -> "Hands-On Explorer / Practical Experimenter (Action & Doing)"
+  * "Assimilating" -> "Logical Thinker / Concept Builder (Strategy & Theory)"
+  * "Converging" -> "Practical Problem-Solver (Applied Execution)"
+  * "Diverging" -> "Creative Brainstormer (Multiple Perspectives & Ideas)"
+- Write all feedback in inspiring, accessible, high-impact language.
 
 Return strictly JSON in this format:
 {
@@ -1302,7 +1370,6 @@ Return strictly JSON in this format:
     "High-impact organizational role 3",
     "High-impact organizational role 4"
   ],
-  "leadershipInsight": "A 2-3 sentence executive synthesis explaining how their cognitive balance drives educational, organizational, and team leadership."
 }`;
 
     const res = await callOpenAI([
@@ -1353,8 +1420,12 @@ export async function generateAIClassroomOverview(params: {
   const cached = getCachedAIResult<AIClassroomOverviewInsights>(cacheKey);
   if (cached) return cached;
 
+  const friendlyLearning = params.dominantLearning !== 'Unknown' && params.dominantLearning !== 'Diverse' 
+    ? getFriendlyStyleDisplay(params.dominantLearning) 
+    : params.dominantLearning;
+
   const fallback: AIClassroomOverviewInsights = {
-    learningInsight: `With ${params.dominantLearning} learning dominating, organize multi-sensory lessons that balance visual models with experiential peer problem-solving.`,
+    learningInsight: `With ${friendlyLearning} learning dominating, organize multi-sensory lessons that balance visual models with experiential peer problem-solving.`,
     thinkingInsight: `Leverage their ${params.dominantThinking} orientation by presenting open inquiry challenges supported by clear evaluative criteria.`,
     decisionInsight: `Support student decisions by allowing a 2-minute reflective pause before group presentations and tests.`,
     synergySummary: `A versatile cohort that excels when theoretical concepts are linked directly to real-world Ghanaian and global applications.`
@@ -1364,9 +1435,12 @@ export async function generateAIClassroomOverview(params: {
     const prompt = `Generate tailored pedagogical classroom strategies for a teacher managing this class:
 Class: ${params.className}
 Student Count: ${params.studentCount}
-Dominant Learning Style: ${params.dominantLearning}
+Dominant Learning Style: ${friendlyLearning}
 Dominant Thinking Style: ${params.dominantThinking}
 Dominant Decision Style: ${params.dominantDecision || 'Balanced'}
+
+IMPORTANT WORDING GUIDELINE:
+Refer to cognitive learning styles using relatable everyday phrases (e.g. 'Hands-On Explorer', 'Logical Thinker', 'Practical Problem-Solver', 'Creative Brainstormer') rather than alienating academic jargon like 'Accommodating' or 'Assimilating'.
 
 Return strictly JSON:
 {
@@ -1485,10 +1559,14 @@ export async function generateAICombinedProfileInsights(params: {
   const cached = getCachedAIResult<AICombinedProfileInsights>(cacheKey);
   if (cached) return cached;
 
+  const friendlyKolb = params.kolbStyle ? getFriendlyStyleName(params.kolbStyle) : 'hands-on';
+  const friendlyThink = params.sternbergStyle ? getFriendlyStyleName(params.sternbergStyle) : 'analytical';
+  const friendlyDual = params.dualProcessStyle ? getFriendlyStyleName(params.dualProcessStyle) : 'adaptive';
+
   const fallback: AICombinedProfileInsights = {
     strengths: [
-      `Synthesizes concepts quickly leveraging ${params.kolbStyle || 'experiential'} learning strategies.`,
-      `Demonstrates strong ${params.sternbergStyle || 'analytical'} thinking when diagnosing complex problems.`,
+      `Synthesizes concepts quickly leveraging ${friendlyKolb} learning strategies.`,
+      `Demonstrates strong ${friendlyThink} thinking when diagnosing complex problems.`,
       `Maintains dynamic cognitive agility across both intuitive and systematic decision domains.`
     ],
     growthAreas: [
@@ -1505,10 +1583,13 @@ export async function generateAICombinedProfileInsights(params: {
   try {
     const prompt = `Synthesize a unified tri-framework cognitive analysis for this student:
 Student: ${params.userName || 'Student'}
-Learning Style (Kolb): ${params.kolbStyle || 'Adaptive'}
-Thinking Style (Sternberg): ${params.sternbergStyle || 'Analytical-Creative'}
-Decision-Making Style (Dual Process): ${params.dualProcessStyle || 'Balanced System 1 & 2'}
+Learning Style: ${params.kolbStyle ? getFriendlyStyleDisplay(params.kolbStyle) : 'Adaptive'}
+Thinking Style: ${params.sternbergStyle ? getFriendlyStyleDisplay(params.sternbergStyle) : 'Analytical-Creative'}
+Decision-Making Style: ${params.dualProcessStyle ? getFriendlyStyleDisplay(params.dualProcessStyle) : 'Balanced Decision-Maker'}
 Detailed Scores: ${JSON.stringify(params.scores || {})}
+
+IMPORTANT WORDING INSTRUCTION:
+Translate all technical cognitive jargon into clear, empowering, everyday language (e.g. use 'Hands-On Explorer' instead of 'Accommodating', 'Logical Thinker' instead of 'Assimilating', 'Practical Problem-Solver' instead of 'Converging', 'Creative Brainstormer' instead of 'Diverging'). Never use dry or ungrounded academic labels in the student-facing strengths or advice.
 
 Return strictly a JSON object with:
 {

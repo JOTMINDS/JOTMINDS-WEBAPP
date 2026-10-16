@@ -19,6 +19,7 @@ import { getAllAssessmentResults } from '../utils/api';
 import { normalizeServerResults } from '../utils/assessmentApi';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { InfoTip } from './ui/info-tip';
+import { getFriendlyStyleDisplay, getFriendlyStyleName, formatKolbStyle } from '../utils/styleWording';
 
 interface SchoolTeacherStylesViewProps {
   admin: User;
@@ -295,26 +296,30 @@ function generateFullProfile(t: TeacherData): FullProfile | null {
   if (thinkStyle === 'Creative' && axes.axisAdaptability < 45) gaps.push('Creative thinking may feel constrained by rigid teaching structure — allow more room for experimentation');
   if (thinkStyle === 'Analytical' && axes.axisClimate < 45) gaps.push('Analytical focus may feel cold — actively building warmth and psychological safety would help');
   if (thinkStyle === 'Practical' && axes.axisKnowledge < 35) gaps.push('Practical bias may under-develop abstract reasoning skills in students');
-  if (kolbStyle === 'Diverging' && axes.axisAuthority > 60) gaps.push('Diverging learning style may clash with high-authority teaching — more facilitation would be more natural');
-  if (kolbStyle === 'Converging' && axes.axisKnowledge > 70) gaps.push('Converging learner teaching through transmission may limit student discovery');
+  if (kolbStyle === 'Diverging' && axes.axisAuthority > 60) gaps.push('Creative Brainstormer (Diverging) learning style may clash with high-authority teaching — more facilitation would be more natural');
+  if (kolbStyle === 'Converging' && axes.axisKnowledge > 70) gaps.push('Practical Problem-Solver (Converging) learner teaching through transmission may limit student discovery');
   if (dualStyle === 'Intuitive' && axes.axisAssessment < 40) gaps.push('Intuitive decisions combined with judgment-focused assessment may overlook student growth');
   if (gaps.length < 2) gaps.push('Continue to explore diverse pedagogical approaches to reach all learner types');
 
   // Student fit
   const studentFit: string[] = [];
-  if (kolbStyle === 'Diverging' || thinkStyle === 'Creative') studentFit.push('Diverging learners, creative thinkers');
-  if (kolbStyle === 'Assimilating' || thinkStyle === 'Analytical') studentFit.push('Assimilating learners, analytical thinkers');
-  if (kolbStyle === 'Converging' || thinkStyle === 'Practical') studentFit.push('Converging learners, practical problem-solvers');
-  if (kolbStyle === 'Accommodating') studentFit.push('Accommodating learners, active doers');
+  if (kolbStyle === 'Diverging' || thinkStyle === 'Creative') studentFit.push('Creative Brainstormers (Diverging), creative thinkers');
+  if (kolbStyle === 'Assimilating' || thinkStyle === 'Analytical') studentFit.push('Logical Thinkers (Assimilating), analytical thinkers');
+  if (kolbStyle === 'Converging' || thinkStyle === 'Practical') studentFit.push('Practical Problem-Solvers (Converging), practical problem-solvers');
+  if (kolbStyle === 'Accommodating') studentFit.push('Hands-On Explorers (Accommodating), active doers');
   if (dualStyle === 'Reflective') studentFit.push('Reflective learners who need processing time');
   if (studentFit.length === 0) studentFit.push('Mixed learner types');
 
-  const cognitiveBlend = [thinkStyle, kolbStyle, dualStyle].filter(Boolean).join(' · ');
+  const cognitiveBlend = [
+    thinkStyle ? getFriendlyStyleName(thinkStyle) : null,
+    kolbStyle ? getFriendlyStyleName(kolbStyle) : null,
+    dualStyle ? getFriendlyStyleName(dualStyle) : null
+  ].filter(Boolean).join(' · ');
   const description = `${teachStyle} whose cognitive profile combines ${cognitiveBlend || 'a range of approaches'}. ${caScore >= 75 ? 'Their learning style aligns naturally with how they teach.' : 'There is productive tension between how they learn and how they teach — a source of growth and inclusivity.'}`;
 
   return {
     name: nameBase,
-    tagline: `${teachStyle} · ${thinkStyle ?? '?'} Thinker · ${kolbStyle ?? '?'} Learner · ${dualStyle ?? '?'} Decider`,
+    tagline: `${teachStyle} · ${thinkStyle ? getFriendlyStyleName(thinkStyle) : '?'} · ${kolbStyle ? getFriendlyStyleName(kolbStyle) : '?'} · ${dualStyle ? getFriendlyStyleName(dualStyle) : '?'}`,
     description,
     strengths: strengths.slice(0, 4),
     gaps: gaps.slice(0, 3),

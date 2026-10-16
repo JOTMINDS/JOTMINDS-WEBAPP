@@ -788,7 +788,7 @@ export const jtiaQuestions: JTIAQuestion[] = [
   },
   {
     id: 105,
-    text: "I am energized by testing emerging educational technologies and AI tools even if they require troubleshooting.",
+    text: "I am energized by testing emerging educational technologies and digital tools even if they require troubleshooting.",
     domain: "Professional Intelligence",
     subCompetency: "Innovation",
     itemType: "preference"

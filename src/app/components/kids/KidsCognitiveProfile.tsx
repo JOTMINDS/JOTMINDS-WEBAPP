@@ -3,6 +3,7 @@ import { User } from '../../types/index';
 import { X, Award, Brain, Lightbulb, Target, Puzzle, Users, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
+import { getFriendlyStyleInfo, getFriendlyStyleDisplay, getFriendlyStyleName } from '../../utils/styleWording';
 
 interface KidsCognitiveProfileProps {
   user: User;
@@ -107,17 +108,18 @@ export function KidsCognitiveProfile({ user, onClose, isParentView = false }: Ki
     const insights = [];
 
     if (learningStyle) {
+      const friendlyInfo = getFriendlyStyleInfo(learningStyle);
       const learningInsights = {
-        'Diverging': '🎨 Learns best through imagination and group work. Encourage creative projects and collaborative activities.',
-        'Assimilating': '📚 Prefers logical explanations and organized information. Provide clear structures and reading materials.',
-        'Converging': '🔧 Excels with practical problem-solving. Use hands-on experiments and real-world applications.',
-        'Accommodating': '🏃 Learns through hands-on experience. Incorporate movement, experimentation, and active discovery.'
+        'Diverging': '🎨 Creative Brainstormer: Learns best through imagination and group work. Encourage creative projects and collaborative activities.',
+        'Assimilating': '📚 Logical Thinker: Prefers logical explanations and organized information. Provide clear structures and reading materials.',
+        'Converging': '🔧 Practical Problem-Solver: Excels with practical problem-solving. Use hands-on experiments and real-world applications.',
+        'Accommodating': '🏃 Hands-On Explorer: Learns through hands-on experience and real-world doing. Incorporate movement, experimentation, and active discovery.'
       };
       insights.push({
         icon: '📚',
         title: 'Learning Style',
-        result: learningStyle,
-        insight: learningInsights[learningStyle as keyof typeof learningInsights] || 'Developing learning preferences.'
+        result: getFriendlyStyleDisplay(learningStyle),
+        insight: learningInsights[learningStyle as keyof typeof learningInsights] || friendlyInfo.plainEnglishDescription
       });
     }
 
@@ -191,7 +193,7 @@ export function KidsCognitiveProfile({ user, onClose, isParentView = false }: Ki
       if (styleTips) {
         tips.push({
           category: '📚 Learning Style Support',
-          style: learningStyle,
+          style: getFriendlyStyleDisplay(learningStyle),
           tips: styleTips
         });
       }
@@ -396,16 +398,16 @@ export function KidsCognitiveProfile({ user, onClose, isParentView = false }: Ki
               icon="📚"
               title="Learning Style"
               completed={assessmentStatus.learning}
-              result={learningStyle}
+              result={learningStyle ? getFriendlyStyleDisplay(learningStyle) : null}
               color="#667eea"
               insight={
                 learningStyle 
                   ? {
-                      'Diverging': '🎨 Learns best through imagination and group work. Encourage creative projects and collaborative activities.',
-                      'Assimilating': '📚 Prefers logical explanations and organized information. Provide clear structures and reading materials.',
-                      'Converging': '🔧 Excels with practical problem-solving. Use hands-on experiments and real-world applications.',
-                      'Accommodating': '🏃 Learns through hands-on experience. Incorporate movement, experimentation, and active discovery.'
-                    }[learningStyle] || 'Developing learning preferences.'
+                      'Diverging': '🎨 Creative Brainstormer: Learns best through imagination and group work. Encourage creative projects and collaborative activities.',
+                      'Assimilating': '📚 Logical Thinker: Prefers logical explanations and organized information. Provide clear structures and reading materials.',
+                      'Converging': '🔧 Practical Problem-Solver: Excels with practical problem-solving. Use hands-on experiments and real-world applications.',
+                      'Accommodating': '🏃 Hands-On Explorer: Learns through hands-on experience and active discovery. Incorporate movement and experimentation.'
+                    }[learningStyle] || getFriendlyStyleInfo(learningStyle).plainEnglishDescription
                   : null
               }
             />

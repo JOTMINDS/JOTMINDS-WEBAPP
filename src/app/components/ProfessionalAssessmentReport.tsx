@@ -11,6 +11,7 @@ import { generatePDF } from '../utils/pdfGenerator';
 import { generateAICognitiveExecutiveSummary, generateAIProfessionalProfile, AIProfessionalProfileInsights } from '../utils/aiService';
 import { getAssessmentInsights } from '../utils/insights';
 import { formatDate } from '../utils/dateFormat';
+import { getFriendlyStyleInfo, getFriendlyStyleName, getFriendlyStyleDisplay } from '../utils/styleWording';
 
 interface CompetencyFit {
   competency: string;
@@ -98,8 +99,8 @@ export function ProfessionalAssessmentReport({
       parts.push(assessment.score.sternberg.style);
     }
     if (assessment?.score?.kolb?.style) {
-      const kolbSimplified = assessment.score.kolb.style.replace('ing', '').toLowerCase();
-      parts.push(kolbSimplified);
+      const kolbFriendly = getFriendlyStyleName(assessment.score.kolb.style);
+      parts.push(kolbFriendly);
     }
     if (assessment?.score?.dualProcess?.style) {
       parts.push(assessment.score.dualProcess.style.toLowerCase());
@@ -203,10 +204,10 @@ export function ProfessionalAssessmentReport({
     const dominantDimensions: string[] = [];
     const avg = (AC + AE + CE + RO) / 4;
     
-    if (AC > avg) dominantDimensions.push('Abstract Conceptualization');
-    if (AE > avg) dominantDimensions.push('Active Experimentation');
-    if (CE > avg) dominantDimensions.push('Concrete Experience');
-    if (RO > avg) dominantDimensions.push('Reflective Observation');
+    if (AC > avg) dominantDimensions.push('Logical Concepts');
+    if (AE > avg) dominantDimensions.push('Practical Action');
+    if (CE > avg) dominantDimensions.push('Hands-On Experience');
+    if (RO > avg) dominantDimensions.push('Thoughtful Observation');
     
     return (dominantDimensions || []).join(' + ') || 'Balanced';
   };
@@ -451,11 +452,11 @@ export function ProfessionalAssessmentReport({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="font-semibold text-gray-900">{getLearningStyleDetail()}</div>
-                    <p className="text-sm text-[rgb(52,52,52)]">
-                      {assessment.score.kolb.style === 'Converging' && 'Learns best by combining conceptual planning with practical testing. Thinks strategically, applies ideas quickly.'}
-                      {assessment.score.kolb.style === 'Diverging' && 'Learns through experience and reflection. Excels at viewing situations from multiple perspectives.'}
-                      {assessment.score.kolb.style === 'Assimilating' && 'Prefers abstract concepts and logical reasoning. Strong at theoretical framework development.'}
-                      {assessment.score.kolb.style === 'Accommodating' && 'Hands-on learner who excels through direct experience and experimentation.'}
+                    <p className="text-sm text-[rgb(52,52,52)] leading-relaxed">
+                      {assessment.score.kolb.style === 'Converging' && 'Practical Problem-Solver: Learns best by combining conceptual planning with practical testing. Thinks strategically and applies ideas quickly.'}
+                      {assessment.score.kolb.style === 'Diverging' && 'Creative Brainstormer: Learns through observation and reflection. Excels at viewing situations from multiple perspectives and generating rich ideas.'}
+                      {assessment.score.kolb.style === 'Assimilating' && 'Logical Thinker: Prefers structured concepts and logical reasoning. Strong at conceptual framework and system development.'}
+                      {assessment.score.kolb.style === 'Accommodating' && 'Hands-On Explorer: Active learner who excels through direct experience, adaptable action, and experimentation.'}
                     </p>
                     
                     {radarData.length > 0 && (
@@ -609,7 +610,7 @@ export function ProfessionalAssessmentReport({
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xl text-blue-900">Key Insights & Cognitive Strengths</CardTitle>
                   <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
-                    {aiProfile ? 'Live AI Analysis' : 'Cognitive Baseline'}
+                    {aiProfile ? 'Personalized Analysis' : 'Cognitive Baseline'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -678,7 +679,7 @@ export function ProfessionalAssessmentReport({
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xl text-green-900">Development Recommendations</CardTitle>
                   <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs">
-                    {aiProfile ? 'AI Strategies' : 'Recommendations'}
+                    {aiProfile ? 'Targeted Strategies' : 'Recommendations'}
                   </Badge>
                 </div>
                 <CardDescription>Personalized strategies for continuous professional growth</CardDescription>

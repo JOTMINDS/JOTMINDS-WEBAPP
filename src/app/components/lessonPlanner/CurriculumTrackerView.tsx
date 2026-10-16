@@ -139,10 +139,10 @@ export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ pl
         saveCurriculumTrack(updatedTrack);
         toast.success(`Generated ${newTopics.length} scheme of work topics & sub-topics!`);
       } else {
-        toast.error('Failed to generate topics from AI.');
+        toast.error('Failed to generate topics.');
       }
     } catch (e) {
-      toast.error('Error connecting to AI curriculum service.');
+      toast.error('Error connecting to curriculum service.');
     }
     setIsGenerating(false);
   };
@@ -201,7 +201,7 @@ export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ pl
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={handleAutoGenerate} disabled={isGenerating} className="bg-indigo-600 hover:bg-indigo-700 text-white border-none text-xs font-semibold shadow-md">
-            {isGenerating ? <><Loader className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Generating Scheme...</> : <><Sparkles className="w-3.5 h-3.5 mr-1.5" /> AI Generate Scheme of Work</>}
+            {isGenerating ? <><Loader className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Generating Scheme...</> : <><Sparkles className="w-3.5 h-3.5 mr-1.5" /> Auto-Generate Scheme of Work</>}
           </Button>
         </div>
       </div>

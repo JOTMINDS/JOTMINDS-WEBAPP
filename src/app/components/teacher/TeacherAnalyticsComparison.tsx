@@ -8,6 +8,7 @@ import { getAllAssessments, getAssessmentsByUserId } from '../../utils/storage';
 import { Info, Target, LayoutTemplate } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { InfoTip } from '../ui/info-tip';
+import { formatKolbStyle, getFriendlyStyleDisplay } from '../../utils/styleWording';
 
 interface TeacherAnalyticsComparisonProps {
   teacherAssessments: Assessment[];
@@ -173,7 +174,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
   // Transform data for charts
   const kolbKeys = Array.from(new Set(['Assimilating', 'Diverging', 'Converging', 'Accommodating', tKolbStyle, ...Object.keys(studentData.kolb).filter(k => k !== 'Total')].filter(Boolean)));
   const kolbChartData = kolbKeys.map(key => ({
-    name: key + (tKolbStyle === key ? ' (You)' : ''),
+    name: formatKolbStyle(key) + (tKolbStyle === key ? ' (You)' : ''),
     originalName: key,
     Students: studentData.kolb.Total ? Math.round(((studentData.kolb[key] || 0) / studentData.kolb.Total) * 100) : 0,
     isTeacher: tKolbStyle === key
@@ -328,7 +329,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                   <span>Learning Style<InfoTip>How students prefer to learn (Kolb). The solid, outlined bar is your own style. Taller bars mean more of your class learns that way.</InfoTip></span>
                   {tKolbStyle && (
                     <Badge style={badgeStyle(KOLB_COLORS, tKolbStyle)}>
-                      You: {tKolbStyle}
+                      You: {getFriendlyStyleDisplay(tKolbStyle)}
                     </Badge>
                   )}
                 </CardTitle>
@@ -340,7 +341,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
                     <BarChart data={kolbChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
                       <XAxis type="number" domain={[0, 100]} hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} tick={{ fill: '#475569', fontSize: 13 }} />
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={160} tick={{ fill: '#475569', fontSize: 11 }} />
                       <Tooltip 
                         cursor={{fill: '#F1F5F9'}}
                         formatter={(value: number, name: string) => [`${value}%`, name === 'Students' ? 'Class Distribution' : 'Your Style']}

@@ -31,6 +31,7 @@ import { StudentDetailView } from '../StudentDetailView';
 import { KidsCognitiveProfile } from '../kids/KidsCognitiveProfile';
 import { sendStudentReminder } from '../../utils/api';
 import { generateAITeachingStrategies, AIStudentTeachingStrategies } from '../../utils/aiService';
+import { getFriendlyStyleDisplay, getFriendlyStyleSubtitle } from '../../utils/styleWording';
 import { toast } from 'sonner';
 
 interface TeacherIndividualStudentViewProps {
@@ -345,10 +346,10 @@ return (
                           <span className="text-[13px] font-semibold tracking-wider uppercase text-[#166534]">Learning Style</span>
                         </div>
                         <h4 className="text-[24px] font-bold text-[#14532D] mb-1">
-                          {((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style}
+                          {getFriendlyStyleDisplay(((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style)}
                         </h4>
                         <p className="text-[12px] font-medium text-[#15803D]">
-                          Learning Style • Assessed {formatDate(latestLearning.completedAt!)}
+                          {getFriendlyStyleSubtitle(((latestLearning.score as any).kolb || (latestLearning.score as any).learning)?.style)} • Assessed {formatDate(latestLearning.completedAt!)}
                         </p>
                       </CardContent>
                     </Card>

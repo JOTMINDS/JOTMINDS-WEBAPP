@@ -171,7 +171,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             <BookOpen className="w-6 h-6 text-indigo-400" /> Lesson Planner & Teaching Insights<InfoTip title="Lesson Planner">Work through the tabs from left to right: Create a plan, edit the document, check class insights, add activities for every learner, build assessments, teach, reflect, and review your analytics.</InfoTip>
           </h1>
           <p className="text-xs text-slate-300 mt-1">
-            Find all official AI-powered Subject Specific Apps for SHS teachers. Easy access to all NaCCA curriculum resources and PLC tools.
+            Find all official Subject Specific Apps for SHS teachers. Easy access to all NaCCA curriculum resources and PLC tools.
           </p>
         </div>
 

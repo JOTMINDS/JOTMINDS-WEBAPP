@@ -51,7 +51,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div className="lg:col-span-8 flex flex-col items-start">
             {/* Eyebrow */}
             <div className="inline-block text-[11px] sm:text-xs font-bold tracking-[0.16em] text-[#4E35DE] uppercase mb-4 sm:mb-5">
-              AI-POWERED HUMAN INTELLIGENCE PLATFORM
+              HUMAN INTELLIGENCE PLATFORM
             </div>
 
             {/* Main Headline */}

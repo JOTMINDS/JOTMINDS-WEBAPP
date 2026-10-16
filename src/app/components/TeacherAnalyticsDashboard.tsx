@@ -823,7 +823,7 @@ function LessonPlanGenerator({ distribution }: { distribution: ClassroomDistribu
       {/* Upload Existing Plan Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Upload Your Lesson Plan<InfoTip>Paste a plan you already have and the AI will adapt it to your class.</InfoTip></CardTitle>
+          <CardTitle>Upload Your Lesson Plan<InfoTip>Paste a plan you already have and the system will adapt it to your class.</InfoTip></CardTitle>
           <CardDescription>Upload your existing lesson plan and we will help you enhance it</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -245,17 +245,17 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-400" /> Lesson Plan Generator<InfoTip title="Lesson plan generator">Create a lesson plan three ways: let AI write it, write it yourself, or upload a plan you already have and let AI improve it. The plan follows the curriculum you choose.</InfoTip>
+            <BookOpen className="w-5 h-5 text-indigo-400" /> Lesson Plan Generator<InfoTip title="Lesson plan generator">Create a lesson plan three ways: auto-generate from details, write it yourself, or upload an existing plan to enhance it. The plan follows the curriculum you choose.</InfoTip>
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Find official AI-powered Subject Specific Apps and easy access to NaCCA curriculum resources.
+            Find official Subject Specific Apps and easy access to NaCCA curriculum resources.
           </p>
         </div>
       </div>
 
       {/* 3 Prominent Visual Lesson Creation Modes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Mode 1: AI Generated */}
+        {/* Mode 1: Auto Generated */}
         <div
           onClick={() => setMode('ai')}
           className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
@@ -269,12 +269,12 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               <Sparkles className="w-5 h-5" />
             </div>
             <Badge className={mode === 'ai' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800'}>
-              AI Accelerated
+              Automated
             </Badge>
           </div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-white">1. AI Generated Lesson Plan<InfoTip>AI writes a full plan from the details you enter. You can edit it afterwards.</InfoTip></h3>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">1. Auto-Generated Lesson Plan<InfoTip>Automatically creates a full plan from the details you enter. You can edit it afterwards.</InfoTip></h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-            Auto-generate curriculum-aligned lesson phases, differentiated tasks, and objectives using AI.
+            Auto-generate curriculum-aligned lesson phases, differentiated tasks, and objectives.
           </p>
         </div>
 
@@ -315,12 +315,12 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               <BookOpen className="w-5 h-5" />
             </div>
             <Badge className={mode === 'upload' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800'}>
-              AI Adaptation
+              Curriculum Adaptation
             </Badge>
           </div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-white">3. Upload Existing Plan<InfoTip>Paste a plan you already use. AI improves it for your class and curriculum without throwing your content away.</InfoTip></h3>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">3. Upload Existing Plan<InfoTip>Paste a plan you already use to adapt it for your class and curriculum without throwing your content away.</InfoTip></h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-            Paste or upload your existing document to receive instant AI differentiation & recommendations.
+            Paste or upload your existing document to receive instant differentiation & recommendations.
           </p>
         </div>
       </div>
@@ -414,7 +414,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
             </div>
             <div>
               <Label className="text-[11px] font-semibold flex items-center justify-between">
-                <span>Duration<InfoTip>Worked out from the start and end times. The AI splits this time across the lesson phases.</InfoTip></span>
+                <span>Duration<InfoTip>Worked out from the start and end times. The system splits this time across the lesson phases.</InfoTip></span>
                 <span className="text-[10px] text-indigo-600 font-normal">Auto-calculated</span>
               </Label>
               <div className="relative mt-1">
@@ -441,7 +441,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold">Subtopic / Sub-strand (Optional)<InfoTip>A narrower focus within the topic. Helps the AI stay on target.</InfoTip></Label>
+              <Label className="text-xs font-semibold">Subtopic / Sub-strand (Optional)<InfoTip>A narrower focus within the topic. Helps keep the lesson on target.</InfoTip></Label>
               <Input
                 value={subtopic}
                 onChange={(e) => setSubtopic(e.target.value)}
@@ -490,12 +490,12 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                   <span>Upload or Paste Your Existing Lesson Plan</span>
                 </div>
                 <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-[10px]">
-                  AI Adaptation Engine
+                  Curriculum Adaptation Engine
                 </Badge>
               </div>
 
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                Have a lesson plan from past terms or external sources? Paste the text or upload your file below. JotMinds AI will analyze and tailor it to your class's specific cognitive profile and curriculum standards.
+                Have a lesson plan from past terms or external sources? Paste the text or upload your file below. JotMinds will analyze and tailor it to your class's specific cognitive profile and curriculum standards.
               </p>
 
               <div>
@@ -541,7 +541,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                 {isGenerating ? (
                   <>
                     <Loader className="w-4 h-4 mr-2 animate-spin" />
-                    Tailoring & Enhancing Lesson Plan with AI...
+                    Tailoring & Enhancing Lesson Plan...
                   </>
                 ) : (
                   <>

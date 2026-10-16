@@ -134,7 +134,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
               </label>
             </div>
             <CardDescription className="text-xs">
-              Paste your own test questions, past examination items, or source texts below. The AI will structure them into differentiated MCQs, short answers, and rubrics.
+              Paste your own test questions, past examination items, or source texts below. The system will structure them into differentiated MCQs, short answers, and rubrics.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

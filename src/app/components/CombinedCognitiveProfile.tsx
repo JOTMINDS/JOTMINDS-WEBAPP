@@ -859,7 +859,7 @@ let latestKolb = assessments.filter(a => {
                   Your Cognitive Strengths
                 </CardTitle>
                 <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs">
-                  {aiInsights ? 'Live AI Analysis' : 'Cognitive Baseline'}
+                  {aiInsights ? 'Personalized Analysis' : 'Cognitive Baseline'}
                 </Badge>
               </div>
               <CardDescription>
@@ -895,7 +895,7 @@ let latestKolb = assessments.filter(a => {
                   Areas for Growth
                 </CardTitle>
                 <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
-                  {aiInsights ? 'AI Focal Points' : 'Growth Opportunities'}
+                  {aiInsights ? 'Targeted Focus Areas' : 'Growth Opportunities'}
                 </Badge>
               </div>
               <CardDescription>
@@ -931,7 +931,7 @@ let latestKolb = assessments.filter(a => {
                 Personalized Recommendations
               </CardTitle>
               <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
-                {aiInsights ? 'Live AI Strategies' : 'Recommendations'}
+                {aiInsights ? 'Targeted Strategies' : 'Recommendations'}
               </Badge>
             </div>
             <CardDescription>

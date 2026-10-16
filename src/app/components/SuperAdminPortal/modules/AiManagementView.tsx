@@ -31,8 +31,8 @@ export function AiManagementView() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">AI Management</h2>
-        <p className="text-slate-500 dark:text-slate-400">Monitor AI tokens, latency, cost tracking, and failures.</p>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Engine Management</h2>
+        <p className="text-slate-500 dark:text-slate-400">Monitor system tokens, latency, cost tracking, and performance.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -82,7 +82,7 @@ export function AiManagementView() {
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {recent.length === 0 ? (
-                  <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500">No AI calls logged yet.</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500">No engine calls logged yet.</td></tr>
                 ) : (
                   recent.map((entry) => (
                     <tr key={entry.id} className="bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900/50">

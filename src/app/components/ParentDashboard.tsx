@@ -38,6 +38,7 @@ import { NavGroup } from './ui/collapsible-sidebar';
 import { generateAIParentSupportTips, getCachedAIResult, setCachedAIResult } from '../utils/aiService';
 import { InfoTip } from './ui/info-tip';
 import { TabTitle } from './ui/tab-title';
+import { getFriendlyStyleDisplay, getFriendlyStyleName, formatKolbStyle, getFriendlyStyleSubtitle } from '../utils/styleWording';
 import { PARENT_TAB_HELP } from '../utils/tabHelp';
 
 interface ParentDashboardProps {
@@ -796,7 +797,10 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
                                 <h4 className="text-sm mb-2 text-blue-900 dark:text-blue-200">Learning Style<InfoTip>How your child prefers to take in and practise new information.</InfoTip></h4>
                                 {kolbAssessment ? (
-                                  <Badge>{kolbAssessment.score.kolb?.style}</Badge>
+                                  <div>
+                                    <Badge className="bg-blue-600 text-white font-medium">{getFriendlyStyleDisplay(kolbAssessment.score.kolb?.style)}</Badge>
+                                    <p className="text-xs text-blue-800 dark:text-blue-300 mt-1.5">{getFriendlyStyleSubtitle(kolbAssessment.score.kolb?.style)}</p>
+                                  </div>
                                 ) : (
                                   <p className="text-sm text-muted-foreground">Not assessed yet</p>
                                 )}
@@ -966,9 +970,9 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                 <div className="flex items-center justify-between">
                                   <h4 className="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-2 text-sm">
                                     <Sparkles className="h-4 w-4 text-purple-600" />
-                                    AI Personalized Home Guidance for {child.name}
+                                    Personalized Home Guidance for {child.name}
                                   </h4>
-                                  <Badge className="bg-purple-600 text-white text-[10px]">✨ Live AI</Badge>
+                                  <Badge className="bg-purple-600 text-white text-[10px]">✨ Tailored</Badge>
                                 </div>
                                 <ul className="space-y-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
                                   {aiSupportTips[child.id].map((tip, idx) => (
@@ -1487,7 +1491,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                             <span className="text-xs font-bold uppercase text-emerald-700 block">3. Child Self-Assessment</span>
                             <h4 className="font-extrabold text-slate-900 text-base">
                               {childAssessmentsList.length > 0 
-                                ? (childAssessmentsList[0]?.score?.kolb?.style || childAssessmentsList[0]?.score?.sternberg?.style || 'Assessed') 
+                                ? (formatKolbStyle(childAssessmentsList[0]?.score?.kolb?.style) || getFriendlyStyleDisplay(childAssessmentsList[0]?.score?.sternberg?.style) || 'Assessed') 
                                 : 'Assessed'}
                             </h4>
                             <p className="text-xs text-slate-600">

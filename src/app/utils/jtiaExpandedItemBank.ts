@@ -766,7 +766,7 @@ export const jtiaExpandedItemBank: JTIAQuestion[] = [
   },
   {
     id: 303,
-    text: "I pilot innovative educational technologies and AI-assisted lesson tools in my classroom, assessing their impact on student learning with an open mind.",
+    text: "I pilot innovative educational technologies and digital lesson tools in my classroom, assessing their impact on student learning with an open mind.",
     domain: "Professional Intelligence",
     subCompetency: "Innovation",
     itemType: "scenario"

@@ -146,7 +146,7 @@ const SUBCOMPETENCY_EXPLANATIONS: Record<string, { strength: string; growth: str
     growth: "Opportunity to participate more actively in professional learning communities and peer inquiry groups."
   },
   "Innovation": {
-    strength: "Forward-thinking innovator who tests emerging AI tools and pedagogical pilot projects to enhance student engagement.",
+    strength: "Forward-thinking innovator who tests emerging digital tools and pedagogical pilot projects to enhance student engagement.",
     growth: "Opportunity to document pilot outcomes and share innovative prototypes with school leadership."
   },
   "Coaching and Mentoring": {

@@ -16,6 +16,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { TeamSynergy } from './TeamSynergy';
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
 import { InfoTip } from './ui/info-tip';
+import { formatKolbStyle, getFriendlyStyleDisplay } from '../utils/styleWording';
 
 interface OrganizationInsightsProps {
   professionals: User[];
@@ -109,7 +110,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
     };
 
     return {
-      kolb: Object.entries(kolbDistribution).map(([name, value]) => ({ name, value })),
+      kolb: Object.entries(kolbDistribution).map(([name, value]) => ({ name: formatKolbStyle(name), value })),
       sternberg: sortedSternbergStyles,
       dualProcess: Object.entries(dualProcessDistribution).map(([name, value]) => ({ name, value })),
       insights: generateInsights(),
@@ -189,7 +190,7 @@ export function OrganizationInsights({ professionals, organizationName }: Organi
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-indigo-600" />
-            <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds Organization Executive Advisor<InfoTip>An AI summary of your organisation's data with strengths, risks and next steps. Check it against what you know of your people.</InfoTip></CardTitle>
+            <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds Organization Executive Advisor<InfoTip>A comprehensive summary of your organisation's data with strengths, risks and next steps. Check it against what you know of your people.</InfoTip></CardTitle>
           </div>
           <Button 
             variant="outline" 

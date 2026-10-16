@@ -83,7 +83,7 @@ export const MILESTONE_DEFINITIONS: MilestoneDefinition[] = [
   { id: 'self_aware', title: 'Self-Aware', description: 'View your cognitive profile 3 times', icon: '🪞', xpReward: 50, category: 'mastery', requirement: 3 },
   { id: 'five_badges', title: 'Badge Collector', description: 'Earn 5 gamification badges', icon: '🎖️', xpReward: 200, category: 'mastery', requirement: 5 },
   { id: 'level_7', title: 'JotMinds Scholar', description: 'Reach Cognitive Level 7', icon: '📚', xpReward: 500, category: 'mastery', requirement: 7 },
-  { id: 'ai_coach_5', title: 'Coached to Excel', description: 'Use the AI Learning Coach 5 times', icon: '🤖', xpReward: 100, category: 'mastery', requirement: 5 },
+  { id: 'ai_coach_5', title: 'Coached to Excel', description: 'Use the Learning Coach 5 times', icon: '🧠', xpReward: 100, category: 'mastery', requirement: 5 },
 ];
 
 const storageKey = (userId: string) => `jotminds_cxp_${userId}`;

@@ -434,7 +434,7 @@ export function ProfessionalCognitiveResults({
                     Key Insights & Strengths
                   <InfoTip>What stands out most in your profile.</InfoTip></CardTitle>
                   <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300 text-xs">
-                    {aiInsights ? 'Live AI Analysis' : 'Cognitive Synthesis'}
+                    {aiInsights ? 'Personalized Analysis' : 'Cognitive Synthesis'}
                   </Badge>
                 </div>
                 <CardDescription>Your executive cognitive strengths and natural advantages</CardDescription>
@@ -528,7 +528,7 @@ export function ProfessionalCognitiveResults({
                     Development Tips & Growth Actions
                   <InfoTip>Practical steps to build on your strengths and stretch other areas.</InfoTip></CardTitle>
                   <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-300 text-xs">
-                    {aiInsights ? 'Live AI Strategies' : 'Recommendations'}
+                    {aiInsights ? 'Targeted Strategies' : 'Recommendations'}
                   </Badge>
                 </div>
                 <CardDescription>Personalized recommendations for continuous growth</CardDescription>
@@ -563,7 +563,7 @@ export function ProfessionalCognitiveResults({
                     Ideal Roles & Career Paths
                   <InfoTip>Roles that tend to suit your profile. Use them as ideas to explore.</InfoTip></CardTitle>
                   <Badge variant="outline" className="bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300 text-xs">
-                    {aiInsights ? 'AI Career Archetype' : 'Mapped Roles'}
+                    {aiInsights ? 'Career Archetype' : 'Mapped Roles'}
                   </Badge>
                 </div>
                 <CardDescription>Positions that align with your cognitive profile</CardDescription>

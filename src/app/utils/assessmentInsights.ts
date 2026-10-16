@@ -3,6 +3,8 @@
  * Generates dynamic, context-aware insights based on user profile and actual scores
  */
 
+import { getFriendlyStyleDisplay, getFriendlyStyleName } from './styleWording';
+
 // ============= STYLE-SPECIFIC INSIGHT TEMPLATES =============
 
 const kolbInsightTemplates = {
@@ -380,16 +382,17 @@ export const generateDetailedWeaknesses = (
     if ((percentage as number) < 20 && style !== dominantStyle) {
       const gap = percentages[dominantStyle] - (percentage as number);
       
-      let developmentText = `Your ${style} abilities are underdeveloped (${percentage}%), representing a ${gap}% gap from your dominant style`;
+      const friendlyStyle = getFriendlyStyleDisplay(style);
+      let developmentText = `Your ${friendlyStyle} approach is less active (${percentage}%), representing a ${gap}% gap from your dominant preference`;
       
       if (framework === 'kolb' && style === 'Assimilating') {
-        developmentText += ', which may limit your theoretical understanding';
+        developmentText += ', which may mean you benefit from spending more time reviewing structured models and theories';
       } else if (framework === 'kolb' && style === 'Accommodating') {
-        developmentText += ', which could reduce your adaptability in dynamic situations';
+        developmentText += ', which means taking more time to try hands-on experiments will help solidify your learning';
       } else if (framework === 'sternberg' && style === 'Creative') {
-        developmentText += ', potentially limiting innovative problem-solving';
+        developmentText += ', which can be boosted by practicing open-ended brainstorming';
       } else if (framework === 'sternberg' && style === 'Practical') {
-        developmentText += ', which may affect real-world application of knowledge';
+        developmentText += ', which can be strengthened by connecting ideas to everyday real-world examples';
       }
       
       weaknesses.push(developmentText);
@@ -399,7 +402,8 @@ export const generateDetailedWeaknesses = (
   // Weakness: Over-reliance on dominant style
   const dominantPercentage = percentages[dominantStyle];
   if (dominantPercentage > 50) {
-    weaknesses.push(`With ${dominantPercentage}% concentration in ${dominantStyle}, you may over-rely on this approach even when alternative strategies would be more effective`);
+    const dominantFriendly = getFriendlyStyleDisplay(dominantStyle);
+    weaknesses.push(`With ${dominantPercentage}% concentration in ${dominantFriendly}, you may over-rely on this single approach even when alternative strategies would be more effective`);
   }
   
   // Weakness: Balance assessment

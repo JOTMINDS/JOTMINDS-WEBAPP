@@ -1,4 +1,5 @@
 import { AssessmentScore, KolbStyle, SternbergStyle, DualProcessStyle, GhanaMapping, Question } from '../types';
+import { getFriendlyStyleInfo } from './styleWording';
 
 export function calculateKolbScore(responses: number[], questions: Question[]): AssessmentScore['kolb'] {
   const scores = { CE: 0, RO: 0, AC: 0, AE: 0 };
@@ -147,22 +148,29 @@ export function getGhanaMapping(score: AssessmentScore): GhanaMapping {
 }
 
 export function getStyleDescription(type: 'kolb' | 'sternberg' | 'dual-process', style: string): string {
+  if (!style) return '';
+  const info = getFriendlyStyleInfo(style);
+  if (info && info.plainEnglishDescription) {
+    return info.plainEnglishDescription;
+  }
+
   const descriptions: Record<string, string> = {
     // Kolb
-    'Diverging': 'You prefer to watch, feel, and think. You excel at seeing things from multiple perspectives and working in groups.',
-    'Assimilating': 'You prefer logical, organized thinking. You excel at understanding theories and creating systematic plans.',
-    'Converging': 'You prefer to think and do. You excel at solving problems and applying ideas to practical situations.',
-    'Accommodating': 'You prefer to feel and do. You excel at hands-on experiences and adapting to new situations.',
+    'Diverging': 'Creative Brainstormer: You prefer to observe and imagine. You excel at seeing things from multiple perspectives, brainstorming, and collaborating.',
+    'Assimilating': 'Logical Thinker: You prefer logical, organized thinking. You excel at understanding big ideas, theories, and creating systematic plans.',
+    'Converging': 'Practical Problem-Solver: You prefer practical action and logic. You excel at solving problems and applying ideas to workable situations.',
+    'Accommodating': 'Hands-On Explorer: You prefer direct action and real-world experience. You excel at hands-on learning, adapting quickly, and testing things out.',
     
     // Sternberg
-    'Analytical': 'You excel at analyzing, comparing, and evaluating. You enjoy breaking down problems and thinking critically.',
-    'Creative': 'You excel at creating, imagining, and designing. You enjoy thinking of new possibilities and original solutions.',
-    'Practical': 'You excel at applying knowledge to real-world situations. You focus on what works in everyday life.',
+    'Analytical': 'Critical Thinker: You excel at analyzing, comparing, and evaluating. You enjoy breaking down problems and thinking critically.',
+    'Creative': 'Innovative Creator: You excel at creating, imagining, and designing. You enjoy thinking of new possibilities and original solutions.',
+    'Practical': 'Real-World Achiever: You excel at applying knowledge to real-world situations. You focus on what works in everyday life.',
     
     // Dual Process
-    'Intuitive': 'You tend to make quick decisions based on gut feelings and pattern recognition.',
-    'Reflective': 'You tend to think carefully and deliberately, analyzing options before deciding.',
-    'Balanced': 'You effectively use both intuitive and reflective thinking, depending on the situation.',
+    'Intuitive': 'Instinctive Decision-Maker: You make quick, confident decisions based on pattern recognition and gut feelings.',
+    'Reflective': 'Deliberate Decision-Maker: You think carefully and deliberately, analyzing options before deciding.',
+    'Deliberate': 'Deliberate Decision-Maker: You think carefully and deliberately, analyzing options before deciding.',
+    'Balanced': 'Adaptive Decision-Maker: You effectively balance both intuitive instinct and careful analysis, depending on the situation.',
   };
 
   return descriptions[style] || '';

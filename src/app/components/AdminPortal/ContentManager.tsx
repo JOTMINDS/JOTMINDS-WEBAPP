@@ -56,8 +56,8 @@ export const ContentManager: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-purple-500" />
-              AI Prompt Templates
-            <InfoTip>The instructions sent to the AI to create insights and plans. Changing them changes what the AI writes.</InfoTip></CardTitle>
+              Insight Prompt Templates
+            <InfoTip>The instructional frameworks and criteria used to create insights and plans.</InfoTip></CardTitle>
             <CardDescription>System prompts for generated reports</CardDescription>
           </CardHeader>
           <CardContent>

@@ -455,7 +455,7 @@ export const CAREER_PATHS: Record<string, Career[]> = {
       description: 'Analyze large amounts of information to help companies make smart decisions',
       whatYouDo: [
         'Collect and clean data from various sources',
-        'Use statistics and AI to find patterns and trends',
+        'Use statistics and modern algorithms to find patterns and trends',
         'Create visualizations (charts, graphs) to explain findings',
         'Help businesses predict customer behavior or improve services'
       ],

@@ -9,6 +9,7 @@ import {
 import { Assessment, User } from '../../types';
 import { toast } from 'sonner';
 import { generateAIStudentRecommendations, AIStudentRecommendationItem } from '../../utils/aiService';
+import { getFriendlyStyleDisplay, getFriendlyStyleName } from '../../utils/styleWording';
 
 interface RecommendationsTabProps {
   user: User;
@@ -94,7 +95,7 @@ export function RecommendationsTab({ user, assessments, onNavigateToTab }: Recom
             Personalized Recommendations & Study Tips
           </h2>
           <p className="text-white/90 text-sm md:text-base leading-relaxed">
-            Tailored study techniques, exam preparation methods, and cognitive growth strategies customized for your <strong className="text-amber-200">{learningStyle}</strong> learning style and <strong className="text-emerald-200">{thinkingStyle}</strong> thinking profile.
+            Tailored study techniques, exam preparation methods, and cognitive growth strategies customized for your <strong className="text-amber-200">{getFriendlyStyleDisplay(learningStyle)}</strong> learning style and <strong className="text-emerald-200">{getFriendlyStyleDisplay(thinkingStyle)}</strong> thinking profile.
           </p>
         </div>
         <div className="absolute right-0 bottom-0 opacity-10 transform translate-x-10 translate-y-10 pointer-events-none">

@@ -1946,7 +1946,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-indigo-600" />
-                <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds School Executive Advisor<InfoTip title="Executive Advisor">An AI summary of your school data: strengths, areas to watch and next steps. Check it against what you know of your school.</InfoTip></CardTitle>
+                <CardTitle className="text-lg text-indigo-950 font-bold">JotMinds School Executive Advisor<InfoTip title="Executive Advisor">A comprehensive summary of your school data: strengths, areas to watch and next steps. Check it against what you know of your school.</InfoTip></CardTitle>
               </div>
               <Button 
                 variant="outline" 

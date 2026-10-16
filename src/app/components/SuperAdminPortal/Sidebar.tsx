@@ -58,7 +58,7 @@ const navItems = [
   { id: 'assessment', label: 'Assessment Engine', icon: BrainCircuit },
   { id: 'item-bank-studio', label: 'Assessment Studio (V2)', icon: FlaskConical },
   { id: 'pilot-analytics', label: 'Pilot Analytics', icon: LineChart },
-  { id: 'ai', label: 'AI Management', icon: Bot },
+  { id: 'ai', label: 'Engine Management', icon: Bot },
   { id: 'content', label: 'Content Management', icon: FileText },
   { id: 'gamification', label: 'Gamification', icon: Gamepad2 },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },

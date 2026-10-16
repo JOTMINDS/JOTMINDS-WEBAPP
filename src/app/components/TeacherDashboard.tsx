@@ -17,6 +17,7 @@ import { getUserAssessmentResults, getStudentsForTeacher } from '../utils/api';
 import { getStudentsBySchool, getAllUsers, getAllAssessments, isStudentConnectedToTeacher, getAllClasses, getAssignmentsForTeacher } from '../utils/storage';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { formatDate, formatTime } from '../utils/dateFormat';
+import { getFriendlyStyleDisplay, getFriendlyStyleName, formatKolbStyle } from '../utils/styleWording';
 import { 
   TeacherAppHeader, 
   TeacherTabBar, 
@@ -140,7 +141,8 @@ export function TeacherDashboard({
         
         if (latestKolb?.score.kolb) {
           const style = latestKolb.score.kolb.style;
-          kolbDistribution[style] = (kolbDistribution[style] || 0) + 1;
+          const friendlyStyle = formatKolbStyle(style);
+          kolbDistribution[friendlyStyle] = (kolbDistribution[friendlyStyle] || 0) + 1;
         }
 
         const latestSternberg = studentAssessments.filter(a => 
@@ -491,7 +493,7 @@ export function TeacherDashboard({
                               {latestLearning ? (
                                 <div>
                                   <Badge className="text-base px-3 py-1 bg-green-600">
-                                    {latestLearning.score.kolb?.style}
+                                    {getFriendlyStyleDisplay(latestLearning.score.kolb?.style)}
                                   </Badge>
                                   <p className="text-xs text-muted-foreground mt-2">
                                     Assessed {formatDate(latestLearning.completedAt!)}

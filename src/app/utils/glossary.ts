@@ -7,39 +7,57 @@ const norm = (s: string) => s.trim().toLowerCase();
 
 /** Learning, thinking and decision styles, and the dimensions behind them. */
 export const STYLE_HELP: Record<string, string> = {
-  // Kolb learning styles
-  diverging: 'Learns by watching and imagining. Likes brainstorming, group discussion and looking at a situation from many angles.',
-  assimilating: 'Learns by understanding ideas and theories. Likes clear explanations, reading, models and logical order.',
-  converging: 'Learns by solving practical problems. Likes to test ideas, work on technical tasks and find the one best answer.',
-  accommodating: 'Learns by doing. Likes hands-on tasks, trying things out and learning from experience.',
+  // Kolb learning styles (Friendly terms + traditional academic references)
+  'hands-on explorer': 'Hands-On Explorer (Accommodating): Learns best by doing, testing things out, movement, and practical real-world experience.',
+  accommodating: 'Hands-On Explorer (Accommodating): Learns best by doing, jumping into action, trying things out, and learning through real-world experience.',
+  
+  'logical thinker': 'Logical Thinker (Assimilating): Learns best by understanding big ideas, theories, patterns, and clear logical explanations.',
+  assimilating: 'Logical Thinker (Assimilating): Learns best by understanding big ideas, organized theories, and clear logical explanations.',
+  
+  'practical problem-solver': 'Practical Problem-Solver (Converging): Learns best by applying ideas to solve practical problems and find workable solutions.',
+  converging: 'Practical Problem-Solver (Converging): Learns best by taking ideas and applying them to solve practical, real-world problems.',
+  
+  'creative brainstormer': 'Creative Brainstormer (Diverging): Learns best by watching, exploring multiple viewpoints, and generating creative ideas.',
+  diverging: 'Creative Brainstormer (Diverging): Learns best by observing, exploring multiple viewpoints, and generating creative ideas.',
+
   // VARK-style labels
-  visual: 'Learns best from pictures, diagrams, charts and colour.',
-  auditory: 'Learns best by listening and talking things through.',
-  kinesthetic: 'Learns best by doing, moving and handling real objects.',
-  'read/write': 'Learns best by reading and writing notes and summaries.',
-  'reading/writing': 'Learns best by reading and writing notes and summaries.',
+  visual: 'Visual: Learns best from pictures, diagrams, charts, and colors.',
+  auditory: 'Auditory: Learns best by listening and talking things through.',
+  kinesthetic: 'Kinesthetic: Learns best by doing, moving, and handling real objects.',
+  'read/write': 'Reading/Writing: Learns best by reading, writing notes, and creating summaries.',
+  'reading/writing': 'Reading/Writing: Learns best by reading, writing notes, and creating summaries.',
+
   // Kolb dimensions
-  'concrete experience': 'How much the learner prefers to learn from real, hands-on experiences and feelings.',
-  'reflective observation': 'How much the learner prefers to watch, think about and review what happened.',
-  'abstract conceptualization': 'How much the learner prefers ideas, theories and logical reasoning.',
-  'active experimentation': 'How much the learner prefers to try things out and apply ideas in practice.',
-  ce: 'Concrete Experience: learning from real, hands-on experiences.',
-  ro: 'Reflective Observation: learning by watching and thinking things over.',
-  ac: 'Abstract Conceptualization: learning through ideas, theories and logic.',
-  ae: 'Active Experimentation: learning by trying things out.',
+  'concrete experience': 'Hands-On Experience: Learning from real, hands-on experiences, feelings, and direct action.',
+  'reflective observation': 'Thoughtful Observation: Learning by watching, listening, and reflecting things over carefully.',
+  'abstract conceptualization': 'Logical Concepts: Learning through big ideas, theories, and systematic logical analysis.',
+  'active experimentation': 'Practical Action: Learning by testing ideas out, experimenting, and seeing what works.',
+  ce: 'Hands-On Experience (CE): Learning from real, hands-on experiences and feeling.',
+  ro: 'Thoughtful Observation (RO): Learning by watching, listening, and thinking things over.',
+  ac: 'Logical Concepts (AC): Learning through structured ideas, theories, and logic.',
+  ae: 'Practical Action (AE): Learning by trying things out and testing in practice.',
+
   // Thinking styles (Sternberg)
-  analytical: 'Breaks problems into parts, weighs evidence and reasons step by step.',
-  creative: 'Comes up with new ideas and original ways to solve problems.',
-  practical: 'Applies ideas to real situations and focuses on what works.',
-  holistic: 'Looks at the big picture and how the parts connect.',
-  social: 'Thinks things through by working with and learning from other people.',
+  'critical thinker': 'Critical Thinker (Analytical): Breaks problems into parts, weighs evidence, and evaluates logic step by step.',
+  analytical: 'Critical Thinker (Analytical): Breaks problems into parts, weighs evidence, and evaluates logic step by step.',
+  'innovative creator': 'Innovative Creator (Creative): Generates original ideas, envisions new possibilities, and creates novel solutions.',
+  creative: 'Innovative Creator (Creative): Generates original ideas, envisions new possibilities, and creates novel solutions.',
+  'real-world achiever': 'Real-World Achiever (Practical): Applies knowledge to daily life, focusing on common sense and what works.',
+  practical: 'Real-World Achiever (Practical): Applies knowledge to daily life, focusing on common sense and what works.',
+  holistic: 'Holistic: Looks at the big picture and how all the different parts connect.',
+  social: 'Social: Thinks things through by collaborating with and learning from other people.',
+
   // Decision styles
-  intuitive: 'Decides quickly using gut feeling and past experience.',
-  reflective: 'Decides slowly and carefully, weighing options before choosing.',
-  balanced: 'Uses both quick instinct and careful thought, depending on the situation.',
-  spontaneous: 'Acts on the moment and adapts as things change.',
-  'data-driven': 'Prefers facts, numbers and evidence before deciding.',
-  collaborative: 'Prefers to talk it over and decide together with others.',
+  'instinctive decision-maker': 'Instinctive Decision-Maker (Intuitive): Decides quickly and confidently using pattern recognition and gut feeling.',
+  intuitive: 'Instinctive Decision-Maker (Intuitive): Decides quickly and confidently using pattern recognition and gut feeling.',
+  'deliberate decision-maker': 'Deliberate Decision-Maker (Reflective): Decides carefully, weighing evidence and options before choosing.',
+  reflective: 'Deliberate Decision-Maker (Reflective): Decides carefully, weighing evidence and options before choosing.',
+  deliberate: 'Deliberate Decision-Maker: Decides carefully, weighing evidence and options before choosing.',
+  'adaptive decision-maker': 'Adaptive Decision-Maker (Balanced): Flexibly combines fast intuition and careful analysis depending on the situation.',
+  balanced: 'Adaptive Decision-Maker (Balanced): Flexibly combines fast intuition and careful analysis depending on the situation.',
+  spontaneous: 'Spontaneous: Acts in the moment and adapts flexibly as situations change.',
+  'data-driven': 'Data-Driven: Prefers verified facts, numbers, and evidence before deciding.',
+  collaborative: 'Collaborative: Prefers to discuss and decide together as a team.',
 };
 
 /** Student status labels shown on analytics dashboards. */

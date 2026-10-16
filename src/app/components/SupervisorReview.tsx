@@ -254,13 +254,13 @@ export function SupervisorReview({
           <AlertDescription className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <strong className="text-purple-950 dark:text-purple-200">
-                {aiRoles.length > 0 ? 'AI-Recommended Organizational Roles:' : 'Suggested Roles Based on Cognitive Profile:'}
+                {aiRoles.length > 0 ? 'Recommended Organizational Roles:' : 'Suggested Roles Based on Cognitive Profile:'}
               </strong>{' '}
               <span className="text-purple-800 dark:text-purple-300">{((aiRoles.length > 0 ? aiRoles : suggestedRoles) || []).join(', ')}</span>
             </div>
             {aiRoles.length > 0 && (
               <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-[10px] shrink-0 self-start sm:self-auto">
-                Live AI Match
+                Role Match
               </Badge>
             )}
           </AlertDescription>
@@ -290,7 +290,7 @@ export function SupervisorReview({
               ) : (
                 <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
               )}
-              {isGeneratingAi ? 'Synthesizing AI...' : 'Auto-Draft Feedback with AI'}
+              {isGeneratingAi ? 'Drafting suggestions...' : 'Auto-Draft Feedback'}
             </Button>
           </div>
         </CardHeader>
