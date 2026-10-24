@@ -122,6 +122,8 @@ export interface LessonPlan {
   endDate?: string;
   existingPlanText?: string;
   uploadText?: string;
+  /** Language the plan was written in (defaults to English) */
+  language?: string;
   curriculumFramework?: 'National' | 'Cambridge' | 'IB' | 'School Custom' | string;
   curriculumTopicId?: string;
   objectives: LearningObjectives;

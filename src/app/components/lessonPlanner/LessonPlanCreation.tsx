@@ -29,6 +29,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   const [subject, setSubject] = useState('');
   const [gradeClass, setGradeClass] = useState('');
   const [curriculumFramework, setCurriculumFramework] = useState<any>('National Curriculum');
+  const [language, setLanguage] = useState('English');
   const [topic, setTopic] = useState('');
   const [subtopic, setSubtopic] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(45);
@@ -88,6 +89,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       topic,
       subtopic,
       curriculumFramework,
+      language,
       durationMinutes,
       existingPlanText: mode === "upload" ? existingPlanText : undefined,
       classSummary
@@ -107,6 +109,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       date,
       endDate,
       curriculumFramework: curriculumFramework as any,
+      language,
             objectives: (Array.isArray(aiResult?.objectives) ? {
         knowledge: aiResult.objectives,
         skills: [],
@@ -368,6 +371,21 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
                     <SelectItem value="Oxford International Curriculum">Oxford International Curriculum</SelectItem>
                     <SelectItem value="International Baccalaureate (IB)">International Baccalaureate (IB)</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Language<InfoTip>The language the plan is written in. The headings you see in the app stay in English.</InfoTip></Label>
+              <div className="mt-1">
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select language..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['English', 'French', 'Twi', 'Ga', 'Ewe', 'Dagbani', 'Hausa', 'Arabic', 'Spanish', 'Portuguese'].map(l => (
+                      <SelectItem key={l} value={l}>{l}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

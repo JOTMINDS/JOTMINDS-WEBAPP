@@ -221,7 +221,8 @@ interface FullProfile {
   teachingAlignment: number; // 0-100 — teaching vs thinking style
   cognitiveAlignment: number; // 0-100 — learning vs teaching style
   decisionAlignment: number;  // 0-100 — decision style vs teaching
-  overallScore: number;       // 0-100 — weighted average
+  overallScore: number;       // 0-100 — weighted average of the dimensions that exist
+  hasCognitive: boolean;      // false for teachers with only Teaching Insights
 }
 
 function computeTeachingThinkingAlignment(axes: Record<string, number>, thinkingStyle: string): number {
@@ -265,12 +266,20 @@ function generateFullProfile(t: TeacherData): FullProfile | null {
   const kolbStyle = t.learning?.style ?? null;
   const dualStyle = t.decision?.style ?? null;
 
-  const taScore = thinkStyle ? computeTeachingThinkingAlignment(axes, thinkStyle) : 65;
-  const caScore = kolbStyle ? computeLearningTeachingAlignment(axes, kolbStyle) : 65;
-  const daScore = dualStyle ? computeDecisionTeachingAlignment(axes, dualStyle) : 65;
+  const taScore = thinkStyle ? computeTeachingThinkingAlignment(axes, thinkStyle) : 0;
+  const caScore = kolbStyle ? computeLearningTeachingAlignment(axes, kolbStyle) : 0;
+  const daScore = dualStyle ? computeDecisionTeachingAlignment(axes, dualStyle) : 0;
 
-  // Weighted overall: teaching-thinking 40%, learning-teaching 35%, decision-teaching 25%
-  const overallScore = Math.round(taScore * 0.40 + caScore * 0.35 + daScore * 0.25);
+  // Weighted overall: teaching-thinking 40%, learning-teaching 35%, decision-teaching 25%,
+  // re-weighted over the assessments the teacher has actually taken.
+  const parts = [
+    { score: taScore, weight: 0.40, present: !!thinkStyle },
+    { score: caScore, weight: 0.35, present: !!kolbStyle },
+    { score: daScore, weight: 0.25, present: !!dualStyle },
+  ].filter(x => x.present);
+  const hasCognitive = parts.length > 0;
+  const weightSum = parts.reduce((t, x) => t + x.weight, 0);
+  const overallScore = hasCognitive ? Math.round(parts.reduce((t, x) => t + x.score * x.weight, 0) / weightSum) : 0;
 
   // Build profile name from primary teaching style + thinking style
   const nameBase = thinkStyle ? `${thinkStyle} ${teachStyle.split(' ').slice(0, 2).join(' ')}` : teachStyle;
@@ -315,11 +324,13 @@ function generateFullProfile(t: TeacherData): FullProfile | null {
     kolbStyle ? getFriendlyStyleName(kolbStyle) : null,
     dualStyle ? getFriendlyStyleName(dualStyle) : null
   ].filter(Boolean).join(' · ');
-  const description = `${teachStyle} whose cognitive profile combines ${cognitiveBlend || 'a range of approaches'}. ${caScore >= 75 ? 'Their learning style aligns naturally with how they teach.' : 'There is productive tension between how they learn and how they teach — a source of growth and inclusivity.'}`;
+  const description = !hasCognitive
+    ? `${teachStyle}. Only the Teaching Insights assessment has been completed, so no comparison with learning, thinking or decision styles is shown.`
+    : `${teachStyle} whose cognitive profile combines ${cognitiveBlend}. ${!kolbStyle ? '' : caScore >= 75 ? 'Their learning style aligns naturally with how they teach.' : 'There is productive tension between how they learn and how they teach — a source of growth and inclusivity.'}`;
 
   return {
     name: nameBase,
-    tagline: `${teachStyle} · ${thinkStyle ? getFriendlyStyleName(thinkStyle) : '?'} · ${kolbStyle ? getFriendlyStyleName(kolbStyle) : '?'} · ${dualStyle ? getFriendlyStyleName(dualStyle) : '?'}`,
+    tagline: [teachStyle, thinkStyle && getFriendlyStyleName(thinkStyle), kolbStyle && getFriendlyStyleName(kolbStyle), dualStyle && getFriendlyStyleName(dualStyle)].filter(Boolean).join(' · '),
     description,
     strengths: strengths.slice(0, 4),
     gaps: gaps.slice(0, 3),
@@ -328,6 +339,7 @@ function generateFullProfile(t: TeacherData): FullProfile | null {
     cognitiveAlignment: caScore,
     decisionAlignment: daScore,
     overallScore,
+    hasCognitive,
   };
 }
 
@@ -398,6 +410,8 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
     return allData.filter(t => (t.user.name || '').toLowerCase().includes(q) || t.user.phone?.includes(q));
   }, [allData, search]);
 
+  const hasCognitive = allData.some(t => t.learning || t.thinking || t.decision);
+  const activeTab: Tab = !hasCognitive && tab === 'cognitive' ? 'overview' : tab;
   const withTeaching = teachers.filter(t => t.teaching);
   const withAll3Core = teachers.filter(t => t.learning && t.thinking && t.decision);
   const withFull = teachers.filter(t => t.completedCount === 4);
@@ -461,7 +475,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
 
   const fullProfiles = useMemo(() => teachers.map(t => ({ teacher: t, profile: generateFullProfile(t) })), [teachers]);
   const avgOverall = useMemo(() => {
-    const scored = fullProfiles.filter(x => x.profile);
+    const scored = fullProfiles.filter(x => x.profile?.hasCognitive);
     if (!scored.length) return 0;
     return Math.round(scored.reduce((s, x) => s + x.profile!.overallScore, 0) / scored.length);
   }, [fullProfiles]);
@@ -477,8 +491,8 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
   );
 
   const CompletionDots = ({ t }: { t: TeacherData }) => (
-    <div className="flex gap-1" title="Teaching / Learning / Thinking / Decision">
-      {[t.teaching, t.learning, t.thinking, t.decision].map((v, i) => (
+    <div className="flex gap-1" title={hasCognitive ? 'Teaching / Learning / Thinking / Decision' : 'Teaching'}>
+      {(hasCognitive ? [t.teaching, t.learning, t.thinking, t.decision] : [t.teaching]).map((v, i) => (
         <div key={i} className={`w-2 h-2 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />
       ))}
     </div>
@@ -491,7 +505,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1"><ArrowLeft className="w-4 h-4" /> Back</Button>
           <div className="flex-1">
             <h1 className="flex items-center gap-2 text-base"><BookOpen className="w-5 h-5 text-[#5B7DB1]" />Teacher Profiles</h1>
-            <p className="text-xs text-gray-500">{admin.school} · {teachers.length} linked · {withFull.length} fully assessed</p>
+            <p className="text-xs text-gray-500">{admin.school} · {teachers.length} linked · {hasCognitive ? `${withFull.length} fully assessed` : `${withTeaching.length} with Teaching Insights`}</p>
           </div>
         </div>
         <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-0 overflow-x-auto">
@@ -500,9 +514,9 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
             ['teaching', BookOpen, 'Teaching Insights'],
             ['cognitive', Brain, 'Cognitive Profile'],
             ['analysis', TrendingUp, 'Full Analysis'],
-          ] as const).map(([t, Icon, label]) => (
+          ] as const).filter(([t]) => hasCognitive || t !== 'cognitive').map(([t, Icon, label]) => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 shrink-0 transition-colors ${tab === t ? 'border-[#5B7DB1] text-[#5B7DB1]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 shrink-0 transition-colors ${activeTab === t ? 'border-[#5B7DB1] text-[#5B7DB1]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               <Icon className="w-3.5 h-3.5" />{label}
             </button>
           ))}
@@ -541,13 +555,15 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
         </div>
 
         {/* ── OVERVIEW ── */}
-        {tab === 'overview' && (<>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {activeTab === 'overview' && (<>
+          <div className={`grid grid-cols-2 gap-3 ${hasCognitive ? 'md:grid-cols-4' : ''}`}>
             {[
               { label: 'Linked teachers', value: teachers.length, color: '#5B7DB1' },
               { label: 'Teaching style', value: withTeaching.length, color: '#1E8A6E' },
-              { label: 'Full cognitive (3 core)', value: withAll3Core.length, color: '#6B4C9A' },
-              { label: 'Fully complete (all 4)', value: withFull.length, color: '#E0A020' },
+              ...(hasCognitive ? [
+                { label: 'Full cognitive (3 core)', value: withAll3Core.length, color: '#6B4C9A' },
+                { label: 'Fully complete (all 4)', value: withFull.length, color: '#E0A020' },
+              ] : []),
             ].map(s => (
               <Card key={s.label}><CardContent className="pt-4 text-center">
                 <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
@@ -556,7 +572,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
             ))}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${thinkingDist.length ? 'md:grid-cols-2' : ''}`}>
             <Card>
               <CardHeader><CardTitle className="text-sm">School Teaching Profile<InfoTip>A summary of the teaching profiles of your staff.</InfoTip></CardTitle></CardHeader>
               <CardContent className="h-[230px]">
@@ -570,7 +586,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
               </CardContent>
             </Card>
 
-            <Card>
+            {thinkingDist.length > 0 && <Card>
               <CardHeader><CardTitle className="text-sm">Staff Thinking Styles<InfoTip>How your teachers split across analytical, creative and practical thinking.</InfoTip></CardTitle></CardHeader>
               <CardContent className="h-[230px]">
                 {!thinkingDist.length ? <div className="h-full flex items-center justify-center text-gray-400 text-sm">No thinking assessments yet</div>
@@ -580,7 +596,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                     </Pie><RechartsTip key="tip" />
                   </PieChart></ResponsiveContainer>}
               </CardContent>
-            </Card>
+            </Card>}
           </div>
 
           {avgOverall > 0 && (
@@ -588,7 +604,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
               <CardContent className="pt-4 flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <p className="text-sm font-semibold text-amber-900">School-wide Educator Alignment</p>
-                  <p className="text-xs text-amber-700 mt-0.5">Weighted across teaching, learning, thinking and decision styles for {fullProfiles.filter(x => x.profile).length} teacher(s)</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Weighted across the learning, thinking and decision assessments completed, for {fullProfiles.filter(x => x.profile?.hasCognitive).length} teacher(s)</p>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold" style={{ color: scoreColor(avgOverall) }}>{avgOverall}</div>
@@ -607,9 +623,11 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                   <th className="text-left px-3 py-2.5">Phone</th>
                   <th className="text-center px-2 py-2.5">Done</th>
                   <th className="text-center px-2 py-2.5">Teaching Insights Profile</th>
+                  {hasCognitive && <>
                   <th className="text-center px-2 py-2.5">Learning</th>
                   <th className="text-center px-2 py-2.5">Thinking</th>
                   <th className="text-center px-2 py-2.5">Decision</th>
+                  </>}
                 </tr></thead>
                 <tbody>
                   {teachers.map(t => (
@@ -618,12 +636,14 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                       <td className="px-3 py-2.5 text-xs text-gray-600">{t.user.phone || '—'}</td>
                       <td className="px-2 py-2.5 text-center"><CompletionDots t={t} /></td>
                       <td className="px-2 py-2.5 text-center">{t.teaching ? <Badge style={{ backgroundColor: styleColor(t.teaching.primaryStyle) + '20', color: styleColor(t.teaching.primaryStyle) }} className="text-[10px]">{t.teaching.primaryStyle.split(' ').slice(0, 1).join(' ')}</Badge> : <span className="text-[10px] text-gray-300">—</span>}</td>
+                      {hasCognitive && <>
                       <td className="px-2 py-2.5 text-center">{t.learning ? <Badge style={{ backgroundColor: KOLB_COLORS[t.learning.style] + '20', color: KOLB_COLORS[t.learning.style] }} className="text-[10px]">{t.learning.style}</Badge> : <span className="text-[10px] text-gray-300">—</span>}</td>
                       <td className="px-2 py-2.5 text-center">{t.thinking ? <Badge style={{ backgroundColor: THINK_COLORS[t.thinking.style] + '20', color: THINK_COLORS[t.thinking.style] }} className="text-[10px]">{t.thinking.style}</Badge> : <span className="text-[10px] text-gray-300">—</span>}</td>
                       <td className="px-2 py-2.5 text-center">{t.decision ? <Badge style={{ backgroundColor: DUAL_COLORS[t.decision.style] + '20', color: DUAL_COLORS[t.decision.style] }} className="text-[10px]">{t.decision.style}</Badge> : <span className="text-[10px] text-gray-300">—</span>}</td>
+                      </>}
                     </tr>
                   ))}
-                  {!teachers.length && <tr><td colSpan={7} className="text-center py-10 text-gray-400 text-sm">No teachers match your search</td></tr>}
+                  {!teachers.length && <tr><td colSpan={hasCognitive ? 7 : 4} className="text-center py-10 text-gray-400 text-sm">No teachers match your search</td></tr>}
                 </tbody>
               </table>
             </CardContent>
@@ -631,7 +651,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
         </>)}
 
         {/* ── TEACHING INSIGHTS  ── */}
-        {tab === 'teaching' && (
+        {activeTab === 'teaching' && (
           <JTIASchoolDashboard 
             reports={jtiaReports}
             schoolName={admin.school || admin.organizationName || 'Partner Educational Institution'} 
@@ -639,7 +659,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
         )}
 
         {/* ── COGNITIVE PROFILE (all 3 core) ── */}
-        {tab === 'cognitive' && (<>
+        {activeTab === 'cognitive' && (<>
           {teachers.filter(t => !t.learning && !t.thinking && !t.decision).length === teachers.length && (
             <Card><CardContent className="py-14 text-center"><Brain className="w-12 h-12 text-gray-200 mx-auto mb-3" /><p className="text-gray-500">No cognitive assessments completed yet</p><p className="text-xs text-gray-400 mt-1">Teachers complete Learning, Thinking, and Decision assessments from their My Style tab</p></CardContent></Card>
           )}
@@ -738,7 +758,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
         </>)}
 
         {/* ── FULL ANALYSIS ── */}
-        {tab === 'analysis' && (<>
+        {activeTab === 'analysis' && (<>
           {/* ANALYSIS EXPLANATION CARD */}
           <Card className="border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 mb-6">
             <CardContent className="pt-4">
@@ -810,7 +830,7 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                         <p className="text-[10px] text-gray-400 mt-0.5 truncate">{p.tagline}</p>
                         <div className="flex items-center gap-2 mt-1.5">
                           <CompletionDots t={t} />
-                          <Badge className="text-[10px]" style={{ backgroundColor: scoreColor(p.overallScore) + '20', color: scoreColor(p.overallScore) }}>{p.overallScore}% overall</Badge>
+                          {p.hasCognitive && <Badge className="text-[10px]" style={{ backgroundColor: scoreColor(p.overallScore) + '20', color: scoreColor(p.overallScore) }}>{p.overallScore}% overall</Badge>}
                         </div>
                       </div>
                     </div>
@@ -823,15 +843,15 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                       <div className="p-3 rounded-xl text-xs text-gray-700 bg-gray-50 border">{p.description}</div>
 
                       {/* Alignment scores */}
-                      <div className="space-y-2">
+                      {p.hasCognitive && <div className="space-y-2">
                         <p className="text-xs font-semibold text-gray-700">Alignment Scores</p>
-                        <ScoreBar label="Teaching Insights ↔ Thinking style" value={p.teachingAlignment} />
-                        <ScoreBar label="Learning style ↔ Teaching approach" value={p.cognitiveAlignment} />
-                        <ScoreBar label="Decision style ↔ Teaching environment" value={p.decisionAlignment} />
+                        {t.thinking && <ScoreBar label="Teaching Insights ↔ Thinking style" value={p.teachingAlignment} />}
+                        {t.learning && <ScoreBar label="Learning style ↔ Teaching approach" value={p.cognitiveAlignment} />}
+                        {t.decision && <ScoreBar label="Decision style ↔ Teaching environment" value={p.decisionAlignment} />}
                         <div className="pt-1 border-t">
                           <ScoreBar label="Overall educator alignment" value={p.overallScore} />
                         </div>
-                      </div>
+                      </div>}
 
                       {/* Strengths + Gaps */}
                       <div className="grid md:grid-cols-2 gap-3">
@@ -873,8 +893,8 @@ export function SchoolTeacherStylesView({ admin, teachers: providedTeachers, onB
                 {(() => {
                   const recs: { title: string; desc: string; category: string }[] = [];
                   const lowAligned = fullProfiles.filter(x => x.profile && x.profile.overallScore < 55);
-                  const noCreative = !teachers.some(t => t.thinking?.style === 'Creative');
-                  const incomplete = teachers.filter(t => t.completedCount < 4);
+                  const noCreative = teachers.some(t => t.thinking) && !teachers.some(t => t.thinking?.style === 'Creative');
+                  const incomplete = hasCognitive ? teachers.filter(t => t.completedCount < 4) : [];
 
                   if (lowAligned.length) {
                     recs.push({

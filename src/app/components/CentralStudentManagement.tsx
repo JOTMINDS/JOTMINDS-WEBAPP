@@ -15,6 +15,7 @@ import { GenerateStudentCodesModal } from './InstitutionDashboard/GenerateStuden
 import { BulkUploadModal } from './InstitutionDashboard/BulkUploadModal';
 import { approveMember, removeMember } from '../utils/institution';
 import { getAllUsers, saveUser } from '../utils/storage';
+import { removeStudentFromTeacher } from '../utils/api';
 import { toast } from 'sonner';
 
 interface CentralStudentManagementProps {
@@ -36,11 +37,14 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
 
   const handleRemoveStudent = async (e: React.MouseEvent, studentId: string) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to remove this student from the institution?')) {
+    const isTeacher = teacher?.role === 'teacher';
+    if (!window.confirm(isTeacher
+      ? 'Remove this student from your class list? Their login code will be deactivated.'
+      : 'Are you sure you want to remove this student from the institution?')) {
       return;
     }
     const instId = teacher?.institutionId || teacher?.organizationId;
-    if (!instId) {
+    if (!isTeacher && !instId) {
       toast.error('Institution ID not found');
       return;
     }
@@ -48,7 +52,18 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
     setRemovingStudentId(studentId);
     try {
       const userToUpdate = getAllUsers().find(u => u.id === studentId);
-      if (userToUpdate) {
+      if (isTeacher) {
+        // Teachers can't edit institution membership; unlink the student from this teacher's roster instead.
+        const res = await removeStudentFromTeacher(studentId);
+        if (!res?.success) throw new Error(res?.error || 'Remove failed');
+        if (userToUpdate) {
+          if (userToUpdate.teacherId === teacher.id) userToUpdate.teacherId = undefined;
+          userToUpdate.linkedTeachers = (userToUpdate.linkedTeachers || []).filter((id: string) => id !== teacher.id);
+          userToUpdate.classId = undefined;
+          userToUpdate.className = undefined;
+          saveUser(userToUpdate);
+        }
+      } else if (userToUpdate) {
         userToUpdate.organizationName = undefined;
         userToUpdate.organizationCode = undefined;
         userToUpdate.classId = undefined;
@@ -56,7 +71,7 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
         saveUser(userToUpdate);
       }
       
-      await removeMember(instId, studentId);
+      if (!isTeacher) await removeMember(instId, studentId);
       toast.success('Student removed successfully');
       if (onRefresh) onRefresh();
     } catch (err) {

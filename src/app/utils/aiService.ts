@@ -294,6 +294,7 @@ type LessonPlanRequest = {
   durationMinutes?: number;
   classSummary?: any;
   existingPlanText?: string;
+  language?: string;
 };
 
 /**
@@ -302,7 +303,7 @@ type LessonPlanRequest = {
  */
 function getCurriculumFormatGuide(framework?: string): { name: string; guide: string; alignmentLabels: string[] } {
   const f = (framework || '').toLowerCase();
-  if (f.includes('national') || f.includes('nacca') || /\bges\b/.test(f)) {
+  if (/\bnational\b/.test(f) || f.includes('nacca') || /\bges\b/.test(f)) {
     return {
       name: 'Ghana National Curriculum (NaCCA / GES)',
       alignmentLabels: ['Strand', 'Sub-strand', 'Content Standard', 'Indicators', 'Core Competencies', 'Teaching & Learning Resources'],
@@ -373,6 +374,10 @@ export async function generateAILessonPlan(
   const framework = curriculum || payload?.curriculumFramework;
   const duration = payload?.durationMinutes || 45;
   const format = getCurriculumFormatGuide(framework);
+  const language = (payload?.language || 'English').trim();
+  const languageRule = language.toLowerCase() === 'english'
+    ? 'Write in plain, simple English that a busy teacher can scan quickly.'
+    : `Write the whole lesson plan in ${language}, in plain, simple wording a busy teacher can scan quickly: summary, objectives, alignment items, activities, teaching notes, materials, differentiation activities and assessment questions and answers. Keep the JSON keys, the five phase names exactly as listed, and the "style" names in English so the app can read them.`;
 
   const prompt = `Generate a complete, ready-to-teach lesson plan.
 
@@ -390,7 +395,8 @@ ${payload?.classSummary ? `Class Summary Data: ${JSON.stringify(payload.classSum
 CURRICULUM FORMAT (follow this strictly, the plan must look like a ${format.name} lesson plan):
 ${format.guide}
 
-Write in plain, simple English that a busy teacher can scan quickly. Be specific to ${topicStr}; do not write generic filler.
+${languageRule}
+Be specific to ${topicStr}; do not write generic filler.
 
 Respond strictly with valid JSON in this structure:
 {
@@ -419,7 +425,7 @@ Respond strictly with valid JSON in this structure:
 Rules: the five phase names must be exactly as shown and in that order; phase durationMinutes must be whole numbers that add up to exactly ${duration}; give at least 5 assessmentQuestions.`;
 
   const res = await callOpenAI([
-    { role: 'system', content: `You are an expert curriculum designer who writes lesson plans in the exact format of the curriculum the teacher selected (${format.name}).` },
+    { role: 'system', content: `You are an expert curriculum designer who writes lesson plans in the exact format of the curriculum the teacher selected (${format.name}). Write the plan in ${language}.` },
     { role: 'user', content: prompt }
   ], true, 3500);
 

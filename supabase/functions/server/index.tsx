@@ -3683,6 +3683,76 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
   }
 });
 
+// Remove a student from the calling teacher's roster
+app.post('/make-server-fc8eb847/teacher/students/remove', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+    const { studentId } = await c.req.json();
+    if (!studentId || typeof studentId !== 'string') {
+      return c.json({ error: 'Missing student ID' }, 400);
+    }
+
+    const teacherProfile = await kv.get(`user:${user.id}`);
+    const role = teacherProfile?.role;
+    if (role !== 'teacher' && role !== 'head_teacher') {
+      return c.json({ error: 'Forbidden - Teacher access required' }, 403);
+    }
+
+    const studentProfile = await kv.get(`user:${studentId}`);
+    if (!studentProfile || studentProfile.role !== 'student') {
+      return c.json({ error: 'Student not found' }, 404);
+    }
+
+    const supabaseAdmin = getSupabaseClient(true);
+
+    const { data: ownClasses } = await supabaseAdmin
+      .from('classes').select('id').eq('class_teacher_id', user.id);
+    const { data: assignedClasses } = await supabaseAdmin
+      .from('teacher_class_assignments').select('class_id').eq('teacher_id', user.id);
+    const teacherClassIds = new Set<string>([
+      ...(ownClasses || []).map((c: any) => c.id),
+      ...(assignedClasses || []).map((a: any) => a.class_id),
+    ]);
+
+    const { data: codeRows } = await supabaseAdmin
+      .from('student_codes').select('id').eq('teacher_id', user.id).eq('user_id', studentId);
+
+    const linkedTeachers: string[] = Array.isArray(studentProfile.linkedTeachers) ? studentProfile.linkedTeachers : [];
+    const ownsStudent =
+      studentProfile.teacherId === user.id ||
+      linkedTeachers.includes(user.id) ||
+      (studentProfile.classId && teacherClassIds.has(studentProfile.classId)) ||
+      (codeRows && codeRows.length > 0);
+    if (!ownsStudent) {
+      return c.json({ error: 'This student is not on your roster' }, 403);
+    }
+
+    const updated = { ...studentProfile };
+    if (updated.teacherId === user.id) updated.teacherId = null;
+    updated.linkedTeachers = linkedTeachers.filter((id) => id !== user.id);
+    if (updated.classId && teacherClassIds.has(updated.classId)) {
+      updated.classId = null;
+      updated.className = null;
+    }
+    await kv.set(`user:${studentId}`, updated);
+
+    if (codeRows && codeRows.length > 0) {
+      await supabaseAdmin
+        .from('student_codes')
+        .update({ is_active: false, revoked_at: new Date().toISOString() })
+        .eq('teacher_id', user.id)
+        .eq('user_id', studentId);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log(`Error removing teacher student: ${error}`);
+    return c.json({ error: 'Failed to remove student' }, 500);
+  }
+});
+
 // Get school roster (students and teachers)
 app.get('/make-server-fc8eb847/school/roster', async (c) => {
   try {

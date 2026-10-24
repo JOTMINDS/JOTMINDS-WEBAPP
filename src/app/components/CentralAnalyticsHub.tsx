@@ -100,9 +100,10 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
 
     students.forEach(s => {
       const studentAssessments = assessments.filter(a => a.userId === s.id && a.score);
-      let kStyle = s.learningStyle || 'Visual';
-      let tStyle = s.thinkingStyle || 'Analytical';
-      let dStyle = s.decisionStyle || 'Balanced';
+      // Students without a result for a dimension are counted as Unassessed, not put in a default group.
+      let kStyle = s.learningStyle || '';
+      let tStyle = s.thinkingStyle || '';
+      let dStyle = s.decisionStyle || '';
       
       studentAssessments.forEach(a => {
         if (a.type === 'kolb' || a.type === 'learning') kStyle = a.score?.kolb?.style || a.score?.learning?.style || kStyle;
@@ -110,6 +111,9 @@ export function CentralAnalyticsHub({ students, assessments, user }: CentralAnal
         if (a.type === 'dual-process' || a.type === 'decision') dStyle = a.score?.dualProcess?.style || a.score?.decision?.style || dStyle;
       });
 
+      kStyle = kStyle || 'Unassessed';
+      tStyle = tStyle || 'Unassessed';
+      dStyle = dStyle || 'Unassessed';
       learningCounts[kStyle] = (learningCounts[kStyle] || 0) + 1;
       thinkingCounts[tStyle] = (thinkingCounts[tStyle] || 0) + 1;
       decisionCounts[dStyle] = (decisionCounts[dStyle] || 0) + 1;

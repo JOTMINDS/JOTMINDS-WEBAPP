@@ -8,7 +8,7 @@ import { getAllAssessments, getAssessmentsByUserId } from '../../utils/storage';
 import { Info, Target, LayoutTemplate } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { InfoTip } from '../ui/info-tip';
-import { formatKolbStyle, getFriendlyStyleDisplay } from '../../utils/styleWording';
+import { formatKolbStyle, getFriendlyStyleDisplay, getCanonicalStyleKey } from '../../utils/styleWording';
 
 interface TeacherAnalyticsComparisonProps {
   teacherAssessments: Assessment[];
@@ -70,7 +70,7 @@ export function TeacherAnalyticsComparison({ teacherAssessments, studentAssessme
     if (!raw || typeof raw !== 'string') return '';
     const v = raw.trim();
     if (!v || ['unknown', 'pending', 'n/a', 'none'].includes(v.toLowerCase())) return '';
-    return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+    return getCanonicalStyleKey(v) || v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
   };
 
   const sameId = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();

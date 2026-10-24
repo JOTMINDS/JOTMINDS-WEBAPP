@@ -406,6 +406,13 @@ export const getStudentsForTeacher = async () => {
   return makeRequest('/teacher/students');
 };
 
+export const removeStudentFromTeacher = async (studentId: string) => {
+  return makeRequest('/teacher/students/remove', {
+    method: 'POST',
+    body: JSON.stringify({ studentId }),
+  });
+};
+
 export const getSchoolRosterAPI = async () => {
   return makeRequest('/school/roster');
 };

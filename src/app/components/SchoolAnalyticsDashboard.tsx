@@ -8,7 +8,7 @@ import { Input } from './ui/input';
 import {
   ArrowLeft, Users, TrendingUp, AlertTriangle, CheckCircle,
   Search, ChevronDown, ChevronUp, BarChart3, Activity,
-  BookOpen, Award, Zap, HelpCircle, Info, Sparkles, Target, X, Eye, ArrowRightLeft
+  BookOpen, Award, Zap, HelpCircle, Info, Sparkles, Target, X, Eye
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTip,
@@ -259,9 +259,6 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
   const [loadingAssessments, setLoadingAssessments] = useState(false);
 
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
-  const [isComparingClasses, setIsComparingClasses] = useState<boolean>(false);
-  const [classAId, setClassAId] = useState<string>('');
-  const [classBId, setClassBId] = useState<string>('');
   const [selectedStudentForModal, setSelectedStudentForModal] = useState<StudentSummary | null>(null);
   const [modalInitialTab, setModalInitialTab] = useState<'profile' | 'diagnostic' | 'strategies' | 'progress'>('profile');
 
@@ -1145,8 +1142,6 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             ? summaries 
             : summaries.filter(s => (s.user.className || s.gradeLevel) === selectedClassId);
 
-          const classAData = summaries.filter(s => (s.user.className || s.gradeLevel) === classAId);
-          const classBData = summaries.filter(s => (s.user.className || s.gradeLevel) === classBId);
 
           return (
             <div className="space-y-6">
@@ -1157,7 +1152,6 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   <select
                     value={selectedClassId}
                     onChange={e => setSelectedClassId(e.target.value)}
-                    disabled={isComparingClasses}
                     className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-[#5B7DB1] focus:outline-none"
                   >
                     <option value="all">All Classes / Whole School</option>
@@ -1167,143 +1161,10 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   </select>
                 </div>
 
-                <Button
-                  variant={isComparingClasses ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => {
-                    const next = !isComparingClasses;
-                    setIsComparingClasses(next);
-                    if (next && availableClasses.length >= 2) {
-                      setClassAId(availableClasses[0]);
-                      setClassBId(availableClasses[1]);
-                    }
-                  }}
-                  className={isComparingClasses ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "border-indigo-200 text-indigo-700 hover:bg-indigo-50"}
-                >
-                  <ArrowRightLeft className="w-4 h-4 mr-1.5" />
-                  {isComparingClasses ? "Exit Comparison" : "Compare Two Classes"}
-                </Button>
               </div>
 
-              {/* Comparison Mode View */}
-              {isComparingClasses && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="border-blue-200 bg-blue-50/20">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm font-bold text-blue-950">Cohort A<InfoTip>The first group you chose to compare.</InfoTip></CardTitle>
-                          <select
-                            value={classAId}
-                            onChange={e => setClassAId(e.target.value)}
-                            className="text-xs font-semibold border border-blue-300 rounded-md px-2 py-1 bg-white"
-                          >
-                            {availableClasses.map(c => (
-                              <option key={c} value={c}>{c}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="p-2 bg-white rounded-lg border border-blue-100">
-                            <p className="text-xl font-bold text-blue-900">{classAData.length}</p>
-                            <p className="text-[10px] text-gray-500">Students</p>
-                          </div>
-                          <div className="p-2 bg-white rounded-lg border border-blue-100">
-                            <p className="text-xl font-bold text-emerald-600">
-                              {classAData.filter(s => s.assessmentCount > 0).length}
-                            </p>
-                            <p className="text-[10px] text-gray-500">Assessed</p>
-                          </div>
-                          <div className="p-2 bg-white rounded-lg border border-blue-100">
-                            <p className="text-xl font-bold text-purple-600">
-                              {classAData.length ? Math.round(classAData.reduce((acc, cur) => acc + cur.engagementScore, 0) / classAData.length) : 0}
-                            </p>
-                            <p className="text-[10px] text-gray-500">Avg Engagement</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-purple-200 bg-purple-50/20">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm font-bold text-purple-950">Cohort B<InfoTip>The second group you chose to compare.</InfoTip></CardTitle>
-                          <select
-                            value={classBId}
-                            onChange={e => setClassBId(e.target.value)}
-                            className="text-xs font-semibold border border-purple-300 rounded-md px-2 py-1 bg-white"
-                          >
-                            {availableClasses.map(c => (
-                              <option key={c} value={c}>{c}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="p-2 bg-white rounded-lg border border-purple-100">
-                            <p className="text-xl font-bold text-purple-900">{classBData.length}</p>
-                            <p className="text-[10px] text-gray-500">Students</p>
-                          </div>
-                          <div className="p-2 bg-white rounded-lg border border-purple-100">
-                            <p className="text-xl font-bold text-emerald-600">
-                              {classBData.filter(s => s.assessmentCount > 0).length}
-                            </p>
-                            <p className="text-[10px] text-gray-500">Assessed</p>
-                          </div>
-                          <div className="p-2 bg-white rounded-lg border border-purple-100">
-                            <p className="text-xl font-bold text-purple-600">
-                              {classBData.length ? Math.round(classBData.reduce((acc, cur) => acc + cur.engagementScore, 0) / classBData.length) : 0}
-                            </p>
-                            <p className="text-[10px] text-gray-500">Avg Engagement</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Comparative Cognitive Style Chart */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm font-bold">Class Cognitive Distribution Comparison<InfoTip>Compares the learning, thinking and decision styles of two cohorts side by side.</InfoTip></CardTitle>
-                      <p className="text-xs text-gray-500">Side-by-side comparison of dominant learning and thinking styles between {classAId} and {classBId}.</p>
-                    </CardHeader>
-                    <CardContent className="h-[300px]">
-                      {(() => {
-                        const styleNames = ['Accommodating', 'Assimilating', 'Converging', 'Diverging', 'Analytical', 'Creative', 'Practical'];
-                        const compData = styleNames.map(st => {
-                          const countA = classAData.filter(s => s.styles?.learningStyle === st || s.styles?.thinkingStyle === st).length;
-                          const countB = classBData.filter(s => s.styles?.learningStyle === st || s.styles?.thinkingStyle === st).length;
-                          return {
-                            style: st,
-                            [classAId || 'Class A']: countA,
-                            [classBId || 'Class B']: countB,
-                          };
-                        });
-
-                        return (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={compData} margin={{ top: 10, right: 30, left: 0, bottom: 25 }}>
-                              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                              <XAxis dataKey="style" tick={{ fontSize: 11 }} angle={-25} textAnchor="end" />
-                              <YAxis tick={{ fontSize: 11 }} />
-                              <RechartsTip />
-                              <Legend verticalAlign="top" height={36} />
-                              <Bar dataKey={classAId || 'Class A'} fill="#5B7DB1" radius={[4, 4, 0, 0]} />
-                              <Bar dataKey={classBId || 'Class B'} fill="#6B4C9A" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
               {/* Single Class or All Classes View */}
-              {!isComparingClasses && (
+              {(
                 <div className="space-y-6">
                   {/* KPI Row */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -276,6 +276,28 @@ export function getFriendlyStyleInfo(style?: string): FriendlyStyleInfo {
 }
 
 /**
+ * Maps any stored spelling of a style (raw key, friendly name, badge label or a longer
+ * phrase such as "Analytical Thinker") back to its canonical key, so styles saved under
+ * different wordings compare as equal. Returns '' when the value is not a known style.
+ */
+export function getCanonicalStyleKey(style?: string): string {
+  const norm = NORM(style);
+  if (!norm) return '';
+  const tables = [KOLB_STYLES, STERNBERG_STYLES, DUAL_PROCESS_STYLES];
+  for (const table of tables) {
+    for (const info of Object.values(table)) {
+      if ([info.key, info.friendlyName, info.badgeLabel].some(n => NORM(n) === norm)) return info.key;
+    }
+  }
+  for (const table of tables) {
+    for (const info of Object.values(table)) {
+      if (norm.startsWith(NORM(info.key))) return info.key;
+    }
+  }
+  return '';
+}
+
+/**
  * Get the user-friendly name for a style (e.g. "Accommodating" -> "Hands-On Explorer")
  */
 export function getFriendlyStyleName(style?: string): string {

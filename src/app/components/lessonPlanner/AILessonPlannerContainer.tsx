@@ -5,7 +5,7 @@ import { InfoTip } from '../ui/info-tip';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { BookOpen, Brain, Layers, FileCheck, Play, RotateCcw, Target, School, Sparkles, MessageSquare, Plus, FileText, CheckCircle2, BarChart3, History } from 'lucide-react';
+import { BookOpen, Brain, Layers, FileCheck, RotateCcw, Target, School, Sparkles, MessageSquare, Plus, FileText, CheckCircle2, BarChart3, History } from 'lucide-react';
 import { LessonPlan, ClassCognitiveSummary, LessonDeliverySession, PostLessonReflection, GeneratedAssessment, DifferentiatedInstruction } from '../../types/lessonPlannerTypes';
 import { getSavedLessonPlans, getClassCognitiveSummary, saveLessonPlan } from '../../utils/lessonPlannerStorage';
 
@@ -14,7 +14,6 @@ import { LessonPlanCreation } from './LessonPlanCreation';
 import { CognitiveInsightEngine } from './CognitiveInsightEngine';
 import { DifferentiatedInstructionView } from './DifferentiatedInstructionView';
 import { AssessmentGeneratorView } from './AssessmentGeneratorView';
-import { LessonDeliveryMode } from './LessonDeliveryMode';
 import { ReflectionHistoryView } from './ReflectionHistoryView';
 import { PostLessonReflectionModal } from './PostLessonReflectionModal';
 import { CurriculumTrackerView } from './CurriculumTrackerView';
@@ -87,7 +86,6 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
   const [activeTab, setActiveTab] = useState<string>('create');
   
   // Delivery & Reflection State
-  const [isDelivering, setIsDelivering] = useState(false);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
@@ -95,11 +93,6 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
     setPlans(getSavedLessonPlans(user?.id));
     setActivePlan(newPlan);
     setActiveTab('document');
-  };
-
-  const handleFinishDelivery = (session: LessonDeliverySession) => {
-    setIsDelivering(false);
-    setShowReflectionModal(true);
   };
 
   const handleCopilotGeneratePlan = async (subject: string, topic: string, gradeClass: string) => {
@@ -144,16 +137,6 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
     }
   };
 
-  if (isDelivering && activePlan) {
-    return (
-      <LessonDeliveryMode
-        plan={activePlan}
-        onFinishDelivery={handleFinishDelivery}
-        onExit={() => setIsDelivering(false)}
-      />
-    );
-  }
-
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
       {/* Top Header & Navigation */}
@@ -168,7 +151,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             </Badge>
           </div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-indigo-400" /> Lesson Planner & Teaching Insights<InfoTip title="Lesson Planner">Work through the tabs from left to right: Create a plan, edit the document, check class insights, add activities for every learner, build assessments, teach, reflect, and review your analytics.</InfoTip>
+            <BookOpen className="w-6 h-6 text-indigo-400" /> Lesson Planner & Teaching Insights<InfoTip title="Lesson Planner">Work through the tabs from left to right: Create a plan, edit the document, check class insights, add activities for every learner, build assessments, reflect, and review your analytics.</InfoTip>
           </h1>
           <p className="text-xs text-slate-300 mt-1">
             Find all official Subject Specific Apps for SHS teachers. Easy access to all NaCCA curriculum resources and PLC tools.
@@ -182,14 +165,6 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
           >
             <Sparkles className="w-4 h-4 mr-1.5" /> Jotti Chat
           </Button>
-          {activePlan && (
-            <Button
-              onClick={() => setIsDelivering(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md"
-            >
-              <Play className="w-4 h-4 mr-1.5" /> Lesson Prep
-            </Button>
-          )}
         </div>
       </div>
 
@@ -243,10 +218,6 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
             </TabsTrigger>
             <TabsTrigger value="assessment" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
               <FileCheck className="w-3.5 h-3.5" /> Assessment
-            </TabsTrigger>
-            <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
-            <TabsTrigger value="delivery" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-emerald-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
-              <Play className="w-3.5 h-3.5" /> Lesson Prep
             </TabsTrigger>
             <TabsTrigger value="reflection" className="rounded-xl px-3.5 py-2 text-xs font-semibold data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" /> Reflection
@@ -339,31 +310,6 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
               setActiveTab('document');
             }}
           />
-        </TabsContent>
-
-        {/* Module 5 Launcher */}
-        <TabsContent value="delivery">
-          <Card className="text-center p-8 space-y-4 max-w-xl mx-auto border-indigo-200 dark:border-indigo-900/50">
-            <Play className="w-12 h-12 text-indigo-600 mx-auto" />
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Launch Lesson Prep<InfoTip>Opens delivery mode: a checklist, a phase timer and live notes to use while you teach.</InfoTip>
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              Open full-screen delivery mode with live activity timer, teaching notes, student attendance, and engagement trackers.
-            </p>
-            <Button
-              onClick={() => {
-                if (!activePlan) {
-                  toast.error('Please create or select a lesson plan first.');
-                  return;
-                }
-                setIsDelivering(true);
-              }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-            >
-              <Play className="w-4 h-4 mr-2" /> Launch Full-Screen Delivery
-            </Button>
-          </Card>
         </TabsContent>
 
         {/* Module 6 Launcher */}
