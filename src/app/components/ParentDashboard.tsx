@@ -37,6 +37,7 @@ import { DashboardLayout } from './ui/dashboard-layout';
 import { NavGroup } from './ui/collapsible-sidebar';
 import { generateAIParentSupportTips, getCachedAIResult, setCachedAIResult } from '../utils/aiService';
 import { InfoTip } from './ui/info-tip';
+import { AssignedWork } from './AssignedWork';
 import { TabTitle } from './ui/tab-title';
 import { getFriendlyStyleDisplay, getFriendlyStyleName, formatKolbStyle, getFriendlyStyleSubtitle } from '../utils/styleWording';
 import { PARENT_TAB_HELP } from '../utils/tabHelp';
@@ -553,6 +554,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
 
 
           <TabsContent value="overview" className="space-y-6">
+          <AssignedWork role="parent" />
             {/* Link Child Form */}
             <Card>
               <CardHeader>

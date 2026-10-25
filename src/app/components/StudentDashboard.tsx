@@ -19,6 +19,7 @@ import { getUserAssessmentResults, getAllAssessmentResults, updateUserProfile } 
 import { useAuth } from './AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { InfoTip } from './ui/info-tip';
+import { AssignedWork } from './AssignedWork';
 import { CardV2, CardV2Grid, StatBadge } from './ui/card-v2';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -543,6 +544,18 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
 
   const thinkingStylesAssessment = getThinkingStylesAssessment();
 
+  // Question bank for the Learning and Decision assessments follows the student's grade
+  // (education level) first, so it matches what their class is assigned. Age is only a fallback.
+  const getQuestionBankAge = (): number | undefined => {
+    switch (user.educationLevel) {
+      case 'SHS': return 16;
+      case 'Tertiary': return 20;
+      case 'JHS':
+      case 'Elementary': return undefined; // default 11-14 bank
+    }
+    return user.age || (user.dateOfBirth ? calculateAge(user.dateOfBirth) : undefined);
+  };
+
   // Helper to check if user should see children's features (ages 6-10)
   const isChildrenUser = () => {
     return user.educationLevel === 'Elementary' || thinkingStylesAssessment === 'Children';
@@ -662,7 +675,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
       <AssessmentTaking
         userId={user.id}
         assessmentType={activeAssessment}
-        userAge={user.age} // Pass user's age for age-appropriate questions (15-18 uses teen bank)
+        userAge={getQuestionBankAge()} // Grade-based bank (SHS uses the teen bank, Tertiary the 19-25 bank)
         onComplete={handleAssessmentComplete}
         onCancel={() => setActiveAssessment(null)}
       />
@@ -838,6 +851,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
         className="w-full"
       >
         <TabsContent value="dashboard" className="space-y-6">
+          <AssignedWork role="student" />
 
             {/* Loading State */}
             {loading && (

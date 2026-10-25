@@ -86,7 +86,7 @@ export function BulkUploadModal({
           const name = parts[actualNameIdx] || '';
           let email = parts[actualEmailIdx] || '';
           const phone = parts[actualPhoneIdx] || '';
-          const dateOfBirth = parts[actualDobIdx] || '2010-01-01';
+          const dateOfBirth = parts[actualDobIdx] || undefined;
           
           if (!email && name) {
             email = `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}_${Date.now()}_${i}@student.jotminds.internal`;

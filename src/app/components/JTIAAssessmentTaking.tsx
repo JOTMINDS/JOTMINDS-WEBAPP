@@ -64,6 +64,37 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
     setCurrentIndex(0);
   };
 
+  const clearSavedSession = () => {
+    localStorage.removeItem(`jtia_progress_${userId}`);
+    localStorage.removeItem(`jtia_session_ids_${userId}`);
+  };
+
+  // Start over with a fresh set of the same length
+  const restartCurrent = () => {
+    if (!selectedLength) return;
+    if (!window.confirm('Restart this assessment? Your answers so far will be cleared.')) return;
+    clearSavedSession();
+    startWithLength(selectedLength);
+    toast.info('Assessment restarted with a fresh set of questions.');
+  };
+
+  // Go back to the format selector (Snapshot / Standard / Comprehensive)
+  const chooseDifferentFormat = () => {
+    if (!window.confirm('Choose a different assessment format? Your answers so far will be cleared.')) return;
+    clearSavedSession();
+    setSessionQuestions([]);
+    setSelectedLength(null);
+    setResponses([]);
+    setCurrentIndex(0);
+  };
+
+  // Stop entirely without saving anything
+  const discardAndExit = () => {
+    if (!window.confirm('Stop this assessment and discard your answers? Nothing will be saved.')) return;
+    clearSavedSession();
+    onCancel();
+  };
+
   const [responses, setResponses] = useState<number[]>(() => {
     const saved = localStorage.getItem(`jtia_progress_${userId}`);
     if (saved) {
@@ -247,7 +278,16 @@ export const JTIAAssessmentTaking: React.FC<JTIAAssessmentTakingProps> = ({
             </Badge>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={chooseDifferentFormat} className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs">
+              Change format
+            </Button>
+            <Button variant="outline" size="sm" onClick={restartCurrent} className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs">
+              Restart
+            </Button>
+            <Button variant="outline" size="sm" onClick={discardAndExit} className="bg-white/10 hover:bg-red-500/30 text-white border-white/20 text-xs">
+              Stop without saving
+            </Button>
             <Button
               variant="outline"
               size="sm"

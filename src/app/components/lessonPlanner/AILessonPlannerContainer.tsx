@@ -278,6 +278,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
         <TabsContent value="assessment">
           <AssessmentGeneratorView
             plan={activePlan}
+            students={students}
             onAssessmentGenerated={(assmt) => {
               const updated = { ...activePlan, assessment: assmt };
               setActivePlan(updated);

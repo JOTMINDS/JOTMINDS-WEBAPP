@@ -3753,6 +3753,131 @@ app.post('/make-server-fc8eb847/teacher/students/remove', async (c) => {
   }
 });
 
+// ── Assigned work: teachers share homework / assessments with students ──────────
+// Stored as assignment:{id} (the work) and assigned:{studentId}:{id} (one pointer per student).
+// Answer keys are stripped before storing, so students and parents never see them.
+const ASSIGNMENT_SECTIONS = ['mcqs', 'shortAnswer', 'discussion', 'practicalExercises', 'homework'];
+
+function stripAnswerKeys(content: any) {
+  const out: any = { title: String(content?.title || 'Assessment').slice(0, 200) };
+  for (const key of ASSIGNMENT_SECTIONS) {
+    out[key] = (Array.isArray(content?.[key]) ? content[key] : []).slice(0, 100).map((q: any) => ({
+      id: String(q?.id || ''),
+      type: q?.type,
+      question: String(q?.question || '').slice(0, 2000),
+      options: Array.isArray(q?.options) ? q.options.slice(0, 8).map((o: any) => String(o).slice(0, 500)) : undefined,
+    }));
+  }
+  return out;
+}
+
+app.post('/make-server-fc8eb847/teacher/assignments', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+    const teacherProfile = await kv.get(`user:${user.id}`);
+    const role = teacherProfile?.role;
+    if (role !== 'teacher' && role !== 'head_teacher') {
+      return c.json({ error: 'Forbidden - Teacher access required' }, 403);
+    }
+
+    const { content, studentIds, dueDate, note } = await c.req.json();
+    if (!content || !Array.isArray(studentIds) || studentIds.length === 0 || studentIds.length > 500) {
+      return c.json({ error: 'Choose the work and at least one student' }, 400);
+    }
+
+    const supabaseAdmin = getSupabaseClient(true);
+    const { data: ownClasses } = await supabaseAdmin.from('classes').select('id').eq('class_teacher_id', user.id);
+    const { data: assignedClasses } = await supabaseAdmin.from('teacher_class_assignments').select('class_id').eq('teacher_id', user.id);
+    const teacherClassIds = new Set<string>([
+      ...(ownClasses || []).map((x: any) => x.id),
+      ...(assignedClasses || []).map((a: any) => a.class_id),
+    ]);
+    const { data: codeRows } = await supabaseAdmin.from('student_codes').select('user_id').eq('teacher_id', user.id);
+    const codeStudentIds = new Set<string>((codeRows || []).map((r: any) => String(r.user_id)));
+
+    // Only students on this teacher's roster can be assigned work
+    const recipients: string[] = [];
+    for (const id of [...new Set(studentIds.map(String))]) {
+      const profile = await kv.get(`user:${id}`);
+      if (!profile || profile.role !== 'student') continue;
+      const linked: string[] = Array.isArray(profile.linkedTeachers) ? profile.linkedTeachers : [];
+      const owns =
+        profile.teacherId === user.id ||
+        linked.includes(user.id) ||
+        (profile.classId && teacherClassIds.has(profile.classId)) ||
+        codeStudentIds.has(id);
+      if (owns) recipients.push(id);
+    }
+    if (recipients.length === 0) {
+      return c.json({ error: 'None of those students are on your roster' }, 403);
+    }
+
+    const assignmentId = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    await kv.set(`assignment:${assignmentId}`, {
+      id: assignmentId,
+      teacherId: user.id,
+      teacherName: teacherProfile?.name || 'Your teacher',
+      content: stripAnswerKeys(content),
+      note: typeof note === 'string' ? note.slice(0, 500) : '',
+      dueDate: typeof dueDate === 'string' ? dueDate.slice(0, 10) : null,
+      studentIds: recipients,
+      createdAt,
+    });
+    for (const id of recipients) {
+      await kv.set(`assigned:${id}:${assignmentId}`, { assignmentId, studentId: id, createdAt });
+    }
+
+    return c.json({ success: true, assignmentId, sharedWith: recipients.length });
+  } catch (error) {
+    console.log(`Error creating assignment: ${error}`);
+    return c.json({ error: 'Failed to share work' }, 500);
+  }
+});
+
+async function loadAssignmentsFor(studentId: string) {
+  const pointers = await kv.getByPrefix(`assigned:${studentId}:`);
+  const items = await Promise.all(
+    pointers.map(async (p: any) => {
+      const a = await kv.get(`assignment:${p.assignmentId}`);
+      return a ? { id: a.id, teacherName: a.teacherName, content: a.content, note: a.note, dueDate: a.dueDate, createdAt: a.createdAt } : null;
+    })
+  );
+  return items.filter(Boolean).sort((x: any, y: any) => String(y.createdAt).localeCompare(String(x.createdAt)));
+}
+
+app.get('/make-server-fc8eb847/student/assignments', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+    return c.json({ success: true, assignments: await loadAssignmentsFor(user.id) });
+  } catch (error) {
+    console.log(`Error loading student assignments: ${error}`);
+    return c.json({ error: 'Failed to load assigned work' }, 500);
+  }
+});
+
+app.get('/make-server-fc8eb847/parent/assignments', async (c) => {
+  try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+    const parentProfile = await kv.get(`user:${user.id}`);
+    const childIds: string[] = Array.isArray(parentProfile?.linkedChildren) ? parentProfile.linkedChildren : [];
+    const byChild = await Promise.all(
+      childIds.map(async (childId) => {
+        const child = await kv.get(`user:${childId}`);
+        return { childId, childName: child?.name || 'Your child', assignments: await loadAssignmentsFor(childId) };
+      })
+    );
+    return c.json({ success: true, children: byChild });
+  } catch (error) {
+    console.log(`Error loading parent assignments: ${error}`);
+    return c.json({ error: 'Failed to load assigned work' }, 500);
+  }
+});
+
 // Get school roster (students and teachers)
 app.get('/make-server-fc8eb847/school/roster', async (c) => {
   try {
@@ -6200,19 +6325,27 @@ app.post('/make-server-fc8eb847/enroll-student', async (c) => {
     }
     
     const { studentName, dateOfBirth, classId, className, teacherId, institutionId, educationLevel } = await c.req.json();
-    if (!studentName || !dateOfBirth) {
+    if (!studentName) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
     
     const supabase = getSupabaseClient(true);
     
-    // Duplicate check
+    // Duplicate check. Date of birth is optional: when it is missing, the same name only counts as a
+    // duplicate inside the same class, so two different children with one name can both be enrolled.
+    const hasRealClass = !!classId && classId !== 'individual' && classId !== 'unassigned';
     let query = supabase
       .from('student_codes')
       .select('*')
       .ilike('student_name', studentName)
-      .eq('student_dob', dateOfBirth)
       .eq('is_active', true);
+    if (dateOfBirth) {
+      query = query.eq('student_dob', dateOfBirth);
+    } else if (hasRealClass) {
+      query = query.eq('class_id', classId);
+    } else {
+      query = query.is('student_dob', null).is('class_id', null);
+    }
       
     if (institutionId) {
       query = query.eq('institution_id', institutionId);
@@ -6291,15 +6424,22 @@ app.post('/make-server-fc8eb847/enroll-student', async (c) => {
     });
     
     // Insert into student_codes
-    const { error: codeError } = await supabase.from('student_codes').insert({
+    const codeRow: Record<string, any> = {
       user_id: userId,
       code,
       student_name: studentName,
-      student_dob: dateOfBirth,
+      student_dob: dateOfBirth || null,
+      class_id: hasRealClass ? classId : null,
       institution_id: institutionId,
       teacher_id: teacherId,
       is_active: true
-    });
+    };
+    let { error: codeError } = await supabase.from('student_codes').insert(codeRow);
+    if (codeError && codeRow.class_id) {
+      // The class may not exist as a database row (for example a local-only class); keep the code anyway.
+      delete codeRow.class_id;
+      ({ error: codeError } = await supabase.from('student_codes').insert(codeRow));
+    }
     
     if (codeError) {
       console.error('[enroll-student] Code insert error:', codeError);

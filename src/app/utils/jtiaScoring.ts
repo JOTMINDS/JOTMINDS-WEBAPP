@@ -255,15 +255,81 @@ export function calculateJTIAScore(responses: number[] = [], sessionQuestions: J
 }
 
 /**
- * Generate culturally relevant, personalized recommendations grounded in NaCCA / GES standards
- * and African classroom context when AI is offline or as standard baseline.
+ * Wording that development recommendations use for the curriculum a teacher teaches.
+ */
+export interface CurriculumContext {
+  name: string;
+  toolkit: string;          // curriculum toolkit / planning resource
+  community: string;        // learning community / PLC wording
+  assessmentTerm: string;   // how the curriculum talks about checking learning
+  localContext: string;     // examples the teacher should draw on
+  aiContext: string;        // instruction line for the AI prompt
+}
+
+export function getCurriculumContext(framework?: string): CurriculumContext {
+  const f = (framework || '').toLowerCase();
+  if (/\bnational\b/.test(f) || f.includes('nacca') || /\bges\b/.test(f)) {
+    return {
+      name: 'Ghana National Curriculum (NaCCA / GES)',
+      toolkit: 'NaCCA / GES Standards-Based Curriculum Toolkit',
+      community: 'Ghana Education Service (GES) school PLC',
+      assessmentTerm: 'NaCCA core competencies and learning indicators',
+      localContext: 'local Ghanaian examples and low-cost teaching and learning materials (TLMs)',
+      aiContext: 'Ground recommendations in the NaCCA / GES curriculum, GES school PLC and INSET practice, and low-cost local TLMs.',
+    };
+  }
+  if (f.includes('british') || f.includes('cambridge') || f.includes('edexcel') || f.includes('pearson')) {
+    return {
+      name: 'British Curriculum (Cambridge / Pearson Edexcel)',
+      toolkit: 'Cambridge / Edexcel syllabus and teacher support resources',
+      community: 'subject department professional learning group',
+      assessmentTerm: 'syllabus learning objectives, success criteria and exam command words',
+      localContext: 'examples and past-paper style questions relevant to your learners',
+      aiContext: 'Ground recommendations in the Cambridge / Pearson Edexcel syllabus, assessment objectives, command words, and exam-board teacher training.',
+    };
+  }
+  if (f.includes('baccalaureate') || /\bib\b/.test(f)) {
+    return {
+      name: 'International Baccalaureate (IB)',
+      toolkit: 'IB programme resources and unit planner',
+      community: 'IB collaborative planning team',
+      assessmentTerm: 'IB assessment criteria, ATL skills and learner profile attributes',
+      localContext: 'global contexts and inquiry questions connected to your learners',
+      aiContext: 'Ground recommendations in IB inquiry-based practice, units of inquiry, ATL skills, the learner profile and IB professional development workshops.',
+    };
+  }
+  if (f.includes('oxford')) {
+    return {
+      name: 'Oxford International Curriculum',
+      toolkit: 'Oxford International teacher resources',
+      community: 'school professional learning team',
+      assessmentTerm: 'learning intentions and success criteria',
+      localContext: 'cross-curricular links and examples relevant to your learners',
+      aiContext: 'Ground recommendations in the Oxford International Curriculum: learning intentions, success criteria and cross-curricular links.',
+    };
+  }
+  return {
+    name: 'your curriculum',
+    toolkit: 'Curriculum planning toolkit for your syllabus',
+    community: 'school professional learning community (PLC)',
+    assessmentTerm: 'your curriculum learning outcomes',
+    localContext: "examples and low-cost materials from your learners' own community",
+    aiContext: 'Keep recommendations general enough to fit any curriculum; do not assume a particular national curriculum.',
+  };
+}
+
+/**
+ * Generate personalized recommendations tailored to the curriculum the teacher teaches,
+ * used when AI is offline or as the standard baseline.
  */
 export function generatePersonalizedRecommendations(
   domainScores: Record<string, number>,
   strengths: Array<{ title: string; domain: string; description?: string }>,
   growthOpportunities: Array<{ title: string; domain: string; description?: string }>,
-  teacherName?: string
+  teacherName?: string,
+  curriculum?: string
 ): JTIAAIRecommendations {
+  const cur = getCurriculumContext(curriculum);
   // Find highest and lowest scoring domains
   const sortedDomains = Object.entries(domainScores).sort((a, b) => b[1] - a[1]);
   const topDomainEntry = sortedDomains[0] || ['instructional', 80];
@@ -277,30 +343,30 @@ export function generatePersonalizedRecommendations(
 
   return {
     resources: [
-      `NaCCA / GES Standards-Based Curriculum Toolkit: Differentiated instructional protocols leveraging your high ${topDomainName} mastery (${primaryStrength}).`,
-      `West African Classroom Low-Cost TLM Manual: Practical guides for creating concrete manipulative teaching aids from local materials to boost ${lowestDomainName} engagement.`,
-      `Ghana Education Service (GES) PLC Handbook: Collaborative lesson study templates and peer micro-teaching strategies.`,
+      `${cur.toolkit}: Differentiated instructional protocols leveraging your high ${topDomainName} mastery (${primaryStrength}).`,
+      `Guide to ${cur.localContext}: ideas for concrete teaching aids that boost ${lowestDomainName} engagement.`,
+      `${cur.community} handbook: Collaborative lesson study templates and peer micro-teaching strategies.`,
       `JotMinds Cognitive Diversity In Action: Field guide for mapping student learning styles to lesson pacing in large classrooms.`
     ],
     activities: [
-      `Formative Exit Slips: End each lesson with a 3-minute check on learning aligned to NaCCA core competencies before student dismissal.`,
+      `Formative Exit Slips: End each lesson with a 3-minute check on learning aligned to ${cur.assessmentTerm} before student dismissal.`,
       `Think-Pair-Share with Structured Wait-Time: Build confidence by allowing students 5 seconds of silence before sharing in pairs to reinforce ${primaryGrowth}.`,
-      `Differentiated Task Cards: Organize tiered practice sets (Core, Scaffolded, Extension) using real-world Ghanaian community examples.`,
+      `Differentiated Task Cards: Organize tiered practice sets (Core, Scaffolded, Extension) using ${cur.localContext}.`,
       `Socratic Circle Modeling: Utilize gradual release ('I Do, We Do, You Do') to guide abstract reasoning and collaborative problem solving.`
     ],
     coaching: [
       `Departmental Peer Observation: Pair with a senior subject teacher for a 20-minute exchange focusing on ${primaryGrowth} and student question-flow.`,
-      `School PLC Lesson Study: Present an upcoming unit plan during your weekly school Professional Learning Community (PLC) session for feedback.`,
+      `Lesson Study: Present an upcoming unit plan to your ${cur.community} for feedback.`,
       `Student Feedback Pulse: Run a short, anonymous 3-question survey once per term asking learners which classroom activities help them understand best.`,
       `Curriculum Leader Debrief: Meet with your head of department or academic supervisor to align termly scheme of work milestones with learner progress.`
     ],
     pathways: [
-      `School-Based INSET Lead: Facilitate peer professional development workshops on effective TLM utilization and differentiated instruction.`,
+      `School-Based Training Lead: Facilitate peer professional development workshops on effective teaching resources and differentiated instruction.`,
       `Curriculum Differentiation Mentor: Guide early-career teachers in tailoring lesson plans to diverse cognitive styles and special educational needs.`,
-      `Subject Area PLC Coordinator: Lead departmental coordination in continuous assessment methods aligned to national testing frameworks.`,
+      `Subject Area Coordinator: Lead departmental coordination in assessment methods aligned to ${cur.name === 'your curriculum' ? 'your curriculum' : cur.name}.`,
       `Institutional Assessment Lead: Champion cognitive and formative evaluation strategies across your school cluster.`
     ],
-    executiveSummary: `Demonstrates exemplary capability in ${topDomainName} Intelligence (${primaryStrength}). A targeted focus on ${lowestDomainName} Intelligence through structured peer activities and localized TLMs will yield exceptional growth in classroom impact.`,
+    executiveSummary: `Demonstrates exemplary capability in ${topDomainName} Intelligence (${primaryStrength}). A targeted focus on ${lowestDomainName} Intelligence through structured peer activities and ${cur.localContext} will yield exceptional growth in classroom impact.`,
     pedagogicalArchetype: `${topDomainName}-Driven Facilitator`
   };
 }
@@ -355,12 +421,17 @@ export function generateSchoolJTIAInsights(reports: JTIAReportData[] = []): JTIA
   }
 
   const count = reports.length || 1;
+  // Average only the scores that exist; a missing score must not be filled in with a made-up value
+  const avgOf = (pick: (r: JTIAReportData) => number | undefined) => {
+    const vals = reports.map(pick).filter((v): v is number => typeof v === 'number' && !isNaN(v));
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+  };
   const domainAverages = {
-    cognitive: Math.round(reports.reduce((s, r) => s + (r.domainScores?.cognitive ?? 70), 0) / count),
-    instructional: Math.round(reports.reduce((s, r) => s + (r.domainScores?.instructional ?? 70), 0) / count),
-    leadership: Math.round(reports.reduce((s, r) => s + (r.domainScores?.leadership ?? 70), 0) / count),
-    relationship: Math.round(reports.reduce((s, r) => s + (r.domainScores?.relationship ?? 75), 0) / count),
-    professional: Math.round(reports.reduce((s, r) => s + (r.domainScores?.professional ?? 70), 0) / count)
+    cognitive: avgOf(r => r.domainScores?.cognitive),
+    instructional: avgOf(r => r.domainScores?.instructional),
+    leadership: avgOf(r => r.domainScores?.leadership),
+    relationship: avgOf(r => r.domainScores?.relationship),
+    professional: avgOf(r => r.domainScores?.professional)
   };
 
   const overallSchoolIntelligence = Math.round(
@@ -379,12 +450,13 @@ export function generateSchoolJTIAInsights(reports: JTIAReportData[] = []): JTIA
         const domain = jtiaQuestions.find(q => q.subCompetency === sub)?.domain || "Cognitive Intelligence";
         subSums[sub] = { sum: 0, count: 0, domain };
       }
-      subSums[sub].sum += (val ?? 70);
+      if (typeof val !== 'number' || isNaN(val)) return;
+      subSums[sub].sum += val;
       subSums[sub].count += 1;
     });
   });
 
-  const competencyHeatmap = Object.entries(subSums).map(([subCompetency, data]) => {
+  const competencyHeatmap = Object.entries(subSums).filter(([, d]) => d.count > 0).map(([subCompetency, data]) => {
     const avg = Math.round(data.sum / (data.count || 1));
     let readinessLevel: 'Exemplary' | 'Proficient' | 'Developing' | 'Emerging' = 'Proficient';
     if (avg >= 88) readinessLevel = 'Exemplary';
@@ -440,6 +512,18 @@ export function generateSchoolJTIAInsights(reports: JTIAReportData[] = []): JTIA
     };
   });
 
+  // Strongest and weakest domains come from the data, not a fixed list
+  const domainLabels: Record<string, string> = {
+    cognitive: 'Cognitive Intelligence',
+    instructional: 'Instructional Intelligence',
+    leadership: 'Classroom Leadership',
+    relationship: 'Relationship Intelligence',
+    professional: 'Professional Intelligence',
+  };
+  const rankedDomains = Object.entries(domainAverages).sort((a, b) => b[1] - a[1]);
+  const strongest = rankedDomains.slice(0, 2).map(([k]) => domainLabels[k]);
+  const weakest = domainLabels[rankedDomains[rankedDomains.length - 1][0]];
+
   return {
     totalTeachersAssessed: count,
     overallSchoolIntelligence,
@@ -447,10 +531,10 @@ export function generateSchoolJTIAInsights(reports: JTIAReportData[] = []): JTIA
     competencyHeatmap,
     pdPriorities,
     growthPatterns: {
-      highSynergyDomains: ["Relationship Intelligence", "Classroom Leadership"],
+      highSynergyDomains: strongest,
       collaborativeOpportunities: [
-        "Peer Observation Exchange: Pairing exemplary instructional leaders with developing faculty.",
-        "Cross-Departmental PLC: Synthesizing critical thinking frameworks across STEM and Humanities."
+        `Peer Observation Exchange: Pair teachers strong in ${strongest[0]} with colleagues who are still developing in it.`,
+        `Staff Learning Sessions: Use your strongest teachers to lead short sessions on ${weakest}, your school's lowest-scoring area.`
       ],
       workforceReadiness: overallSchoolIntelligence
     }

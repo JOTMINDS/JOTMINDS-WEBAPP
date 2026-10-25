@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
-import { shsQuestions } from '../utils/shsThinkingData';
+import { shsQuestions as baseShsQuestions } from '../utils/shsThinkingData';
 import { calculateSHSScores, SHSResponse, SHSResults } from '../utils/shsScoring';
 import { ArrowRight, ArrowLeft, CheckCircle, BookOpen } from 'lucide-react';
 
@@ -14,6 +14,15 @@ interface SHSThinkingAssessmentProps {
 }
 
 export function SHSThinkingAssessment({ userId, onComplete, onCancel }: SHSThinkingAssessmentProps) {
+  // New random order each attempt; responses are keyed by question id so scoring is unaffected
+  const [shsQuestions] = useState(() => {
+    const a = [...baseShsQuestions];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  });
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [responses, setResponses] = useState<SHSResponse[]>([]);
   const [showIntro, setShowIntro] = useState(true);

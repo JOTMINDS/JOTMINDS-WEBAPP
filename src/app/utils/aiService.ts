@@ -1,5 +1,5 @@
 import { AssessmentScore } from '../types';
-import { JTIAAIRecommendations, JTIASchoolAggregatedInsights, generatePersonalizedRecommendations } from './jtiaScoring';
+import { JTIAAIRecommendations, JTIASchoolAggregatedInsights, generatePersonalizedRecommendations, getCurriculumContext } from './jtiaScoring';
 import { getFriendlyStyleInfo, getFriendlyStyleName, getFriendlyStyleDisplay } from './styleWording';
 
 // We now securely proxy through our Cloudflare Pages Function
@@ -571,12 +571,16 @@ Provide empathetic, constructive coaching feedback in JSON format:
 }
 
 export async function generateJTIAAIRecommendations(
-  report: any
+  report: any,
+  curriculum?: string
 ): Promise<JTIAAIRecommendations> {
+  const cur = getCurriculumContext(curriculum);
   const fallback = generatePersonalizedRecommendations(
     report?.domainScores || { cognitive: 80, instructional: 85, leadership: 78, relationship: 82, professional: 84 },
     report?.strengths || [],
-    report?.growthOpportunities || []
+    report?.growthOpportunities || [],
+    undefined,
+    curriculum
   );
 
   try {
@@ -585,7 +589,7 @@ Report Data: ${JSON.stringify(report)}
 
 Return strictly valid JSON with this exact schema:
 {
-  "resources": ["4 specific locally grounded teaching and learning resources (mentioning NaCCA, GES curriculum, or accessible African classroom TLMs)"],
+  "resources": ["4 specific teaching and learning resources that fit the teacher's curriculum"],
   "activities": ["4 highly actionable classroom activities tailored to this teacher's strengths and growth areas"],
   "coaching": ["4 peer observation, coaching, or school PLC exercises"],
   "pathways": ["4 career growth pathways or leadership opportunities"],
@@ -595,7 +599,7 @@ Return strictly valid JSON with this exact schema:
 
 Crucial Instructions:
 1. Personalization: Address the teacher's specific score profile and growth areas.
-2. Local Context: Include culturally relevant West African / Ghanaian education context (e.g. GES standards, low-cost local TLMs, school-based INSET / PLC).
+2. Curriculum: The teacher teaches ${cur.name}. ${cur.aiContext}
 3. Professionalism: Frame growth areas positively as mastery pathways.`;
     
     const res = await callOpenAI([

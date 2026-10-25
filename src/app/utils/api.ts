@@ -413,6 +413,18 @@ export const removeStudentFromTeacher = async (studentId: string) => {
   });
 };
 
+export const shareAssignment = async (data: { content: any; studentIds: string[]; dueDate?: string; note?: string }) => {
+  return makeRequest('/teacher/assignments', { method: 'POST', body: JSON.stringify(data) });
+};
+
+export const getMyAssignments = async () => {
+  return makeRequest('/student/assignments');
+};
+
+export const getChildrenAssignments = async () => {
+  return makeRequest('/parent/assignments');
+};
+
 export const getSchoolRosterAPI = async () => {
   return makeRequest('/school/roster');
 };
@@ -687,7 +699,7 @@ export const deleteInstitutionClassAPI = async (classId: string) => {
 
 export async function enrollStudent(data: {
   studentName: string;
-  dateOfBirth: string;
+  dateOfBirth?: string;
   classId: string;
   className?: string;
   teacherId: string;

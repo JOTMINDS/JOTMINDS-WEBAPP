@@ -621,40 +621,24 @@ export function InstitutionMembers({
                 }`}
                 style={memberRoleFilter === r ? { backgroundColor: r === 'all' ? '#5B7DB1' : ROLE_COLORS[r] } : {}}
               >
-                {r === 'all' ? 'All' : `${r}s`}
+                {r === 'all' ? `All (${counts.admins + counts.teachers})` : r === 'admin' ? `Administrators (${counts.admins})` : `Teachers (${counts.teachers})`}
               </button>
             ))}
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           {onViewTeacherStyles && (
-            <Button variant="secondary" onClick={onViewTeacherStyles} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">
-              <Brain className="w-4 h-4 mr-2" /> View Teaching Insights
+            <Button size="sm" variant="secondary" onClick={onViewTeacherStyles} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">
+              <Brain className="w-4 h-4 mr-2" /> Teaching Insights
             </Button>
           )}
-          <Button variant="secondary" onClick={onOpenBulkUploadModal} className="bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200">
+          <Button size="sm" variant="secondary" onClick={onOpenBulkUploadModal} className="bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200">
             <Upload className="w-4 h-4 mr-2" /> Bulk Upload
           </Button>
-          <Button style={{ backgroundColor: '#6B4C9A' }} onClick={() => onOpenInviteModal()}>
+          <Button size="sm" style={{ backgroundColor: '#6B4C9A' }} onClick={() => onOpenInviteModal()}>
             <UserPlus className="w-4 h-4 mr-2" /> Invite Member
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {[
-          { label: 'Administrators', value: counts.admins, color: '#5B7DB1' },
-          { label: 'Teachers', value: counts.teachers, color: '#6B4C9A' },
-        ].map(s => (
-          <Card key={s.label}>
-            <CardContent className="pt-3 pb-3 text-center">
-              <div className="text-xl font-bold" style={{ color: s.color }}>
-                {s.value}
-              </div>
-              <p className="text-xs text-gray-500">{s.label}</p>
-            </CardContent>
-          </Card>
-        ))}
       </div>
 
       {filteredMembers.length === 0 && (

@@ -58,6 +58,17 @@ export const initialCurriculumTrack: CurriculumTrack = {
 
 // ─── STORAGE HELPER FUNCTIONS ──────────────────────────────────────────────────
 
+/**
+ * The curriculum a teacher is teaching, taken from their most recent lesson plan.
+ * Returns undefined when they have not created a plan yet.
+ */
+export function getTeacherCurriculum(teacherId?: string): string | undefined {
+  const plans = getSavedLessonPlans(teacherId)
+    .filter(p => p.curriculumFramework)
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime());
+  return plans[0]?.curriculumFramework as string | undefined;
+}
+
 export function getSavedLessonPlans(teacherId?: string): LessonPlan[] {
   if (typeof window === 'undefined') return [];
   const saved = localStorage.getItem(STORAGE_KEYS.LESSON_PLANS);

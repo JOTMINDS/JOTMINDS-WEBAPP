@@ -51,13 +51,15 @@ import {
   CartesianGrid,
   Cell,
 } from "recharts";
-import { JTIAReportData, JTIAAIRecommendations } from "../utils/jtiaScoring";
+import { JTIAReportData, JTIAAIRecommendations, generatePersonalizedRecommendations } from "../utils/jtiaScoring";
 import { jtiaDomainDescriptions, JTIADomain } from "../utils/jtiaQuestions";
 import { generateJTIAAIRecommendations } from "../utils/aiService";
 
 interface JTIAReportProps {
   report: JTIAReportData;
   teacherName?: string;
+  /** Curriculum the teacher teaches; recommendations are tailored to it */
+  curriculum?: string;
   onRetake?: () => void;
   onBack?: () => void;
 }
@@ -65,6 +67,7 @@ interface JTIAReportProps {
 export const JTIAReport: React.FC<JTIAReportProps> = ({
   report,
   teacherName = "Teacher",
+  curriculum,
   onRetake,
   onBack,
 }) => {
@@ -82,7 +85,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
 
   const fetchAiInsights = async () => {
     setIsLoadingAi(true);
-    const aiRes = await generateJTIAAIRecommendations(report);
+    const aiRes = await generateJTIAAIRecommendations(report, curriculum);
     if (aiRes) {
       setAiRecommendations(aiRes);
     }
@@ -91,9 +94,14 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
 
   useEffect(() => {
     fetchAiInsights();
-  }, [report]);
+  }, [report, curriculum]);
 
-  const displayedRecommendations = aiRecommendations || report.recommendations;
+  // Rebuilt from the current curriculum so saved reports don't keep older, curriculum-specific wording
+  const baseRecommendations = React.useMemo(
+    () => generatePersonalizedRecommendations(report.domainScores as any, report.strengths || [], report.growthOpportunities || [], teacherName, curriculum),
+    [report, teacherName, curriculum]
+  );
+  const displayedRecommendations = aiRecommendations || baseRecommendations;
 
   const domainScores = report.domainScores || {
     cognitive: 82,

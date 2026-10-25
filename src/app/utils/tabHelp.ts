@@ -7,7 +7,7 @@ export type TabHelpMap = Record<string, string>;
 export const TEACHER_TAB_HELP: TabHelpMap = {
   overview: 'A summary of your class: how many students have been assessed, the most common learning and thinking styles, and teaching ideas that suit them.',
   'manage-classes': 'Create classes and add students to them. Students in your classes appear in your other tabs.',
-  students: 'Your class roster. Search for a student, open their cognitive profile and add your own observations.',
+  students: 'Your students and classes in one place. The Student Roster lets you search students, open profiles and give out codes. Classes lets you create classes and add students to them.',
   preschool: 'The Early Years track for children aged 2 to 6. You record observations of play and milestones instead of giving tests.',
   analytics: 'Charts and tables about your class: learning, thinking and decision styles, dimensions, a student heatmap, and how your own styles compare with your students.',
   'lesson-planner': 'Create lesson plans in the format of your curriculum, add activities for every learner, build assessments, teach and reflect.',

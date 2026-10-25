@@ -4,7 +4,8 @@ import { InfoTip } from '../ui/info-tip';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
-import { Upload } from 'lucide-react';
+import { Upload, Send } from 'lucide-react';
+import { ShareWorkDialog } from './ShareWorkDialog';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { FileCheck, Sparkles, CheckCircle2, HelpCircle, BookOpen, MessageSquare, Loader } from 'lucide-react';
@@ -15,11 +16,14 @@ import { toast } from 'sonner';
 interface AssessmentGeneratorViewProps {
   plan?: LessonPlan;
   onAssessmentGenerated?: (assmt: GeneratedAssessment) => void;
+  /** Students the teacher can share the work with */
+  students?: any[];
 }
 
 export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = ({
   plan,
-  onAssessmentGenerated
+  onAssessmentGenerated,
+  students = []
 }) => {
   const [assessment, setAssessment] = useState<GeneratedAssessment>(
     plan?.assessment || {
@@ -36,6 +40,8 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadText, setUploadText] = useState('');
   const [showUpload, setShowUpload] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const hasQuestions = assessment.mcqs.length + assessment.shortAnswer.length + assessment.discussion.length + assessment.practicalExercises.length + assessment.homework.length > 0;
 
   const handleGenerateAssessment = async () => {
     setIsGenerating(true);
@@ -90,6 +96,17 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
           >
             <Upload className="w-3.5 h-3.5 mr-1.5" />
             {showUpload ? 'Hide Custom Materials' : 'Upload / Paste Questions'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasQuestions}
+            onClick={() => setShowShare(true)}
+            className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold"
+            title={hasQuestions ? 'Send to students' : 'Generate questions first'}
+          >
+            <Send className="w-3.5 h-3.5 mr-1.5" />
+            Share with students
           </Button>
           <Button
             onClick={handleGenerateAssessment}
@@ -279,6 +296,7 @@ export const AssessmentGeneratorView: React.FC<AssessmentGeneratorViewProps> = (
           ))}
         </TabsContent>
       </Tabs>
+      <ShareWorkDialog open={showShare} onClose={() => setShowShare(false)} assessment={assessment} students={students} />
     </div>
   );
 };

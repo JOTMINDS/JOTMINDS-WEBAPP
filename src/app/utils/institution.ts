@@ -1131,9 +1131,14 @@ export async function getInstitutionClasses(institutionId: string, teacherIds?: 
         createdAt: dbClass.created_at
       }));
       // Combine with remoteClasses from API
-      const rMap = new Map();
+      // Merge field by field. The database row can lack fields the backend copy has (for example the
+      // grade level, when the column is not there yet), so an empty database field must not wipe them out.
+      const rMap = new Map<string, Class>();
       remoteClasses.forEach(c => rMap.set(c.id, c));
-      dbClasses.forEach(c => rMap.set(c.id, c));
+      dbClasses.forEach(c => {
+        const defined = Object.fromEntries(Object.entries(c).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+        rMap.set(c.id, { ...(rMap.get(c.id) || {}), ...defined } as Class);
+      });
       remoteClasses = Array.from(rMap.values());
     }
   } catch (e) {

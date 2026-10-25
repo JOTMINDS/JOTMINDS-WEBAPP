@@ -18,6 +18,7 @@ import { Badge } from './ui/badge';
 import { TeacherClassOverview } from './teacher';
 import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
 import { JTIAReport } from './JTIAReport';
+import { getTeacherCurriculum } from '../utils/lessonPlannerStorage';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { calculateJTIAScore, JTIAReportData } from '../utils/jtiaScoring';
 import { generateDeepDiveQuestions } from '../utils/teachingStyleData';
@@ -50,8 +51,18 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
   const { impersonatedUser } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
+  // Students and Manage Classes are one tab with two views, since they overlap
+  const [studentsView, setStudentsView] = useState<'roster' | 'classes'>('roster');
   const [activeTab, setActiveTab] = useState<'overview' | 'manage-classes' | 'students' | 'preschool' | 'analytics' | 'lesson-planner' | 'jtia'>('overview');
   const [loading, setLoading] = useState(true);
+
+  // Old links to the Manage Classes tab open the Classes view of the Students tab
+  useEffect(() => {
+    if ((activeTab as string) === 'manage-classes') {
+      setStudentsView('classes');
+      setActiveTab('students');
+    }
+  }, [activeTab]);
   const [myAssessments, setMyAssessments] = useState<Assessment[]>([]);
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);
   const [initialResponses, setInitialResponses] = useState<number[]>([]);
@@ -364,8 +375,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
       groupLabel: 'Educator Portal',
       items: [
         { id: 'overview', label: 'Overview', icon: Users },
-        { id: 'manage-classes', label: 'Manage Classes', icon: School },
-        { id: 'students', label: 'Students', icon: Eye, badge: students.length },
+        { id: 'students', label: 'Students & Classes', icon: Eye, badge: students.length },
         { id: 'preschool', label: 'Early Years (Preschool)', icon: Sparkles, badge: 'Ages 2–6' },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'lesson-planner', label: 'Lesson Planner', icon: ClipboardList },
@@ -453,8 +463,23 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
         )}
 
         {(activeTab as string) === 'students' && (
-          <div className="space-y-8">
-            <CentralStudentManagement students={students as any} assessments={allAssessments} teacher={user} onRefresh={loadClassData} />
+          <div className="space-y-6">
+            <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
+              {([['roster', 'Student Roster'], ['classes', 'Classes']] as const).map(([view, label]) => (
+                <button
+                  key={view}
+                  onClick={() => setStudentsView(view)}
+                  className={`px-4 py-1.5 rounded-md font-medium transition-colors ${studentsView === view ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {studentsView === 'roster' ? (
+              <CentralStudentManagement students={students as any} assessments={allAssessments} teacher={user} onRefresh={loadClassData} />
+            ) : (
+              <TeacherClassManagement teacher={user} students={students as any} />
+            )}
           </div>
         )}
 
@@ -465,12 +490,6 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               childrenList={students.filter(isPreschoolChild)}
               onBack={() => setActiveTab('overview')}
             />
-          </div>
-        )}
-
-        {(activeTab as string) === 'manage-classes' && (
-          <div className="space-y-8">
-            <TeacherClassManagement teacher={user} students={students as any} />
           </div>
         )}
 
@@ -521,6 +540,7 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
               <JTIAReport
                 report={displayedAssessment.score?.jtia || calculateJTIAScore(displayedAssessment.responses)}
                 teacherName={user.name || 'Teacher Profile'}
+                curriculum={getTeacherCurriculum(user.id)}
                 onRetake={() => setIsTakingAssessment(true)}
               />
 

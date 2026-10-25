@@ -64,11 +64,24 @@ export function InstitutionOverview({
 
   // Assessed students calculation
   const studentMemberIds = new Set(members.filter(m => m.role === 'student').map(m => m.userId));
+  const CORE_TYPES = ['kolb', 'vark', 'learning', 'sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking', 'dual-process', 'decision'];
+  const TEACHING_TYPES = ['jtia', 'teaching-style', 'teaching'];
   const assessedStudentIds = new Set(
     (memberAssessments || [])
-      .filter((a: any) => studentMemberIds.has(a.userId) && a.completedAt)
+      .filter((a: any) => studentMemberIds.has(a.userId) && a.completedAt && CORE_TYPES.includes(a.type))
       .map((a: any) => a.userId)
   );
+  const teacherMemberIds = new Set(
+    members.filter(m => (m.role === 'teacher' || m.role === 'admin') && m.status === 'approved').map(m => m.userId)
+  );
+  const assessedTeacherIds = new Set(
+    (memberAssessments || [])
+      .filter((a: any) => teacherMemberIds.has(a.userId) && a.completedAt && (TEACHING_TYPES.includes(a.type) || CORE_TYPES.includes(a.type)))
+      .map((a: any) => a.userId)
+  );
+  const unassessedStudents = Math.max(0, approvedStudents - assessedStudentIds.size);
+  const unassessedTeachers = Math.max(0, teacherMemberIds.size - assessedTeacherIds.size);
+  const teacherAssessmentRate = teacherMemberIds.size > 0 ? Math.round((assessedTeacherIds.size / teacherMemberIds.size) * 100) : 0;
   const assessedStudentsCount = assessedStudentIds.size;
   const assessmentCompletionRate = approvedStudents > 0 
     ? Math.round((assessedStudentsCount / approvedStudents) * 100) 
@@ -122,7 +135,7 @@ export function InstitutionOverview({
       <div className="mb-6">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900">Overview<InfoTip>A summary of your institution: members, classes and activity.</InfoTip></h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Welcome to your Institution Portal. This dashboard provides a central overview of your school's performance, member management, and cognitive insights. Use the sidebar to navigate between student and teacher analytics, review performance reports, or adjust your settings.
+          Your school at a glance.
         </p>
       </div>
 
@@ -133,6 +146,77 @@ export function InstitutionOverview({
             This institution account is <strong>deactivated</strong>. Teachers and students cannot join using the institution code. Reactivate from the Manage Codes panel.
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* School Summary KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {[
+          { 
+            label: 'Connected Students', 
+            value: approvedStudents, 
+            subtitle: pendingStudents > 0 ? `${pendingStudents} awaiting verification` : 'Verified students', 
+            color: '#1E8A6E' 
+          },
+          { 
+            label: 'Active Facilitators', 
+            value: approvedTeachers, 
+            subtitle: pendingTeachers > 0 ? `${pendingTeachers} pending approval` : 'Faculty active', 
+            color: '#6B4C9A' 
+          },
+          { 
+            label: 'Active Classes', 
+            value: totalClasses, 
+            subtitle: 'Class sections & cohorts', 
+            color: '#2563EB' 
+          },
+          { 
+            label: 'Assessed Profiles', 
+            value: `${assessmentCompletionRate}%`, 
+            subtitle: `${assessedStudentsCount} of ${approvedStudents} completed`, 
+            color: '#D97706' 
+          },
+          { 
+            label: 'Facilitators Assessed', 
+            value: `${teacherAssessmentRate}%`, 
+            subtitle: `${assessedTeacherIds.size} of ${teacherMemberIds.size} teachers`, 
+            color: '#0891B2' 
+          },
+        ].map(s => (
+          <Card key={s.label}>
+            <CardContent className="pt-4 text-center">
+              <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
+              <p className="text-xs font-semibold text-gray-700 mt-0.5">{s.label}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{s.subtitle}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* What needs attention */}
+      {(pendingStudents > 0 || pendingTeachers > 0 || unassessedStudents > 0 || unassessedTeachers > 0 || totalClasses === 0 || expired) && (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardContent className="pt-4">
+            <p className="text-sm font-semibold text-amber-900 mb-2">Needs your attention</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { show: expired, text: 'School code has expired', tab: 'settings' as const },
+                { show: pendingTeachers > 0, text: `${pendingTeachers} teacher${pendingTeachers === 1 ? '' : 's'} awaiting approval`, tab: 'teacher_management' as const },
+                { show: pendingStudents > 0, text: `${pendingStudents} student${pendingStudents === 1 ? '' : 's'} awaiting approval`, tab: 'manage_students' as const },
+                { show: unassessedStudents > 0, text: `${unassessedStudents} student${unassessedStudents === 1 ? '' : 's'} not yet assessed`, tab: 'student_insights' as const },
+                { show: unassessedTeachers > 0, text: `${unassessedTeachers} teacher${unassessedTeachers === 1 ? '' : 's'} without a profile`, tab: 'teaching_analytics' as const },
+                { show: totalClasses === 0, text: 'No classes created yet', tab: 'class_management' as any },
+              ].filter(x => x.show).map(x => (
+                <button
+                  key={x.text}
+                  onClick={() => setTab(x.tab)}
+                  className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 cursor-pointer"
+                >
+                  {x.text}
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Institution card */}
@@ -243,50 +327,6 @@ export function InstitutionOverview({
           </div>
         </CardContent>
       </Card>
-
-      {/* School Summary KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {[
-          { 
-            label: 'Connected Students', 
-            value: approvedStudents, 
-            subtitle: pendingStudents > 0 ? `${pendingStudents} awaiting verification` : 'Verified students', 
-            color: '#1E8A6E' 
-          },
-          { 
-            label: 'Active Facilitators', 
-            value: approvedTeachers, 
-            subtitle: pendingTeachers > 0 ? `${pendingTeachers} pending approval` : 'Faculty active', 
-            color: '#6B4C9A' 
-          },
-          { 
-            label: 'Active Classes', 
-            value: totalClasses, 
-            subtitle: 'Class sections & cohorts', 
-            color: '#2563EB' 
-          },
-          { 
-            label: 'Assessed Profiles', 
-            value: `${assessmentCompletionRate}%`, 
-            subtitle: `${assessedStudentsCount} of ${approvedStudents} completed`, 
-            color: '#D97706' 
-          },
-          { 
-            label: 'School Status', 
-            value: institution.isActive ? 'Active' : 'Inactive', 
-            subtitle: `${daysLeft ?? 30} days left on code`, 
-            color: institution.isActive ? '#10B981' : '#EF4444' 
-          },
-        ].map(s => (
-          <Card key={s.label}>
-            <CardContent className="pt-4 text-center">
-              <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
-              <p className="text-xs font-semibold text-gray-700 mt-0.5">{s.label}</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">{s.subtitle}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       {/* Quick Tools */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -49,7 +49,26 @@ const SECTION_INFO = {
   }
 };
 
+const SECTION_ORDER = ['creative', 'analytical', 'practical', 'reflective'] as const;
+
+// Sections stay in order so the section summaries still make sense, but the questions inside
+// each section come in a fresh random order every attempt. Returns canonical question indexes.
+function buildQuestionOrder(): number[] {
+  const order: number[] = [];
+  for (const section of SECTION_ORDER) {
+    const idx = JHS_QUESTIONS.map((q, i) => (q.section === section ? i : -1)).filter(i => i >= 0);
+    for (let i = idx.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    order.push(...idx);
+  }
+  return order;
+}
+
 export function JHSThinkingAssessment({ userId, onComplete, onCancel }: JHSThinkingAssessmentProps) {
+  const [order] = useState<number[]>(buildQuestionOrder);
+  const questions = order.map(i => JHS_QUESTIONS[i]);
   const [showIntro, setShowIntro] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [responses, setResponses] = useState<number[]>(new Array(24).fill(0));
@@ -58,25 +77,26 @@ export function JHSThinkingAssessment({ userId, onComplete, onCancel }: JHSThink
   const [showConfetti, setShowConfetti] = useState(false);
   const questionRef = useRef<HTMLDivElement>(null);
 
-  const question = JHS_QUESTIONS[currentQuestion];
+  const question = questions[currentQuestion];
   const currentSection = question.section;
   const sectionInfo = SECTION_INFO[currentSection];
-  const progress = ((currentQuestion + 1) / JHS_QUESTIONS.length) * 100;
-  const isLastQuestion = currentQuestion === JHS_QUESTIONS.length - 1;
-  const canProceed = responses[currentQuestion] > 0;
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  const isLastQuestion = currentQuestion === questions.length - 1;
+  const canonicalIndex = order[currentQuestion];
+  const canProceed = responses[canonicalIndex] > 0;
 
   // Check if we're at the start of a new section
   const isNewSection = currentQuestion === 0 || 
-    JHS_QUESTIONS[currentQuestion].section !== JHS_QUESTIONS[currentQuestion - 1]?.section;
+    questions[currentQuestion].section !== questions[currentQuestion - 1]?.section;
 
   // Check if we're at the end of a section
-  const isEndOfSection = currentQuestion < JHS_QUESTIONS.length - 1 && 
-    JHS_QUESTIONS[currentQuestion].section !== JHS_QUESTIONS[currentQuestion + 1]?.section;
+  const isEndOfSection = currentQuestion < questions.length - 1 && 
+    questions[currentQuestion].section !== questions[currentQuestion + 1]?.section;
 
   // Get section progress
   const getSectionProgress = () => {
-    const sectionQuestions = JHS_QUESTIONS.filter(q => q.section === currentSection);
-    const sectionStartIndex = JHS_QUESTIONS.findIndex(q => q.section === currentSection);
+    const sectionQuestions = questions.filter(q => q.section === currentSection);
+    const sectionStartIndex = questions.findIndex(q => q.section === currentSection);
     const questionsAnswered = currentQuestion - sectionStartIndex + 1;
     return {
       total: sectionQuestions.length,
@@ -87,7 +107,7 @@ export function JHSThinkingAssessment({ userId, onComplete, onCancel }: JHSThink
 
   const handleResponse = (value: number) => {
     const newResponses = [...responses];
-    newResponses[currentQuestion] = value;
+    newResponses[canonicalIndex] = value;
     setResponses(newResponses);
     
     // Auto-scroll to top after selection
@@ -100,7 +120,7 @@ export function JHSThinkingAssessment({ userId, onComplete, onCancel }: JHSThink
     if (isEndOfSection && canProceed) {
       // Show section summary before moving to next section
       setShowSectionSummary(true);
-    } else if (currentQuestion < JHS_QUESTIONS.length - 1) {
+    } else if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     }
   };
@@ -201,9 +221,9 @@ export function JHSThinkingAssessment({ userId, onComplete, onCancel }: JHSThink
               </div>
             </div>
             <div className="pt-4">
-              <Progress value={((currentQuestion + 1) / JHS_QUESTIONS.length) * 100} className="h-3 mb-2" />
+              <Progress value={((currentQuestion + 1) / questions.length) * 100} className="h-3 mb-2" />
               <p className="text-sm text-center text-gray-600">
-                Overall progress: {currentQuestion + 1} of {JHS_QUESTIONS.length} questions
+                Overall progress: {currentQuestion + 1} of {questions.length} questions
               </p>
             </div>
           </div>
@@ -349,7 +369,7 @@ export function JHSThinkingAssessment({ userId, onComplete, onCancel }: JHSThink
             {/* Progress */}
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-gray-600">
-                <span>Question {currentQuestion + 1} of {JHS_QUESTIONS.length}</span>
+                <span>Question {currentQuestion + 1} of {questions.length}</span>
                 <span>{Math.round(progress)}% Complete</span>
               </div>
               <Progress value={progress} className="h-2" />
@@ -375,15 +395,15 @@ export function JHSThinkingAssessment({ userId, onComplete, onCancel }: JHSThink
                     key={item.value}
                     onClick={() => handleResponse(item.value)}
                     className={`p-3 rounded-xl transition-all flex flex-col items-center justify-center gap-2 ${
-                      responses[currentQuestion] === item.value
+                      responses[canonicalIndex] === item.value
                         ? 'ring-4 scale-110 shadow-lg'
                         : 'hover:scale-105 hover:shadow-md'
                     }`}
                     style={{
-                      backgroundColor: responses[currentQuestion] === item.value
+                      backgroundColor: responses[canonicalIndex] === item.value
                         ? `${sectionInfo.color}20`
                         : 'white',
-                      borderColor: responses[currentQuestion] === item.value
+                      borderColor: responses[canonicalIndex] === item.value
                         ? sectionInfo.color
                         : '#E5E7EB',
                       borderWidth: '2px',

@@ -56,6 +56,14 @@ const baseQuestions: Question[] = [
   { id: 20, text: "I feel proud when I learn from my mistakes.", category: 'reflective' },
 ];
 
+// A picture for each statement, so a child can follow the question from the image without reading every word
+const QUESTION_PICTURES: Record<number, string> = {
+  1: '💡📖', 2: '🎨🧱', 3: '✨🎁', 4: '🔀💭', 5: '🌈🦄',
+  6: '🧩❓', 7: '⚙️🔎', 8: '🙋‍♀️❓', 9: '🧠📚', 10: '🗣️💬',
+  11: '🔧🏠', 12: '🧪✅', 13: '📐🛠️', 14: '🏫🏡', 15: '💪🔁',
+  16: '🔄😊', 17: '👂👫', 18: '🌱🔙', 19: '🤔👍', 20: '🏅📈',
+};
+
 const emojiOptions = [
   { value: '1', emoji: '😕', label: 'Not really me' },
   { value: '2', emoji: '😐', label: 'A little like me' },
@@ -260,7 +268,10 @@ export function ChildrenThinkingAssessment({ onComplete, onBack }: ChildrenThink
           </CardHeader>
 
           <CardContent className="space-y-6 pt-8 pb-8">
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg border-2 border-purple-200 min-h-[100px] flex items-center justify-center">
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg border-2 border-purple-200 min-h-[100px] flex flex-col items-center justify-center gap-3">
+              {QUESTION_PICTURES[question.id] && (
+                <div className="text-7xl leading-none" aria-hidden="true">{QUESTION_PICTURES[question.id]}</div>
+              )}
               <p className="text-2xl text-center leading-relaxed">
                 {question.text}
               </p>

@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Plus, X, Copy, CheckCircle2, UserPlus, RefreshCw, Upload, Download, School, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Plus, X, Copy, CheckCircle2, UserPlus, RefreshCw, Upload, Download, School, ArrowRight, ArrowLeft, Camera, Loader2 } from 'lucide-react';
 import { Class, EducationLevel, StudentCode } from '../../types';
 import { generateId, getAllClasses, saveClass } from '../../utils/storage';
 import { enrollStudent, saveInstitutionClassAPI } from '../../utils/api';
@@ -112,7 +112,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
 
 
   const downloadTemplate = () => {
-    const csvContent = "Name,DateOfBirth\nKofi Mensah,2010-05-15\nAma Serwaa,2011-08-22\nKwame Owusu,2009-12-04\nAbena Osei,2010-03-18";
+    const csvContent = "Name,DateOfBirth (optional)\nKofi Mensah,\nAma Serwaa,\nKwame Owusu,\nAbena Osei,";
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -121,7 +121,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("CSV Template downloaded! Fill in student names and birthdates.");
+    toast.success("CSV Template downloaded! Fill in student names (birthdates are optional).");
   };
 
   const normalizeDob = (rawDate: string): { valid: boolean; formatted: string } => {
@@ -152,6 +152,61 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
     }
 
     return { valid: false, formatted: '' };
+  };
+
+  // ── Scan a printed or handwritten class list with the camera ──
+  const [isScanning, setIsScanning] = useState(false);
+
+  // Turns raw OCR text into a clean list of names: one per line, numbering and bullets removed
+  const parseNamesFromText = (text: string): string[] => {
+    const seen = new Set<string>();
+    const names: string[] = [];
+    for (const rawLine of text.split(/\r?\n/)) {
+      const cleaned = rawLine
+        .replace(/^[\s\-*•·.)(\[\]\d]+/, '')          // leading numbers, bullets, punctuation
+        .replace(/[^\p{L}\s'’.-]/gu, ' ')              // stray symbols from the scan
+        .replace(/\s+/g, ' ')
+        .trim();
+      const letters = cleaned.replace(/[^\p{L}]/gu, '');
+      if (letters.length < 3 || cleaned.length > 60) continue;
+      const key = cleaned.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      names.push(cleaned);
+    }
+    return names;
+  };
+
+  const handleScanList = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setIsScanning(true);
+    const toastId = toast.loading('Reading the list… this can take a few seconds the first time.');
+    try {
+      // Loaded on demand so the scanner only downloads when someone uses it. Runs on this device:
+      // the photo and the names in it are not sent to any server.
+      const { recognize } = await import('tesseract.js');
+      const result = await recognize(file, 'eng');
+      const names = parseNamesFromText(result.data.text || '');
+      if (names.length === 0) {
+        toast.error('No names found. Try a clearer, well-lit photo with one name per line.', { id: toastId });
+        return;
+      }
+      // Replace empty rows, keep anything already typed
+      const kept = students.filter(s => s.name.trim());
+      setStudents([
+        ...kept,
+        ...names.map(name => ({ name, dob: '', id: generateId() })),
+      ]);
+      toast.success(`Found ${names.length} name${names.length === 1 ? '' : 's'}. Please check and correct them before generating codes.`, { id: toastId });
+    } catch (err) {
+      console.error('List scan failed', err);
+      toast.error('Could not read that photo. Please try again or type the names in.', { id: toastId });
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,9 +241,10 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
             continue;
           }
 
-          const parsedDob = normalizeDob(rawDob);
+          // Date of birth is optional; only reject a date that was entered but can't be read
+          const parsedDob = rawDob && rawDob.trim() ? normalizeDob(rawDob) : { valid: true, formatted: '' };
           if (!parsedDob.valid) {
-            invalidRows.push(`Row ${rowNum} (${name}): Invalid date "${rawDob || 'empty'}"`);
+            invalidRows.push(`Row ${rowNum} (${name}): Invalid date "${rawDob}"`);
             continue;
           }
 
@@ -229,10 +285,10 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
 
     setIsGenerating(true);
     
-    const validStudents = students.filter(s => s.name.trim().length > 0 && s.dob.trim().length > 0);
+    const validStudents = students.filter(s => s.name.trim().length > 0);
     
     if (validStudents.length === 0) {
-      toast.error('Please provide name and date of birth for all students');
+      toast.error('Please enter at least one student name');
       setIsGenerating(false);
       return;
     }
@@ -250,7 +306,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
         try {
           const response = await enrollStudent({
             studentName: student.name.trim(),
-            dateOfBirth: student.dob.trim(),
+            dateOfBirth: student.dob.trim() || undefined,
             classId: targetClassId,
             className: targetClassName,
             teacherId,
@@ -328,8 +384,8 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
               ? 'First, select or create a class for these students. The class determines their education level.'
               : step === 'enter-students'
               ? selectedClassId === 'individual'
-                ? `Generating individual codes for ${individualEducationLevel} students. Enter names and birth dates.`
-                : `Adding students to "${selectedClass?.name || 'Class'}" (${selectedClass?.educationLevel || 'No level'}). Enter names and birth dates.`
+                ? `Generating individual codes for ${individualEducationLevel} students. Enter student names. Date of birth is optional.`
+                : `Adding students to "${selectedClass?.name || 'Class'}" (${selectedClass?.educationLevel || 'No level'}). Enter student names. Date of birth is optional.`
               : 'Student codes have been generated successfully!'
             }
           </DialogDescription>
@@ -557,7 +613,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                   </div>
                   <div className="flex-1 space-y-2">
                     <Input
-                      placeholder="Date of Birth (Required)"
+                      placeholder="Date of Birth (Optional)"
                       type="date"
                       value={student.dob}
                       onChange={(e) => updateStudent(student.id, 'dob', e.target.value)}
@@ -604,6 +660,27 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                 </Button>
               </div>
             </div>
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleScanList}
+                disabled={isScanning}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                title="Scan a class list with your camera"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isScanning}
+                className="w-full border-dashed border-2 text-purple-600 border-purple-200 hover:bg-purple-50 pointer-events-none"
+              >
+                {isScanning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Camera className="w-4 h-4 mr-2" />}
+                {isScanning ? 'Reading list…' : 'Scan class list with camera'}
+              </Button>
+              <p className="text-[11px] text-gray-500 mt-1">Take a photo of a printed or written list, one name per line. You can edit the names before generating codes. The photo stays on your device.</p>
+            </div>
             <div className="text-right">
               <button onClick={downloadTemplate} className="text-xs flex items-center justify-end w-full gap-1 text-indigo-500 hover:text-indigo-700">
                 <Download className="w-3 h-3" /> Download CSV Template
@@ -618,7 +695,7 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                 <Button variant="ghost" onClick={onClose}>Cancel</Button>
                 <Button
                   onClick={generateCodes}
-                  disabled={isGenerating || students.every(s => !s.name.trim() || !s.dob.trim())}
+                  disabled={isGenerating || students.every(s => !s.name.trim())}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   {isGenerating ? (
