@@ -24,6 +24,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
 import { StudentDetailView } from './StudentDetailView';
 import { InstitutionMember } from '../utils/institution';
+import { getFriendlyDimensionName } from '../utils/styleWording';
 
 interface SchoolAnalyticsDashboardProps {
   user: User;
@@ -547,21 +548,23 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
     }));
 
     // Comparative Data Array
-    const comparisonData = cognitiveSummary.map(studentDim => {
+    // Only dimensions that both students and facilitators have results for are compared;
+    // a missing facilitator result is not the same as a 0% score.
+    const comparisonData = cognitiveSummary.flatMap(studentDim => {
       const teacherDim = teacherCognitiveSummary.find(t => t.name === studentDim.name);
-      return {
+      if (!teacherDim) return [];
+      return [{
         name: studentDim.name,
         'Student Avg (%)': Math.round((studentDim.avg / studentDim.max) * 100),
-        'Teacher Avg (%)': teacherDim ? Math.round((teacherDim.avg / teacherDim.max) * 100) : 0,
-      };
+        'Teacher Avg (%)': Math.round((teacherDim.avg / teacherDim.max) * 100),
+      }];
     });
     const teacherAssessedList = teacherSummaries.filter((s: any) => s.assessments.length > 0);
-    const teacherAvgEng = teacherAssessedList.length ? Math.round(teacherAssessedList.reduce((s: any, v: any) => s + (v.assessments.length >= 2 ? 90 : 80), 0) / teacherAssessedList.length) : 0;
 
     return { 
       assessed: assessed.length, total: summaries.length, riskCounts, avgEng, totalXP, activeStreaks, 
       typeCompletion, gradeData, engagementBands, topStreaks, topXP, topScores, cognitiveSummary, comparisonData,
-      teacherTotal: teacherSummaries.length, teacherAssessed: teacherAssessedList.length, teacherAvgEng
+      teacherTotal: teacherSummaries.length, teacherAssessed: teacherAssessedList.length
     };
   }, [summaries, teacherSummaries]);
 
@@ -1471,81 +1474,97 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
         })()}
 
         {tab === 'comparison' && (<>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <span>Student Engagement<InfoTip>Average engagement score for students.</InfoTip></span>
-                  <Users className="w-4 h-4 text-[#1E8A6E]" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-2 text-center mt-2">
-                  <div>
-                    <p className="text-2xl font-bold text-[#5B7DB1]">{stats.total}</p>
-                    <p className="text-xs text-gray-500">Total</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-[#1E8A6E]">{Math.round((stats.assessed / Math.max(stats.total, 1)) * 100)}%</p>
-                    <p className="text-xs text-gray-500">Assessed</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-[#6B4C9A]">{stats.avgEng}</p>
-                    <p className="text-xs text-gray-500">Avg Score</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <span>Facilitator Engagement<InfoTip>Average engagement score for facilitators (teachers).</InfoTip></span>
-                  <BookOpen className="w-4 h-4 text-[#E0A020]" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-2 text-center mt-2">
-                  <div>
-                    <p className="text-2xl font-bold text-[#5B7DB1]">{stats.teacherTotal}</p>
-                    <p className="text-xs text-gray-500">Total</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-[#1E8A6E]">{Math.round((stats.teacherAssessed / Math.max(stats.teacherTotal, 1)) * 100)}%</p>
-                    <p className="text-xs text-gray-500">Assessed</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-[#6B4C9A]">{stats.teacherAvgEng}</p>
-                    <p className="text-xs text-gray-500">Avg Score</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {(() => {
+            const gaps = stats.comparisonData
+              .map(d => {
+                const diff = d['Student Avg (%)'] - d['Teacher Avg (%)'];
+                return { label: getFriendlyDimensionName(d.name), students: d['Student Avg (%)'], teachers: d['Teacher Avg (%)'], diff };
+              })
+              .sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff));
+            const verdict = (diff: number) =>
+              Math.abs(diff) <= 10 ? { text: 'Well matched', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
+              : diff > 0 ? { text: 'Students stronger', cls: 'bg-amber-50 text-amber-800 border-amber-200' }
+              : { text: 'Facilitators stronger', cls: 'bg-blue-50 text-blue-800 border-blue-200' };
+            const biggest = gaps.filter(g => Math.abs(g.diff) > 10).slice(0, 3);
+            return (<>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-800">Students assessed</p>
+                      <Users className="w-4 h-4 text-[#1E8A6E]" />
+                    </div>
+                    <p className="text-3xl font-bold text-[#1E8A6E] mt-2">{Math.round((stats.assessed / Math.max(stats.total, 1)) * 100)}%</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{stats.assessed} of {stats.total} students</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-800">Facilitators assessed</p>
+                      <BookOpen className="w-4 h-4 text-[#E0A020]" />
+                    </div>
+                    <p className="text-3xl font-bold text-[#E0A020] mt-2">{Math.round((stats.teacherAssessed / Math.max(stats.teacherTotal, 1)) * 100)}%</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{stats.teacherAssessed} of {stats.teacherTotal} facilitators</p>
+                  </CardContent>
+                </Card>
+              </div>
 
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-sm font-bold">Cognitive Profile Alignment: Facilitators vs. Students<InfoTip>Compares what facilitators prefer with what students prefer, for each style.</InfoTip></CardTitle>
-              <p className="text-xs text-gray-500 mt-1">Comparing the average dimension strengths (in percentage) of school facilitators and students.</p>
-            </CardHeader>
-            <CardContent className="h-[350px]">
-              {stats.comparisonData.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-gray-400 text-sm">Not enough data to compare. Ensure both facilitators and students have completed assessments.</div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(val) => `${val}%`} />
-                    <RechartsTip cursor={{fill: 'transparent'}} />
-                    <Legend verticalAlign="top" height={36} />
-                    <Bar dataKey="Teacher Avg (%)" name="Facilitator Avg (%)" fill="#6B4C9A" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Student Avg (%)" name="Student Avg (%)" fill="#1E8A6E" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-sm font-bold">How well do facilitators match students?<InfoTip>For each thinking and learning style, this compares the average strength among students with the average among facilitators. Big gaps show where teaching may not reach every student.</InfoTip></CardTitle>
+                  <p className="text-xs text-gray-500 mt-1">Biggest differences first. A gap is a chance to adapt, not a fault.</p>
+                </CardHeader>
+                <CardContent>
+                  {gaps.length === 0 ? (
+                    <div className="py-10 text-center text-gray-400 text-sm">Not enough data to compare yet. Both facilitators and students need to complete assessments.</div>
+                  ) : (<>
+                    {biggest.length > 0 ? (
+                      <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100 space-y-1.5">
+                        <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2"><Zap className="w-4 h-4" /> What to do</h4>
+                        {biggest.map(g => (
+                          <p key={g.label} className="text-xs text-blue-800">
+                            {g.diff > 0
+                              ? `Students rate higher than facilitators on ${g.label} (${g.students}% vs ${g.teachers}%). Add more lessons and activities that use this strength.`
+                              : `Facilitators rate higher than students on ${g.label} (${g.teachers}% vs ${g.students}%). Teachers may lean on this more than students need; mix in other approaches.`}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mb-4 p-4 bg-emerald-50 rounded-lg border border-emerald-100 text-xs text-emerald-800">
+                        Facilitator and student profiles are closely matched. Keep up your current differentiated teaching.
+                      </div>
+                    )}
+                    <div className="space-y-3">
+                      {gaps.map(g => {
+                        const v = verdict(g.diff);
+                        return (
+                          <div key={g.label}>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-xs font-medium text-gray-800">{g.label}</span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${v.cls}`}>{v.text}</span>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="w-20 text-[10px] text-gray-500">Students</span>
+                                <div className="flex-1 bg-gray-100 rounded-full h-2"><div className="h-2 rounded-full bg-[#1E8A6E]" style={{ width: `${g.students}%` }} /></div>
+                                <span className="w-9 text-right text-[10px] text-gray-600">{g.students}%</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="w-20 text-[10px] text-gray-500">Facilitators</span>
+                                <div className="flex-1 bg-gray-100 rounded-full h-2"><div className="h-2 rounded-full bg-[#6B4C9A]" style={{ width: `${g.teachers}%` }} /></div>
+                                <span className="w-9 text-right text-[10px] text-gray-600">{g.teachers}%</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>)}
+                </CardContent>
+              </Card>
+            </>);
+          })()}
 
           {/* Connected Facilitator Alignment Roster */}
           <Card className="mb-6">
@@ -1616,28 +1635,6 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             </CardContent>
           </Card>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Teaching Style vs. Student Needs<InfoTip>Where the way teachers teach differs from the way students learn best.</InfoTip></CardTitle>
-                <p className="text-xs text-gray-500 mt-1">If the student population skews towards 'Reflective' processing, do the facilitators' styles accommodate that?</p>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Use the Cognitive Profile Alignment chart above to identify gaps. 
-                  For example, if your students score highly in <b>Practical</b> and <b>Concrete Experience (CE)</b>, but your facilitators' cognitive profiles lean heavily towards <b>Analytical</b> or <b>Abstract Conceptualization (AC)</b>, you may need to introduce more hands-on, experiential learning opportunities into the curriculum to bridge the alignment gap.
-                </p>
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                  <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2"><Zap className="w-4 h-4" /> Recommendation Engine<InfoTip>Suggestions generated from the biggest gaps between teacher and student styles.</InfoTip></h4>
-                  <p className="text-xs text-blue-800 mt-2">
-                    {stats.comparisonData.some(d => d.name === 'Practical' && d['Student Avg (%)'] > d['Teacher Avg (%)'] + 15) 
-                      ? "High Practical gap detected: Encourage teachers to implement project-based learning." 
-                      : "Profiles are generally aligned. Maintain current differentiated instruction strategies."}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </>)}
 
         {tab === 'alignment' && (<>

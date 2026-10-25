@@ -11,6 +11,28 @@ interface AudioNarrationProps {
   onComplete?: () => void;
 }
 
+/**
+ * Picks a warm, natural English voice for children's narration.
+ * Browsers rarely label voices "female" or "child", so rank well-known friendly voices
+ * by name, then fall back to any English voice, then the first voice available.
+ */
+const FRIENDLY_VOICE_NAMES = [
+  'samantha', 'ava', 'allison', 'karen', 'tessa', 'moira', 'serena', 'google uk english female',
+  'google us english', 'aria', 'jenny', 'sonia', 'libby', 'zira',
+];
+
+function pickKidsVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
+  const english = voices.filter(v => v.lang?.toLowerCase().startsWith('en'));
+  const pool = english.length ? english : voices;
+  for (const name of FRIENDLY_VOICE_NAMES) {
+    const matches = pool.filter(v => v.name.toLowerCase().includes(name));
+    // Prefer natural/enhanced variants of the same voice
+    const best = matches.find(v => /natural|enhanced|premium/i.test(v.name)) || matches[0];
+    if (best) return best;
+  }
+  return pool[0];
+}
+
 export function AudioNarration({
   text,
   autoPlay = false,
@@ -80,12 +102,7 @@ export function AudioNarration({
       // Try to find a suitable voice
       const voices = window.speechSynthesis.getVoices();
       
-      // Prefer female/child-like voices for kids mode
-      const preferredVoice = voices.find(v => 
-        v.name.toLowerCase().includes('female') || 
-        v.name.toLowerCase().includes('woman') ||
-        v.name.toLowerCase().includes('child')
-      ) || voices[0];
+      const preferredVoice = pickKidsVoice(voices);
 
       if (preferredVoice) {
         utterance.voice = preferredVoice;
@@ -93,7 +110,7 @@ export function AudioNarration({
 
       // Slower, clearer speech for children
       utterance.rate = rate;
-      utterance.pitch = voice === 'child' ? 1.2 : 1.0;
+      utterance.pitch = voice === 'child' ? 1.1 : 1.0;
       utterance.volume = 1.0;
 
       utterance.onstart = () => {
