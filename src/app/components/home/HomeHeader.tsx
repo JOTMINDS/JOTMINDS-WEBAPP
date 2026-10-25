@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Globe, ArrowRight, Menu, X } from 'lucide-react';
+import { Globe, ArrowRight, Menu, X, Building2 } from 'lucide-react';
 import { Logo } from '../Logo';
 import { LanguageSelector } from '../ui/LanguageSelector';
 
@@ -72,6 +72,17 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <LanguageSelector variant="minimal" />
           </div>
 
+          {/* Organization sign up */}
+          {onSupervisorPortal && (
+            <button
+              onClick={onSupervisorPortal}
+              className="hidden md:flex bg-white hover:bg-[#4E35DE]/5 border border-[#4E35DE] text-[#4E35DE] text-[13px] font-semibold px-4 py-2.5 rounded-lg items-center gap-1.5 transition-all duration-150 cursor-pointer active:scale-[0.98]"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Organization Sign Up</span>
+            </button>
+          )}
+
           {/* Primary CTA */}
           <button
             onClick={onGetStarted}
@@ -110,7 +121,16 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               </button>
             ))}
           </div>
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
+            {onSupervisorPortal && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); onSupervisorPortal(); }}
+                className="w-full bg-white border border-[#4E35DE] text-[#4E35DE] text-sm font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Building2 className="w-4 h-4" />
+                <span>Organization Sign Up</span>
+              </button>
+            )}
             <button
               onClick={() => { setMobileMenuOpen(false); onGetStarted(); }}
               className="w-full bg-[#4E35DE] hover:bg-[#412dc4] text-white text-sm font-semibold py-3 rounded-lg flex items-center justify-center gap-2 shadow-sm"

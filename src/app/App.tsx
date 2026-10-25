@@ -857,6 +857,7 @@ function AppContent() {
           user={impersonatedUser || user}
           onLogout={handleBackToDashboard}
           onRegisterNew={handleViewInstitutionRegister}
+          onSwitchToPersonal={handleBackToDashboard}
           onProfileUpdate={refreshUser}
         />
       ) : null;

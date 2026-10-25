@@ -49,6 +49,7 @@ export function LandingPage({
         <HeroSection
           onGetStarted={onGetStarted}
           onExplore={() => scrollTo('journey')}
+          onOrganizationSignUp={onSupervisorPortal}
         />
 
         {/* 3. Transition Strip ("Your Brain Has a Manual. We Built It.") */}

@@ -232,7 +232,7 @@ function buildSummary(u: User): StudentSummary {
 
   return {
     user: u,
-    assessmentCount: assessments.length,
+    assessmentCount: completedTypes.length,
     completedTypes,
     avgScore,
     engagementScore,
@@ -418,17 +418,21 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       const assessmentsMap = new Map();
       dbAssessments.forEach((a: Assessment) => assessmentsMap.set(a.type, a));
       localAssessments.forEach((a: Assessment) => assessmentsMap.set(a.type, a));
-      const assessments = Array.from(assessmentsMap.values());
+      const allAssessments = Array.from(assessmentsMap.values());
       
       const eng = getEngagementMetrics(u.id);
       const gam = getGamificationProfile(u.id);
 
-      const completedTypes = [...new Set(assessments.map((a: Assessment) => {
+      // Only the three core cognitive assessments count towards "assessed". Learning results saved
+      // under two names (kolb + learning) are one assessment, and other result types are not counted.
+      const coreCategory = (a: Assessment): string | null => {
         if (['kolb', 'vark', 'learning'].includes(a.type)) return 'learning';
         if (['sternberg', 'jhs-thinking', 'shs-thinking', 'adult-thinking', 'child-thinking', 'thinking'].includes(a.type)) return 'thinking';
         if (a.type === 'dual-process' || (a.type as any) === 'decision') return 'decision';
-        return a.type;
-      }))];
+        return null;
+      };
+      const assessments = allAssessments.filter((a: Assessment) => coreCategory(a) !== null);
+      const completedTypes = [...new Set(assessments.map((a: Assessment) => coreCategory(a) as string))];
 
       const allNormalizedScores = assessments.flatMap((a: Assessment) => {
         return extractDimensionScores(a).map((d: { name: string; score: number }) => {
@@ -446,7 +450,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
 
       return {
         user: u,
-        assessmentCount: assessments.length,
+        assessmentCount: completedTypes.length,
         completedTypes,
         avgScore,
         engagementScore,
@@ -1109,30 +1113,6 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             )}
           </Card>
 
-          {/* Student Profile Modal */}
-          {selectedStudentForModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
-                <div className="flex justify-between items-center pb-4 border-b mb-4">
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold text-xs">
-                      Student Cognitive Profile & Diagnostic
-                    </Badge>
-                    <span className="font-bold text-gray-900">{selectedStudentForModal.user.name}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedStudentForModal(null)} className="h-8 w-8 p-0 text-gray-500">
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                <StudentDetailView
-                  student={selectedStudentForModal.user}
-                  assessments={selectedStudentForModal.assessments}
-                  initialTab={modalInitialTab}
-                  onBack={() => setSelectedStudentForModal(null)}
-                />
-              </div>
-            </div>
-          )}
         </>)}
 
         {tab === 'class' && (() => {
@@ -1956,6 +1936,31 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
             </Card>
           )}
         </>)}
+
+        {/* Student Profile Modal */}
+        {selectedStudentForModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+              <div className="flex justify-between items-center pb-4 border-b mb-4">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold text-xs">
+                    Student Cognitive Profile & Diagnostic
+                  </Badge>
+                  <span className="font-bold text-gray-900">{selectedStudentForModal.user.name}</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedStudentForModal(null)} className="h-8 w-8 p-0 text-gray-500">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <StudentDetailView
+                student={selectedStudentForModal.user}
+                assessments={selectedStudentForModal.assessments}
+                initialTab={modalInitialTab}
+                onBack={() => setSelectedStudentForModal(null)}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
     </TooltipProvider>

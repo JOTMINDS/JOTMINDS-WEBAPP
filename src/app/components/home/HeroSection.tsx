@@ -1,14 +1,16 @@
 import React from 'react';
-import { ArrowRight, Play } from 'lucide-react';
+import { ArrowRight, Play, Building2 } from 'lucide-react';
 
 interface HeroSectionProps {
   onGetStarted: () => void;
   onExplore: () => void;
+  onOrganizationSignUp?: () => void;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
   onGetStarted,
   onExplore,
+  onOrganizationSignUp,
 }) => {
   return (
     <section className="relative overflow-hidden bg-white pt-10 pb-16 sm:pt-16 sm:pb-24 lg:pt-20 lg:pb-28">
@@ -89,6 +91,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </span>
                 <span>Explore JotMinds</span>
               </button>
+
+              {onOrganizationSignUp && (
+                <button
+                  onClick={onOrganizationSignUp}
+                  className="bg-[#4E35DE]/5 hover:bg-[#4E35DE]/10 text-[#4E35DE] text-sm font-semibold px-5 sm:px-6 py-3.5 rounded-lg flex items-center gap-2 transition-all duration-150 cursor-pointer active:scale-[0.98]"
+                >
+                  <Building2 className="w-4 h-4" />
+                  <span>Organization Sign Up</span>
+                </button>
+              )}
             </div>
           </div>
 

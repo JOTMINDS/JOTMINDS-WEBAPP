@@ -26,7 +26,7 @@ interface Question {
   category: 'creative' | 'analytical' | 'practical' | 'reflective';
 }
 
-const questions: Question[] = [
+const baseQuestions: Question[] = [
   // Creative Thinking (1-5)
   { id: 1, text: "I love coming up with new ideas or stories.", category: 'creative' },
   { id: 2, text: "I like to draw, build, or make fun things.", category: 'creative' },
@@ -71,7 +71,18 @@ const categoryInfo = {
   reflective: { emoji: '💭', title: 'Thoughtful Thinking', subtitle: '"I learn and grow every day."', color: 'from-green-500 to-emerald-500' },
 };
 
+function shuffled<T>(items: T[]): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export function ChildrenThinkingAssessment({ onComplete, onBack }: ChildrenThinkingAssessmentProps) {
+  // New random order for every attempt; answers are stored by question id so scoring is unaffected
+  const [questions] = useState(() => shuffled(baseQuestions));
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [showInstructions, setShowInstructions] = useState(true);

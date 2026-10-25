@@ -70,6 +70,12 @@ function selectRandomQuestions(
     selected.push(...shuffled.slice(0, questionsPerDimension));
   });
   
+  // Mix the order across dimensions too, otherwise questions are always grouped by dimension
+  for (let i = selected.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + '-order', i) * (i + 1));
+    [selected[i], selected[j]] = [selected[j], selected[i]];
+  }
+  
   return selected;
 }
 

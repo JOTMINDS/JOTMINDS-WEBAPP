@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import {
-  ArrowLeft, Building2, Users, BarChart3, Download, Settings, Shield, Loader, LogOut, Brain, RefreshCw, BookOpen, Clock, GraduationCap, Award, Sparkles
+  ArrowLeft, ArrowLeftRight, Building2, Users, BarChart3, Download, Settings, Shield, Loader, LogOut, Brain, RefreshCw, BookOpen, Clock, GraduationCap, Award, Sparkles
 } from 'lucide-react';
 import { DashboardLayout } from '../ui/dashboard-layout';
 import { NavGroup } from '../ui/collapsible-sidebar';
@@ -59,6 +59,8 @@ interface InstitutionDashboardProps {
   user: User;
   onLogout: () => void;
   onRegisterNew: () => void;
+  /** Takes the admin to their own teacher/professional dashboard */
+  onSwitchToPersonal?: () => void;
   initialInstitution?: Institution;
   onProfileUpdate?: () => void;
 }
@@ -69,6 +71,7 @@ export function InstitutionDashboard({
   user,
   onLogout,
   onRegisterNew,
+  onSwitchToPersonal,
   initialInstitution,
   onProfileUpdate
 }: InstitutionDashboardProps) {
@@ -420,6 +423,13 @@ export function InstitutionDashboard({
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        {onSwitchToPersonal && (
+          <Button variant="outline" size="sm" onClick={onSwitchToPersonal} className="h-8 text-xs">
+            <ArrowLeftRight className="w-3.5 h-3.5 mr-1.5" />
+            <span className="hidden sm:inline">My {user.role === 'teacher' ? 'Teacher' : 'Personal'} Dashboard</span>
+            <span className="sm:hidden">Mine</span>
+          </Button>
+        )}
         <span className="text-[10px] text-gray-400 flex items-center gap-1">
           <Clock className="w-3 h-3" /> {getTimeSinceRefresh()}
         </span>
