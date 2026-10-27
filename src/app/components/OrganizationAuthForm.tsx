@@ -97,6 +97,11 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
   };
 
   const validateStep3 = (): boolean => {
+    // Schools skip the organization-details step, so ask for the name here.
+    if (organizationType === 'Educational Institution' && !organizationName.trim()) {
+      setError('Please enter your school name.');
+      return false;
+    }
     if (email.trim() && !emailVerified) {
       setError('Please verify your email address first.');
       return false;
@@ -800,6 +805,24 @@ export function OrganizationAuthForm({ onLogin, onBackToMain }: OrganizationAuth
               {/* REGISTRATION FORM - STEP 3: Verification */}
               {!isLogin && registrationStep === 3 && (
                 <div className="space-y-4">
+                  {organizationType === 'Educational Institution' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="schoolName">
+                        School Name <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="schoolName"
+                          type="text"
+                          placeholder="Your school's name"
+                          value={organizationName}
+                          onChange={(e) => setOrganizationName(e.target.value)}
+                          className="pl-10 shadow-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
                   <div className="p-4 rounded-lg bg-blue-50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/30">
                     <h3 className="font-medium text-blue-900 dark:text-blue-200 mb-2">Verify Contact Details</h3>
                     <p className="text-sm text-blue-800 dark:text-blue-300">
