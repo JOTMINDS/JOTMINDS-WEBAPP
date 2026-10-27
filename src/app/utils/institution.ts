@@ -190,13 +190,29 @@ export async function getInstitutionByCode(code: string): Promise<Institution | 
 
 export async function getInstitutionByAdminId(adminId: string): Promise<Institution | null> {
   try {
+    // An admin can end up with several rows (e.g. a stub created on every
+    // load), which makes .maybeSingle() error out and triggers yet another
+    // stub. Fetch them all and keep the one that actually has members.
     const { data, error } = await (supabase as any)
       .from('institutions')
       .select('*')
       .eq('admin_id', adminId)
-      .maybeSingle();
+      .order('created_at', { ascending: true });
 
-    if (!error && data) return mapDBInstitutionToLocal(data);
+    if (!error && data && data.length > 0) {
+      if (data.length === 1) return mapDBInstitutionToLocal(data[0]);
+      let best = data[0];
+      try {
+        const { data: rows } = await (supabase as any)
+          .from('institution_members')
+          .select('institution_id')
+          .in('institution_id', data.map((d: any) => d.id));
+        const counts: Record<string, number> = {};
+        (rows || []).forEach((r: any) => { counts[r.institution_id] = (counts[r.institution_id] || 0) + 1; });
+        best = data.reduce((a: any, b: any) => ((counts[b.id] || 0) > (counts[a.id] || 0) ? b : a), data[0]);
+      } catch (e) {}
+      return mapDBInstitutionToLocal(best);
+    }
   } catch (err) {}
 
   const local = localStorage.getItem('jotminds_institution');

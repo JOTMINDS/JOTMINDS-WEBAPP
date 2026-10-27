@@ -66,6 +66,9 @@ interface InstitutionDashboardProps {
 
 type Tab = 'overview' | 'class_management' | 'training' | 'manage_students' | 'student_insights' | 'teacher_management' | 'teaching_analytics' | 'reports' | 'settings' | 'profile' | 'lesson_planning' | 'preschool';
 
+// One in-flight stub-institution creation per user id (see initInstitution).
+const stubCreations = new Map<string, Promise<Institution>>();
+
 export function InstitutionDashboard({
   user,
   onLogout,
@@ -126,7 +129,9 @@ export function InstitutionDashboard({
         if (!inst) {
           // Auto-create a stub institution with resolved location to avoid blocking the user
           const loc = resolveSchoolLocation(null, user.organizationName || user.school);
-          const newInst = await createInstitution({
+          // Share one in-flight creation per user so a double-run effect
+          // (or a quick refresh) can't generate a second school and code.
+          const pending = stubCreations.get(user.id) || createInstitution({
             name: user.organizationName || user.school || 'My School',
             type: (user.educationLevel as any) || 'SHS',
             region: loc.region,
@@ -142,6 +147,8 @@ export function InstitutionDashboard({
             emailVerified: true,
             phoneVerified: true,
           });
+          stubCreations.set(user.id, pending);
+          const newInst = await pending;
           setInstitution(newInst);
           setLoading(false);
           return;
