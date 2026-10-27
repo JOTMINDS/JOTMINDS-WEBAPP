@@ -31,11 +31,21 @@ import { rateLimiter } from 'npm:hono-rate-limiter';
 const app = new Hono();
 
 // Global Rate Limiter (100 requests per minute per IP)
+// Everyone in a school shares one public IP, so a per-IP limit throttled a
+// whole school (admin dashboard included) while students were signing in.
+// Signed-in callers are counted per session; anonymous ones per IP.
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const globalLimiter = rateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  limit: 100, // Limit each IP to 100 requests per `window`
+  limit: 200, // per user session (or per IP when anonymous) per `window`
   standardHeaders: "draft-6", // draft-6: `RateLimit-*` headers
-  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown", // IP address from Supabase Edge/Cloudflare
+  keyGenerator: (c) => {
+    const token = (c.req.header("authorization") || '').replace(/^Bearer\s+/i, '');
+    if (token && token !== ANON_KEY && token.split('.').length === 3) {
+      return `user:${token.slice(-40)}`;
+    }
+    return c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown";
+  },
 });
 
 // Middleware
@@ -828,11 +838,15 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
       const memberUserIds = members.map(m => m.user_id);
       
       // 1. Fetch from KV store
-      const kvProfiles = await Promise.all(memberUserIds.map(id => kv.get(`user:${id}`)));
+      // One batched query instead of one client + request per member.
       const kvProfileMap = new Map();
-      kvProfiles.forEach((p: any, idx: number) => {
-        if (p) kvProfileMap.set(memberUserIds[idx], p);
-      });
+      for (let i = 0; i < memberUserIds.length; i += 100) {
+        const keys = memberUserIds.slice(i, i + 100).map((id: string) => `user:${id}`);
+        const { data: kvRows } = await supabase.from('kv_store_fc8eb847').select('key, value').in('key', keys);
+        (kvRows || []).forEach((r: any) => {
+          if (r?.value) kvProfileMap.set(r.key.slice('user:'.length), r.value);
+        });
+      }
 
       // 2. Fetch missing from Postgres `users` table
       const missingIds = memberUserIds.filter(id => !kvProfileMap.has(id));
