@@ -119,9 +119,9 @@ export function InstitutionDashboard({
         return;
       }
       try {
-        let inst = await getInstitutionByAdminId(user.id);
+        let inst = await getInstitutionByAdminId(user.id, { throwOnError: true });
         if (!inst) {
-          inst = await getInstitutionForMember(user.id);
+          inst = await getInstitutionForMember(user.id, { throwOnError: true });
         }
         if (!inst && (user.organizationCode || user.jotsCode)) {
           inst = await getInstitutionByCode(user.organizationCode || user.jotsCode);

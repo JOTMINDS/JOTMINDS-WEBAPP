@@ -188,7 +188,9 @@ export async function getInstitutionByCode(code: string): Promise<Institution | 
   return null;
 }
 
-export async function getInstitutionByAdminId(adminId: string): Promise<Institution | null> {
+// With throwOnError, a failed query throws instead of looking like "no school",
+// so callers don't mistake an outage for a new admin and create a duplicate.
+export async function getInstitutionByAdminId(adminId: string, opts?: { throwOnError?: boolean }): Promise<Institution | null> {
   try {
     // An admin can end up with several rows (e.g. a stub created on every
     // load), which makes .maybeSingle() error out and triggers yet another
@@ -213,7 +215,10 @@ export async function getInstitutionByAdminId(adminId: string): Promise<Institut
       } catch (e) {}
       return mapDBInstitutionToLocal(best);
     }
-  } catch (err) {}
+    if (error && opts?.throwOnError) throw error;
+  } catch (err) {
+    if (opts?.throwOnError) throw err;
+  }
 
   const local = localStorage.getItem('jotminds_institution');
   if (local) {
@@ -1012,16 +1017,24 @@ export async function assignAdmin(institutionId: string, adminId: string, adminN
   });
 }
 
-export async function getInstitutionForMember(userId: string): Promise<Institution | null> {
-  const { data: member, error: memberError } = await (supabase as any)
+export async function getInstitutionForMember(userId: string, opts?: { throwOnError?: boolean }): Promise<Institution | null> {
+  // A user can have more than one membership row; .maybeSingle() would error on
+  // that and look like "no school". Take the earliest approved one instead.
+  const { data: members, error: memberError } = await (supabase as any)
     .from('institution_members')
     .select('institution_id, status')
     .eq('user_id', userId)
-    .maybeSingle() as { data: any, error: any };
+    .eq('status', 'approved')
+    .order('joined_at', { ascending: true })
+    .limit(1) as { data: any[] | null, error: any };
 
-  if (memberError || !member || member.status !== 'approved') return null;
+  if (memberError) {
+    if (opts?.throwOnError) throw memberError;
+    return null;
+  }
+  if (!members || members.length === 0) return null;
 
-  return getInstitutionById(member.institution_id);
+  return getInstitutionById(members[0].institution_id);
 }
 
 export const GHANA_REGIONS = [

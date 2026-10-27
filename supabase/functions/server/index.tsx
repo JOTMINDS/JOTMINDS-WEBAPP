@@ -1901,13 +1901,19 @@ app.post('/make-server-fc8eb847/signup', async (c) => {
         if (instData) institutionId = instData.id;
       }
       if (!institutionId && (finalOrgName || school)) {
+        // Names are not unique and many schools were saved under a generic
+        // default, so only auto-link on a specific name with exactly one match.
         const lookupName = (finalOrgName || school).trim();
-        const { data: instData } = await supabase
-          .from('institutions')
-          .select('id, code')
-          .ilike('name', lookupName)
-          .maybeSingle();
-        if (instData) institutionId = instData.id;
+        const genericNames = new Set(['jotminds', 'my school', 'school', 'educational institution', 'institution', 'demo school', 'test school', 'default']);
+        if (lookupName.length > 2 && !genericNames.has(lookupName.toLowerCase())) {
+          const escaped = lookupName.replace(/[\\%_]/g, '\\$&');
+          const { data: nameMatches } = await supabase
+            .from('institutions')
+            .select('id, code')
+            .ilike('name', escaped)
+            .limit(2);
+          if (nameMatches && nameMatches.length === 1) institutionId = nameMatches[0].id;
+        }
       }
 
       if (institutionId) {
