@@ -24,7 +24,6 @@ import {
   promoteMember,
   demoteMember,
   resolveSchoolLocation,
-  getInstitutionBySchoolName,
   getInstitutionByCode
 } from '../../utils/institution';
 import { getAllUsers, getAllClasses } from '../../utils/storage';
@@ -120,9 +119,6 @@ export function InstitutionDashboard({
         let inst = await getInstitutionByAdminId(user.id);
         if (!inst) {
           inst = await getInstitutionForMember(user.id);
-        }
-        if (!inst && (user.organizationName || user.school)) {
-          inst = await getInstitutionBySchoolName(user.organizationName || user.school);
         }
         if (!inst && (user.organizationCode || user.jotsCode)) {
           inst = await getInstitutionByCode(user.organizationCode || user.jotsCode);
