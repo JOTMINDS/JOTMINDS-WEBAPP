@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Sparkles, TrendingUp, Cloud, Sun, CloudRain } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { getAuthToken } from '../utils/api';
 
 interface MindMoodMeterProps {
   userId: string;
@@ -80,7 +81,7 @@ export function MindMoodMeter({ userId, userName, onMoodSelected, showAsWidget =
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/get-mood-history?userId=${userId}`,
         {
-          headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+          headers: { 'Authorization': `Bearer ${getAuthToken() || publicAnonKey}` }
         }
       );
 
@@ -117,7 +118,7 @@ export function MindMoodMeter({ userId, userName, onMoodSelected, showAsWidget =
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`
+            'Authorization': `Bearer ${getAuthToken() || publicAnonKey}`
           },
           body: JSON.stringify({
             userId,

@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Sparkles, Star, Trophy, CheckCircle2, Flame, Gift } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { getAuthToken } from '../utils/api';
 
 interface ChildrenDailyChallengesProps {
   userId: string;
@@ -72,7 +73,7 @@ export function ChildrenDailyChallenges({ userId, userName }: ChildrenDailyChall
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847/get-challenge-progress?userId=${userId}`,
         {
-          headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+          headers: { 'Authorization': `Bearer ${getAuthToken() || publicAnonKey}` }
         }
       );
 
@@ -119,7 +120,7 @@ export function ChildrenDailyChallenges({ userId, userName }: ChildrenDailyChall
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`
+            'Authorization': `Bearer ${getAuthToken() || publicAnonKey}`
           },
           body: JSON.stringify({
             userId,

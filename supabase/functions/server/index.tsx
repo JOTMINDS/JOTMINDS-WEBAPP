@@ -887,59 +887,6 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
 });
 
 // Temporary debug route to diagnose school visibility issues
-app.get('/make-server-fc8eb847/test-debug-school', async (c) => {
-  const supabase = getSupabaseClient(true);
-  
-  // Find Mav School
-  const { data: schools } = await supabase.from('institutions').select('*').ilike('name', '%Mav%');
-  const mavSchool = schools && schools.length > 0 ? schools[0] : null;
-  
-  if (!mavSchool) {
-    return c.json({ error: 'Mav School not found' });
-  }
-
-  // Get members
-  const { data: members } = await supabase.from('institution_members').select('*').eq('institution_id', mavSchool.id);
-  
-  // Get invitations
-  const { data: invitations } = await supabase.from('institution_invitations').select('*').eq('institution_id', mavSchool.id);
-  
-  // Find the user in KV store to see their status
-  const allUsers = await kv.getByPrefix('user:');
-  const targetUsers = allUsers.filter((u: any) => 
-    u.email === 'edsmayne@gmail.com' || u.email === 'maynefingy@gmail.com'
-  );
-
-  const testUpserts = [];
-  const authStatus = [];
-  for (const u of targetUsers) {
-    if (u.role === 'teacher') {
-      const authUser = await supabase.auth.admin.getUserById(u.id);
-      authStatus.push({ email: u.email, authFound: !!authUser.data?.user, error: authUser.error?.message });
-      
-      const res = await supabase.from('institution_members').upsert({
-        user_id: u.id,
-        user_name: u.name || u.email,
-        user_email: u.email,
-        user_phone: u.phone || null,
-        role: u.role,
-        institution_id: mavSchool.id,
-        joined_via_code: u.organizationCode || mavSchool.code,
-        status: 'pending'
-      }, { onConflict: 'user_id, institution_id' });
-      testUpserts.push({ email: u.email, error: res.error });
-    }
-  }
-
-  return c.json({
-    school: mavSchool,
-    members: members || [],
-    invitations: invitations || [],
-    targetUsersInKV: targetUsers,
-    testUpsertErrors: testUpserts,
-    authStatus: authStatus
-  });
-});
 
 // Join Institution Endpoint (Secure joining bypassing RLS)
 app.post('/make-server-fc8eb847/institutions/join', async (c) => {
@@ -5041,7 +4988,10 @@ app.post('/make-server-fc8eb847/admin/fix-professional-org-code', async (c) => {
 // Get children's challenge progress
 app.get('/make-server-fc8eb847/get-challenge-progress', async (c) => {
   try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
     const userId = c.req.query('userId');
+    if (userId && userId !== user.id) return c.json({ error: 'Forbidden' }, 403);
     
     if (!userId) {
       return c.json({ error: 'User ID is required' }, 400);
@@ -5084,6 +5034,9 @@ app.get('/make-server-fc8eb847/get-challenge-progress', async (c) => {
 app.post('/make-server-fc8eb847/save-challenge-progress', async (c) => {
   try {
     const body = await c.req.json();
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+    if (body?.userId && body.userId !== user.id) return c.json({ error: 'Forbidden' }, 403);
     const { userId, challengeId, completedAt, currentStreak, totalStars } = body;
 
     if (!userId) {
@@ -5135,7 +5088,10 @@ app.post('/make-server-fc8eb847/save-challenge-progress', async (c) => {
 // Get mood history
 app.get('/make-server-fc8eb847/get-mood-history', async (c) => {
   try {
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
     const userId = c.req.query('userId');
+    if (userId && userId !== user.id) return c.json({ error: 'Forbidden' }, 403);
     
     if (!userId) {
       return c.json({ error: 'User ID is required' }, 400);
@@ -5178,6 +5134,9 @@ app.get('/make-server-fc8eb847/get-mood-history', async (c) => {
 app.post('/make-server-fc8eb847/save-mood', async (c) => {
   try {
     const body = await c.req.json();
+    const user = await verifyAuth(c.req.raw);
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
+    if (body?.userId && body.userId !== user.id) return c.json({ error: 'Forbidden' }, 403);
     const { userId, mood, date, timestamp } = body;
 
     if (!userId || !mood) {
@@ -6283,7 +6242,8 @@ app.post('/make-server-fc8eb847/gamification/update', async (c) => {
 app.post('/make-server-fc8eb847/cron/cleanup-unverified-users', async (c) => {
   try {
     const cronSecret = c.req.header('x-cron-secret');
-    if (cronSecret !== (Deno.env.get('CRON_SECRET') || 'jotminds-cron-secret')) {
+    const expectedCronSecret = Deno.env.get('CRON_SECRET');
+    if (!expectedCronSecret || cronSecret !== expectedCronSecret) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
