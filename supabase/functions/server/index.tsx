@@ -670,13 +670,29 @@ app.get('/make-server-fc8eb847/institutions/members', async (c) => {
       return c.json({ success: false, error: 'Missing institution id' }, 400);
     }
 
-    // Attempt auth check, but allow graceful continuation so dashboards don't break during token refresh
+    // This returns every member's profile and runs the auto-sync writes below,
+    // so only signed-in admins/members of this institution may call it. The
+    // client retries once on 401 to cover token-refresh timing.
     const user = await verifyAuth(c.req.raw);
     if (!user) {
-      console.log(`[institutions/members] Request for institution ${institutionId} without verified user JWT, continuing`);
+      return c.json({ success: false, error: 'Unauthorized' }, 401);
     }
 
     const supabase = getSupabaseClient(true);
+
+    let allowed = await isCallerInstitutionAdmin(supabase, user, institutionId);
+    if (!allowed) {
+      const { data: callerMember } = await supabase
+        .from('institution_members')
+        .select('status')
+        .eq('institution_id', institutionId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      allowed = callerMember?.status === 'approved';
+    }
+    if (!allowed) {
+      return c.json({ success: false, error: 'Forbidden' }, 403);
+    }
 
     // --- Auto-sync logic from KV & Postgres ---
     try {
