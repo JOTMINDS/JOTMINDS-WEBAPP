@@ -835,18 +835,35 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   Students grouped by their 0-100 engagement score.
                 </p>
               </CardHeader>
-              <CardContent className="h-[200px]">
+              <CardContent className="pt-5">
                 {stats.engagementBands.length === 0
-                  ? <div className="h-full flex items-center justify-center text-gray-400 text-sm">No data yet</div>
-                  : <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie key="pie" data={stats.engagementBands} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={75}>
-                        {stats.engagementBands.map((e, i) => <Cell key={i} fill={e.color} />)}
-                      </Pie>
-                      <RechartsTip key="tip" />
-                      <Legend key="legend" />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  ? <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">No data yet</div>
+                  : (() => {
+                    const bandTotal = stats.engagementBands.reduce((sum, b) => sum + b.value, 0);
+                    return (
+                      <div className="space-y-4">
+                        <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-100">
+                          {stats.engagementBands.map(b => (
+                            <div
+                              key={b.label}
+                              title={`${b.label}: ${b.value}`}
+                              style={{ width: `${(b.value / bandTotal) * 100}%`, backgroundColor: b.color }}
+                            />
+                          ))}
+                        </div>
+                        <ul className="space-y-3">
+                          {stats.engagementBands.map(b => (
+                            <li key={b.label} className="flex items-center gap-3 text-sm">
+                              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: b.color }} />
+                              <span className="flex-1 text-gray-700">{b.label}</span>
+                              <span className="font-semibold text-gray-900">{b.value}</span>
+                              <span className="w-12 text-right text-xs text-gray-500">{Math.round((b.value / bandTotal) * 100)}%</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })()
                 }
               </CardContent>
             </Card>

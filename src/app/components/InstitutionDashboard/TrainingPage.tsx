@@ -183,16 +183,16 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
 
       if (!hasAssessments) {
         riskLevel = 'High';
-        gapReasons.push('Pedagogical Profile Unassessed: Teacher has not completed the Teaching Insights assessment.');
+        gapReasons.push('Teaching Insights not completed');
         recommendedTraining.push('Module 1: Teaching Insights & Cognitive Profile Discovery');
       }
 
       if (assignedClasses.length === 0) {
         if (riskLevel !== 'High') riskLevel = 'Medium';
-        gapReasons.push('Unassigned Faculty: No primary or subject classes currently designated.');
+        gapReasons.push('No classes assigned');
       } else if (studentUsers.length > 0) {
         // Evaluate alignment with student cohort
-        gapReasons.push(`Assigned to ${assignedClasses.length} classes with ${studentUsers.length} enrolled students.`);
+        gapReasons.push(`${assignedClasses.length} ${assignedClasses.length === 1 ? 'class' : 'classes'}, ${studentUsers.length} ${studentUsers.length === 1 ? 'student' : 'students'}`);
         recommendedTraining.push('Module 2: Differentiated Classroom Instruction for Diverse Thinkers');
         recommendedTraining.push('Module 4: Experiential Learning Scaffolding & Group Dynamics');
       } else {
@@ -252,11 +252,8 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
               <span className="p-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30">
                 <GraduationCap className="w-5 h-5" />
               </span>
-              <h2 className="text-xl font-bold">Faculty Training, Alignment & Recruitment Intelligence<InfoTip>Training suggestions and staffing insights built from your teachers' profiles.</InfoTip></h2>
+              <h2 className="text-xl font-bold">Training & Alignment<InfoTip>Flags teaching gaps, suggests training for each teacher and offers staffing guidance, using your teachers' profiles and student data.</InfoTip></h2>
             </div>
-            <p className="text-xs text-indigo-200/80 max-w-2xl">
-              Flag faculty pedagogical gaps, tailor professional development recommendations, and plan school staffing decisions using student cognitive data.
-            </p>
           </div>
         </div>
 
@@ -264,21 +261,21 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-5 border-t border-indigo-900/60">
           <div className="bg-white/5 backdrop-blur-xs p-3 rounded-xl border border-white/10 text-center">
             <p className="text-2xl font-black text-indigo-300">{teacherMembers.length}</p>
-            <p className="text-xs text-slate-300 mt-0.5">Faculty Members</p>
+            <p className="text-xs text-slate-300 mt-0.5">Teachers</p>
           </div>
           <div className="bg-white/5 backdrop-blur-xs p-3 rounded-xl border border-white/10 text-center">
             <p className="text-2xl font-black text-red-400">{highRiskCount}</p>
-            <p className="text-xs text-slate-300 mt-0.5">Profile Gaps (Action Needed)</p>
+            <p className="text-xs text-slate-300 mt-0.5">Priority gaps</p>
           </div>
           <div className="bg-white/5 backdrop-blur-xs p-3 rounded-xl border border-white/10 text-center">
             <p className="text-2xl font-black text-amber-300">{mediumRiskCount}</p>
-            <p className="text-xs text-slate-300 mt-0.5">Moderate Attention</p>
+            <p className="text-xs text-slate-300 mt-0.5">Moderate gaps</p>
           </div>
           <div className="bg-white/5 backdrop-blur-xs p-3 rounded-xl border border-white/10 text-center">
             <p className="text-2xl font-black text-emerald-400">
               {teacherMembers.length - highRiskCount - mediumRiskCount}
             </p>
-            <p className="text-xs text-slate-300 mt-0.5">Optimal Alignment</p>
+            <p className="text-xs text-slate-300 mt-0.5">Aligned</p>
           </div>
         </div>
       </div>
@@ -294,7 +291,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
           }`}
         >
           <AlertTriangle className="w-4 h-4" />
-          Faculty Risk & Gap Analysis ({facultyGaps.length})
+          Teacher Gaps ({facultyGaps.length})
         </button>
         <button
           onClick={() => setActiveTab('resources')}
@@ -305,48 +302,28 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          Training Library & Materials ({RESOURCES.length})
+          Library ({RESOURCES.length})
         </button>
       </div>
 
       {/* TAB 1: FACULTY RISK & GAPS */}
       {activeTab === 'risk-gaps' && (
         <div className="space-y-6">
-          {/* Recruitment Decision & Staffing Insight Card */}
-          <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50/50 via-white to-purple-50/50">
-            <CardHeader className="pb-3">
+          {/* Staffing guidance */}
+          <Card className="border-indigo-200 bg-indigo-50/40">
+            <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-indigo-950">
                 <Target className="w-4 h-4 text-indigo-600" />
-                Institutional Staffing & Recruitment Advisory
-              <InfoTip>Suggestions on what kind of teachers to recruit or develop, based on your students' needs and your current staff.</InfoTip></CardTitle>
-              <CardDescription className="text-xs">
-                General best-practice guidance for staffing decisions - not yet personalized to this school's data.
-              </CardDescription>
+                Staffing Guidance
+                <InfoTip>General best-practice advice for hiring and developing teachers. It is not yet personalised to this school's data.</InfoTip>
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-xs">
-              <div className="p-3 bg-white rounded-xl border border-indigo-100 shadow-2xs">
-                <p className="font-bold text-gray-900 mb-1 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500" /> Strategic Faculty Hiring Recommendation:
-                </p>
-                <p className="text-gray-600 leading-relaxed">
-                  Your student population exhibits high demand for <b>Accommodating</b> (experiential, hands-on) and <b>Diverging</b> (exploratory, open-ended) learning environments. When recruiting upcoming teachers, prioritize candidates with proven competencies in <b>Project-Based Learning (PBL)</b> and interactive lab scaffolding to reduce pedagogical misalignment in STEM and Social Studies.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3 bg-white rounded-xl border border-gray-200">
-                  <p className="font-bold text-gray-800 mb-1">Targeted Internal Training Priority</p>
-                  <p className="text-gray-500 text-[11px]">
-                    Assign <b>Module 2 (Differentiated Classroom Instruction)</b> to all faculty managing classes with over 25 enrolled students.
-                  </p>
-                </div>
-                <div className="p-3 bg-white rounded-xl border border-gray-200">
-                  <p className="font-bold text-gray-800 mb-1">Staff Pairing & Co-Teaching Advice</p>
-                  <p className="text-gray-500 text-[11px]">
-                    Pair highly analytical educators with experiential co-teachers to balance student cognitive engagement across double periods.
-                  </p>
-                </div>
-              </div>
+            <CardContent>
+              <ul className="space-y-2 text-xs text-gray-700">
+                <li className="flex gap-2"><Sparkles className="w-4 h-4 text-amber-500 shrink-0" /><span><b>Hiring:</b> favour teachers experienced in project-based and hands-on learning.</span></li>
+                <li className="flex gap-2"><BookOpen className="w-4 h-4 text-indigo-600 shrink-0" /><span><b>Training:</b> give Module 2 to teachers of classes over 25 students.</span></li>
+                <li className="flex gap-2"><Users className="w-4 h-4 text-emerald-600 shrink-0" /><span><b>Pairing:</b> co-teach analytical and experiential teachers.</span></li>
+              </ul>
             </CardContent>
           </Card>
 
@@ -355,31 +332,30 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
             <CardHeader className="py-3 border-b bg-gray-50/50">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Users className="w-4 h-4 text-indigo-600" />
-                Teacher Risk & Gap Evaluations ({facultyGaps.length} Faculty Members)
-              <InfoTip>Flags teachers who have not yet completed the Teaching Insights assessment or have no classes assigned, with training modules to suggest. High means unassessed, Medium means unassigned. These are prompts for support, not judgements.</InfoTip></CardTitle>
+                Teachers ({facultyGaps.length})
+              <InfoTip>Flags teachers who have not completed the Teaching Insights assessment (priority gap) or have no classes assigned (moderate gap), with training to suggest. These are prompts for support, not judgements.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-gray-50 text-gray-500 border-b">
                   <tr>
                     <th className="text-left px-4 py-3 font-semibold">Teacher</th>
-                    <th className="text-center px-3 py-3 font-semibold">Assigned Classes</th>
-                    <th className="text-center px-3 py-3 font-semibold">Gap Status</th>
-                    <th className="text-left px-4 py-3 font-semibold">Identified Gap & Rationale</th>
-                    <th className="text-left px-4 py-3 font-semibold">Recommended Training Action</th>
-                    <th className="text-right px-4 py-3 font-semibold">Leadership Action</th>
+                    <th className="text-left px-3 py-3 font-semibold">Classes</th>
+                    <th className="text-left px-3 py-3 font-semibold">Status</th>
+                    <th className="text-left px-4 py-3 font-semibold">Suggested training</th>
+                    <th className="text-right px-4 py-3 font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {facultyGaps.map(g => (
-                    <tr key={g.teacher.userId} className="hover:bg-gray-50 transition-colors">
+                    <tr key={g.teacher.userId} className="hover:bg-gray-50 transition-colors align-top">
                       <td className="px-4 py-3">
-                        <p className="font-bold text-gray-900">{g.teacher.userName}</p>
+                        <p className="font-semibold text-gray-900">{g.teacher.userName}</p>
                         <p className="text-[10px] text-gray-400">{g.teacher.userEmail}</p>
                       </td>
-                      <td className="px-3 py-3 text-center text-gray-700 font-medium">
+                      <td className="px-3 py-3 text-gray-700">
                         {g.assignedClasses.length > 0 ? (
-                          <div className="flex flex-wrap justify-center gap-1">
+                          <div className="flex flex-wrap gap-1">
                             {g.assignedClasses.map(c => (
                               <Badge key={c.id} variant="outline" className="text-[10px]">
                                 {c.name}
@@ -387,10 +363,10 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                             ))}
                           </div>
                         ) : (
-                          <span className="text-gray-400 italic">Unassigned</span>
+                          <span className="text-gray-400">None</span>
                         )}
                       </td>
-                      <td className="px-3 py-3 text-center">
+                      <td className="px-3 py-3">
                         <Badge
                           className={
                             g.riskLevel === 'High'
@@ -400,25 +376,19 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                               : 'bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]'
                           }
                         >
-                          {g.riskLevel === 'High' ? 'Priority Gap' : g.riskLevel === 'Medium' ? 'Moderate Gap' : 'Aligned'}
+                          {g.riskLevel === 'High' ? 'Priority gap' : g.riskLevel === 'Medium' ? 'Moderate gap' : 'Aligned'}
                         </Badge>
+                        <p className="text-[11px] text-gray-500 mt-1">{g.gapReasons.join(' · ')}</p>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 max-w-xs">
-                        <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
-                          {g.gapReasons.map((r, i) => (
-                            <li key={i}>{r}</li>
+                      <td className="px-4 py-3 text-gray-700 max-w-xs">
+                        <ul className="space-y-1 text-[11px]">
+                          {g.recommendedTraining.map((t, i) => (
+                            <li key={i} className="flex items-start gap-1.5">
+                              <BookOpen className="w-3 h-3 text-indigo-600 shrink-0 mt-0.5" />
+                              <span>{t}</span>
+                            </li>
                           ))}
                         </ul>
-                      </td>
-                      <td className="px-4 py-3 text-indigo-700 font-medium max-w-xs">
-                        <div className="space-y-1">
-                          {g.recommendedTraining.map((t, i) => (
-                            <div key={i} className="flex items-center gap-1.5 text-[11px] bg-indigo-50/70 p-1.5 rounded border border-indigo-100">
-                              <BookOpen className="w-3 h-3 text-indigo-600 shrink-0" />
-                              <span className="line-clamp-1">{t}</span>
-                            </div>
-                          ))}
-                        </div>
                       </td>
                       <td className="px-4 py-3 text-right">
                         {g.riskLevel === 'High' ? (
@@ -430,7 +400,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                             }}
                             className="text-[11px] h-7 border-red-200 text-red-700 hover:bg-red-50 gap-1"
                           >
-                            <Mail className="w-3 h-3" /> Remind Assessment
+                            <Mail className="w-3 h-3" /> Remind
                           </Button>
                         ) : g.riskLevel === 'Medium' ? (
                           <Button
@@ -441,20 +411,18 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                             }}
                             className="text-[11px] h-7 border-amber-200 text-amber-700 hover:bg-amber-50 gap-1"
                           >
-                            <Calendar className="w-3 h-3" /> Schedule Coaching
+                            <Calendar className="w-3 h-3" /> Coach
                           </Button>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-medium">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Profile Aligned
-                          </span>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 inline" aria-label="Aligned" />
                         )}
                       </td>
                     </tr>
                   ))}
                   {facultyGaps.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-gray-400">
-                        No faculty members connected to evaluate.
+                      <td colSpan={5} className="text-center py-8 text-gray-400">
+                        No teachers connected yet.
                       </td>
                     </tr>
                   )}
@@ -468,54 +436,33 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
       {/* TAB 2: TRAINING LIBRARY & MATERIALS */}
       {activeTab === 'resources' && (
         <div className="space-y-6">
-          {/* Featured Video Card */}
-          <Card className="border-indigo-100 shadow-sm overflow-hidden">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs">
-                  Featured Masterclass
-                </Badge>
-                <span className="text-xs text-gray-500">6 min watch</span>
+          {/* Featured video */}
+          <div
+            onClick={() => {
+              setSelectedVideoModal(RESOURCES[4]);
+              setIsPlaying(true);
+              setVideoError(false);
+            }}
+            className="relative rounded-xl overflow-hidden bg-slate-900 h-[180px] flex items-center justify-center group cursor-pointer border border-indigo-200"
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end justify-between p-5">
+              <div>
+                <h4 className="text-white font-bold text-base">Platform Walkthrough</h4>
+                <p className="text-indigo-200 text-xs">Setup, classes and reports</p>
               </div>
-              <CardTitle className="text-base font-bold text-gray-900 mt-1">
-                School Portal Setup & Student Code Distribution Walkthrough
-              <InfoTip>A step-by-step video guide to setting up your school and giving students their codes.</InfoTip></CardTitle>
-              <CardDescription className="text-xs text-gray-600">
-                Interactive video orientation covering administrator setup, class creation, and cognitive report exports.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div
-                onClick={() => {
-                  setSelectedVideoModal(RESOURCES[4]);
-                  setIsPlaying(true);
-                  setVideoError(false);
-                }}
-                className="relative rounded-xl overflow-hidden bg-slate-900 aspect-video max-h-[260px] flex items-center justify-center group cursor-pointer border border-indigo-200 shadow-inner"
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-between p-6">
-                  <div className="flex justify-between items-start">
-                    <Badge className="bg-red-600 text-white font-semibold text-[10px]">HD VIDEO TUTORIAL</Badge>
-                    <span className="text-xs text-white/80 font-mono">6:12</span>
-                  </div>
-                  <div>
-                    <h4 className="text-white font-bold text-base mb-1">Click to Launch Interactive Video Player</h4>
-                    <p className="text-indigo-200 text-xs">Watch platform walkthrough with chapter bookmarks and transcript.</p>
-                  </div>
-                </div>
-                <div className="w-14 h-14 rounded-full bg-white/95 text-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform z-10">
-                  <Play className="w-6 h-6 ml-1 fill-current" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <span className="text-xs text-white/80 font-mono">6 min</span>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-white/95 text-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform z-10">
+              <Play className="w-5 h-5 ml-0.5 fill-current" />
+            </div>
+          </div>
 
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="relative flex-1 w-full max-w-sm">
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Search resources, guides, articles..."
+                placeholder="Search resources..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-9 text-xs"
@@ -524,9 +471,9 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
 
             <div className="flex gap-1.5 flex-wrap">
               {[
-                { id: 'all', label: 'All Resources' },
+                { id: 'all', label: 'All' },
                 { id: 'getting-started', label: 'Getting Started' },
-                { id: 'assessment-guides', label: 'Assessment Guides' },
+                { id: 'assessment-guides', label: 'Assessments' },
                 { id: 'pedagogy', label: 'Pedagogy' },
                 { id: 'video-tutorials', label: 'Videos' }
               ].map(cat => (
@@ -590,7 +537,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                       }}
                       className="w-full text-xs text-purple-700 border-purple-200 hover:bg-purple-50 flex items-center justify-center gap-1.5"
                     >
-                      <Play className="w-3.5 h-3.5 fill-current" /> Watch Video Tutorial
+                      <Play className="w-3.5 h-3.5 fill-current" /> Watch
                     </Button>
                   ) : (
                     <Button
@@ -599,7 +546,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                       onClick={() => handleDownload(res)}
                       className="w-full text-xs text-indigo-700 border-indigo-200 hover:bg-indigo-50 flex items-center justify-center gap-1.5"
                     >
-                      <Download className="w-3.5 h-3.5" /> Download {res.format}
+                      <Download className="w-3.5 h-3.5" /> Download
                     </Button>
                   )}
                 </CardContent>
@@ -616,7 +563,6 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
             {/* Modal Header */}
             <div className="flex justify-between items-center px-4 py-3 border-b border-slate-800 bg-slate-950">
               <div className="flex items-center gap-2">
-                <Badge className="bg-red-600 text-white text-[10px]">HD Video Player</Badge>
                 <span className="font-bold text-sm text-slate-100">{selectedVideoModal.title}</span>
               </div>
               <Button
@@ -651,23 +597,23 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
                     <BookOpen className="w-6 h-6" />
                   </div>
                   <h4 className="font-bold text-base text-white mb-1">
-                    Interactive Platform Walkthrough Guide
-                  <InfoTip>A guided tour of the main features.</InfoTip></h4>
+                    The video is unavailable right now
+                  </h4>
                   <p className="text-xs text-indigo-200/90 max-w-md mb-4 leading-relaxed">
-                    Online video stream is undergoing scheduled server updates. Explore the core platform workflow below:
+                    Here is the workflow in brief:
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full max-w-lg text-left text-[11px]">
                     <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
                       <span className="font-bold text-indigo-300 block mb-0.5">1. Class Codes</span>
-                      <span className="text-slate-300 text-[10px]">Teachers generate codes in Class Management for students to self-enroll.</span>
+                      <span className="text-slate-300 text-[10px]">Students join with a class code.</span>
                     </div>
                     <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
                       <span className="font-bold text-emerald-300 block mb-0.5">2. Assessments</span>
-                      <span className="text-slate-300 text-[10px]">Learners complete Kolb, Sternberg & Decision frameworks in 15 mins.</span>
+                      <span className="text-slate-300 text-[10px]">Three short assessments, about 15 minutes.</span>
                     </div>
                     <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
                       <span className="font-bold text-amber-300 block mb-0.5">3. School Reports</span>
-                      <span className="text-slate-300 text-[10px]">Download executive PDF dossiers and CSV rosters for leadership meetings.</span>
+                      <span className="text-slate-300 text-[10px]">Download PDF and CSV reports.</span>
                     </div>
                   </div>
                 </div>
@@ -677,7 +623,7 @@ export function TrainingPage({ institutionId, members = [], allPlatformUsers = [
             {/* Video Transcript / Notes */}
             <div className="p-4 bg-slate-950 border-t border-slate-800 text-xs">
               <p className="font-bold text-slate-300 mb-1 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-indigo-400" /> Key Takeaways & Transcript
+                <FileText className="w-3.5 h-3.5 text-indigo-400" /> Summary
               </p>
               <p className="text-slate-400 text-[11px] leading-relaxed">
                 {selectedVideoModal.content}

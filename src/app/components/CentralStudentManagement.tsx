@@ -13,8 +13,8 @@ import { StudentCognitiveProfile } from '../utils/teacherIntelligence';
 import { StudentDetailView } from './StudentDetailView';
 import { GenerateStudentCodesModal } from './InstitutionDashboard/GenerateStudentCodesModal';
 import { BulkUploadModal } from './InstitutionDashboard/BulkUploadModal';
-import { approveMember, removeMember } from '../utils/institution';
-import { getAllUsers, saveUser } from '../utils/storage';
+import { approveMember, removeMemberFromInstitution } from '../utils/institution';
+import { getAllUsers, saveUser, deleteUser } from '../utils/storage';
 import { removeStudentFromTeacher } from '../utils/api';
 import { toast } from 'sonner';
 
@@ -40,7 +40,7 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
     const isTeacher = teacher?.role === 'teacher';
     if (!window.confirm(isTeacher
       ? 'Remove this student from your class list? Their login code will be deactivated.'
-      : 'Are you sure you want to remove this student from the institution?')) {
+      : 'Remove this student from the institution? A student account created by the school is deleted completely.')) {
       return;
     }
     const instId = teacher?.institutionId || teacher?.organizationId;
@@ -63,20 +63,23 @@ export function CentralStudentManagement({ students, assessments, teacher, onRef
           userToUpdate.className = undefined;
           saveUser(userToUpdate);
         }
-      } else if (userToUpdate) {
-        userToUpdate.organizationName = undefined;
-        userToUpdate.organizationCode = undefined;
-        userToUpdate.classId = undefined;
-        userToUpdate.className = undefined;
-        saveUser(userToUpdate);
+      } else {
+        const { accountDeleted } = await removeMemberFromInstitution(instId, studentId);
+        if (accountDeleted) {
+          deleteUser(studentId);
+        } else if (userToUpdate) {
+          userToUpdate.organizationName = undefined;
+          userToUpdate.organizationCode = undefined;
+          userToUpdate.classId = undefined;
+          userToUpdate.className = undefined;
+          saveUser(userToUpdate);
+        }
       }
-      
-      if (!isTeacher) await removeMember(instId, studentId);
       toast.success('Student removed successfully');
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to remove student');
+      toast.error((err as Error)?.message || 'Failed to remove student');
     } finally {
       setRemovingStudentId(null);
     }

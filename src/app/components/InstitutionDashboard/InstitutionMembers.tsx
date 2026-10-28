@@ -18,11 +18,11 @@ import {
   approveMember,
   rejectMember,
   batchApproveMembers,
-  removeMember,
+  removeMemberFromInstitution,
   getInstitutionMembers,
   deleteInstitutionInvitation
 } from '../../utils/institution';
-import { saveUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, saveTeacherAssignment, saveClass } from '../../utils/storage';
+import { saveUser, deleteUser, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, saveTeacherAssignment, saveClass } from '../../utils/storage';
 import { InfoTip } from '../ui/info-tip';
 
 interface InstitutionMembersProps {
@@ -273,22 +273,27 @@ export function InstitutionMembers({
   };
 
   const handleRemoveMember = async (userId: string) => {
-    if (!window.confirm('Remove this member from the institution?')) return;
+    if (!window.confirm('Remove this member from the institution? A student account created by the school is deleted completely.')) return;
 
     setProcessingMemberId(userId);
     try {
-      const userToUpdate = allPlatformUsers.find(u => u.id === userId);
-      if (userToUpdate) {
-        userToUpdate.organizationName = undefined;
-        userToUpdate.organizationCode = undefined;
-        saveUser(userToUpdate);
+      const { accountDeleted } = await removeMemberFromInstitution(institution.id, userId);
+
+      if (accountDeleted) {
+        deleteUser(userId);
+      } else {
+        const userToUpdate = allPlatformUsers.find(u => u.id === userId);
+        if (userToUpdate) {
+          userToUpdate.organizationName = undefined;
+          userToUpdate.organizationCode = undefined;
+          saveUser(userToUpdate);
+        }
       }
 
-      await removeMember(institution.id, userId);
       await onRefresh();
-      toast.success('Member removed');
-    } catch (err) {
-      toast.error('Failed to remove member');
+      toast.success(accountDeleted ? 'Student account deleted' : 'Member removed');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to remove member');
     } finally {
       setProcessingMemberId(null);
     }

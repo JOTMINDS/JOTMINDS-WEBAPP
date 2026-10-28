@@ -10,6 +10,7 @@ import {
 import {
   Institution,
   regenerateCode,
+  reviveCode,
   deactivateInstitution,
   activateInstitution,
   getInstitutionById,
@@ -49,6 +50,7 @@ export function InstitutionCodeManager({
   onInstitutionUpdate
 }: InstitutionCodeManagerProps) {
   const [regenerating, setRegenerating] = useState(false);
+  const [reviving, setReviving] = useState(false);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [expiryDays, setExpiryDays] = useState<number | null>(institution.codeExpiryDays ?? null);
@@ -70,6 +72,24 @@ export function InstitutionCodeManager({
       console.error(err);
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  const handleRevive = async () => {
+    setReviving(true);
+    try {
+      const updated = await reviveCode(institution.id, expiryDays);
+      if (updated) {
+        onInstitutionUpdate(updated);
+        toast.success(`Code ${updated.code} is active again.`);
+      } else {
+        toast.error('Could not revive the code. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Could not revive the code. Please try again.');
+    } finally {
+      setReviving(false);
     }
   };
 
@@ -148,6 +168,38 @@ export function InstitutionCodeManager({
           </div>
         </div>
       </div>
+
+      {/* Revive an expired code */}
+      {expired && (
+        <Card className="border-2 border-red-200 bg-red-50">
+          <CardContent className="pt-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-red-900">This code has expired</p>
+              <p className="text-xs text-red-800 mt-0.5">
+                Revive it to keep using <span className="font-mono">{institution.code}</span>. No new code to share.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                aria-label="New validity period"
+                value={expiryDays === null ? 'never' : String(expiryDays)}
+                onChange={e => setExpiryDays(e.target.value === 'never' ? null : Number(e.target.value))}
+                className="h-9 rounded-md border border-red-200 bg-white px-3 text-sm text-gray-700"
+              >
+                {EXPIRY_OPTIONS.map(opt => (
+                  <option key={String(opt.value)} value={opt.value === null ? 'never' : String(opt.value)}>
+                    {opt.value === null ? 'Never expires' : `Valid for ${opt.label}`}
+                  </option>
+                ))}
+              </select>
+              <Button size="sm" onClick={handleRevive} disabled={reviving} style={{ backgroundColor: '#5B7DB1' }}>
+                {reviving ? <Loader className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                Revive Code
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Code info */}
       <Card>

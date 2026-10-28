@@ -17,6 +17,7 @@ import roleFitRoutes from './role-fit-routes.tsx';
 import brainGymRoutes from './brain-gym-routes.tsx';
 import teacherObservationRoutes from './teacher-observation-routes.tsx';
 import accountRoutes from './account-routes.tsx';
+import { purgeAccountLinks, wipeAccount, pruneDeletedChildren } from './account-cleanup.tsx';
 import leaderboardRoutes from './leaderboard-routes.tsx';
 import superadminRoutes from './superadmin-routes.tsx';
 import featureFlagsRoutes from './feature-flags-routes.tsx';
@@ -1131,6 +1132,110 @@ app.post('/make-server-fc8eb847/institutions/reject-member', async (c) => {
     return c.json({ success: true, member });
   } catch (error: any) {
     console.error('[reject-member] Error:', error);
+    return c.json({ error: error.message || 'Server error' }, 500);
+  }
+});
+
+// Remove a member from the institution (service role, so row-level security cannot
+// silently block it). A student whose account the school created with a student code
+// has no other home, so that account is deleted and parents stop seeing it. Everyone
+// else just leaves the school and keeps their own account.
+app.post('/make-server-fc8eb847/institutions/remove-member', async (c) => {
+  try {
+    const { institutionId, targetUserId } = await c.req.json();
+    const user = await verifyAuth(c.req.raw);
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    if (!institutionId || !targetUserId) {
+      return c.json({ error: 'Missing institutionId or targetUserId' }, 400);
+    }
+
+    const supabase = getSupabaseClient(true);
+    const isAdmin = await isCallerInstitutionAdmin(supabase, user, institutionId);
+    if (!isAdmin) {
+      return c.json({ error: 'Forbidden: Only administrators can remove members' }, 403);
+    }
+    if (targetUserId === user.id) {
+      return c.json({ error: 'You cannot remove yourself from the institution' }, 400);
+    }
+
+    const { data: inst } = await supabase
+      .from('institutions')
+      .select('admin_id')
+      .eq('id', institutionId)
+      .maybeSingle();
+    if (inst?.admin_id === targetUserId) {
+      return c.json({ error: 'The school owner cannot be removed' }, 403);
+    }
+
+    const { data: memberRow } = await supabase
+      .from('institution_members')
+      .select('role')
+      .eq('institution_id', institutionId)
+      .eq('user_id', targetUserId)
+      .maybeSingle();
+    const { data: codeRows } = await supabase
+      .from('student_codes')
+      .select('id')
+      .eq('institution_id', institutionId)
+      .eq('user_id', targetUserId);
+    const hasSchoolCode = !!codeRows && codeRows.length > 0;
+
+    if (!memberRow && !hasSchoolCode) {
+      return c.json({ error: 'This person is not part of your institution' }, 404);
+    }
+
+    const { error: deleteError } = await supabase
+      .from('institution_members')
+      .delete()
+      .eq('institution_id', institutionId)
+      .eq('user_id', targetUserId);
+    if (deleteError) {
+      console.error('[remove-member] Delete error:', deleteError);
+      return c.json({ error: deleteError.message }, 500);
+    }
+
+    const profile = await kv.get(`user:${targetUserId}`);
+    const isStudent = (profile?.role || memberRow?.role) === 'student';
+
+    let belongsElsewhere = false;
+    if (isStudent && hasSchoolCode) {
+      const { data: others } = await supabase
+        .from('institution_members')
+        .select('institution_id')
+        .eq('user_id', targetUserId)
+        .neq('institution_id', institutionId)
+        .limit(1);
+      belongsElsewhere = !!others && others.length > 0;
+    }
+
+    if (isStudent && hasSchoolCode && !belongsElsewhere) {
+      const { authError } = await wipeAccount(targetUserId);
+      if (authError) console.error('[remove-member] Login deletion failed:', authError);
+      return c.json({ success: true, accountDeleted: true });
+    }
+
+    if (hasSchoolCode) {
+      await supabase
+        .from('student_codes')
+        .update({ is_active: false, revoked_at: new Date().toISOString() })
+        .eq('institution_id', institutionId)
+        .eq('user_id', targetUserId);
+    }
+    if (profile) {
+      await kv.set(`user:${targetUserId}`, {
+        ...profile,
+        classId: null,
+        className: null,
+        organizationName: null,
+        organizationCode: null,
+      });
+    }
+
+    return c.json({ success: true, accountDeleted: false });
+  } catch (error: any) {
+    console.error('[remove-member] Error:', error);
     return c.json({ error: error.message || 'Server error' }, 500);
   }
 });
@@ -2695,9 +2800,12 @@ app.get('/make-server-fc8eb847/parent/children', async (c) => {
     const allUsers = await kv.getByPrefix('user:');
     
     // Filter to get only the linked children (case-insensitive role check)
-    const children = allUsers.filter((u: any) => 
+    const candidates = allUsers.filter((u: any) =>
       linkedChildIds.includes(u.id) && u.role?.toLowerCase() === 'student'
     );
+    // Children whose account was deleted drop off the parent's list.
+    const liveIds = await pruneDeletedChildren(user.id, userProfile, new Set(candidates.map((u: any) => u.id)));
+    const children = candidates.filter((u: any) => liveIds.has(u.id));
 
     return c.json({ success: true, children });
   } catch (error) {
@@ -3012,12 +3120,15 @@ app.get('/make-server-fc8eb847/parent/linked-children', async (c) => {
       if (p && p.id) profilesMap.set(p.id, p);
     });
 
+    // Children whose account was deleted drop off the parent's list.
+    const liveChildIds = await pruneDeletedChildren(user.id, userProfile, new Set(profilesMap.keys()));
+
     // Get each child's profile and assessments
     const childrenData = await Promise.all(
       linkedChildrenIds.map(async (childId: string) => {
         const childProfile = profilesMap.get(childId);
-        if (!childProfile) {
-          console.log('[Backend] Child profile not found:', childId);
+        if (!childProfile || !liveChildIds.has(childId)) {
+          console.log('[Backend] Child profile not found or deleted:', childId);
           return null;
         }
         
@@ -6295,6 +6406,7 @@ app.post('/make-server-fc8eb847/cron/cleanup-unverified-users', async (c) => {
         
         if (!isVerified) {
           console.log(`[cron] Deleting unverified user: ${user.id} (${user.email}) created at ${user.created_at}`);
+          await purgeAccountLinks(user.id);
           await supabase.auth.admin.deleteUser(user.id);
           await kv.del(`user:${user.id}`);
           deletedUserIds.push(user.id);

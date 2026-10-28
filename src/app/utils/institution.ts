@@ -361,6 +361,26 @@ export async function regenerateCode(institutionId: string, expiryDays: number |
   return mapDBInstitutionToLocal(data);
 }
 
+// Keeps the current code and restarts its validity window, so codes already
+// handed out to teachers and students work again without being re-shared.
+export async function reviveCode(institutionId: string, expiryDays: number | null): Promise<Institution | null> {
+  const timestamp = new Date().toISOString();
+
+  const { data, error } = await (supabase as any)
+    .from('institutions')
+    .update({
+      code_generated_at: timestamp,
+      code_expiry_days: expiryDays,
+      updated_at: timestamp
+    } as any)
+    .eq('id', institutionId)
+    .select()
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapDBInstitutionToLocal(data);
+}
+
 export function isCodeExpired(institution?: Partial<Institution> | null): boolean {
   if (!institution || !institution.codeExpiryDays || !institution.codeGeneratedAt) return false;
   const generated = new Date(institution.codeGeneratedAt).getTime();
@@ -639,6 +659,31 @@ export async function removeMember(institutionId: string, userId: string): Promi
     .eq('user_id', userId);
 
   if (error) throw error;
+}
+
+// Admin-initiated removal. The server checks the caller is an admin of this
+// institution, and deletes the account outright when it is a school-created
+// student account with no other home (so parents stop seeing it).
+export async function removeMemberFromInstitution(institutionId: string, userId: string): Promise<{ accountDeleted: boolean }> {
+  const token = await getAuthToken();
+  const res = await fetch(`${BASE_URL}/institutions/remove-member`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ institutionId, targetUserId: userId })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 404 && !data.error) {
+    // Route not deployed on the server yet: fall back to the plain membership delete.
+    await removeMember(institutionId, userId);
+    return { accountDeleted: false };
+  }
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Failed to remove member');
+  }
+  return { accountDeleted: !!data.accountDeleted };
 }
 
 export async function transferMember(userId: string, currentInstitutionId: string, newInstitutionCode: string): Promise<boolean> {

@@ -384,15 +384,12 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Class Management<InfoTip>Create classes, assign a class teacher and subject teachers, and add students.</InfoTip></h2>
-          <p className="text-xs text-gray-500 mt-1">Review teacher classes, approve creations, assign educators, and manage enrolled learners grouped by educational level.</p>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-800">Class Management<InfoTip>Create classes, assign a class teacher and subject teachers, and add students. Teacher-created classes wait here for your approval.</InfoTip></h2>
         <button
           onClick={() => { setCurrentClass({ academicYear: new Date().getFullYear().toString(), educationLevel: 'Primary' }); setIsModalOpen(true); }}
           className="bg-[#1E8A6E] text-white px-4 py-2 rounded-lg hover:bg-[#156e57] transition-colors text-sm font-semibold shadow-xs cursor-pointer"
         >
-          Add New Class
+          Add Class
         </button>
       </div>
 
@@ -403,14 +400,9 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
             <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 shrink-0">
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-sm font-bold text-amber-900">
-                {pendingClasses.length} Class Verification{pendingClasses.length > 1 ? 's' : ''} Pending Approval
-              </p>
-              <p className="text-xs text-amber-700">
-                Teachers submitted {pendingClasses.length} class{pendingClasses.length > 1 ? 'es' : ''} awaiting institutional review and approval before students can officially join.
-              </p>
-            </div>
+            <p className="text-sm font-semibold text-amber-900">
+              {pendingClasses.length} {pendingClasses.length > 1 ? 'classes' : 'class'} waiting for approval
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -436,8 +428,8 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
           { id: 'all', label: 'All Levels' },
           { id: 'Early Years', label: 'Preschool' },
           { id: 'Primary', label: 'Elementary' },
-          { id: 'JHS', label: 'Junior High School (JHS)' },
-          { id: 'SHS', label: 'Senior High School (SHS)' },
+          { id: 'JHS', label: 'JHS' },
+          { id: 'SHS', label: 'SHS' },
           { id: 'Tertiary', label: 'Tertiary' },
         ].map(cat => {
           const count = cat.id === 'all' 
@@ -472,9 +464,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
         <table className="w-full text-left">
           <thead className="bg-gray-50">
             <tr>
-              <th className="p-4 font-semibold text-gray-600">Class Name</th>
-              <th className="p-4 font-semibold text-gray-600">Level</th>
-              <th className="p-4 font-semibold text-gray-600">Academic Year</th>
+              <th className="p-4 font-semibold text-gray-600">Class</th>
               <th className="p-4 font-semibold text-gray-600">Class Teacher<InfoTip>The main teacher responsible for the class.</InfoTip></th>
               <th className="p-4 font-semibold text-gray-600">Students</th>
               <th className="p-4 font-semibold text-gray-600">Subject Teachers<InfoTip>Teachers who teach a subject to this class but are not the main class teacher.</InfoTip></th>
@@ -488,10 +478,10 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
               const enrolledCount = students.filter(s => s.classId === cls.id).length;
 
               return (
-                <tr key={cls.id} className="hover:bg-gray-50">
-                  <td className="p-4 font-medium text-gray-800">
+                <tr key={cls.id} className="hover:bg-gray-50 align-top">
+                  <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">{cls.name}</span>
+                      <span className="font-semibold text-gray-800">{cls.name}</span>
                       {cls.status === 'pending' && (
                         <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Pending</span>
                       )}
@@ -499,140 +489,116 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                         <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-red-100 text-red-800">Rejected</span>
                       )}
                     </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {(() => {
+                        const lvl = cls.educationLevel || 'Elementary';
+                        if (['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'].includes(lvl)) return 'Preschool';
+                        if (['Primary', 'Elementary'].includes(lvl)) return 'Elementary';
+                        return lvl;
+                      })()}
+                      {cls.academicYear ? ` · ${cls.academicYear}` : ''}
+                    </p>
                   </td>
-                  <td className="p-4">
-                    {(() => {
-                      const lvl = cls.educationLevel || 'Elementary';
-                      let color = 'bg-emerald-50 text-emerald-800 border-emerald-200';
-                      let label: string = lvl;
-                      if (['Early Years', 'Pre-school', 'Preschool', 'Nursery', 'Kindergarten', 'Crèche', 'Creche'].includes(lvl)) {
-                        color = 'bg-pink-50 text-pink-800 border-pink-200';
-                        label = 'Preschool';
-                      } else if (['Primary', 'Elementary'].includes(lvl)) {
-                        color = 'bg-emerald-50 text-emerald-800 border-emerald-200';
-                        label = 'Elementary';
-                      } else if (lvl === 'JHS') {
-                        color = 'bg-blue-50 text-blue-800 border-blue-200';
-                        label = 'JHS';
-                      } else if (lvl === 'SHS') {
-                        color = 'bg-purple-50 text-purple-800 border-purple-200';
-                        label = 'SHS';
-                      } else if (lvl === 'Tertiary') {
-                        color = 'bg-amber-50 text-amber-800 border-amber-200';
-                        label = 'Tertiary';
-                      }
-                      return (
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full border font-bold ${color}`}>
-                          {label}
-                        </span>
-                      );
-                    })()}
-                  </td>
-                  <td className="p-4 text-gray-600 text-sm">{cls.academicYear}</td>
-                  <td className="p-4">
+                  <td className="p-4 text-sm">
                     {classTeacher ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {classTeacher.name}
-                      </span>
+                      <span className="text-gray-800">{classTeacher.name}</span>
                     ) : (
-                      <span className="text-gray-400 italic text-xs">Unassigned</span>
+                      <span className="text-gray-400">Unassigned</span>
                     )}
                   </td>
-                  <td className="p-4">
-                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      {enrolledCount} {enrolledCount === 1 ? 'student' : 'students'}
-                    </span>
-                  </td>
+                  <td className="p-4 text-sm text-gray-700">{enrolledCount}</td>
                   <td className="p-4">
                     <div className="flex flex-col gap-1">
-                      {subjectAssignments.length > 0 ? subjectAssignments.map(a => {
+                      {subjectAssignments.map(a => {
                         const teacher = teachers.find(t => t.id === a.teacherId);
                         return (
-                          <div key={a.id} className="text-xs text-gray-600 flex justify-between items-center bg-gray-100 p-1 rounded">
-                            <span>{teacher?.name} ({a.subjectId})</span>
-                            <button onClick={() => handleDeleteAssignment(a.id)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+                          <div key={a.id} className="text-xs text-gray-600 flex justify-between items-center bg-gray-100 px-2 py-1 rounded">
+                            <span>{teacher?.name} · {a.subjectId}</span>
+                            <button onClick={() => handleDeleteAssignment(a.id)} aria-label="Remove subject teacher" className="text-red-500 hover:text-red-700 ml-2">&times;</button>
                           </div>
                         );
-                      }) : (
-                        <span className="text-xs text-gray-400">No subjects assigned</span>
-                      )}
-                      <button 
+                      })}
+                      <button
                         onClick={() => { setActiveClassId(cls.id); setIsSubjectModalOpen(true); }}
-                        className="text-xs text-[#1E8A6E] hover:underline mt-1 text-left"
+                        className="text-xs text-[#1E8A6E] hover:underline text-left disabled:text-gray-300 disabled:no-underline"
                         disabled={cls.status === 'pending' || cls.status === 'rejected'}
                       >
-                        + Add Subject Teacher
+                        + Add
                       </button>
                     </div>
                   </td>
-                  <td className="p-4 flex flex-wrap gap-2 items-center">
-                    {cls.status === 'pending' ? (
-                      <>
-                        <button 
-                          onClick={() => {
-                            const updated = { ...cls, status: 'approved' as const };
-                            saveClass(updated);
-                            setClasses(prev => prev.map(c => c.id === cls.id ? updated : c));
-                            toast.success(`Class "${cls.name}" verified and approved!`);
-                            window.dispatchEvent(new CustomEvent('institution-notification', {
-                              detail: { title: 'Class Approved', message: `Class "${cls.name}" verified.` }
-                            }));
-                          }}
-                          className="text-white bg-emerald-600 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded shadow-sm font-medium"
-                        >
-                          Approve
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const updated = { ...cls, status: 'rejected' as const };
-                            saveClass(updated);
-                            setClasses(prev => prev.map(c => c.id === cls.id ? updated : c));
-                            toast.error(`Class "${cls.name}" was declined.`);
-                            window.dispatchEvent(new CustomEvent('institution-notification', {
-                              detail: { title: 'Class Declined', message: `Class "${cls.name}" declined.` }
-                            }));
-                          }}
-                          className="text-white bg-red-500 hover:bg-red-600 text-xs px-3 py-1.5 rounded shadow-sm font-medium"
-                        >
-                          Decline
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button 
-                          onClick={() => { setActiveClass(cls); setIsDetailsModalOpen(true); }}
-                          className="text-[#1E8A6E] hover:underline mr-1 font-medium bg-green-50 px-2 py-1 rounded text-sm"
-                        >
-                          View Details
-                        </button>
-                        <button 
-                          onClick={() => handleManageStudents(cls.id)}
-                          className="text-[#1E8A6E] hover:underline mr-1 text-sm"
-                        >
-                          Manage Students
-                        </button>
-                        <button 
-                          onClick={() => { setCurrentClass(cls); setIsModalOpen(true); }}
-                          className="text-blue-500 hover:underline mr-1 text-sm"
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteClass(cls.id)}
-                          className="text-red-500 hover:underline text-sm"
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
+                  <td className="p-4">
+                    <div className="flex flex-wrap justify-end gap-2 items-center">
+                      {cls.status === 'pending' ? (
+                        <>
+                          <button
+                            onClick={() => {
+                              const updated = { ...cls, status: 'approved' as const };
+                              saveClass(updated);
+                              setClasses(prev => prev.map(c => c.id === cls.id ? updated : c));
+                              toast.success(`Class "${cls.name}" verified and approved!`);
+                              window.dispatchEvent(new CustomEvent('institution-notification', {
+                                detail: { title: 'Class Approved', message: `Class "${cls.name}" verified.` }
+                              }));
+                            }}
+                            className="text-white bg-emerald-600 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded shadow-sm font-medium"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => {
+                              const updated = { ...cls, status: 'rejected' as const };
+                              saveClass(updated);
+                              setClasses(prev => prev.map(c => c.id === cls.id ? updated : c));
+                              toast.error(`Class "${cls.name}" was declined.`);
+                              window.dispatchEvent(new CustomEvent('institution-notification', {
+                                detail: { title: 'Class Declined', message: `Class "${cls.name}" declined.` }
+                              }));
+                            }}
+                            className="text-white bg-red-500 hover:bg-red-600 text-xs px-3 py-1.5 rounded shadow-sm font-medium"
+                          >
+                            Decline
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => { setActiveClass(cls); setIsDetailsModalOpen(true); }}
+                            className="text-[#1E8A6E] bg-green-50 hover:bg-green-100 px-3 py-1 rounded text-sm font-medium"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleManageStudents(cls.id)}
+                            className="text-gray-700 hover:bg-gray-100 px-2 py-1 rounded text-sm"
+                          >
+                            Students
+                          </button>
+                          <button
+                            onClick={() => { setCurrentClass(cls); setIsModalOpen(true); }}
+                            className="text-gray-700 hover:bg-gray-100 px-2 py-1 rounded text-sm"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClass(cls.id)}
+                            aria-label={`Delete ${cls.name}`}
+                            title="Delete class"
+                            className="text-red-500 hover:bg-red-50 p-1.5 rounded"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
             })}
-            {classes.length === 0 && (
+            {displayedClasses.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-8 text-center text-gray-500">
-                  No classes created yet.
+                  {classes.length === 0 ? 'No classes yet.' : 'No classes at this level.'}
                 </td>
               </tr>
             )}
@@ -766,10 +732,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
       {isStudentModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
-            <h3 className="text-xl font-bold mb-1 flex-shrink-0">Assign Students<InfoTip>Add students to this class.</InfoTip></h3>
-            <p className="text-sm text-gray-500 mb-3 flex-shrink-0">
-              Select or deselect students to add or remove them from this class.
-            </p>
+            <h3 className="text-xl font-bold mb-3 flex-shrink-0">Assign Students<InfoTip>Tick a student to add them to this class. Untick to remove them.</InfoTip></h3>
             <div className="mb-3 flex-shrink-0">
               <input
                 type="text"
@@ -816,9 +779,9 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                             : 'bg-yellow-100 text-yellow-800'
                       }`}>
                         {s.classId === activeStudentClassId 
-                          ? 'Current Class' 
-                          : s.classId 
-                            ? `Assigned to ${classes.find(c => c.id === s.classId)?.name || 'another class'}` 
+                          ? 'This class'
+                          : s.classId
+                            ? (classes.find(c => c.id === s.classId)?.name || 'Other class')
                             : 'Unassigned'}
                       </span>
                     </label>
@@ -885,7 +848,6 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                     </button>
                   </div>
                 )}
-                <p className="text-xs text-blue-700/70 mt-2">Share this code with students so they can join this class.</p>
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -917,7 +879,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                     );
                   })
                 ) : (
-                  <p className="text-sm text-gray-500 italic col-span-2">No subject teachers assigned yet.</p>
+                  <p className="text-sm text-gray-500 col-span-2">None assigned.</p>
                 )}
               </div>
             </div>
@@ -969,7 +931,7 @@ export default function ClassManagement({ institutionMembers = [], allPlatformUs
                   </ul>
                 ) : (
                   <div className="p-4 text-center text-gray-500">
-                    No students are currently assigned to this class.
+                    No students in this class yet.
                   </div>
                 )}
               </div>
