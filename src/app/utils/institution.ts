@@ -1159,17 +1159,20 @@ export function resolveSchoolLocation(inst?: Partial<Institution> | null, school
 // -----------------------------------------
 
 import { Class } from '../types';
-import { getAllClasses, saveClass, deleteClass } from './storage';
-import { fetchInstitutionClassesAPI, saveInstitutionClassAPI, deleteInstitutionClassAPI } from './api';
+import { getAllClasses, saveClass, deleteClass, removeClassesLocally } from './storage';
+import { fetchInstitutionClassesAPI, saveInstitutionClassAPI, deleteInstitutionClassAPI, generateClassCodeForClass } from './api';
 
 export async function getInstitutionClasses(institutionId: string, teacherIds?: string[]): Promise<Class[]> {
   let remoteClasses: Class[] = [];
+  let apiOk = false;
+  let dbOk = false;
   
   // 1. Try fetching from Backend KV store API
   try {
     const res = await fetchInstitutionClassesAPI(institutionId);
     if (res && res.success && Array.isArray(res.classes)) {
       remoteClasses = res.classes;
+      apiOk = true;
     }
   } catch (e) {
     console.warn('Exception fetching classes from backend API:', e);
@@ -1192,6 +1195,7 @@ export async function getInstitutionClasses(institutionId: string, teacherIds?: 
     if (error) {
       console.warn('Error fetching classes from Supabase, falling back to local storage:', error);
     } else {
+      dbOk = true;
       const dbClasses = (data || []).map((dbClass: any) => ({
         id: dbClass.id,
         name: dbClass.name,
@@ -1217,6 +1221,21 @@ export async function getInstitutionClasses(institutionId: string, teacherIds?: 
     }
   } catch (e) {
     console.warn('Exception fetching classes from Supabase:', e);
+  }
+
+  // A class of this school that both server sources have stopped returning was deleted
+  // elsewhere (for example by the school admin). Forget the local copy, otherwise it is
+  // shown again and synced straight back to the server. Classes made in the last few
+  // minutes are kept in case their first sync has not landed yet.
+  if (institutionId && apiOk && dbOk) {
+    const remoteIds = new Set(remoteClasses.map(c => c.id));
+    const graceMs = 10 * 60 * 1000;
+    const stale = getAllClasses().filter(c =>
+      c.institutionId === institutionId &&
+      !remoteIds.has(c.id) &&
+      Date.now() - new Date(c.createdAt || 0).getTime() > graceMs
+    );
+    removeClassesLocally(stale.map(c => c.id));
   }
 
   // Merge with local storage classes (allow matching institutionId, teacherIds of school, or unscoped classes)
@@ -1338,13 +1357,7 @@ export async function deleteInstitutionClass(classId: string): Promise<void> {
 }
 
 export async function generateNewClassCode(classId: string): Promise<string> {
-  const classCode = generateInstitutionCode().replace('JOTM-', 'CLS-');
-  const { error } = await (supabase as any)
-    .from('classes')
-    .update({ class_code: classCode })
-    .eq('id', classId);
-
-  if (error) throw error;
-  
-  return classCode;
+  const res = await generateClassCodeForClass(classId, false);
+  if (res.success && res.classCode) return res.classCode;
+  throw new Error(res.error || 'Failed to generate class code');
 }

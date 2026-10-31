@@ -2173,6 +2173,28 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
+                {(user as any).studentCode && (
+                  <div className="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                      <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-200">Your personal code</p>
+                      <p className="text-3xl font-black font-mono tracking-widest text-indigo-700 dark:text-indigo-300 select-all">{(user as any).studentCode}</p>
+                      <p className="text-[11px] text-indigo-800/80 dark:text-indigo-300/80 mt-1">Use it to sign in. Your teacher and parent can see it too, so you can always ask them.</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-white"
+                      onClick={() => {
+                        navigator.clipboard.writeText((user as any).studentCode).then(
+                          () => toast.success('Code copied'),
+                          () => toast.error('Could not copy the code')
+                        );
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Card 1: Student Information */}
                   <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">

@@ -42,10 +42,10 @@ export const TeacherPerformanceAnalyticsView: React.FC<TeacherPerformanceAnalyti
       <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               Lesson Planner Analytics
             </Badge>
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               {score} / 100 Usage Score
             </Badge>
           </div>

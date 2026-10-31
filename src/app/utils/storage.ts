@@ -112,6 +112,15 @@ export function deleteClass(classId: string) {
   deleteClassFromSupabase(classId);
 }
 
+// Forgets classes on this device only. Unlike deleteClass it never touches the
+// server, so a device can drop a class that was deleted elsewhere without
+// deleting it a second time.
+export function removeClassesLocally(classIds: string[]) {
+  if (classIds.length === 0) return;
+  const drop = new Set(classIds);
+  localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(getAllClasses().filter(c => !drop.has(c.id))));
+}
+
 export function getClassById(classId: string): Class | undefined {
   return getAllClasses().find(c => c.id === classId);
 }

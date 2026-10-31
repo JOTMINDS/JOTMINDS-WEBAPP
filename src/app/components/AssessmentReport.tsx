@@ -12,7 +12,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { saveReflection as saveReflectionToServer } from '../utils/api';
 
 import { BookOpen, Briefcase, Lightbulb, FileText, Download, ArrowLeft, TrendingUp, AlertTriangle, Target, Users, BarChart3, Share2, Eye, Brain, ChevronDown, ChevronUp, Printer, HelpCircle } from 'lucide-react';
-import { generatePDF, exportReportToPDF } from '../utils/pdfGenerator';
+import { generatePDF, generatePDFFile, printAssessmentPDF, exportReportToPDF } from '../utils/pdfGenerator';
 import { getAssessmentInsights, AssessmentInsights } from '../utils/insights';
 import { generateAIInsights, AIInsightsResponse } from '../utils/aiService';
 import { toast } from 'sonner';
@@ -141,41 +141,58 @@ export function AssessmentReport({ assessment, userName, onBack, isOrganizationa
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-    toast.success('Opening print dialog...');
+  const handlePrint = async () => {
+    toast.info('Preparing your report for printing...');
+    const ready = await printAssessmentPDF(assessment, userName, ghanaMapping, isOrganizational);
+    if (!ready) {
+      toast.error('Could not prepare the report. Opening the page print view instead.');
+      window.print();
+    }
   };
 
   const handleShareResults = async () => {
     const mainStyle = getMainStyle() ? getMainStyle().replace(/\s*\([^)]*\)/g, '').trim() : '';
-    const shareText = `I've completed my ${assessment.type === 'kolb' ? 'Learning Style' : assessment.type === 'sternberg' ? 'Thinking Style' : 'Decision Style'} Assessment on JotMinds! My primary style is ${mainStyle}.`;
-    
-    // Check if Web Share API is available and supported
+    const kind = assessment.type === 'kolb' ? 'Learning Style' : assessment.type === 'sternberg' ? 'Thinking Style' : 'Decision Style';
+    // Short lines read well in chat apps, unlike one long paragraph
+    const shareText = [
+      `JotMinds ${kind} Report`,
+      `Name: ${userName}`,
+      mainStyle ? `Main style: ${mainStyle}` : '',
+      '',
+      `Find yours at ${window.location.origin}`,
+    ].filter((line, i, all) => line !== '' || (i > 0 && i < all.length - 1)).join('\n');
+    const title = `${userName}'s ${kind} Report`;
+
     if (navigator.share && navigator.canShare) {
-      const shareData = {
-        title: `${userName}'s Thinking Style Assessment`,
-        text: shareText
-      };
-      
-      // Check if the data can be shared
+      // Best: send the full PDF report as a file, so it opens as a report in the other app
+      try {
+        const file = await generatePDFFile(assessment, userName, ghanaMapping, isOrganizational);
+        if (file && navigator.canShare({ files: [file] })) {
+          await navigator.share({ title, text: shareText, files: [file] });
+          toast.success('Report shared!');
+          return;
+        }
+      } catch (error: any) {
+        if (error?.name === 'AbortError') return; // the person closed the share sheet
+        console.log('Sharing the PDF failed, falling back to text:', error?.name);
+      }
+
+      const shareData = { title, text: shareText };
       if (navigator.canShare(shareData)) {
         try {
           await navigator.share(shareData);
           toast.success('Shared successfully!');
           return;
         } catch (error: any) {
-          // User cancelled or permission denied
-          if (error.name === 'AbortError') {
-            // User cancelled, do nothing
-            return;
-          }
-          // For other errors, fall back to clipboard
-          console.log('Share API error, using fallback:', error.name);
+          if (error?.name === 'AbortError') return;
+          console.log('Share API error, using fallback:', error?.name);
         }
       }
     }
-    
-    // Fallback for browsers that don't support Web Share API or if sharing failed
+
+    // This browser cannot share files: save the PDF so it can be attached by hand, and copy the summary
+    const saved = await generatePDF(assessment, userName, ghanaMapping, isOrganizational);
+    if (saved) toast.success('PDF report saved. Attach it in your app to share.');
     fallbackShare(shareText);
   };
 

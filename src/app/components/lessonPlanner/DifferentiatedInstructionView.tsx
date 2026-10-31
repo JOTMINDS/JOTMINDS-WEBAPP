@@ -123,20 +123,20 @@ export const DifferentiatedInstructionView: React.FC<DifferentiatedInstructionVi
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
+      <div className="bg-gradient-to-r from-[#5B7DB1] via-[#6B4C9A] to-[#1E8A6E] text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               Module 3 • Activities for Every Learner<InfoTip>The same lesson at three levels. Give Extra Support to learners who find it hard, the Main Activity to most learners, and the Challenge to those who finish early. Alternative activities suit different learning styles.</InfoTip>
             </Badge>
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               3 Levels of Activity
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Layers className="w-5 h-5 text-indigo-400" /> Activities for Every Learner
           </h2>
-          <p className="text-xs text-slate-300 mt-1">
+          <p className="text-xs text-white/85 mt-1">
             Three levels of activity so every learner can take part: extra support, main activity and challenge.
           </p>
         </div>

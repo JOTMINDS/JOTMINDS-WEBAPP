@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mascot, CelebratingMascot, EncouragingMascot } from './Mascot';
 import { KidsButton } from './KidsButton';
@@ -405,7 +405,19 @@ export function KidsAssessment({ type, onComplete, onBack }: KidsAssessmentProps
   const { refreshUser } = useAuth();
   const { play } = useSound();
 
-  const questions = kidsQuestions[type] || [];
+  // A fresh order of questions, and of the answer choices, for every attempt. Answers are
+  // scored by choice id, so the order does not affect results.
+  const questions = useMemo(() => {
+    const mix = <T,>(items: T[]): T[] => {
+      const copy = [...items];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    };
+    return mix(kidsQuestions[type] || []).map(q => ({ ...q, options: mix(q.options) }));
+  }, [type]);
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 

@@ -572,7 +572,8 @@ Provide empathetic, constructive coaching feedback in JSON format:
 
 export async function generateJTIAAIRecommendations(
   report: any,
-  curriculum?: string
+  curriculum?: string,
+  teaching?: { subjects: string[]; levels: string[] }
 ): Promise<JTIAAIRecommendations> {
   const cur = getCurriculumContext(curriculum);
   const fallback = generatePersonalizedRecommendations(
@@ -580,8 +581,12 @@ export async function generateJTIAAIRecommendations(
     report?.strengths || [],
     report?.growthOpportunities || [],
     undefined,
-    curriculum
+    curriculum,
+    teaching
   );
+  const taught = teaching && (teaching.subjects.length || teaching.levels.length)
+    ? `The teacher teaches ${[teaching.subjects.join(', '), teaching.levels.join(', ')].filter(Boolean).join(' at ')}.`
+    : '';
 
   try {
     const prompt = `Generate Teaching Insights recommendations based on this teacher assessment report:
@@ -599,7 +604,7 @@ Return strictly valid JSON with this exact schema:
 
 Crucial Instructions:
 1. Personalization: Address the teacher's specific score profile and growth areas.
-2. Curriculum: The teacher teaches ${cur.name}. ${cur.aiContext}
+2. Curriculum: The teacher teaches ${cur.name}. ${cur.aiContext} ${taught} Name real elements of this curriculum (its standards, competencies, assessment approach, or planning documents) in each recommendation, and tie each one to a specific domain in the report.
 3. Professionalism: Frame growth areas positively as mastery pathways.`;
     
     const res = await callOpenAI([

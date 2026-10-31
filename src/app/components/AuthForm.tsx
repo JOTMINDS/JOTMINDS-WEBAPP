@@ -3,7 +3,7 @@ import { PhoneInput } from './PhoneInput';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '../utils/supabase/client';
-import { setAuthToken, signup, signin, validateStudentCode, signInWithStudentCode } from '../utils/api';
+import { setAuthToken, signup, signin, validateStudentCode, signInWithStudentCode, lookupClassCode, joinWithClassCode } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -66,6 +66,13 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
   const [studentCodeStudentName, setStudentCodeStudentName] = useState('');
   const [studentCodeSchoolName, setStudentCodeSchoolName] = useState('');
   const [studentCodeLoading, setStudentCodeLoading] = useState(false);
+
+  // Class code sign-in: one code for the whole class, then name and date of birth
+  const [classJoin, setClassJoin] = useState<{ className: string; schoolName: string } | null>(null);
+  const [classJoinName, setClassJoinName] = useState('');
+  const [classJoinDob, setClassJoinDob] = useState('');
+  const [classJoinNotFound, setClassJoinNotFound] = useState(false);
+  const [pendingClassSession, setPendingClassSession] = useState<{ session: any } | null>(null);
 
   // Student Code Display After Signup
   const [showStudentCodeModal, setShowStudentCodeModal] = useState(false);
@@ -584,6 +591,27 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
     setSignInMethod('email');
     setStudentCodeInput('');
     setStudentCodeValidated(false);
+    resetClassJoin();
+  };
+
+  const resetClassJoin = () => {
+    setClassJoin(null);
+    setClassJoinName('');
+    setClassJoinDob('');
+    setClassJoinNotFound(false);
+  };
+
+  // Sets the Supabase session for a student who joined with a class code.
+  const applyStudentSession = async (session: any) => {
+    if (session?.access_token) {
+      const supabase = createClient();
+      const res = await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token || session.access_token,
+      });
+      if (res.error) console.error('[AuthForm] setSession error:', res.error);
+      setAuthToken(session.access_token);
+    }
   };
 
   // Student Code Sign-In Handler
@@ -598,6 +626,45 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
 
     setStudentCodeLoading(true);
     try {
+      // A class code (CLS-XXXXXX) is shared by the whole class: the student then confirms their name and birthday.
+      if (code.startsWith('CLS-') || classJoin) {
+        if (!classJoin) {
+          const lookup = await lookupClassCode(code);
+          if (!lookup.valid) {
+            setError('Class code not found. Check it with your teacher and try again.');
+          } else {
+            setClassJoin({ className: lookup.className || 'Your class', schoolName: lookup.schoolName || '' });
+          }
+          setStudentCodeLoading(false);
+          return;
+        }
+
+        if (!classJoinName.trim() || !classJoinDob) {
+          setError('Please enter your full name and date of birth.');
+          setStudentCodeLoading(false);
+          return;
+        }
+        const joined = await joinWithClassCode({
+          code,
+          studentName: classJoinName.trim(),
+          dateOfBirth: classJoinDob,
+          confirmNew: classJoinNotFound,
+        });
+        if (joined.notFound) {
+          setClassJoinNotFound(true);
+        } else if (joined.success && joined.code) {
+          // Show the personal code first; the session is applied when the student continues.
+          setPendingClassSession({ session: joined.session });
+          setGeneratedStudentCode(joined.code);
+          setStudentCodeStudentName(classJoinName.trim().split(' ')[0]);
+          setShowStudentCodeModal(true);
+        } else {
+          setError(joined.error || 'Could not sign you in. Please try again.');
+        }
+        setStudentCodeLoading(false);
+        return;
+      }
+
       if (!studentCodeValidated) {
         // Step 1: Validate the code
         const result = await validateStudentCode(code);
@@ -645,6 +712,14 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
 
   const handleAcknowledgeStudentCode = async () => {
     setShowStudentCodeModal(false);
+    if (pendingClassSession) {
+      const { session } = pendingClassSession;
+      setPendingClassSession(null);
+      await applyStudentSession(session);
+      toast.success(`Welcome, ${studentCodeStudentName || 'Student'}!`);
+      onLogin();
+      return;
+    }
     if (pendingAutoLogin) {
       setLoading(true);
       console.log('[AuthForm] Attempting auto-login after code acknowledgment...');
@@ -770,7 +845,47 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                   {/* Student Code Sign-In */}
                   {signInMethod === 'studentCode' ? (
                     <div className="space-y-4">
-                      {!studentCodeValidated ? (
+                      {classJoin ? (
+                        <>
+                          <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-4 text-center">
+                            <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+                            <p className="text-xs text-emerald-700">Class found</p>
+                            <p className="text-lg font-bold text-emerald-950 dark:text-emerald-50">{classJoin.className}</p>
+                            {classJoin.schoolName && <p className="text-xs text-emerald-600/70 mt-0.5">{classJoin.schoolName}</p>}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="classJoinName">Your full name</Label>
+                            <Input
+                              id="classJoinName"
+                              type="text"
+                              placeholder="e.g. Ama Mensah"
+                              value={classJoinName}
+                              onChange={(e) => { setClassJoinName(e.target.value); setClassJoinNotFound(false); }}
+                              autoComplete="off"
+                              className="shadow-sm"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="classJoinDob">Date of birth</Label>
+                            <Input
+                              id="classJoinDob"
+                              type="date"
+                              max={new Date().toISOString().split('T')[0]}
+                              value={classJoinDob}
+                              onChange={(e) => { setClassJoinDob(e.target.value); setClassJoinNotFound(false); }}
+                              className="shadow-sm"
+                            />
+                          </div>
+                          {classJoinNotFound && (
+                            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                              We could not find that name and date of birth on this class list. Check the spelling and date, or press "Join as a new student" if you are new to the class.
+                            </p>
+                          )}
+                          <button type="button" onClick={() => { resetClassJoin(); setStudentCodeInput(''); setError(''); }} className="text-xs text-muted-foreground underline w-full text-center">
+                            Use a different code
+                          </button>
+                        </>
+                      ) : !studentCodeValidated ? (
                         <>
                           <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/40 rounded-xl p-4 text-center">
                             <KeyRound className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
@@ -778,7 +893,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                               Do you have a code from your teacher or school?
                             </p>
                             <p className="text-xs text-indigo-600/70 dark:text-indigo-400/70 mt-1">
-                              Enter the code your teacher gave you to sign in
+                              Enter your own code, or the class code your teacher gave the whole class
                             </p>
                           </div>
                           <div className="space-y-2">
@@ -790,7 +905,7 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                               <Input
                                 id="studentCode"
                                 type="text"
-                                placeholder="JM-XXXX-XXXX"
+                                placeholder="JM-XXXX-XXXX or CLS-XXXXXX"
                                 value={studentCodeInput}
                                 onChange={(e) => setStudentCodeInput(e.target.value.toUpperCase())}
                                 className="pl-10 shadow-sm font-mono tracking-widest text-center text-lg"
@@ -1506,16 +1621,16 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
                     <Button
                       type="button"
                       className="w-full py-6"
-                      disabled={studentCodeLoading || (!studentCodeValidated && studentCodeInput.trim().length < 5)}
+                      disabled={studentCodeLoading || (classJoin ? (!classJoinName.trim() || !classJoinDob) : (!studentCodeValidated && studentCodeInput.trim().length < 5))}
                       onClick={handleStudentCodeSignIn}
                     >
                       {studentCodeLoading ? (
                         <>
                           <Loader className="mr-2 h-4 w-4 animate-spin" />
-                          {studentCodeValidated ? 'Signing in...' : 'Verifying...'}
+                          {studentCodeValidated || classJoin ? 'Signing in...' : 'Verifying...'}
                         </>
                       ) : (
-                        studentCodeValidated ? 'Sign In' : 'Continue'
+                        classJoin ? (classJoinNotFound ? 'Join as a new student' : 'Continue') : studentCodeValidated ? 'Sign In' : 'Continue'
                       )}
                     </Button>
                   ) : (
@@ -1551,8 +1666,8 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-indigo-600 p-6 text-center text-white">
               <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-300" />
-              <h3 className="text-2xl font-bold">Account Created!</h3>
-              <p className="text-indigo-100 mt-1">Here is your unique student code.</p>
+              <h3 className="text-2xl font-bold">{pendingClassSession ? `Welcome, ${studentCodeStudentName}!` : 'Account Created!'}</h3>
+              <p className="text-indigo-100 mt-1">{pendingClassSession ? 'This is your own personal code.' : 'Here is your unique student code.'}</p>
             </div>
             
             <div className="p-6">
@@ -1586,7 +1701,9 @@ export function AuthForm({ onLogin, onBack, onForgotPassword }: AuthFormProps) {
               </div>
               
               <p className="text-xs text-center text-gray-500 mt-4 px-2">
-                Save this code. You will use it instead of an email to sign in on your school's devices.
+                {pendingClassSession
+                  ? 'Write this code down and remember it. Next time, sign in with it instead of the class code. Your teacher and parent can see it too.'
+                  : "Save this code. You will use it instead of an email to sign in on your school's devices."}
               </p>
             </div>
           </div>

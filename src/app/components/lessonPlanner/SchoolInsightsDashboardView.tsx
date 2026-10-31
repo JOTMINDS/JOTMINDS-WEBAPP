@@ -39,20 +39,20 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
+      <div className="bg-gradient-to-r from-[#5B7DB1] via-[#6B4C9A] to-[#1E8A6E] text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               Module 8 • School & Classroom Intelligence
             </Badge>
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs font-semibold">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs font-semibold">
               {completedPlansCount} Plans Completed
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <School className="w-5 h-5 text-indigo-400" /> School Insights & Lesson Oversight<InfoTip title="School oversight">For school leaders. Shows lesson plans and reflections saved by teachers, so you can see what is being taught and how it went.</InfoTip>
           </h2>
-          <p className="text-xs text-slate-300 mt-1">
+          <p className="text-xs text-white/85 mt-1">
             Track student cognitive distributions, monitor teacher lesson plans (completed/pending), and review post-lesson reflections.
           </p>
         </div>
@@ -62,7 +62,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
           <button
             onClick={() => setActiveSubTab('intelligence')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeSubTab === 'intelligence' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+              activeSubTab === 'intelligence' ? 'bg-indigo-600 text-white shadow-sm' : 'text-white/85 hover:text-white'
             }`}
           >
             Classroom Intelligence
@@ -70,7 +70,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
           <button
             onClick={() => setActiveSubTab('plans')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeSubTab === 'plans' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+              activeSubTab === 'plans' ? 'bg-indigo-600 text-white shadow-sm' : 'text-white/85 hover:text-white'
             }`}
           >
             Saved Plans ({savedPlans.length})
@@ -78,7 +78,7 @@ export const SchoolInsightsDashboardView: React.FC<SchoolInsightsDashboardViewPr
           <button
             onClick={() => setActiveSubTab('reflections')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeSubTab === 'reflections' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+              activeSubTab === 'reflections' ? 'bg-indigo-600 text-white shadow-sm' : 'text-white/85 hover:text-white'
             }`}
           >
             Reflections ({savedReflections.length})

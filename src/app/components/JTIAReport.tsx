@@ -60,6 +60,13 @@ interface JTIAReportProps {
   teacherName?: string;
   /** Curriculum the teacher teaches; recommendations are tailored to it */
   curriculum?: string;
+  /** Subjects and levels the teacher works with, so recommendations can name them */
+  teaching?: { subjects: string[]; levels: string[] };
+  /**
+   * Numeric scores are for school leadership. Teachers see levels and meters instead
+   * (pass false), so the focus stays on growth rather than on a number.
+   */
+  showScores?: boolean;
   onRetake?: () => void;
   onBack?: () => void;
 }
@@ -67,7 +74,9 @@ interface JTIAReportProps {
 export const JTIAReport: React.FC<JTIAReportProps> = ({
   report,
   teacherName = "Teacher",
-  curriculum,
+  curriculum: curriculumFromPlans,
+  teaching,
+  showScores = true,
   onRetake,
   onBack,
 }) => {
@@ -83,9 +92,20 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
     useState<JTIAAIRecommendations | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
 
+  // The curriculum the teacher says they teach wins over the one guessed from their lesson plans.
+  const CURRICULUM_KEY = "jm_teacher_curriculum_choice";
+  const [pickedCurriculum, setPickedCurriculum] = useState<string>(() => {
+    try { return localStorage.getItem(CURRICULUM_KEY) || ""; } catch { return ""; }
+  });
+  const curriculum = pickedCurriculum || curriculumFromPlans;
+  const chooseCurriculum = (value: string) => {
+    setPickedCurriculum(value);
+    try { localStorage.setItem(CURRICULUM_KEY, value); } catch { /* storage unavailable */ }
+  };
+
   const fetchAiInsights = async () => {
     setIsLoadingAi(true);
-    const aiRes = await generateJTIAAIRecommendations(report, curriculum);
+    const aiRes = await generateJTIAAIRecommendations(report, curriculum, teaching);
     if (aiRes) {
       setAiRecommendations(aiRes);
     }
@@ -94,12 +114,12 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
 
   useEffect(() => {
     fetchAiInsights();
-  }, [report, curriculum]);
+  }, [report, curriculum, teaching?.subjects.join("|"), teaching?.levels.join("|")]);
 
   // Rebuilt from the current curriculum so saved reports don't keep older, curriculum-specific wording
   const baseRecommendations = React.useMemo(
-    () => generatePersonalizedRecommendations(report.domainScores as any, report.strengths || [], report.growthOpportunities || [], teacherName, curriculum),
-    [report, teacherName, curriculum]
+    () => generatePersonalizedRecommendations(report.domainScores as any, report.strengths || [], report.growthOpportunities || [], teacherName, curriculum, teaching),
+    [report, teacherName, curriculum, teaching?.subjects.join("|"), teaching?.levels.join("|")]
   );
   const displayedRecommendations = aiRecommendations || baseRecommendations;
 
@@ -170,19 +190,19 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
     csvRows.push(["Teaching Insights Assessment Report"]);
     csvRows.push(["Teacher Name", teacherName]);
     csvRows.push(["Date", new Date().toLocaleDateString()]);
-    csvRows.push(["Overall Score", report.overallScore?.toString() || "N/A"]);
+    if (showScores) csvRows.push(["Overall Score", report.overallScore?.toString() || "N/A"]);
     csvRows.push([]);
     
-    csvRows.push(["5 Core Domain Scores"]);
-    csvRows.push(["Domain", "Score", "Orientation Level"]);
+    csvRows.push([showScores ? "5 Core Domain Scores" : "5 Core Domains"]);
+    csvRows.push(showScores ? ["Domain", "Score", "Orientation Level"] : ["Domain", "Orientation Level"]);
     const getLevelText = (s: number) => s >= 85 ? "Exemplary Practice" : s >= 70 ? "Established Practice" : "Developing Focus";
     Object.entries(domainScores).forEach(([dom, score]) => {
       const formattedDom = dom.charAt(0).toUpperCase() + dom.slice(1) + " Intelligence";
-      csvRows.push([formattedDom, score.toString(), getLevelText(score)]);
+      csvRows.push(showScores ? [formattedDom, score.toString(), getLevelText(score)] : [formattedDom, getLevelText(score)]);
     });
     csvRows.push([]);
 
-    if (report.subCompetencies) {
+    if (showScores && report.subCompetencies) {
       csvRows.push(["Sub-Competency Breakdown"]);
       csvRows.push(["Competency", "Score"]);
       Object.entries(report.subCompetencies).forEach(([comp, score]) => {
@@ -237,6 +257,20 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
     link.click();
     document.body.removeChild(link);
     toast.success("Teaching Insights CSV report downloaded successfully!");
+  };
+
+  // 1-3 steps matching the Developing / Established / Exemplary badges
+  const levelStep = (score: number) => (score >= 85 ? 3 : score >= 70 ? 2 : 1);
+  const LevelMeter = ({ score }: { score: number }) => {
+    const step = levelStep(score);
+    const color = step === 3 ? "bg-emerald-500" : step === 2 ? "bg-indigo-500" : "bg-amber-500";
+    return (
+      <div className="flex gap-1 w-full" role="img" aria-label={step === 3 ? "Exemplary" : step === 2 ? "Established" : "Developing"}>
+        {[1, 2, 3].map((i) => (
+          <div key={i} className={`h-2 flex-1 rounded-full ${i <= step ? color : "bg-slate-200 dark:bg-slate-700"}`} />
+        ))}
+      </div>
+    );
   };
 
   const getOrientationBadge = (score: number) => {
@@ -445,7 +479,37 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
         className={`${activeTab === "overview" ? "block animate-in fade-in-50 duration-300" : "hidden print:block"} space-y-8`}
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Radar Visual */}
+          {/* Levels view for teachers: no numbers */}
+          {!showScores && (
+            <Card className="lg:col-span-5 shadow-md border-indigo-100 dark:border-slate-800 self-start">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Compass className="w-5 h-5 text-indigo-600" />
+                  Your Teaching Profile
+                  <InfoTip>Where each of the five teaching domains sits for you, from Developing to Exemplary. Detailed scores are shared with school leadership. This view keeps the focus on where to grow.</InfoTip>
+                </CardTitle>
+                <CardDescription>Strongest domain first.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[...radarData].sort((a, b) => b.score - a.score).map((d) => (
+                  <div key={d.domain}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                        {getDomainIcon(d.domain)} {d.full}
+                      </span>
+                      {getOrientationBadge(d.score)}
+                    </div>
+                    <div className="mt-2"><LevelMeter score={d.score} /></div>
+                  </div>
+                ))}
+                <p className="text-xs text-slate-600 dark:text-slate-400 pt-2 border-t">
+                  Strongest: <b>{[...radarData].sort((a, b) => b.score - a.score)[0].full}</b>. Best place to grow next: <b>{[...radarData].sort((a, b) => a.score - b.score)[0].full}</b>.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {showScores && (
           <Card className="lg:col-span-5 shadow-md border-indigo-100 dark:border-slate-800 bg-gradient-to-b from-white via-indigo-50/20 to-white dark:from-slate-900 dark:to-slate-950">
             <CardHeader className="flex flex-row items-start justify-between pb-2">
               <div>
@@ -610,6 +674,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Domain Score Breakdown */}
           <div className="lg:col-span-7 space-y-4">
@@ -656,16 +721,24 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
 
                         <div className="text-right shrink-0 flex flex-col items-end gap-1">
                           {getOrientationBadge(item.score)}
-                          <div className="text-2xl font-black text-indigo-950 dark:text-indigo-100 mt-1">
-                            {item.score}
-                          </div>
-                          <div className="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">
-                            Domain Score
-                          </div>
+                          {showScores && (
+                            <>
+                              <div className="text-2xl font-black text-indigo-950 dark:text-indigo-100 mt-1">
+                                {item.score}
+                              </div>
+                              <div className="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">
+                                Domain Score
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="mt-4 flex items-center gap-3">
-                        <Progress value={item.score} className="h-2 w-full bg-slate-100 dark:bg-slate-800"  />
+                        {showScores ? (
+                          <Progress value={item.score} className="h-2 w-full bg-slate-100 dark:bg-slate-800"  />
+                        ) : (
+                          <LevelMeter score={item.score} />
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -683,7 +756,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
         <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-5">
           <h3 className="font-bold text-emerald-900 dark:text-emerald-300 text-lg flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            Your Professional Strengths<InfoTip>The areas where you scored highest. Keep using and sharing these.</InfoTip>
+            Your Professional Strengths<InfoTip>The areas where you are strongest. Keep using and sharing these.</InfoTip>
           </h3>
           <p className="text-sm text-emerald-800 dark:text-emerald-400 mt-1">
             These are the sub-competencies where you consistently demonstrate
@@ -820,10 +893,24 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                   </Badge>
                 </div>
                 <p className="text-sm text-purple-200">
-                  Custom-curated learning resources, classroom activities,
-                  coaching suggestions, and career growth pathways based on your
-                  Teaching Insights responses.
+                  Resources, classroom activities, coaching and growth pathways
+                  matched to your results and to the curriculum you teach.
                 </p>
+                <label className="mt-2 flex items-center gap-2 text-xs text-purple-100">
+                  Curriculum you teach
+                  <select
+                    value={pickedCurriculum}
+                    onChange={(e) => chooseCurriculum(e.target.value)}
+                    className="rounded-md bg-white/10 border border-purple-400/40 px-2 py-1 text-xs text-white [&>option]:text-slate-900"
+                  >
+                    <option value="">{curriculumFromPlans ? `From my lesson plans (${curriculumFromPlans})` : "Not set"}</option>
+                    <option value="National Curriculum (NaCCA / GES)">National (NaCCA / GES)</option>
+                    <option value="British Curriculum (Cambridge / Edexcel)">British (Cambridge / Edexcel)</option>
+                    <option value="International Baccalaureate (IB)">International Baccalaureate (IB)</option>
+                    <option value="Oxford International Curriculum">Oxford International</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
               </div>
             </div>
             <Button

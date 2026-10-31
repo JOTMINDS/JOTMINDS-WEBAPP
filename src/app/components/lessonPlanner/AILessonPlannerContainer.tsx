@@ -10,7 +10,7 @@ import { LessonPlan, ClassCognitiveSummary, LessonDeliverySession, PostLessonRef
 import { getSavedLessonPlans, getClassCognitiveSummary, saveLessonPlan } from '../../utils/lessonPlannerStorage';
 
 // Import 10 modules
-import { LessonPlanCreation } from './LessonPlanCreation';
+import { LessonPlanCreation, LessonPlanPrefill } from './LessonPlanCreation';
 import { CognitiveInsightEngine } from './CognitiveInsightEngine';
 import { DifferentiatedInstructionView } from './DifferentiatedInstructionView';
 import { AssessmentGeneratorView } from './AssessmentGeneratorView';
@@ -84,6 +84,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
   const [classSummary, setClassSummary] = useState<ClassCognitiveSummary>(computeClassSummary());
 
   const [activeTab, setActiveTab] = useState<string>('create');
+  const [planPrefill, setPlanPrefill] = useState<LessonPlanPrefill | undefined>();
   
   // Delivery & Reflection State
   const [showReflectionModal, setShowReflectionModal] = useState(false);
@@ -138,22 +139,22 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-16">
+    <div className="jm-planner space-y-6 max-w-6xl mx-auto pb-16">
       {/* Top Header & Navigation */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
+      <div className="bg-gradient-to-r from-[#5B7DB1] via-[#6B4C9A] to-[#1E8A6E] text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               JotMinds Intelligence Suite
             </Badge>
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               10-Module Lesson Planner
             </Badge>
           </div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-indigo-400" /> Lesson Planner & Teaching Insights<InfoTip title="Lesson Planner">Work through the tabs from left to right: Create a plan, edit the document, check class insights, add activities for every learner, build assessments, reflect, and review your analytics.</InfoTip>
+            <BookOpen className="w-6 h-6 text-white" /> Lesson Planner & Teaching Insights<InfoTip title="Lesson Planner">Work through the tabs from left to right: Create a plan, edit the document, check class insights, add activities for every learner, build assessments, reflect, and review your analytics.</InfoTip>
           </h1>
-          <p className="text-xs text-slate-300 mt-1">
+          <p className="text-xs text-white/85 mt-1">
             Find all official Subject Specific Apps for SHS teachers. Easy access to all NaCCA curriculum resources and PLC tools.
           </p>
         </div>
@@ -243,6 +244,7 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
           <LessonPlanCreation user={user}
             classSummary={classSummary}
             onPlanCreated={handlePlanCreated}
+            prefill={planPrefill}
           />
         </TabsContent>
 
@@ -289,7 +291,23 @@ export const AILessonPlannerContainer: React.FC<AILessonPlannerContainerProps> =
 
         {/* Module 7 */}
         <TabsContent value="curriculum">
-          <CurriculumTrackerView plan={activePlan} />
+          <CurriculumTrackerView
+            plan={activePlan}
+            plans={plans}
+            teacherId={user?.id}
+            onPlanLesson={(topic) => {
+              setPlanPrefill({
+                subject: topic.subject,
+                gradeClass: topic.grade,
+                topic: topic.title,
+                strand: topic.strand,
+                substrand: topic.substrand,
+                curriculumTopicId: topic.id,
+                nonce: Date.now(),
+              });
+              setActiveTab('create');
+            }}
+          />
         </TabsContent>
 
         {/* Module 8 */}

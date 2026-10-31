@@ -1,21 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import React, { useMemo, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { InfoTip } from '../ui/info-tip';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Button } from '../ui/button';
-import { CheckCircle2, Clock, AlertCircle, BookOpen, Layers, CheckSquare, Sparkles, Loader, Filter, Plus, ListTree } from 'lucide-react';
+import { Input } from '../ui/input';
+import { CheckCircle2, Clock, Circle, BookOpen, Sparkles, Loader, Plus, ListTree, Trash2, ArrowRight } from 'lucide-react';
 import { CurriculumTrack, CurriculumTopic, LessonPlan } from '../../types/lessonPlannerTypes';
-import { getCurriculumTrack, saveCurriculumTrack } from '../../utils/lessonPlannerStorage';
+import {
+  getCurriculumSchemes,
+  saveCurriculumScheme,
+  deleteCurriculumScheme,
+  getPostLessonReflections,
+} from '../../utils/lessonPlannerStorage';
+import { effectiveStatus, summarizeTopics } from '../../utils/curriculumProgress';
 import { generateAICurriculumTopics } from '../../utils/aiService';
 import { toast } from 'sonner';
 
 interface CurriculumTrackerViewProps {
   plan?: LessonPlan;
+  plans: LessonPlan[];
+  teacherId?: string;
+  onPlanLesson?: (topic: CurriculumTopic, frameworkName: string) => void;
 }
 
-// Built-in Scheme of Work library for rapid offline / immediate display
-const SCHEME_OF_WORK_DATABASE: Record<string, Array<{ strand: string; substrand: string; title: string; hours: number }>> = {
+// Starter topics for common subjects. They are a starting point to edit, not the official syllabus.
+const STARTER_TOPICS: Record<string, Array<{ strand: string; substrand: string; title: string; hours: number }>> = {
   'Mathematics': [
     { strand: 'Number & Operations', substrand: 'Real Number Systems', title: 'Integers, Rational Numbers & Decimals', hours: 4 },
     { strand: 'Number & Operations', substrand: 'Fractions & Percentages', title: 'Fraction Operations & Percentage Applications', hours: 4 },
@@ -53,292 +63,426 @@ const SCHEME_OF_WORK_DATABASE: Record<string, Array<{ strand: string; substrand:
     { strand: 'Information Technology', substrand: 'Productivity Tools', title: 'Word Processing, Spreadsheets & Digital Presentations', hours: 5 },
     { strand: 'Internet & Cybersecurity', substrand: 'Networks & Web', title: 'Web Browsing, Search Engines & Digital Safety', hours: 4 },
     { strand: 'Programming & Logic', substrand: 'Algorithms', title: 'Flowcharts, Pseudocode & Algorithmic Problem Solving', hours: 6 },
-  ]
+  ],
 };
 
-export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ plan }) => {
-  const [track, setTrack] = useState<CurriculumTrack>(getCurriculumTrack());
+const slug = (text: string) => text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const topicCode = (subject: string, grade: string, n: number) =>
+  `${subject.replace(/[^A-Za-z]/g, '').substring(0, 4).toUpperCase()}-${grade.replace(/\s+/g, '')}-${n}`;
+
+function matchStarterKey(subject: string): string | undefined {
+  const s = subject.trim().toLowerCase();
+  if (!s) return undefined;
+  return Object.keys(STARTER_TOPICS).find(k => s.includes(k.toLowerCase()) || k.toLowerCase().includes(s));
+}
+
+export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ plan, plans, teacherId, onPlanLesson }) => {
+  const [schemes, setSchemes] = useState<CurriculumTrack[]>(() => getCurriculumSchemes(teacherId));
+  const reflections = useMemo(() => getPostLessonReflections(teacherId), [teacherId, plans]);
+
+  // The scheme being shown: the active lesson's subject and class, else the first one the teacher has.
+  const [active, setActive] = useState<{ subject: string; grade: string } | null>(() => {
+    if (plan?.subject && plan?.gradeClass) return { subject: plan.subject, grade: plan.gradeClass };
+    const first = getCurriculumSchemes(teacherId)[0];
+    if (first) return { subject: first.subject, grade: first.grade };
+    const p = plans[0];
+    return p ? { subject: p.subject, grade: p.gradeClass } : null;
+  });
+  const [pickerOpen, setPickerOpen] = useState(!active);
+  const [newSubject, setNewSubject] = useState('');
+  const [newGrade, setNewGrade] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedStrand, setSelectedStrand] = useState<string>('all');
+  const [selectedStrand, setSelectedStrand] = useState('all');
+  const [adding, setAdding] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftStrand, setDraftStrand] = useState('');
+  const [draftHours, setDraftHours] = useState('2');
 
-  const subject = plan?.subject || track.subject || 'Mathematics';
-  const grade = plan?.gradeClass || track.grade || 'JHS 2';
-  const frameworkName = plan?.curriculumFramework || track.frameworkName || 'National Curriculum';
+  const sameKey = (a: { subject: string; grade: string }, b: { subject: string; grade: string }) =>
+    a.subject.trim().toLowerCase() === b.subject.trim().toLowerCase() && a.grade.trim().toLowerCase() === b.grade.trim().toLowerCase();
 
-  // Automatically sync scheme of work when subject or grade changes
-  useEffect(() => {
-    if (plan?.subject && (plan.subject !== track.subject || plan.gradeClass !== track.grade)) {
-      // Find matching standard scheme of work
-      const matchedKey = Object.keys(SCHEME_OF_WORK_DATABASE).find(k => 
-        plan.subject.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(plan.subject.toLowerCase())
-      ) || 'Mathematics';
+  // Every subject and class the teacher has a scheme or a lesson for.
+  const options = useMemo(() => {
+    const list: Array<{ subject: string; grade: string }> = [];
+    const add = (subject: string, grade: string) => {
+      if (subject && grade && !list.some(o => sameKey(o, { subject, grade }))) list.push({ subject, grade });
+    };
+    schemes.forEach(s => add(s.subject, s.grade));
+    plans.forEach(p => add(p.subject, p.gradeClass));
+    if (active) add(active.subject, active.grade);
+    return list;
+  }, [schemes, plans, active]);
 
-      const baseTopics = SCHEME_OF_WORK_DATABASE[matchedKey] || SCHEME_OF_WORK_DATABASE['Mathematics'];
-      const topics: CurriculumTopic[] = baseTopics.map((item, idx) => ({
-        id: `topic-${plan.subject.substring(0, 3).toLowerCase()}-${idx + 1}`,
-        code: `${plan.subject.substring(0, 4).toUpperCase()}-${plan.gradeClass.replace(/\s+/g, '')}-${idx + 1}`,
-        title: item.title,
-        strand: item.strand,
-        substrand: item.substrand,
-        estimatedHours: item.hours,
-        subject: plan.subject,
-        grade: plan.gradeClass,
-        status: idx < 3 ? 'covered' : idx === 3 ? 'in_progress' : 'outstanding',
-        mappedLessonId: idx === 3 ? plan.id : undefined
-      }));
+  const frameworkName = plan?.curriculumFramework || schemes[0]?.frameworkName || 'National Curriculum';
+  const track: CurriculumTrack | undefined = active
+    ? schemes.find(s => sameKey(s, active)) || {
+        frameworkName,
+        subject: active.subject,
+        grade: active.grade,
+        totalTopics: 0,
+        coveredTopicsCount: 0,
+        completionPercentage: 0,
+        topics: [],
+      }
+    : undefined;
 
-      const covered = topics.filter(t => t.status === 'covered').length;
-      const updated: CurriculumTrack = {
-        frameworkName: plan.curriculumFramework || frameworkName,
-        subject: plan.subject,
-        grade: plan.gradeClass,
-        totalTopics: topics.length,
-        coveredTopicsCount: covered,
-        completionPercentage: Math.round((covered / topics.length) * 100),
-        topics
-      };
+  const persist = (updated: CurriculumTrack) => {
+    const summary = summarizeTopics(updated.topics, plans, reflections);
+    const saved: CurriculumTrack = {
+      ...updated,
+      totalTopics: summary.total,
+      coveredTopicsCount: summary.covered,
+      completionPercentage: summary.percentage,
+    };
+    saveCurriculumScheme(teacherId, saved);
+    setSchemes(getCurriculumSchemes(teacherId));
+  };
 
-      setTrack(updated);
-      saveCurriculumTrack(updated);
+  const rows = useMemo(
+    () => (track?.topics || []).map(topic => ({ topic, ...effectiveStatus(topic, plans, reflections) })),
+    [track, plans, reflections],
+  );
+  const summary = useMemo(() => summarizeTopics(track?.topics || [], plans, reflections), [track, plans, reflections]);
+  const nextUp = rows.find(r => r.status === 'outstanding') || rows.find(r => r.status === 'in_progress');
+  const strands = Array.from(new Set(rows.map(r => r.topic.strand || 'Core topics')));
+  const visibleRows = selectedStrand === 'all' ? rows : rows.filter(r => (r.topic.strand || 'Core topics') === selectedStrand);
+
+  const openScheme = (subject: string, grade: string) => {
+    if (!subject.trim() || !grade.trim()) {
+      toast.error('Enter both a subject and a class.');
+      return;
     }
-  }, [plan?.subject, plan?.gradeClass, plan?.curriculumFramework]);
+    setActive({ subject: subject.trim(), grade: grade.trim() });
+    setSelectedStrand('all');
+    setPickerOpen(false);
+    setNewSubject('');
+    setNewGrade('');
+  };
+
+  const addTopics = (fresh: CurriculumTopic[]) => {
+    if (!track) return;
+    const have = new Set(track.topics.map(t => t.title.trim().toLowerCase()));
+    const unique = fresh.filter(t => !have.has(t.title.trim().toLowerCase()));
+    if (unique.length === 0) {
+      toast.info('Those topics are already in this scheme.');
+      return;
+    }
+    persist({ ...track, topics: [...track.topics, ...unique] });
+    toast.success(`Added ${unique.length} ${unique.length === 1 ? 'topic' : 'topics'}.`);
+  };
+
+  const startFromStarter = () => {
+    if (!track) return;
+    const key = matchStarterKey(track.subject);
+    if (!key) return;
+    addTopics(STARTER_TOPICS[key].map((item, idx) => ({
+      id: `topic-${slug(track.subject)}-${slug(track.grade)}-${idx + 1}`,
+      code: topicCode(track.subject, track.grade, idx + 1),
+      title: item.title,
+      strand: item.strand,
+      substrand: item.substrand,
+      estimatedHours: item.hours,
+      subject: track.subject,
+      grade: track.grade,
+      status: 'outstanding',
+    })));
+  };
 
   const handleAutoGenerate = async () => {
+    if (!track) return;
     setIsGenerating(true);
-    toast.info(`Generating Scheme of Work for ${subject} (${grade})...`);
-    
     try {
-      const generated = await generateAICurriculumTopics(subject, grade, frameworkName, plan?.topic || 'General Scheme of Work');
+      const generated = await generateAICurriculumTopics(track.subject, track.grade, track.frameworkName, plan?.topic || 'General scheme of work');
       if (generated && generated.length > 0) {
-        const newTopics: CurriculumTopic[] = generated.map((t: any, i: number) => ({
-          id: `topic-gen-${Date.now()}-${i}`,
-          code: `${subject.substring(0, 4).toUpperCase()}-${grade.replace(/\s+/g, '')}-GEN${i + 1}`,
-          title: t.title || t,
-          strand: t.strand || 'Core Knowledge',
-          substrand: t.substrand || 'Key Competencies',
+        const stamp = Date.now();
+        addTopics(generated.map((t: any, i: number) => ({
+          id: `topic-gen-${stamp}-${i}`,
+          code: topicCode(track.subject, track.grade, track.topics.length + i + 1),
+          title: String(t.title || t),
+          strand: t.strand || 'Core topics',
+          substrand: t.substrand,
           estimatedHours: t.estimatedHours || 2,
-          subject,
-          grade,
-          status: 'outstanding'
-        }));
-        
-        const combined = [...track.topics, ...newTopics];
-        const covered = combined.filter(t => t.status === 'covered').length;
-        const updatedTrack: CurriculumTrack = {
-          ...track,
-          frameworkName,
-          subject,
-          grade,
-          topics: combined,
-          totalTopics: combined.length,
-          coveredTopicsCount: covered,
-          completionPercentage: Math.round((covered / combined.length) * 100) || 0
-        };
-        
-        setTrack(updatedTrack);
-        saveCurriculumTrack(updatedTrack);
-        toast.success(`Generated ${newTopics.length} scheme of work topics & sub-topics!`);
+          subject: track.subject,
+          grade: track.grade,
+          status: 'outstanding',
+        })));
       } else {
-        toast.error('Failed to generate topics.');
+        toast.error('Could not generate topics. Try again or add them yourself.');
       }
-    } catch (e) {
-      toast.error('Error connecting to curriculum service.');
+    } catch {
+      toast.error('Could not reach the curriculum service.');
     }
     setIsGenerating(false);
   };
 
-  const toggleTopicStatus = (topicId: string) => {
-    const updatedTopics = track.topics.map(t => {
-      if (t.id === topicId) {
-        const nextStatus: CurriculumTopic['status'] =
-          t.status === 'covered' ? 'outstanding' : t.status === 'outstanding' ? 'in_progress' : 'covered';
-        return { ...t, status: nextStatus };
-      }
-      return t;
-    });
-
-    const coveredCount = updatedTopics.filter(t => t.status === 'covered').length;
-    const completionPct = Math.round((coveredCount / updatedTopics.length) * 100);
-
-    const updatedTrack: CurriculumTrack = {
-      ...track,
-      topics: updatedTopics,
-      coveredTopicsCount: coveredCount,
-      completionPercentage: completionPct
-    };
-
-    setTrack(updatedTrack);
-    saveCurriculumTrack(updatedTrack);
-    toast.success('Curriculum topic status updated!');
+  const handleAddTopic = () => {
+    if (!track || !draftTitle.trim()) {
+      toast.error('Give the topic a title.');
+      return;
+    }
+    addTopics([{
+      id: `topic-custom-${Date.now()}`,
+      code: topicCode(track.subject, track.grade, track.topics.length + 1),
+      title: draftTitle.trim(),
+      strand: draftStrand.trim() || undefined,
+      estimatedHours: Math.max(0.5, Number(draftHours) || 1),
+      subject: track.subject,
+      grade: track.grade,
+      status: 'outstanding',
+    }]);
+    setDraftTitle('');
+    setDraftStrand('');
+    setDraftHours('2');
+    setAdding(false);
   };
 
-  // Extract unique strands
-  const strands = Array.from(new Set(track.topics.map(t => t.strand || 'Core Topics').filter(Boolean)));
+  const removeTopic = (id: string) => {
+    if (!track) return;
+    persist({ ...track, topics: track.topics.filter(t => t.id !== id) });
+  };
 
-  const filteredTopics = selectedStrand === 'all' 
-    ? track.topics 
-    : track.topics.filter(t => (t.strand || 'Core Topics') === selectedStrand);
+  const toggleTaught = (topic: CurriculumTopic, current: CurriculumTopic['status']) => {
+    if (!track) return;
+    const next: CurriculumTopic['status'] = current === 'covered' ? 'outstanding' : 'covered';
+    persist({ ...track, topics: track.topics.map(t => (t.id === topic.id ? { ...t, status: next } : t)) });
+  };
+
+  const removeScheme = () => {
+    if (!track || !window.confirm(`Delete the ${track.subject} (${track.grade}) scheme of work? Your lessons are not affected.`)) return;
+    deleteCurriculumScheme(teacherId, track.subject, track.grade);
+    setSchemes(getCurriculumSchemes(teacherId));
+    const rest = options.filter(o => !sameKey(o, track));
+    setActive(rest[0] || null);
+    setPickerOpen(!rest[0]);
+  };
+
+  const starterKey = track ? matchStarterKey(track.subject) : undefined;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
-              Module 7 • Scheme of Work & Curriculum Tracker
-            </Badge>
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs font-semibold">
-              {track.completionPercentage}% Syllabus Covered
-            </Badge>
+    <div className="space-y-5 max-w-4xl mx-auto">
+      {/* Header + scheme picker */}
+      <div className="bg-gradient-to-r from-[#5B7DB1] via-[#6B4C9A] to-[#1E8A6E] text-white p-5 rounded-2xl shadow-md space-y-3">
+        <div className="flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              {track ? `${track.subject} · ${track.grade}` : 'Curriculum'}
+              <InfoTip title="Curriculum">Your topics for a subject and class. Topics turn to "Planned" when you write a lesson for them and to "Covered" once that lesson is delivered or reflected on. You can also tick off topics you taught without the planner.</InfoTip>
+            </h2>
+            <p className="text-xs text-white/80 mt-0.5">{frameworkName}</p>
           </div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-400" /> {frameworkName}: {subject} ({grade})
-          </h2>
-          <p className="text-xs text-slate-300 mt-1">
-            Structured Scheme of Work organized by Strands, Sub-strands, Topics, and Sub-topics for {grade}.
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {options.length > 0 && (
+              <select
+                aria-label="Subject and class"
+                value={active ? options.findIndex(o => sameKey(o, active)) : ''}
+                onChange={e => {
+                  const o = options[Number(e.target.value)];
+                  if (o) openScheme(o.subject, o.grade);
+                }}
+                className="h-9 rounded-lg bg-white/15 border border-white/30 text-white text-xs px-3 [&>option]:text-slate-900"
+              >
+                {options.map((o, i) => (
+                  <option key={`${o.subject}-${o.grade}`} value={i}>{o.subject} · {o.grade}</option>
+                ))}
+              </select>
+            )}
+            <Button size="sm" onClick={() => setPickerOpen(v => !v)} className="bg-white/20 hover:bg-white/30 text-white border border-white/30 text-xs">
+              <Plus className="w-3.5 h-3.5 mr-1" /> New
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={handleAutoGenerate} disabled={isGenerating} className="bg-indigo-600 hover:bg-indigo-700 text-white border-none text-xs font-semibold shadow-md">
-            {isGenerating ? <><Loader className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Generating Scheme...</> : <><Sparkles className="w-3.5 h-3.5 mr-1.5" /> Auto-Generate Scheme of Work</>}
-          </Button>
-        </div>
+        {pickerOpen && (
+          <div className="flex items-end gap-2 flex-wrap bg-white/10 rounded-xl p-3">
+            <div className="flex-1 min-w-[140px]">
+              <label className="text-[11px] text-white/80">Subject</label>
+              <Input value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="e.g. Mathematics" className="mt-1 h-9 bg-white text-slate-900 text-xs" />
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <label className="text-[11px] text-white/80">Class</label>
+              <Input value={newGrade} onChange={e => setNewGrade(e.target.value)} placeholder="e.g. JHS 2" className="mt-1 h-9 bg-white text-slate-900 text-xs" />
+            </div>
+            <Button size="sm" onClick={() => openScheme(newSubject, newGrade)} className="bg-white text-[#6B4C9A] hover:bg-white/90 text-xs font-semibold h-9">
+              Open
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Progress Bar Summary Card */}
-      <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Overall Syllabus Progress</span>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                {track.coveredTopicsCount} of {track.totalTopics} Topics Completed ({track.completionPercentage}%)<InfoTip title="Curriculum coverage">The share of topics you have marked as covered. Update topics as you teach them. This figure also feeds your Lesson Planner analytics.</InfoTip>
-              </h3>
-            </div>
-            <div className="text-right">
-              <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">
-                {track.completionPercentage}%
-              </span>
-            </div>
-          </div>
-          <Progress value={track.completionPercentage} className="h-3 bg-slate-100 dark:bg-slate-800" />
-        </CardContent>
-      </Card>
-
-      {/* Strand Filter Controls */}
-      {strands.length > 1 && (
-        <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
-            <Filter className="w-3.5 h-3.5 text-indigo-600" /> Filter Strand:
-          </div>
-          <button
-            onClick={() => setSelectedStrand('all')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-              selectedStrand === 'all'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-            }`}
-          >
-            All Strands ({track.topics.length})
-          </button>
-          {strands.map(s => (
-            <button
-              key={s}
-              onClick={() => setSelectedStrand(s)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                selectedStrand === s
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Topics & Sub-Topics List */}
-      <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <ListTree className="w-4 h-4 text-indigo-600" /> Scheme of Work: Topics & Sub-Topics<InfoTip>Your list of topics for the term or year. Tick a topic when it has been taught.</InfoTip>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Click any topic to cycle status between Covered, In Progress, and Outstanding.
-            </CardDescription>
-          </div>
-          <Badge variant="outline" className="text-xs font-semibold">
-            {filteredTopics.length} Topics Displayed
-          </Badge>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {filteredTopics.map((topic, idx) => (
-            <div
-              key={topic.id}
-              onClick={() => toggleTopicStatus(topic.id)}
-              className={`p-4 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all hover:shadow-xs ${
-                topic.status === 'covered'
-                  ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-200'
-                  : topic.status === 'in_progress'
-                  ? 'bg-amber-50/70 border-amber-200 text-amber-950 dark:bg-amber-950/30 dark:text-amber-200 ring-1 ring-amber-300'
-                  : 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-900 dark:text-slate-300'
-              }`}
-            >
-              <div className="flex items-start gap-3 min-w-0">
-                <div className="mt-0.5">
-                  {topic.status === 'covered' ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  ) : topic.status === 'in_progress' ? (
-                    <Clock className="w-5 h-5 text-amber-600 shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-slate-400 shrink-0" />
-                  )}
+      {!track ? (
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-slate-500">
+            Choose a subject and class above to start your scheme of work.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Progress */}
+          <Card>
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-3xl font-bold text-[#6B4C9A]">{summary.percentage}%</p>
+                  <p className="text-xs text-slate-500">
+                    {summary.covered} of {summary.total} topics covered
+                    {summary.hoursTotal > 0 && ` · ${summary.hoursCovered} of ${summary.hoursTotal} hours`}
+                  </p>
                 </div>
-                <div className="min-w-0 space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-[10px] text-slate-500 uppercase font-semibold bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border">
-                      {topic.code}
-                    </span>
-                    {topic.strand && (
-                      <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded">
-                        Strand: {topic.strand}
-                      </span>
-                    )}
-                    {topic.substrand && (
-                      <span className="text-[10px] bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 font-medium px-2 py-0.5 rounded">
-                        Sub-strand: {topic.substrand}
-                      </span>
-                    )}
-                    {topic.estimatedHours && (
-                      <span className="text-[10px] text-slate-400">
-                        • {topic.estimatedHours} {topic.estimatedHours === 1 ? 'Hour' : 'Hours'}
-                      </span>
-                    )}
+                <div className="flex gap-4 text-center text-xs">
+                  <div><p className="text-lg font-semibold text-[#1E8A6E]">{summary.covered}</p><p className="text-slate-500">Covered</p></div>
+                  <div><p className="text-lg font-semibold text-amber-600">{summary.inProgress}</p><p className="text-slate-500">Planned</p></div>
+                  <div><p className="text-lg font-semibold text-slate-500">{summary.outstanding}</p><p className="text-slate-500">To do</p></div>
+                </div>
+              </div>
+              <Progress value={summary.percentage} className="h-2.5" />
+            </CardContent>
+          </Card>
+
+          {/* Next up */}
+          {nextUp && (
+            <Card className="border-[#6B4C9A]/30 bg-[#6B4C9A]/5">
+              <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6B4C9A]">
+                    {nextUp.status === 'in_progress' ? 'Lesson planned' : 'Next up'}
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900">{nextUp.topic.title}</p>
+                </div>
+                {onPlanLesson && nextUp.status === 'outstanding' && (
+                  <Button size="sm" onClick={() => onPlanLesson(nextUp.topic, track.frameworkName)} className="bg-[#6B4C9A] hover:bg-[#583D80] text-white text-xs">
+                    Plan lesson <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Topics */}
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2 flex-wrap">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <ListTree className="w-4 h-4 text-[#6B4C9A]" /> Topics
+              </CardTitle>
+              <div className="flex items-center gap-2 flex-wrap">
+                {track.topics.length > 0 && (
+                  <Button size="sm" variant="outline" onClick={handleAutoGenerate} disabled={isGenerating} className="text-xs">
+                    {isGenerating ? <Loader className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />} Suggest more
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" onClick={() => setAdding(v => !v)} className="text-xs">
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add topic
+                </Button>
+                <button onClick={removeScheme} aria-label="Delete this scheme" title="Delete this scheme" className="text-slate-400 hover:text-red-600 p-1.5">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {adding && (
+                <div className="flex items-end gap-2 flex-wrap bg-slate-50 rounded-xl p-3 border">
+                  <div className="flex-[2] min-w-[180px]">
+                    <label className="text-[11px] text-slate-500">Topic</label>
+                    <Input value={draftTitle} onChange={e => setDraftTitle(e.target.value)} placeholder="e.g. Solving quadratic equations" className="mt-1 h-9 text-xs" />
                   </div>
-                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">{topic.title}</h4>
+                  <div className="flex-1 min-w-[120px]">
+                    <label className="text-[11px] text-slate-500">Strand (optional)</label>
+                    <Input value={draftStrand} onChange={e => setDraftStrand(e.target.value)} placeholder="e.g. Algebra" className="mt-1 h-9 text-xs" />
+                  </div>
+                  <div className="w-20">
+                    <label className="text-[11px] text-slate-500">Hours</label>
+                    <Input type="number" min="0.5" step="0.5" value={draftHours} onChange={e => setDraftHours(e.target.value)} className="mt-1 h-9 text-xs" />
+                  </div>
+                  <Button size="sm" onClick={handleAddTopic} className="bg-[#6B4C9A] hover:bg-[#583D80] text-white text-xs h-9">Add</Button>
                 </div>
-              </div>
+              )}
 
-              <div className="shrink-0 ml-3">
-                <Badge
-                  variant="outline"
-                  className={
-                    topic.status === 'covered'
-                      ? 'border-emerald-300 text-emerald-700 dark:text-emerald-300 bg-emerald-100/50 font-semibold'
-                      : topic.status === 'in_progress'
-                      ? 'border-amber-300 text-amber-700 dark:text-amber-300 bg-amber-100/50 font-semibold'
-                      : 'border-slate-300 text-slate-500'
-                  }
-                >
-                  {topic.status === 'covered' ? 'Covered' : topic.status === 'in_progress' ? 'In Progress' : 'Outstanding'}
-                </Badge>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+              {strands.length > 1 && (
+                <div className="flex gap-1.5 flex-wrap">
+                  {['all', ...strands].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setSelectedStrand(s)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        selectedStrand === s ? 'bg-[#6B4C9A] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {s === 'all' ? 'All' : s}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {track.topics.length === 0 ? (
+                <div className="text-center py-8 space-y-3">
+                  <p className="text-sm text-slate-600">No topics yet for {track.subject} ({track.grade}).</p>
+                  <div className="flex justify-center gap-2 flex-wrap">
+                    {starterKey && (
+                      <Button size="sm" onClick={startFromStarter} className="bg-[#6B4C9A] hover:bg-[#583D80] text-white text-xs">
+                        Start from suggested {starterKey} topics
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={handleAutoGenerate} disabled={isGenerating} className="text-xs">
+                      {isGenerating ? <Loader className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />} Suggest with AI
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setAdding(true)} className="text-xs">Add my own</Button>
+                  </div>
+                  <p className="text-[11px] text-slate-400">Suggestions are a starting point. Edit them to match your syllabus.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {visibleRows.map(({ topic, status, lessons, fromLessons }) => (
+                    <li
+                      key={topic.id}
+                      className={`p-3 rounded-xl border flex items-center gap-3 ${
+                        status === 'covered' ? 'bg-emerald-50/60 border-emerald-200'
+                        : status === 'in_progress' ? 'bg-amber-50/60 border-amber-200'
+                        : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      {status === 'covered' ? <CheckCircle2 className="w-5 h-5 text-[#1E8A6E] shrink-0" />
+                        : status === 'in_progress' ? <Clock className="w-5 h-5 text-amber-600 shrink-0" />
+                        : <Circle className="w-5 h-5 text-white/85 shrink-0" />}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-slate-900">{topic.title}</p>
+                        <p className="text-[11px] text-slate-500">
+                          {[topic.strand, topic.substrand].filter(Boolean).join(' · ')}
+                          {topic.estimatedHours ? `${topic.strand || topic.substrand ? ' · ' : ''}${topic.estimatedHours} h` : ''}
+                          {lessons.length > 0 && ` · ${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'}`}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className={
+                        status === 'covered' ? 'border-emerald-300 text-emerald-700'
+                        : status === 'in_progress' ? 'border-amber-300 text-amber-700'
+                        : 'border-slate-300 text-slate-500'
+                      }>
+                        {status === 'covered' ? 'Covered' : status === 'in_progress' ? 'Planned' : 'To do'}
+                      </Badge>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {status === 'outstanding' && onPlanLesson && (
+                          <Button size="sm" variant="outline" onClick={() => onPlanLesson(topic, track.frameworkName)} className="h-7 text-[11px]">Plan</Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={fromLessons}
+                          title={fromLessons ? 'Covered through a delivered lesson' : undefined}
+                          onClick={() => toggleTaught(topic, status)}
+                          className="h-7 text-[11px]"
+                        >
+                          {status === 'covered' ? (fromLessons ? 'From lesson' : 'Undo') : 'Mark taught'}
+                        </Button>
+                        <button onClick={() => removeTopic(topic.id)} aria-label={`Remove ${topic.title}`} title="Remove topic" className="text-white/85 hover:text-red-600 p-1">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 };

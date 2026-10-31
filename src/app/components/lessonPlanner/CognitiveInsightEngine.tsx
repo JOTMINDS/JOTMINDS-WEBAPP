@@ -19,7 +19,7 @@ export const CognitiveInsightEngine: React.FC<CognitiveInsightEngineProps> = ({ 
       <div className="bg-gradient-to-r from-indigo-900 via-purple-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               {summary.totalStudents} Students Analyzed
             </Badge>
           </div>

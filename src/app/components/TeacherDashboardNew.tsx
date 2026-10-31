@@ -18,7 +18,7 @@ import { Badge } from './ui/badge';
 import { TeacherClassOverview } from './teacher';
 import { JTIAAssessmentTaking } from './JTIAAssessmentTaking';
 import { JTIAReport } from './JTIAReport';
-import { getTeacherCurriculum } from '../utils/lessonPlannerStorage';
+import { getTeacherCurriculum, getTeacherTeaching } from '../utils/lessonPlannerStorage';
 import { JTIASchoolDashboard } from './JTIASchoolDashboard';
 import { calculateJTIAScore, JTIAReportData } from '../utils/jtiaScoring';
 import { generateDeepDiveQuestions } from '../utils/teachingStyleData';
@@ -541,6 +541,8 @@ export function TeacherDashboardNew({ user, onLogout, onViewAnalytics, onViewPri
                 report={displayedAssessment.score?.jtia || calculateJTIAScore(displayedAssessment.responses)}
                 teacherName={user.name || 'Teacher Profile'}
                 curriculum={getTeacherCurriculum(user.id)}
+                teaching={getTeacherTeaching(user.id)}
+                showScores={false}
                 onRetake={() => setIsTakingAssessment(true)}
               />
 

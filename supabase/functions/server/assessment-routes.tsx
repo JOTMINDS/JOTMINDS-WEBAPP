@@ -883,7 +883,9 @@ app.get('/assessment/:framework/:version', async (c) => {
     } else {
       selectedQuestions = questions.slice(0, 12);
     }
-    questions = selectedQuestions;
+    // Selection above groups the questions by style, which made every attempt follow the same
+    // pattern. Mix the final order too (scoring uses each answer's own style, so order is free).
+    questions = randomize && usedSeed ? shuffleArray(selectedQuestions, `${usedSeed}-order`) : selectedQuestions;
 
     console.log(`[Questions] Retrieved ${framework} ${version} with ${questions.length} questions${randomize ? ' (randomized)' : ''}`);
 

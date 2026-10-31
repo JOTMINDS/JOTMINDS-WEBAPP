@@ -84,9 +84,9 @@ export const SchoolLessonPlanningView: React.FC<SchoolLessonPlanningViewProps> =
   }, [allPlans, allReflections]);
 
   return (
-    <div className="space-y-6">
+    <div className="jm-planner space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-sm border border-slate-800">
+      <div className="bg-gradient-to-r from-[#5B7DB1] via-[#6B4C9A] to-[#1E8A6E] text-white p-6 rounded-2xl shadow-sm border border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -105,21 +105,21 @@ export const SchoolLessonPlanningView: React.FC<SchoolLessonPlanningViewProps> =
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-5 border-t border-indigo-900/60">
           <div className="bg-white/5 backdrop-blur-xs p-3 rounded-xl border border-white/10 text-center">
             <p className="text-2xl font-black text-indigo-300">{allPlans.length}</p>
-            <p className="text-xs text-slate-300 mt-0.5">Lessons Created</p>
+            <p className="text-xs text-white/85 mt-0.5">Lessons Created</p>
           </div>
           <div className="bg-white/5 backdrop-blur-xs p-3 rounded-xl border border-white/10 text-center">
             <p className="text-2xl font-black text-emerald-400">{deliveredCount}</p>
-            <p className="text-xs text-slate-300 mt-0.5">Lessons Delivered</p>
+            <p className="text-xs text-white/85 mt-0.5">Lessons Delivered</p>
           </div>
           <div className="bg-white/5 backdrop-blur-xs p-3 rounded-xl border border-white/10 text-center">
             <p className="text-2xl font-black text-amber-300">{allReflections.length}</p>
-            <p className="text-xs text-slate-300 mt-0.5">Teacher Reflections</p>
+            <p className="text-xs text-white/85 mt-0.5">Teacher Reflections</p>
           </div>
           <div className="bg-white/5 backdrop-blur-xs p-3 rounded-xl border border-white/10 text-center">
             <p className="text-2xl font-black text-purple-300">
               {curriculumTrack.completionPercentage}%
             </p>
-            <p className="text-xs text-slate-300 mt-0.5">Curriculum Pace</p>
+            <p className="text-xs text-white/85 mt-0.5">Curriculum Pace</p>
           </div>
         </div>
       </div>

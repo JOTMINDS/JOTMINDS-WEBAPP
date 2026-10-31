@@ -21,6 +21,7 @@ import { formatDate } from '../utils/dateFormat';
 import { generatePDF } from '../utils/pdfGenerator';
 import { toast } from 'sonner';
 import { diagnoseStudentRisk } from '../utils/riskDiagnostic';
+import { buildStudentStrategies } from '../utils/studentStrategies';
 import { InfoTip } from './ui/info-tip';
 
 interface StudentDetailViewProps {
@@ -80,152 +81,33 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
     { dimension: 'Active Experiment', score: ae, fullMark: 48 }
   ];
 
-  // Get personalized teaching recommendations
-  const getTeachingStrategies = () => {
-    const strategies: string[] = [];
-    
-    if (latestLearning) {
-      const style = latestLearning.score?.kolb?.style || (latestLearning.score as any)?.learning?.style;
-      switch (style) {
-        case 'Diverging':
-          strategies.push(
-            'Encourage group discussions and collaborative projects',
-            'Use brainstorming sessions to explore multiple perspectives',
-            'Provide opportunities for reflection through journals or discussions',
-            'Connect learning to personal experiences and emotions',
-            'Allow time for observation before asking for action'
-          );
-          break;
-        case 'Assimilating':
-          strategies.push(
-            'Present information in logical, organized frameworks',
-            'Provide reading materials and time for independent study',
-            'Use diagrams, models, and theoretical explanations',
-            'Encourage note-taking and systematic organization',
-            'Allow time for deep thinking and analysis'
-          );
-          break;
-        case 'Converging':
-          strategies.push(
-            'Focus on practical applications and problem-solving',
-            'Use simulations, experiments, and technical tasks',
-            'Provide clear objectives and step-by-step processes',
-            'Encourage hypothesis testing and logical reasoning',
-            'Offer opportunities to apply theories to real situations'
-          );
-          break;
-        case 'Accommodating':
-          strategies.push(
-            'Incorporate hands-on activities and experiments',
-            'Allow learning through trial and error',
-            'Use real-world examples and practical demonstrations',
-            'Encourage active participation and movement',
-            'Provide immediate feedback and opportunities to adjust'
-          );
-          break;
-      }
+  // Thinking style comes from whichever thinking assessment this student took
+  const thinkingStyle = (() => {
+    if (!latestThinking) return '';
+    const cap = (v?: string) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : '');
+    switch (latestThinking.type) {
+      case 'sternberg': return latestThinking.score.sternberg?.style || '';
+      case 'jhs-thinking': return cap(latestThinking.score['jhs-thinking']?.primaryStyle);
+      case 'shs-thinking': return latestThinking.score['shs-thinking']?.primaryStyle || '';
+      case 'adult-thinking': return latestThinking.score['adult-thinking']?.dominantStyle || '';
+      case 'child-thinking': return latestThinking.score['child-thinking']?.primaryStyle || '';
+      default: return '';
     }
+  })();
+  const decisionStyle = latestDecision
+    ? (latestDecision.score?.dualProcess?.style || (latestDecision.score as any)?.decision?.style || latestDecision.score?.['dual-process']?.style || '')
+    : '';
 
-    if (latestThinking) {
-      let style = '';
-      if (latestThinking.type === 'sternberg') {
-        style = latestThinking.score.sternberg?.style;
-      } else if (latestThinking.type === 'jhs-thinking') {
-        const primaryKey = latestThinking.score['jhs-thinking']?.primaryStyle;
-        style = primaryKey ? primaryKey.charAt(0).toUpperCase() + primaryKey.slice(1) : '';
-      } else if (latestThinking.type === 'shs-thinking') {
-        style = latestThinking.score['shs-thinking']?.primaryStyle || '';
-      } else if (latestThinking.type === 'adult-thinking') {
-        style = latestThinking.score['adult-thinking']?.dominantStyle || '';
-      } else if (latestThinking.type === 'child-thinking') {
-        style = latestThinking.score['child-thinking']?.primaryStyle || '';
-      }
-
-      switch (style) {
-        case 'Analytical':
-        case 'analytical':
-          strategies.push(
-            'Present challenging analytical problems to solve',
-            'Encourage critical evaluation and comparison',
-            'Use debates and structured arguments'
-          );
-          break;
-        case 'Creative':
-        case 'creative':
-          strategies.push(
-            'Offer open-ended projects with creative freedom',
-            'Encourage innovative solutions and imagination',
-            'Value novel approaches even if unconventional'
-          );
-          break;
-        case 'Practical':
-        case 'practical':
-          strategies.push(
-            'Connect lessons to everyday life applications',
-            'Use case studies and real-world scenarios',
-            'Emphasize practical skills and useful knowledge'
-          );
-          break;
-        case 'Reflective':
-        case 'reflective':
-            strategies.push(
-              'Allow time for observation and thinking before action',
-              'Use journaling and self-reflection exercises',
-              'Connect learning to past experiences'
-            );
-            break;
-      }
-    }
-
-    return strategies;
-  };
-
-  // Get areas for support
-  const getAreasForSupport = () => {
-    const areas: string[] = [];
-    
-    if (latestLearning) {
-      const dimensions = [
-        { name: 'Concrete Experience', score: ce },
-        { name: 'Reflective Observation', score: ro },
-        { name: 'Abstract Conceptualization', score: ac },
-        { name: 'Active Experimentation', score: ae }
-      ];
-      
-      const weakest = dimensions.sort((a, b) => a.score - b.score)[0];
-      
-      if (weakest.score < 25) {
-        switch (weakest.name) {
-          case 'Concrete Experience':
-            areas.push('May need more connection to real-world experiences and emotional engagement');
-            break;
-          case 'Reflective Observation':
-            areas.push('Could benefit from more time to reflect and observe before acting');
-            break;
-          case 'Abstract Conceptualization':
-            areas.push('May need support with theoretical thinking and systematic analysis');
-            break;
-          case 'Active Experimentation':
-            areas.push('Could use more hands-on practice and active application opportunities');
-            break;
-        }
-      }
-    }
-
-    if (latestDecision) {
-      const style = latestDecision.score?.dualProcess?.style || (latestDecision.score as any)?.decision?.style || latestDecision.score?.['dual-process']?.style;
-      if (style === 'Intuitive Dominant') {
-        areas.push('Encourage more analytical reasoning and evidence-based decision-making');
-      } else if (style === 'Reflective Dominant') {
-        areas.push('Help develop confidence in intuitive responses when quick decisions are needed');
-      }
-    }
-
-    return areas.length > 0 ? areas : ['Continue supporting balanced cognitive development across all areas'];
-  };
-
-  const teachingStrategies = getTeachingStrategies();
-  const areasForSupport = getAreasForSupport();
+  const { strategies: teachingStrategies, support: supportItems } = buildStudentStrategies({
+    firstName: (student.name || 'This student').split(' ')[0],
+    kolb: latestLearning ? { ce, ro, ac, ae, style: latestLearning.score?.kolb?.style || (latestLearning.score as any)?.learning?.style } : undefined,
+    thinkingStyle,
+    decisionStyle,
+    decisionBalanceScore: diagnostic.metrics.decisionBalanceScore,
+    engagementScore: diagnostic.metrics.engagementScore,
+    daysSinceLastActive: diagnostic.metrics.daysSinceLastActive,
+    completedCount: diagnostic.metrics.completedCount,
+  });
 
   return (
     <div className="space-y-6">
@@ -834,11 +716,8 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-yellow-600" />
-                Personalized Teaching Strategies
-              <InfoTip>Teaching ideas matched to this student's profile.</InfoTip></CardTitle>
-              <CardDescription>
-                Evidence-based strategies tailored to {student.name}'s cognitive profile
-              </CardDescription>
+                Teaching Strategies for {(student.name || '').split(' ')[0]}
+              <InfoTip>Ideas built from this student's own scores and recent activity. Each one shows the result it comes from.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {teachingStrategies.length > 0 ? (
@@ -850,7 +729,11 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
                           {index + 1}
                         </div>
                       </div>
-                      <p className="text-sm">{strategy}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold">{strategy.title}</p>
+                        <p className="text-sm mt-0.5">{strategy.action}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Why: {strategy.evidence}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -869,20 +752,25 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-orange-600" />
                 Areas for Additional Support
-              <InfoTip>Where this student may benefit from extra help.</InfoTip></CardTitle>
-              <CardDescription>
-                Dimensions where {student.name} may need extra guidance
-              </CardDescription>
+              <InfoTip>Where this student's results suggest extra help.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2">
-                {areasForSupport.map((area, index) => (
-                  <li key={index} className="flex gap-2 text-sm">
-                    <span className="text-orange-600">•</span>
-                    <span>{area}</span>
-                  </li>
-                ))}
-              </ul>
+              {supportItems.length > 0 ? (
+                <ul className="space-y-3">
+                  {supportItems.map((item, index) => (
+                    <li key={index} className="flex gap-2 text-sm">
+                      <span className="text-orange-600">•</span>
+                      <div className="min-w-0">
+                        <p className="font-semibold">{item.title}</p>
+                        <p>{item.action}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Why: {item.evidence}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No clear gaps in this student's results. Keep varying how new ideas are introduced.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

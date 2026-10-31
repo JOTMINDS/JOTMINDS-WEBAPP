@@ -835,3 +835,46 @@ font[style] {
   background-color: transparent !important;
   box-shadow: none !important;
 }
+
+/* ===== JotMinds brand for the Lesson Planner: Poppins plus the brand palette ===== */
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Regular.ttf') format('truetype');
+  font-weight: 100 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Bold.ttf') format('truetype');
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+.jm-planner {
+  font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+
+  /* Default buttons, progress bars and focus rings use the brand purple */
+  --primary: #6B4C9A;
+  --primary-foreground: #ffffff;
+  --ring: #6B4C9A;
+
+  /* Brand purple (#6B4C9A) replaces indigo and purple inside the planner */
+  --color-indigo-50: #F4EFFA;  --color-indigo-100: #E8DDF4; --color-indigo-200: #D2BDE9;
+  --color-indigo-300: #B999DA; --color-indigo-400: #9A73C6; --color-indigo-500: #8159B1;
+  --color-indigo-600: #6B4C9A; --color-indigo-700: #583D80; --color-indigo-800: #453166;
+  --color-indigo-900: #33244C; --color-indigo-950: #221733;
+  --color-purple-50: #F4EFFA;  --color-purple-100: #E8DDF4; --color-purple-200: #D2BDE9;
+  --color-purple-300: #B999DA; --color-purple-400: #9A73C6; --color-purple-500: #8159B1;
+  --color-purple-600: #6B4C9A; --color-purple-700: #583D80; --color-purple-800: #453166;
+  --color-purple-900: #33244C;
+
+  /* Brand blue (#5B7DB1) */
+  --color-blue-50: #EEF3FA;  --color-blue-100: #DCE6F4; --color-blue-200: #BCCFE8;
+  --color-blue-300: #97B2D8; --color-blue-400: #7396C6; --color-blue-500: #6688BB;
+  --color-blue-600: #5B7DB1; --color-blue-700: #4A6A9C; --color-blue-800: #3C5680;
+
+  /* Brand green (#1E8A6E) */
+  --color-emerald-500: #2FA383; --color-emerald-600: #1E8A6E; --color-emerald-700: #17705A;
+}

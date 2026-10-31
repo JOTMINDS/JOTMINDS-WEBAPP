@@ -733,6 +733,50 @@ export async function signInWithStudentCode(code: string): Promise<{ session: an
   return res.json();
 }
 
+export async function lookupClassCode(code: string): Promise<{ valid: boolean; className?: string; schoolName?: string }> {
+  const res = await fetch(`${BASE_URL}/class-code/lookup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+  return res.json();
+}
+
+export interface ClassCodeJoinResult {
+  success?: boolean;
+  notFound?: boolean;
+  alreadyClaimed?: boolean;
+  isNew?: boolean;
+  code?: string;
+  session?: any;
+  user?: any;
+  error?: string;
+}
+
+// Returns the server's answer even on a refusal, so the sign-in form can show the reason.
+export async function joinWithClassCode(data: {
+  code: string;
+  studentName: string;
+  dateOfBirth: string;
+  confirmNew?: boolean;
+}): Promise<ClassCodeJoinResult> {
+  const res = await fetch(`${BASE_URL}/class-code/join`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json().catch(() => ({ error: 'Something went wrong. Please try again.' }));
+}
+
+export async function generateClassCodeForClass(classId: string, regenerate = false): Promise<{ success: boolean; classCode?: string; error?: string }> {
+  const res = await fetch(`${BASE_URL}/class-code/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken || publicAnonKey}` },
+    body: JSON.stringify({ classId, regenerate }),
+  });
+  return res.json().catch(() => ({ success: false, error: 'Request failed' }));
+}
+
 export async function revokeStudentCode(codeId: string): Promise<{ success: boolean; newCode: string }> {
   const res = await fetch(`${BASE_URL}/student-code/revoke`, {
     method: 'POST',

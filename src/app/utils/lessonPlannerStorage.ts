@@ -8,6 +8,7 @@ import {
   GeneratedAssessment,
   CopilotChatMessage
 } from '../types/lessonPlannerTypes';
+import { summarizeTopics } from './curriculumProgress';
 
 const STORAGE_KEYS = {
   LESSON_PLANS: 'jm_lesson_plans',
@@ -15,6 +16,7 @@ const STORAGE_KEYS = {
   DELIVERY_SESSIONS: 'jm_lesson_delivery_sessions',
   REFLECTIONS: 'jm_lesson_reflections',
   CURRICULUM_TRACKS: 'jm_curriculum_tracks',
+  TEACHER_CURRICULUM: 'jm_teacher_curriculum_schemes',
   PERFORMANCE_METRICS: 'jm_teacher_performance_metrics',
   COPILOT_CHAT: 'jm_copilot_chat_history'
 };
@@ -67,6 +69,21 @@ export function getTeacherCurriculum(teacherId?: string): string | undefined {
     .filter(p => p.curriculumFramework)
     .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime());
   return plans[0]?.curriculumFramework as string | undefined;
+}
+
+/** Subjects and levels the teacher plans lessons or keeps schemes of work for (at most three of each). */
+export function getTeacherTeaching(teacherId?: string): { subjects: string[]; levels: string[] } {
+  const subjects = new Set<string>();
+  const levels = new Set<string>();
+  getSavedLessonPlans(teacherId).forEach(p => {
+    if (p.subject) subjects.add(p.subject.trim());
+    if (p.gradeClass) levels.add(p.gradeClass.trim());
+  });
+  getCurriculumSchemes(teacherId).forEach(t => {
+    if (t.subject) subjects.add(t.subject.trim());
+    if (t.grade) levels.add(t.grade.trim());
+  });
+  return { subjects: Array.from(subjects).slice(0, 3), levels: Array.from(levels).slice(0, 3) };
 }
 
 export function getSavedLessonPlans(teacherId?: string): LessonPlan[] {
@@ -162,6 +179,45 @@ export function saveCurriculumTrack(track: CurriculumTrack): void {
   localStorage.setItem(STORAGE_KEYS.CURRICULUM_TRACKS, JSON.stringify(track));
 }
 
+// ─── PER-TEACHER SCHEMES OF WORK ───────────────────────────────────────────────
+// One scheme per teacher, subject and class, so each teacher's coverage is their own.
+
+const schemeKey = (subject: string, grade: string) => `${subject.trim().toLowerCase()}|${grade.trim().toLowerCase()}`;
+
+function readSchemes(): Record<string, Record<string, CurriculumTrack>> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEACHER_CURRICULUM) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function getCurriculumSchemes(teacherId?: string): CurriculumTrack[] {
+  return Object.values(readSchemes()[teacherId || 'unknown'] || {});
+}
+
+export function getCurriculumScheme(teacherId: string | undefined, subject: string, grade: string): CurriculumTrack | undefined {
+  return readSchemes()[teacherId || 'unknown']?.[schemeKey(subject, grade)];
+}
+
+export function saveCurriculumScheme(teacherId: string | undefined, track: CurriculumTrack): void {
+  const all = readSchemes();
+  const mine = all[teacherId || 'unknown'] || {};
+  mine[schemeKey(track.subject, track.grade)] = track;
+  all[teacherId || 'unknown'] = mine;
+  localStorage.setItem(STORAGE_KEYS.TEACHER_CURRICULUM, JSON.stringify(all));
+}
+
+export function deleteCurriculumScheme(teacherId: string | undefined, subject: string, grade: string): void {
+  const all = readSchemes();
+  const mine = all[teacherId || 'unknown'];
+  if (!mine) return;
+  delete mine[schemeKey(subject, grade)];
+  localStorage.setItem(STORAGE_KEYS.TEACHER_CURRICULUM, JSON.stringify(all));
+}
+
 const DELIVERED_STATUSES = ['delivered', 'reviewed', 'completed'];
 const UNDERSTANDING_TO_RATING: Record<string, number> = { Excellent: 5, Good: 4, Average: 3, Poor: 2 };
 
@@ -191,7 +247,9 @@ export function getTeacherPerformanceMetrics(teacherId?: string): TeacherPerform
   const reflectionRate = delivered ? Math.min(1, reflections.length / delivered) : 0;
   const differentiatedRate = plans.length ? plans.filter(p => p.differentiatedInstruction).length / plans.length : 0;
 
-  const track = getCurriculumTrack();
+  // Coverage across every scheme of work this teacher keeps, counted from real lessons
+  const schemeTopics = getCurriculumSchemes(teacherId).flatMap(t => t.topics);
+  const coverage = summarizeTopics(schemeTopics, plans, reflections);
   const completedAsPlannedPct = reflections.length
     ? Math.round((reflections.filter(r => r.completedAsPlanned).length / reflections.length) * 100)
     : null;
@@ -208,7 +266,7 @@ export function getTeacherPerformanceMetrics(teacherId?: string): TeacherPerform
         : null,
     },
     annual: {
-      curriculumCoveragePct: Math.min(100, Math.max(0, Math.round(track.completionPercentage || 0))),
+      curriculumCoveragePct: coverage.percentage,
       completedAsPlannedPct,
       // Usage score: 50% delivery, 25% reflection, 25% differentiation across all saved plans
       teachingEffectivenessScore: Math.round((deliveryRate * 0.5 + reflectionRate * 0.25 + differentiatedRate * 0.25) * 100),

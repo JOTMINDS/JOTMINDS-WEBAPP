@@ -264,9 +264,66 @@ export interface CurriculumContext {
   assessmentTerm: string;   // how the curriculum talks about checking learning
   localContext: string;     // examples the teacher should draw on
   aiContext: string;        // instruction line for the AI prompt
+  /** One concrete practice per teaching domain, written in the curriculum's own terms */
+  domainActions: Record<string, string>;
 }
 
+/** The subjects and levels a teacher works with, used to make recommendations specific. */
+export interface TeachingContext {
+  subjects: string[];
+  levels: string[];
+}
+
+const DOMAIN_ACTIONS: Record<string, Record<string, string>> = {
+  nacca: {
+    cognitive: 'Plan one higher-order question per lesson that builds the NaCCA core competency of Critical Thinking and Problem Solving, and note it against the learning indicator.',
+    instructional: 'Map each lesson to the content standard, indicator and exemplars in the NaCCA curriculum for your subject, then pick the exemplar activity that best fits your learners.',
+    leadership: 'Set clear routines for group work and use of TLMs that fit the learner-centred approach in the NaCCA curriculum, and rotate group roles so every learner leads.',
+    relationship: 'Build the NaCCA competency of Communication and Collaboration with paired talk, peer feedback and a short learner reflection in every unit.',
+    professional: 'Use PLC or INSET time to review one lesson against the NaCCA indicators and to plan School-Based Assessment tasks with colleagues.',
+  },
+  british: {
+    cognitive: 'Teach the exam command words (describe, explain, evaluate) explicitly and let learners practise answering at each level.',
+    instructional: 'Plan backwards from the syllabus learning objectives and assessment objectives, and use mark schemes to show learners what each level of answer looks like.',
+    leadership: 'Use a consistent starter, main task and plenary routine with clear timings, and train learners to self-mark against the mark scheme.',
+    relationship: 'Give feedback tied to mark-scheme criteria and hold a short one-to-one target-setting conversation with each learner every term.',
+    professional: 'Take part in department moderation and standardisation, and use the exam board\'s teacher support resources for your syllabus.',
+  },
+  ib: {
+    cognitive: 'Build inquiry questions and conceptual understanding into each unit, and ask learners to transfer an idea to a new context.',
+    instructional: 'Plan units around a statement of inquiry and a global context, and tie approaches-to-learning (ATL) skills to specific tasks.',
+    leadership: 'Share ownership of the inquiry: let learners choose focus questions and manage part of the process themselves.',
+    relationship: 'Use the learner-profile attributes (communicator, caring, open-minded) as the language for feedback and reflection.',
+    professional: 'Join collaborative planning and IB professional development to review units against the assessment criteria.',
+  },
+  oxford: {
+    cognitive: 'Write a learning intention that asks for thinking, not recall, and add a stretch question to the success criteria.',
+    instructional: 'Share learning intentions and success criteria at the start of each lesson and return to them at the end.',
+    leadership: 'Run lessons with a predictable structure and agreed group roles, and link tasks across subjects where the curriculum allows.',
+    relationship: 'Use the success criteria as the basis for peer and self-assessment so feedback is specific and kind.',
+    professional: 'Review a unit with your learning team against the learning intentions and agree one change to try next term.',
+  },
+  generic: {
+    cognitive: 'Plan one question per lesson that makes learners reason, compare or justify, and record which syllabus outcome it supports.',
+    instructional: 'Write each lesson objective in the words of your syllabus outcomes, and check at the end whether learners met it.',
+    leadership: 'Agree simple routines for starting, group work and tidying up, and rotate group roles so every learner leads.',
+    relationship: 'Learn each learner\'s interests and use them in examples, and give feedback that names one strength and one next step.',
+    professional: 'Use your school\'s professional learning time to review one lesson with a colleague against your syllabus outcomes.',
+  },
+};
+
 export function getCurriculumContext(framework?: string): CurriculumContext {
+  const base = baseCurriculumContext(framework);
+  const f = (framework || '').toLowerCase();
+  const kind = (/\bnational\b/.test(f) || f.includes('nacca') || /\bges\b/.test(f)) ? 'nacca'
+    : (f.includes('british') || f.includes('cambridge') || f.includes('edexcel') || f.includes('pearson')) ? 'british'
+    : (f.includes('baccalaureate') || /\bib\b/.test(f)) ? 'ib'
+    : f.includes('oxford') ? 'oxford'
+    : 'generic';
+  return { ...base, domainActions: DOMAIN_ACTIONS[kind] };
+}
+
+function baseCurriculumContext(framework?: string): Omit<CurriculumContext, 'domainActions'> {
   const f = (framework || '').toLowerCase();
   if (/\bnational\b/.test(f) || f.includes('nacca') || /\bges\b/.test(f)) {
     return {
@@ -327,9 +384,11 @@ export function generatePersonalizedRecommendations(
   strengths: Array<{ title: string; domain: string; description?: string }>,
   growthOpportunities: Array<{ title: string; domain: string; description?: string }>,
   teacherName?: string,
-  curriculum?: string
+  curriculum?: string,
+  teaching?: TeachingContext
 ): JTIAAIRecommendations {
   const cur = getCurriculumContext(curriculum);
+  const taught = [teaching?.levels.join(' / '), teaching?.subjects.join(' / ')].filter(Boolean).join(' ');
   // Find highest and lowest scoring domains
   const sortedDomains = Object.entries(domainScores).sort((a, b) => b[1] - a[1]);
   const topDomainEntry = sortedDomains[0] || ['instructional', 80];
@@ -340,23 +399,26 @@ export function generatePersonalizedRecommendations(
 
   const primaryStrength = strengths[0]?.title || `${topDomainName} Intelligence`;
   const primaryGrowth = growthOpportunities[0]?.title || `${lowestDomainName} Intelligence`;
+  const growAction = cur.domainActions[lowestDomainEntry[0]] || cur.domainActions.instructional;
+  const leverageAction = cur.domainActions[topDomainEntry[0]] || cur.domainActions.instructional;
+  const forClasses = taught ? ` for your ${taught} classes` : '';
 
   return {
     resources: [
-      `${cur.toolkit}: Differentiated instructional protocols leveraging your high ${topDomainName} mastery (${primaryStrength}).`,
-      `Guide to ${cur.localContext}: ideas for concrete teaching aids that boost ${lowestDomainName} engagement.`,
+      `${cur.toolkit}${forClasses}: ${growAction}`,
+      `Guide to ${cur.localContext}: ideas for concrete teaching aids that boost ${lowestDomainName} engagement${forClasses}.`,
       `${cur.community} handbook: Collaborative lesson study templates and peer micro-teaching strategies.`,
       `JotMinds Cognitive Diversity In Action: Field guide for mapping student learning styles to lesson pacing in large classrooms.`
     ],
     activities: [
+      `Build on your ${topDomainName} strength (${primaryStrength})${forClasses}: ${leverageAction}`,
       `Formative Exit Slips: End each lesson with a 3-minute check on learning aligned to ${cur.assessmentTerm} before student dismissal.`,
       `Think-Pair-Share with Structured Wait-Time: Build confidence by allowing students 5 seconds of silence before sharing in pairs to reinforce ${primaryGrowth}.`,
-      `Differentiated Task Cards: Organize tiered practice sets (Core, Scaffolded, Extension) using ${cur.localContext}.`,
-      `Socratic Circle Modeling: Utilize gradual release ('I Do, We Do, You Do') to guide abstract reasoning and collaborative problem solving.`
+      `Differentiated Task Cards: Organize tiered practice sets (Core, Scaffolded, Extension) using ${cur.localContext}.`
     ],
     coaching: [
+      `${cur.community}: ${cur.domainActions.professional}`,
       `Departmental Peer Observation: Pair with a senior subject teacher for a 20-minute exchange focusing on ${primaryGrowth} and student question-flow.`,
-      `Lesson Study: Present an upcoming unit plan to your ${cur.community} for feedback.`,
       `Student Feedback Pulse: Run a short, anonymous 3-question survey once per term asking learners which classroom activities help them understand best.`,
       `Curriculum Leader Debrief: Meet with your head of department or academic supervisor to align termly scheme of work milestones with learner progress.`
     ],

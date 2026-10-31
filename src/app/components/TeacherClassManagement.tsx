@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { School, Plus, Loader, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Class, User, EducationLevel } from '../types';
 import { getAllClasses, saveClass, deleteClass, getAllUsers, saveUser, isStudentConnectedToTeacher } from '../utils/storage';
-import { assignMemberToClass, fetchInstitutionClassesAPI, saveInstitutionClassAPI } from '../utils/api';
+import { assignMemberToClass, saveInstitutionClassAPI } from '../utils/api';
+import { getInstitutionClasses } from '../utils/institution';
+import { ClassCodeCard } from './ClassCodeCard';
 import { toast } from 'sonner';
 import { InfoTip } from './ui/info-tip';
 
@@ -33,14 +35,8 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
   const loadData = async () => {
     let allClasses = getAllClasses();
     try {
-      const response = await fetchInstitutionClassesAPI(teacher.institutionId);
-      if (response && response.success && response.classes) {
-        // Merge local and server classes
-        const mergedClasses = new Map();
-        allClasses.forEach(c => mergedClasses.set(c.id, c));
-        response.classes.forEach((c: any) => mergedClasses.set(c.id, c));
-        allClasses = Array.from(mergedClasses.values());
-      }
+      // Also drops local copies of classes the school has since deleted.
+      allClasses = await getInstitutionClasses(teacher.institutionId);
     } catch (err) {
       console.error("Failed to load classes from server", err);
     }
@@ -372,6 +368,11 @@ export function TeacherClassManagement({ teacher, students: serverStudents = [] 
                               )}
                             </div>
                           </div>
+                          {cls.status === 'approved' && (
+                            <div className="px-4 pb-4 bg-white">
+                              <ClassCodeCard cls={cls} onUpdated={() => loadData()} />
+                            </div>
+                          )}
                           {cls.status === 'approved' && (
                             <div className="bg-gray-50 p-4 border-t text-sm text-gray-600 flex justify-between items-center">
                               <span>Students enrolled: {cls.studentCount || 0}</span>

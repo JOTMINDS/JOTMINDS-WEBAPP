@@ -9,6 +9,7 @@ import { Class, EducationLevel, StudentCode } from '../../types';
 import { generateId, getAllClasses, saveClass } from '../../utils/storage';
 import { enrollStudent, saveInstitutionClassAPI } from '../../utils/api';
 import { toast } from 'sonner';
+import { ClassCodeCard } from '../ClassCodeCard';
 
 interface GenerateStudentCodesModalProps {
   isOpen: boolean;
@@ -452,6 +453,11 @@ export function GenerateStudentCodesModal({ isOpen, onClose, teacherId, institut
                     <p className="text-sm font-medium">No classes found</p>
                     <p className="text-xs mt-1">Create your first class to start generating student codes.</p>
                   </div>
+                )}
+
+                {/* One code for the whole class */}
+                {selectedClass && (
+                  <ClassCodeCard cls={selectedClass} onUpdated={loadTeacherClasses} />
                 )}
 
                 {/* Option to generate individual student code directly */}

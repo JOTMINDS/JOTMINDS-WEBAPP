@@ -185,7 +185,7 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
     if (isLinking) return;
     
     if (!childEmail.trim()) {
-      setLinkMessage({ type: 'error', text: 'Please enter a valid email address.' });
+      setLinkMessage({ type: 'error', text: 'Please enter your child\'s email address or student code.' });
       return;
     }
     
@@ -561,9 +561,9 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                 <CardTitle className="flex items-center gap-2">
                   <UserPlus className="h-5 w-5" />
                   Request Access to Child's Account
-                <InfoTip>Enter your child's email to send an access request. Children aged 10 or younger are approved automatically. Older children must approve it. Once linked, you can see their results and get guidance.</InfoTip></CardTitle>
+                <InfoTip>Enter your child's email, or the personal student code their school gave them, to send an access request. Children aged 10 or younger are approved automatically. Older children must approve it. Once linked, you can see their results and get guidance.</InfoTip></CardTitle>
                 <CardDescription>
-                  Enter your child's email address to send an access request. <strong>Children 10 years old or younger will be automatically approved.</strong> Older students will need to approve the request.
+                  Enter your child's email address or student code to send an access request. <strong>Children 10 years old or younger will be automatically approved.</strong> Older students will need to approve the request.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -576,8 +576,8 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                 )}
                 <div className="flex gap-2">
                   <Input
-                    type="email"
-                    placeholder="child@example.com"
+                    type="text"
+                    placeholder="child@example.com or JM-XXXX-XXXX"
                     value={childEmail}
                     onChange={(e) => setChildEmail(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleLinkChild()}
@@ -652,7 +652,13 @@ export function ParentDashboard({ user, onLogout, onViewSettings }: ParentDashbo
                                 </div>
                                 <div>
                                   <CardTitle className="text-lg">{child.name}</CardTitle>
-                                  <CardDescription>{child.email}</CardDescription>
+                                  {(child as any).studentCode ? (
+                                    <CardDescription>
+                                      Student code: <span className="font-mono font-semibold text-[#6B4C9A] select-all">{(child as any).studentCode}</span>
+                                    </CardDescription>
+                                  ) : (
+                                    <CardDescription>{child.email}</CardDescription>
+                                  )}
                                 </div>
                               </div>
                             </div>

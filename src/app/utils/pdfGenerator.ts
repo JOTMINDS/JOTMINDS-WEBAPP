@@ -42,7 +42,7 @@ function loadLogo(): Promise<HTMLImageElement | null> {
 }
 
 
-export async function generatePDF(assessment: Assessment, userName: string, ghanaMapping: GhanaMapping | null, isOrganizational: boolean = false): Promise<boolean> {
+async function buildAssessmentPDF(assessment: Assessment, userName: string, ghanaMapping: GhanaMapping | null, isOrganizational: boolean = false): Promise<{ doc: jsPDF; filename: string } | null> {
   try {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -531,12 +531,40 @@ export async function generatePDF(assessment: Assessment, userName: string, ghan
     const filename = isOrganizational 
       ? `organizational-assessment-${safeUserName.replace(/\s+/g, '-')}.pdf`
       : `thinking-styles-report-${safeUserName.replace(/\s+/g, '-')}.pdf`;
-    doc.save(filename);
-    return true;
+    return { doc, filename };
   } catch (err) {
     console.error('[PDF Generator] Error generating direct PDF:', err);
-    return false;
+    return null;
   }
+}
+
+/** Builds the assessment report and downloads it. */
+export async function generatePDF(assessment: Assessment, userName: string, ghanaMapping: GhanaMapping | null, isOrganizational: boolean = false): Promise<boolean> {
+  const built = await buildAssessmentPDF(assessment, userName, ghanaMapping, isOrganizational);
+  if (!built) return false;
+  built.doc.save(built.filename);
+  return true;
+}
+
+/**
+ * Opens the JotMinds-branded PDF report ready to print, so only the report is printed
+ * (printing the page itself also printed the menus and buttons around it).
+ */
+export async function printAssessmentPDF(assessment: Assessment, userName: string, ghanaMapping: GhanaMapping | null, isOrganizational: boolean = false): Promise<boolean> {
+  const built = await buildAssessmentPDF(assessment, userName, ghanaMapping, isOrganizational);
+  if (!built) return false;
+  built.doc.autoPrint();
+  const url = String(built.doc.output('bloburl'));
+  const win = window.open(url, '_blank');
+  if (!win) built.doc.save(built.filename); // pop-ups blocked: download it to print from there
+  return true;
+}
+
+/** Builds the same report as a file, for sharing through other apps instead of downloading. */
+export async function generatePDFFile(assessment: Assessment, userName: string, ghanaMapping: GhanaMapping | null, isOrganizational: boolean = false): Promise<File | null> {
+  const built = await buildAssessmentPDF(assessment, userName, ghanaMapping, isOrganizational);
+  if (!built) return null;
+  return new File([built.doc.output('blob')], built.filename, { type: 'application/pdf' });
 }
 
 export async function exportReportToPDF(elementId: string, filename: string = 'Jotminds_Report.pdf'): Promise<boolean> {

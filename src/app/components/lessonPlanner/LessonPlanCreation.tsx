@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { InfoTip } from '../ui/info-tip';
 import { Button } from '../ui/button';
@@ -14,16 +14,29 @@ import { generateAILessonPlan } from '../../utils/aiService';
 import { saveLessonPlan } from '../../utils/lessonPlannerStorage';
 import { toast } from 'sonner';
 
+export interface LessonPlanPrefill {
+  subject: string;
+  gradeClass: string;
+  topic: string;
+  strand?: string;
+  substrand?: string;
+  curriculumTopicId: string;
+  /** Changes on every request so the same topic can be prefilled twice */
+  nonce: number;
+}
+
 interface LessonPlanCreationProps {
   classSummary?: ClassCognitiveSummary;
   onPlanCreated: (plan: LessonPlan) => void;
   user: any;
+  prefill?: LessonPlanPrefill;
 }
 
 export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   classSummary,
   onPlanCreated,
-  user
+  user,
+  prefill
 }) => {
   const [mode, setMode] = useState<'ai' | 'manual' | 'upload'>('ai');
   const [subject, setSubject] = useState('');
@@ -38,6 +51,21 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   const [startTime, setStartTime] = useState('08:30');
   const [endTime, setEndTime] = useState('09:15');
   const [isGenerating, setIsGenerating] = useState(false);
+  // Set when the lesson is started from a curriculum topic, so the topic can track it.
+  const [linkedTopic, setLinkedTopic] = useState<{ id: string; strand?: string; substrand?: string } | null>(null);
+
+  useEffect(() => {
+    if (!prefill) return;
+    setSubject(prefill.subject);
+    setGradeClass(prefill.gradeClass);
+    setTopic(prefill.topic);
+    setSubtopic(prefill.substrand || '');
+    setLinkedTopic({ id: prefill.curriculumTopicId, strand: prefill.strand, substrand: prefill.substrand });
+  }, [prefill?.nonce]);
+
+  const curriculumLink = () => linkedTopic
+    ? { curriculumTopicId: linkedTopic.id, strand: linkedTopic.strand, substrand: linkedTopic.substrand }
+    : {};
 
   // Auto-calculate duration from date and time
   const handleDateOrTimeChange = (
@@ -109,6 +137,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       date,
       endDate,
       curriculumFramework: curriculumFramework as any,
+      ...curriculumLink(),
       language,
             objectives: (Array.isArray(aiResult?.objectives) ? {
         knowledge: aiResult.objectives,
@@ -212,6 +241,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
       date,
       endDate,
       curriculumFramework: curriculumFramework as any,
+      ...curriculumLink(),
       objectives: {
         knowledge: knowledgeObj.split('\n').filter(Boolean),
         skills: skillsObj.split('\n').filter(Boolean),
@@ -237,20 +267,20 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
+      <div className="bg-gradient-to-r from-[#5B7DB1] via-[#6B4C9A] to-[#1E8A6E] text-white p-6 rounded-2xl shadow-xl border border-indigo-800/30 flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               Module 1 • Lesson Creation
             </Badge>
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-0.5 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 px-3 py-0.5 text-xs">
               Save Planning Time
             </Badge>
           </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-indigo-400" /> Lesson Plan Generator<InfoTip title="Lesson plan generator">Create a lesson plan three ways: auto-generate from details, write it yourself, or upload an existing plan to enhance it. The plan follows the curriculum you choose.</InfoTip>
           </h2>
-          <p className="text-xs text-slate-300 mt-1">
+          <p className="text-xs text-white/85 mt-1">
             Find official Subject Specific Apps and easy access to NaCCA curriculum resources.
           </p>
         </div>
@@ -453,7 +483,7 @@ export const LessonPlanCreation: React.FC<LessonPlanCreationProps> = ({
               <Label className="text-xs font-semibold">Topic / Strand<InfoTip>The main topic of the lesson. For NaCCA, use the strand name from the curriculum.</InfoTip></Label>
               <Input
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                onChange={(e) => { setTopic(e.target.value); setLinkedTopic(null); }}
                 placeholder="e.g. Linear Equations in One Variable"
                 className="mt-1"
               />

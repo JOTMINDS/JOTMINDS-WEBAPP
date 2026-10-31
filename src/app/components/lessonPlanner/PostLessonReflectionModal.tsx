@@ -86,17 +86,17 @@ export const PostLessonReflectionModal: React.FC<PostLessonReflectionModalProps>
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <Card className="w-full max-w-xl shadow-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
-        <CardHeader className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 rounded-t-xl">
+        <CardHeader className="bg-gradient-to-r from-[#5B7DB1] via-[#6B4C9A] to-[#1E8A6E] text-white p-5 rounded-t-xl">
           <div className="flex items-center justify-between">
-            <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs">
+            <Badge className="bg-white/20 text-white border-white/30 text-xs">
               Module 6 • Post-Lesson Reflection
             </Badge>
-            <span className="text-xs text-slate-300">{new Date().toLocaleDateString()}</span>
+            <span className="text-xs text-white/85">{new Date().toLocaleDateString()}</span>
           </div>
           <CardTitle className="text-lg font-bold text-white mt-1">
             Reflect on: {plan.topic} ({plan.gradeClass})
           </CardTitle>
-          <CardDescription className="text-xs text-slate-300">
+          <CardDescription className="text-xs text-white/85">
             Log completion, student understanding, and follow-up teaching notes.
           </CardDescription>
         </CardHeader>

@@ -14,7 +14,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId, getAllClasses } from '../utils/storage';
+import { getStudentsBySchool, getAllUsers, getAssessmentsByUserId, getAllClasses, getAssignmentsForTeacher, isStudentConnectedToTeacher } from '../utils/storage';
 import { getEngagementMetrics } from '../utils/engagementTracking';
 import { getGamificationProfile } from '../utils/gamification';
 import { extractDimensionScores } from '../utils/cognitiveXP';
@@ -24,7 +24,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
 import { StudentDetailView } from './StudentDetailView';
 import { InstitutionMember } from '../utils/institution';
-import { getFriendlyDimensionName } from '../utils/styleWording';
+import { getFriendlyDimensionName, getFriendlyStyleName } from '../utils/styleWording';
+import {
+  extractTeaching, extractStudentStyles, computeTeachingFit, teacherFitWithStudents,
+  STYLE_TEACHING_ADVICE, StyleFit, StudentStyles,
+} from '../utils/teachingAlignment';
 
 interface SchoolAnalyticsDashboardProps {
   user: User;
@@ -244,6 +248,39 @@ function buildSummary(u: User): StudentSummary {
     assessments,
     styles: getStudentCognitiveStyles(assessments)
   };
+}
+
+const fitTone = (fit: number) =>
+  fit >= 75 ? { label: 'Strong fit', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: '#1E8A6E' }
+  : fit >= 55 ? { label: 'Moderate fit', cls: 'bg-amber-50 text-amber-800 border-amber-200', bar: '#E0A020' }
+  : { label: 'Needs attention', cls: 'bg-red-50 text-red-700 border-red-200', bar: '#DC2626' };
+
+// How well the teaching approach (from Teaching Insights) suits each student style found in the school.
+function TeachingFitCard({ rows, teacherCount }: { rows: StyleFit[]; teacherCount: number }) {
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="text-sm font-bold">How well does our teaching suit each student style?<InfoTip>Each facilitator's Teaching Insights result is checked against the learning, thinking and decision styles your students have. A lower fit shows a student style that current teaching may not reach as well. It is a prompt to adapt, not a fault.</InfoTip></CardTitle>
+        <p className="text-xs text-gray-500 mt-1">Based on {teacherCount} {teacherCount === 1 ? 'facilitator' : 'facilitators'} who completed Teaching Insights. Lowest fit first.</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {rows.map(r => {
+          const tone = fitTone(r.fit);
+          return (
+            <div key={`${r.dimension}-${r.style}`}>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-xs font-medium text-gray-800">
+                  {getFriendlyStyleName(r.style)} <span className="text-gray-400 font-normal">· {r.dimension.toLowerCase()} · {r.students} {r.students === 1 ? 'student' : 'students'}</span>
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${tone.cls}`}>{tone.label}</span>
+              </div>
+              <div className="bg-gray-100 rounded-full h-2"><div className="h-2 rounded-full" style={{ width: `${r.fit}%`, backgroundColor: tone.bar }} /></div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
 }
 
 export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMembers, allPlatformUsers: parentUsers, memberAssessments: parentAssessments }: SchoolAnalyticsDashboardProps) {
@@ -567,6 +604,37 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       teacherTotal: teacherSummaries.length, teacherAssessed: teacherAssessedList.length
     };
   }, [summaries, teacherSummaries]);
+
+  // Teaching-style fit: works for facilitators who only completed Teaching Insights.
+  const studentStylesById = useMemo(() => {
+    const map = new Map<string, StudentStyles>();
+    summaries.forEach(s => map.set(s.user.id, extractStudentStyles(s.assessments)));
+    return map;
+  }, [summaries]);
+
+  const teachingFit = useMemo(() => {
+    const axes = teacherSummaries
+      .map(t => extractTeaching(t.assessments)?.axes)
+      .filter((a): a is Record<string, number> => !!a);
+    return { teacherCount: axes.length, rows: computeTeachingFit(axes, Array.from(studentStylesById.values())) };
+  }, [teacherSummaries, studentStylesById]);
+
+  // Each facilitator's own fit, using the students they teach (all students when none are linked yet).
+  const fitByTeacher = useMemo(() => {
+    const result = new Map<string, { fit: number; scope: 'their students' | 'all students' } | null>();
+    const classes = getAllClasses();
+    teacherSummaries.forEach(t => {
+      const axes = extractTeaching(t.assessments)?.axes;
+      if (!axes) { result.set(t.user.id, null); return; }
+      const classIds = new Set<string>(classes.filter(c => c.classTeacherId === t.user.id).map(c => c.id));
+      getAssignmentsForTeacher(t.user.id).forEach(a => classIds.add(a.classId));
+      const own = summaries.filter(s => isStudentConnectedToTeacher(s.user, t.user, classIds));
+      const pool = own.length > 0 ? own : summaries;
+      const fit = teacherFitWithStudents(axes, pool.map(s => studentStylesById.get(s.user.id) || {}));
+      result.set(t.user.id, fit == null ? null : { fit, scope: own.length > 0 ? 'their students' : 'all students' });
+    });
+    return result;
+  }, [teacherSummaries, summaries, studentStylesById]);
 
   const availableStudentClasses = useMemo(() => {
     const allClasses = getAllClasses();
@@ -1534,7 +1602,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                 </CardHeader>
                 <CardContent>
                   {gaps.length === 0 ? (
-                    <div className="py-10 text-center text-gray-400 text-sm">Not enough data to compare yet. Both facilitators and students need to complete assessments.</div>
+                    <div className="py-10 text-center text-gray-400 text-sm">{teachingFit.rows.length > 0 ? 'Facilitators who only did Teaching Insights are compared in the next card.' : 'Not enough data to compare yet. Both facilitators and students need to complete assessments.'}</div>
                   ) : (<>
                     {biggest.length > 0 ? (
                       <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100 space-y-1.5">
@@ -1580,6 +1648,9 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   </>)}
                 </CardContent>
               </Card>
+              {teachingFit.rows.length > 0 && (
+                <TeachingFitCard rows={teachingFit.rows} teacherCount={teachingFit.teacherCount} />
+              )}
             </>);
           })()}
 
@@ -1606,7 +1677,8 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                   {teacherSummaries.map(t => {
                     const hasAssessments = t.assessments.length > 0;
                     const ts = t.assessments.find(a => a.type === 'jtia' || a.type === 'teaching-style' || a.type === 'teaching');
-                    const teachingStyle = ts?.score?.['teaching-style']?.primaryStyle || ts?.score?.jtia?.primaryStyle || (hasAssessments ? 'Assessed' : 'Pending profile');
+                    const teachingStyle = ts?.score?.['teaching-style']?.primaryStyle || ts?.score?.jtia?.primaryStyle || extractTeaching(t.assessments)?.primaryStyle || (hasAssessments ? 'Assessed' : 'Pending profile');
+                    const teacherFit = fitByTeacher.get(t.user.id) || null;
                     return (
                       <tr key={t.user.id} className="hover:bg-gray-50">
                         <td className="px-4 py-2.5">
@@ -1631,11 +1703,18 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                           </span>
                         </td>
                         <td className="px-3 py-2.5 text-center">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                            hasAssessments ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-500'
-                          }`}>
-                            {hasAssessments ? 'Active Profile' : 'Pending'}
-                          </span>
+                          {teacherFit ? (
+                            <span
+                              title={`Teaching fit with ${teacherFit.scope}`}
+                              className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${fitTone(teacherFit.fit).cls}`}
+                            >
+                              {fitTone(teacherFit.fit).label}
+                            </span>
+                          ) : (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-gray-100 text-gray-500">
+                              {hasAssessments ? 'Waiting for students' : 'Pending'}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -1674,7 +1753,37 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
               </CardHeader>
               <CardContent className="space-y-4">
                 {stats.comparisonData.length === 0 ? (
-                  <p className="text-sm text-gray-400">Not enough data to generate recommendations. Ensure both teachers and students have taken assessments.</p>
+                  (() => {
+                    if (teachingFit.rows.length === 0) {
+                      return (
+                        <p className="text-sm text-gray-400">
+                          {teachingFit.teacherCount === 0
+                            ? 'No facilitator has completed Teaching Insights yet. Once they do, their teaching approach is checked against your students\' styles here.'
+                            : 'Students have not completed learning, thinking or decision assessments yet, so there is nothing to compare with.'}
+                        </p>
+                      );
+                    }
+                    const attention = teachingFit.rows.filter(r => r.fit < 75).slice(0, 4);
+                    if (attention.length === 0) {
+                      return (
+                        <div className="p-4 bg-green-50 text-green-800 rounded-lg border border-green-100 text-sm">
+                          <strong className="flex items-center gap-2 mb-1"><CheckCircle className="w-4 h-4" /> Strong Alignment Detected</strong>
+                          Your facilitators' teaching approach suits every student style found in the school. Keep up your differentiated teaching.
+                        </div>
+                      );
+                    }
+                    return attention.map(r => (
+                      <div key={`${r.dimension}-${r.style}`} className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-bold text-blue-900">{getFriendlyStyleName(r.style)}</span>
+                          <Badge variant="outline" className="text-blue-700 bg-blue-100 border-blue-200 text-[10px]">
+                            {r.students} {r.students === 1 ? 'student' : 'students'} · {fitTone(r.fit).label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-blue-800">{STYLE_TEACHING_ADVICE[r.style] || `Provide more opportunities for students to use their ${r.style} strengths.`}</p>
+                      </div>
+                    ));
+                  })()
                 ) : (
                   (() => {
                     const gaps = stats.comparisonData.map(d => ({

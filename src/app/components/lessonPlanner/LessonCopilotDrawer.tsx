@@ -86,19 +86,19 @@ export const LessonCopilotDrawer: React.FC<LessonCopilotDrawerProps> = ({
   return (
     <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between">
       {/* Drawer Top Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#5B7DB1] via-[#6B4C9A] to-[#1E8A6E] text-white p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
-              Jotti <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-[10px]">Module 10</Badge>
+              Jotti <Badge className="bg-white/20 text-white border-white/30 text-[10px]">Module 10</Badge>
             </h3>
-            <p className="text-[11px] text-slate-300">24/7 Intelligent Teaching Assistant</p>
+            <p className="text-[11px] text-white/85">24/7 Intelligent Teaching Assistant</p>
           </div>
         </div>
-        <Button size="sm" variant="ghost" onClick={onClose} className="text-slate-300 hover:text-white">
+        <Button size="sm" variant="ghost" onClick={onClose} className="text-white/85 hover:text-white">
           <X className="w-4 h-4" />
         </Button>
       </div>

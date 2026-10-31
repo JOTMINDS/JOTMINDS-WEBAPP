@@ -17,6 +17,7 @@ import roleFitRoutes from './role-fit-routes.tsx';
 import brainGymRoutes from './brain-gym-routes.tsx';
 import teacherObservationRoutes from './teacher-observation-routes.tsx';
 import accountRoutes from './account-routes.tsx';
+import classCodeRoutes from './class-code-routes.tsx';
 import { purgeAccountLinks, wipeAccount, pruneDeletedChildren } from './account-cleanup.tsx';
 import leaderboardRoutes from './leaderboard-routes.tsx';
 import superadminRoutes from './superadmin-routes.tsx';
@@ -70,6 +71,7 @@ app.route('/make-server-fc8eb847/role-fit', roleFitRoutes);
 app.route('/make-server-fc8eb847/brain-gym', brainGymRoutes);
 app.route('/make-server-fc8eb847/teacher-observation', teacherObservationRoutes);
 app.route('/make-server-fc8eb847/account', accountRoutes);
+app.route('/make-server-fc8eb847/class-code', classCodeRoutes);
 app.route('/make-server-fc8eb847/leaderboard', leaderboardRoutes);
 app.route('/make-server-fc8eb847/superadmin', superadminRoutes);
 app.route('/make-server-fc8eb847/feature-flags', featureFlagsRoutes);
@@ -3323,10 +3325,47 @@ app.delete('/make-server-fc8eb847/institutions/classes/:id', async (c) => {
     if (!classId) {
       return c.json({ error: 'Missing class ID' }, 400);
     }
+
+    const supabaseAdmin = getSupabaseClient(true);
+
+    // Find the class (it can live in the KV store, the classes table, or both) so we know whose it is.
+    const kvClass = await kv.get(`class:${classId}`);
+    const { data: dbClass } = await supabaseAdmin
+      .from('classes')
+      .select('institution_id, class_teacher_id')
+      .eq('id', classId)
+      .maybeSingle();
+    const institutionId = kvClass?.institutionId || dbClass?.institution_id || null;
+    const classTeacherId = kvClass?.classTeacherId || dbClass?.class_teacher_id || null;
+
+    // Only the school's admins, the class teacher or a platform admin may delete a class.
+    const allowed =
+      classTeacherId === user.id ||
+      (institutionId && await isCallerInstitutionAdmin(supabaseAdmin, user, institutionId)) ||
+      await isPlatformAdmin(user.id);
+    if ((kvClass || dbClass) && !allowed) {
+      return c.json({ error: 'Forbidden: Only school administrators or the class teacher can delete a class' }, 403);
+    }
+
     await kv.del(`class:${classId}`);
 
+    // Remove the class from teachers' assignments and release its students, so nothing keeps listing it.
     try {
-      const supabaseAdmin = getSupabaseClient(true);
+      await supabaseAdmin.from('teacher_class_assignments').delete().eq('class_id', classId);
+      const { data: students } = await supabaseAdmin
+        .from('kv_store_fc8eb847')
+        .select('key, value')
+        .like('key', 'user:%')
+        .eq('value->>classId', classId);
+      for (const row of students || []) {
+        await kv.set(row.key, { ...row.value, classId: null, className: null });
+      }
+      await supabaseAdmin.from('users').update({ class_id: null }).eq('class_id', classId);
+    } catch (err) {
+      console.log('Class delete cleanup fallback:', err);
+    }
+
+    try {
       await supabaseAdmin.from('classes').delete().eq('id', classId);
     } catch (err) {
       console.log('Postgres class delete error fallback:', err);
@@ -4098,15 +4137,31 @@ app.post('/make-server-fc8eb847/access-request/create', async (c) => {
       return c.json({ error: 'Forbidden - Parent access required' }, 403);
     }
 
-    // Find child by email (using fast index if available)
+    // A student code (JM-XXXX-XXXX) works in place of an email, for children who sign in with a code
     let child = null;
-    const childId = await kv.get(`email:${childEmail.toLowerCase()}`);
-    if (childId) {
-      child = await kv.get(`user:${childId}`);
+    const identifier = String(childEmail || '').trim();
+    const isStudentCode = /^JM-[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(identifier);
+    if (isStudentCode) {
+      const { data: codeRow } = await getSupabaseClient(true)
+        .from('student_codes')
+        .select('user_id')
+        .eq('code', identifier.toUpperCase())
+        .eq('is_active', true)
+        .is('revoked_at', null)
+        .maybeSingle();
+      if (codeRow?.user_id) {
+        child = await kv.get(`user:${codeRow.user_id}`);
+        if (child && !child.id) child.id = codeRow.user_id;
+      }
+    } else {
+      const childId = await kv.get(`email:${identifier.toLowerCase()}`);
+      if (childId) {
+        child = await kv.get(`user:${childId}`);
+      }
     }
     
     // Fallback if index misses
-    if (!child) {
+    if (!child && !isStudentCode) {
       console.log(`[Access Request] Cache miss for ${childEmail}, falling back to targeted query`);
       const supabase = getSupabaseClient(true);
       const { data } = await supabase.from('kv_store_fc8eb847').select('key, value').like('key', 'user:%').ilike('value->>email', childEmail.toLowerCase()).maybeSingle();
@@ -4122,7 +4177,7 @@ app.post('/make-server-fc8eb847/access-request/create', async (c) => {
     }
 
     if (!child) {
-      return c.json({ error: 'Student not found. Please check the email address.' }, 404);
+      return c.json({ error: 'Student not found. Please check the email address or student code.' }, 404);
     }
 
     if (child.role !== 'student') {
