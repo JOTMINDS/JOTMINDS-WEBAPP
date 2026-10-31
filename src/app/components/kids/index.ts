@@ -15,3 +15,6 @@ export { ParentPINGate, SetupParentPIN } from './ParentPINGate';
 export { ProgressFlow, TimeRemaining, MotivationalProgress } from './ProgressFlow';
 export { KidsModeWrapper } from './KidsModeWrapper';
 export { KidsStickerBook } from './KidsStickerBook';
+export { KidsMyProfile } from './KidsMyProfile';
+export { SoundToggleButton, SoundSettingsPanel } from './KidsSoundSettings';
+export { kidsSound, useKidsSound } from './kidsSound';
