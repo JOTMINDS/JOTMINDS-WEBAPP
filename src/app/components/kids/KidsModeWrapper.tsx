@@ -41,8 +41,8 @@ export function KidsModeWrapper({ user, onLogout }: KidsModeWrapperProps) {
 
   // Sound settings (sounds, read-aloud, voice) belong to the child, not the device.
   useLayoutEffect(() => {
-    kidsSound.setChild(user.id);
-  }, [user.id]);
+    kidsSound.setChild(user.id, user.kidsSound ?? null);
+  }, [user.id, user.kidsSound?.updatedAt]);
 
   // Force light mode for Kids Mode (remove dark class from html element)
   useEffect(() => {

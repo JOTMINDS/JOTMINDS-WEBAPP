@@ -1,8 +1,10 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { soundManager } from './SoundFeedback';
+import { updateUserProfile } from '../../utils/api';
 
 /**
- * Sound settings for Kids Mode, remembered per child on this device, plus the narration voice
+ * Sound settings for Kids Mode, remembered per child (on this device and on the child's account,
+ * so they follow the child to other devices), plus the narration voice
  * logic shared by every screen that reads aloud.
  *
  * Why the voice used to differ between accounts: the voice was picked inside speak(), from
@@ -20,9 +22,13 @@ export interface KidsSoundSettings {
   narration: boolean;
   /** voiceURI of the voice this child picked; null means "use the best default". */
   voiceURI: string | null;
+  /** The picked voice's friendly name, so another device can find the same voice. */
+  voiceName: string | null;
+  /** When the child last changed a setting; the newer copy (device or account) wins. */
+  updatedAt: string | null;
 }
 
-const DEFAULT_SETTINGS: KidsSoundSettings = { effects: true, narration: true, voiceURI: null };
+const DEFAULT_SETTINGS: KidsSoundSettings = { effects: true, narration: true, voiceURI: null, voiceName: null, updatedAt: null };
 const GUEST_ID = 'guest';
 const LEGACY_MUTE_KEY = 'kids_sound_muted';
 
@@ -39,23 +45,26 @@ let loadedFor: string | null = null;
 let current: KidsSoundSettings = DEFAULT_SETTINGS;
 const listeners = new Set<Listener>();
 
+function normalise(parsed: any): KidsSoundSettings {
+  return {
+    effects: parsed?.effects !== false,
+    narration: parsed?.narration !== false,
+    voiceURI: typeof parsed?.voiceURI === 'string' ? parsed.voiceURI : null,
+    voiceName: typeof parsed?.voiceName === 'string' ? parsed.voiceName : null,
+    updatedAt: typeof parsed?.updatedAt === 'string' ? parsed.updatedAt : null,
+  };
+}
+
 function readSettings(childId: string): KidsSoundSettings {
   try {
     const raw = localStorage.getItem(storageKey(childId));
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        effects: parsed.effects !== false,
-        narration: parsed.narration !== false,
-        voiceURI: typeof parsed.voiceURI === 'string' ? parsed.voiceURI : null,
-      };
-    }
+    if (raw) return normalise(JSON.parse(raw));
     // One-time hand-over from the old device-wide mute flag. The first child to open Kids Mode
     // after the update takes it, so it never leaks to the next child on a shared device.
     const legacy = localStorage.getItem(LEGACY_MUTE_KEY);
     if (legacy !== null) {
       const on = legacy !== 'true';
-      const migrated = { ...DEFAULT_SETTINGS, effects: on, narration: on };
+      const migrated: KidsSoundSettings = { ...DEFAULT_SETTINGS, effects: on, narration: on };
       localStorage.setItem(storageKey(childId), JSON.stringify(migrated));
       localStorage.removeItem(LEGACY_MUTE_KEY);
       return migrated;
@@ -77,24 +86,62 @@ function commit(next: KidsSoundSettings) {
   listeners.forEach(listener => listener());
 }
 
+function saveLocal(childId: string, settings: KidsSoundSettings) {
+  try {
+    localStorage.setItem(storageKey(childId), JSON.stringify(settings));
+  } catch {
+    // Not remembered on this device, but still applies for this visit.
+  }
+}
+
+// Saves the child's settings to their account a moment after the last change.
+let pushTimer: ReturnType<typeof setTimeout> | undefined;
+function pushToAccount(childId: string) {
+  if (childId === GUEST_ID) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    updateUserProfile({ kidsSound: { ...current, updatedAt: current.updatedAt || new Date().toISOString() } }).catch(() => {
+      // Offline or signed out: the device copy is kept and the next change tries again.
+    });
+  }, 800);
+}
+
+const stamp = (s: KidsSoundSettings) => Date.parse(s.updatedAt || '') || 0;
+
+// Compares this device's copy with the one on the child's account: the newer one wins.
+function reconcile(childId: string, remote: unknown) {
+  if (childId === GUEST_ID) return;
+  const remoteSettings = remote && typeof remote === 'object' ? normalise(remote) : null;
+  const remoteAt = remoteSettings ? stamp(remoteSettings) : 0;
+  const localAt = stamp(current);
+  if (remoteSettings && remoteAt > localAt) {
+    saveLocal(childId, remoteSettings);
+    commit(remoteSettings);
+  } else if (localAt > remoteAt) {
+    pushToAccount(childId);
+  }
+}
+
 export const kidsSound = {
-  /** Switch to a child's saved settings. Safe to call repeatedly with the same id. */
-  setChild(childId?: string | null) {
+  /**
+   * Switch to a child's saved settings. Safe to call repeatedly with the same id. Pass the
+   * settings stored on the child's account (when known) so the newer copy is used.
+   */
+  setChild(childId?: string | null, remote?: unknown) {
     const id = childId || GUEST_ID;
-    if (id === loadedFor) return;
-    loadedFor = id;
-    activeChildId = id;
-    commit(readSettings(id));
+    if (id !== loadedFor) {
+      loadedFor = id;
+      activeChildId = id;
+      commit(readSettings(id));
+    }
+    if (remote !== undefined) reconcile(id, remote);
   },
   get: () => current,
   update(patch: Partial<KidsSoundSettings>) {
-    const next = { ...current, ...patch };
-    try {
-      localStorage.setItem(storageKey(activeChildId), JSON.stringify(next));
-    } catch {
-      // Not remembered, but still applies for this visit.
-    }
+    const next = { ...current, ...patch, updatedAt: new Date().toISOString() };
+    saveLocal(activeChildId, next);
     commit(next);
+    pushToAccount(activeChildId);
   },
   subscribe(listener: Listener) {
     listeners.add(listener);
@@ -205,10 +252,16 @@ export function getVoiceOptions(voices: SpeechSynthesisVoice[], limit = 4): Spee
 }
 
 /** The child's saved voice if this device still has it, otherwise the best default. */
-export function resolveVoice(voices: SpeechSynthesisVoice[], voiceURI: string | null): SpeechSynthesisVoice | undefined {
+export function resolveVoice(voices: SpeechSynthesisVoice[], voiceURI: string | null, voiceName?: string | null): SpeechSynthesisVoice | undefined {
   if (voiceURI) {
     const saved = voices.find(v => v.voiceURI === voiceURI);
     if (saved) return saved;
+  }
+  // A voice picked on another device: the same name usually exists here too.
+  if (voiceName) {
+    const wanted = voiceName.toLowerCase();
+    const sameName = getVoiceOptions(voices, voices.length).find(v => friendlyVoiceName(v).toLowerCase() === wanted);
+    if (sameName) return sameName;
   }
   return getVoiceOptions(voices, 1)[0] ?? voices.find(isEnglish) ?? voices[0];
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -21,7 +21,8 @@ import { formatDate } from '../utils/dateFormat';
 import { generatePDF } from '../utils/pdfGenerator';
 import { toast } from 'sonner';
 import { diagnoseStudentRisk } from '../utils/riskDiagnostic';
-import { buildStudentStrategies } from '../utils/studentStrategies';
+import { buildStudentStrategies, StrategyItem } from '../utils/studentStrategies';
+import { writeStudentTeachingPlan } from '../utils/aiService';
 import { InfoTip } from './ui/info-tip';
 
 interface StudentDetailViewProps {
@@ -98,7 +99,7 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
     ? (latestDecision.score?.dualProcess?.style || (latestDecision.score as any)?.decision?.style || latestDecision.score?.['dual-process']?.style || '')
     : '';
 
-  const { strategies: teachingStrategies, support: supportItems } = buildStudentStrategies({
+  const strategyInput = {
     firstName: (student.name || 'This student').split(' ')[0],
     kolb: latestLearning ? { ce, ro, ac, ae, style: latestLearning.score?.kolb?.style || (latestLearning.score as any)?.learning?.style } : undefined,
     thinkingStyle,
@@ -107,7 +108,29 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
     engagementScore: diagnostic.metrics.engagementScore,
     daysSinceLastActive: diagnostic.metrics.daysSinceLastActive,
     completedCount: diagnostic.metrics.completedCount,
-  });
+  };
+  // Worked out from the results first; the suggestions below are written from the same data.
+  const { strategies: teachingStrategies, support: supportItems } = buildStudentStrategies(strategyInput);
+
+  const [writtenPlan, setWrittenPlan] = useState<{ strategies: StrategyItem[]; support: StrategyItem[] } | null>(null);
+  const [writingPlan, setWritingPlan] = useState(true);
+  const planKey = JSON.stringify(strategyInput);
+  useEffect(() => {
+    let cancelled = false;
+    if (teachingStrategies.length === 0 && supportItems.length === 0) {
+      setWrittenPlan(null);
+      setWritingPlan(false);
+      return;
+    }
+    setWritingPlan(true);
+    setWrittenPlan(null);
+    writeStudentTeachingPlan(strategyInput, { strategies: teachingStrategies, support: supportItems }, (student as any).educationLevel)
+      .then(plan => { if (!cancelled) setWrittenPlan(plan); })
+      .finally(() => { if (!cancelled) setWritingPlan(false); });
+    return () => { cancelled = true; };
+  }, [planKey]);
+  const shownStrategies = writtenPlan?.strategies ?? teachingStrategies;
+  const shownSupport = writtenPlan ? writtenPlan.support : supportItems;
 
   return (
     <div className="space-y-6">
@@ -720,9 +743,11 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
               <InfoTip>Ideas built from this student's own scores and recent activity. Each one shows the result it comes from.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {teachingStrategies.length > 0 ? (
+              {writingPlan ? (
+                <p className="text-sm text-muted-foreground animate-pulse">Preparing suggestions for {strategyInput.firstName}…</p>
+              ) : shownStrategies.length > 0 ? (
                 <div className="space-y-3">
-                  {teachingStrategies.map((strategy, index) => (
+                  {shownStrategies.map((strategy, index) => (
                     <div key={index} className="flex gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
                       <div className="flex-shrink-0 mt-0.5">
                         <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold">
@@ -755,9 +780,11 @@ export function StudentDetailView({ student, assessments, onBack, initialTab = '
               <InfoTip>Where this student's results suggest extra help.</InfoTip></CardTitle>
             </CardHeader>
             <CardContent>
-              {supportItems.length > 0 ? (
+              {writingPlan ? (
+                <p className="text-sm text-muted-foreground animate-pulse">Preparing…</p>
+              ) : shownSupport.length > 0 ? (
                 <ul className="space-y-3">
-                  {supportItems.map((item, index) => (
+                  {shownSupport.map((item, index) => (
                     <li key={index} className="flex gap-2 text-sm">
                       <span className="text-orange-600">•</span>
                       <div className="min-w-0">

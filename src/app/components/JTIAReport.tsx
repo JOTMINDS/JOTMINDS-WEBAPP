@@ -883,14 +883,6 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
                   <h3 className="text-lg font-bold text-white">
                     Personalised Development Pathway<InfoTip>Suggested next steps, in order, to build the skills you chose to focus on.</InfoTip>
                   </h3>
-                  <Badge
-                    variant="outline"
-                    className="bg-purple-500/20 text-purple-200 border-purple-500/30 text-xs"
-                  >
-                    {aiRecommendations
-                      ? "Live Strategy Variations"
-                      : "Algorithmic Guidance"}
-                  </Badge>
                 </div>
                 <p className="text-sm text-purple-200">
                   Resources, classroom activities, coaching and growth pathways
@@ -925,7 +917,7 @@ export const JTIAReport: React.FC<JTIAReportProps> = ({
               ) : (
                 <RefreshCw className="w-3.5 h-3.5" />
               )}
-              {isLoadingAi ? "Generating..." : "Generate Variations"}
+              {isLoadingAi ? "Refreshing..." : "Refresh ideas"}
             </Button>
           </div>
 

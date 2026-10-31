@@ -149,6 +149,7 @@ export const updateUserProfile = async (updates: Partial<{
   classCode: string;
   avatarUrl: string;
   isVerified: boolean;
+  kidsSound: { effects: boolean; narration: boolean; voiceURI?: string | null; voiceName?: string | null; updatedAt?: string };
 }>) => {
   return makeRequest('/user/profile', {
     method: 'PATCH',

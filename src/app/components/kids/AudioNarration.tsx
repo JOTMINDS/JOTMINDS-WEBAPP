@@ -98,7 +98,7 @@ export function AudioNarration({
       const voices = await loadVoices();
       if (requestId !== requestRef.current) return;
 
-      const preferredVoice = resolveVoice(voices, kidsSound.get().voiceURI);
+      const preferredVoice = resolveVoice(voices, kidsSound.get().voiceURI, kidsSound.get().voiceName);
 
       if (preferredVoice) {
         utterance.voice = preferredVoice;
