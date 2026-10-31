@@ -108,6 +108,8 @@ export interface User {
   reviews?: SupervisorReviewData[];
   avatarUrl?: string; // Profile photo (data URL) — shown to the user and their linked parent
   studentCode?: string; // Unique code for institutional students (e.g. JM-7K42-XP91)
+  /** Kids Mode sound and voice choices, kept on the account so they follow the child across devices */
+  kidsSound?: { effects: boolean; narration: boolean; voiceURI?: string | null; voiceName?: string | null; updatedAt?: string };
 }
 
 

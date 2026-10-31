@@ -74,10 +74,10 @@ function SwitchRow({ icon, label, on, onChange }: { icon: string; label: string;
 
 /** Sound effects, read-aloud and voice choice for the child who is signed in. */
 export function SoundSettingsPanel({ onClose }: { onClose: () => void }) {
-  const { effects, narration, voiceURI } = useKidsSound();
+  const { effects, narration, voiceURI, voiceName } = useKidsSound();
   const voices = useVoices();
   const options = getVoiceOptions(voices);
-  const chosen = resolveVoice(voices, voiceURI);
+  const chosen = resolveVoice(voices, voiceURI, voiceName);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -86,7 +86,7 @@ export function SoundSettingsPanel({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   const pickVoice = (voice: SpeechSynthesisVoice) => {
-    kidsSound.update({ voiceURI: voice.voiceURI });
+    kidsSound.update({ voiceURI: voice.voiceURI, voiceName: friendlyVoiceName(voice) });
     soundManager.play('pop');
     previewVoice(voice, 'Hi! I can read to you.');
   };

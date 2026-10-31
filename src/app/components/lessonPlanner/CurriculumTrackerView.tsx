@@ -422,7 +422,7 @@ export const CurriculumTrackerView: React.FC<CurriculumTrackerViewProps> = ({ pl
                       </Button>
                     )}
                     <Button size="sm" variant="outline" onClick={handleAutoGenerate} disabled={isGenerating} className="text-xs">
-                      {isGenerating ? <Loader className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />} Suggest with AI
+                      {isGenerating ? <Loader className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />} Suggest topics
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setAdding(true)} className="text-xs">Add my own</Button>
                   </div>
