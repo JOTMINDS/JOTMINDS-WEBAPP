@@ -92,11 +92,11 @@ export interface AIInsightsResponse {
 /**
  * Helper to call our Cloudflare Pages proxy
  */
-async function callOpenAI(messages: any[], isJson = false, maxTokens = 1200) {
+async function callOpenAI(messages: any[], isJson = false, maxTokens = 1200, temperature = 0.9) {
   const body: any = {
     model: 'gpt-4o-mini',
     messages,
-    temperature: 0.9,
+    temperature,
     max_tokens: maxTokens
   };
   if (isJson) {
@@ -1648,3 +1648,173 @@ Return strictly a JSON object with:
   return fallback;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Recommendations written for one student or one school
+// ─────────────────────────────────────────────────────────────
+
+import type { StudentStrategyInput, StrategyItem } from './studentStrategies';
+import type { StudentRecommendation, StudentCognitiveProfile } from './teacherIntelligence';
+import type { StyleFit } from './teachingAlignment';
+
+/**
+ * Every recommendation shown to a teacher or school leader is written from the data in front of
+ * it. These rules keep the wording specific, plain and free of any mention of how it was made.
+ */
+const RECOMMENDATION_RULES = `Writing rules:
+- Write for a busy teacher in plain, warm, professional English. Short sentences. No jargon.
+- Every item must be specific to the data given. If it could be said about any student or any school, leave it out.
+- Name the student by first name where it reads naturally. Quote the real numbers or results that led to each suggestion.
+- Suggest things a teacher can do this week in an ordinary classroom with few resources.
+- Never mention AI, artificial intelligence, algorithms, models, prompts, or that the text was generated or written by a tool.
+- Never use the words "Accommodating", "Assimilating", "Converging" or "Diverging" on their own; use plain descriptions of how the student learns.
+- Do not label anything as a score out of a made-up scale. Use only numbers given in the data.`;
+
+function stableKey(prefix: string, value: unknown): string {
+  const text = JSON.stringify(value);
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  return `${prefix}_${(hash >>> 0).toString(36)}`;
+}
+
+async function writeJSON<T>(system: string, user: string, maxTokens: number): Promise<T | null> {
+  try {
+    const res = await callOpenAI(
+      [{ role: 'system', content: `${system}\n\n${RECOMMENDATION_RULES}` }, { role: 'user', content: user }],
+      true,
+      maxTokens,
+      0.6,
+    );
+    return res ? (JSON.parse(res) as T) : null;
+  } catch (error) {
+    console.warn('Could not write recommendations, using the data-based version instead:', error);
+    return null;
+  }
+}
+
+const cleanItems = (value: unknown, max: number): StrategyItem[] =>
+  (Array.isArray(value) ? value : [])
+    .map((x: any) => ({ title: String(x?.title || '').trim(), action: String(x?.action || '').trim(), evidence: String(x?.evidence || '').trim() }))
+    .filter(x => x.title && x.action && x.evidence)
+    .slice(0, max);
+
+const cleanLines = (value: unknown, max: number): string[] =>
+  (Array.isArray(value) ? value : []).map((x: any) => String(x || '').trim()).filter(Boolean).slice(0, max);
+
+/** Teaching strategies and support areas for one student, from their results and recent activity. */
+export async function writeStudentTeachingPlan(
+  input: StudentStrategyInput,
+  groundwork: { strategies: StrategyItem[]; support: StrategyItem[] },
+  educationLevel?: string,
+): Promise<{ strategies: StrategyItem[]; support: StrategyItem[] } | null> {
+  const cacheKey = stableKey('teach_plan', { input, educationLevel });
+  const cached = getCachedAIResult<{ strategies: StrategyItem[]; support: StrategyItem[] }>(cacheKey);
+  if (cached) return cached;
+
+  const kolbModes = input.kolb ? `Learning modes (each out of 48): Concrete Experience ${input.kolb.ce}, Reflective Observation ${input.kolb.ro}, Abstract Conceptualization ${input.kolb.ac}, Active Experimentation ${input.kolb.ae}.` : 'The learning-style assessment has not been taken.';
+  const data = `Student first name: ${input.firstName}
+Education level: ${educationLevel || 'not stated'}
+${kolbModes}
+Thinking style: ${input.thinkingStyle || 'not assessed'}
+Decision style: ${input.decisionStyle || 'not assessed'}${input.decisionBalanceScore != null ? ` (balance ${Math.round(input.decisionBalanceScore)}/100)` : ''}
+Engagement score: ${input.engagementScore ?? 'unknown'}/100
+Days since last active: ${input.daysSinceLastActive ?? 'unknown'}
+Assessments completed: ${input.completedCount} of 3 core assessments
+
+Draft notes already worked out from the data (improve on these, do not just repeat them):
+${JSON.stringify(groundwork)}`;
+
+  const result = await writeJSON<{ strategies?: unknown; support?: unknown }>(
+    'You advise teachers on how to teach one particular student, using that student\'s own assessment results.',
+    `${data}
+
+Return strictly JSON: {"strategies":[{"title":"short heading","action":"1-2 sentences saying exactly what to do in class","evidence":"the specific result or number this comes from"}],"support":[{"title":"","action":"","evidence":""}]}
+Give 4 to 5 strategies and 1 to 3 support items (only where the data shows a real gap; use an empty list if there is none).`,
+    1100,
+  );
+  if (!result) return null;
+  const strategies = cleanItems(result.strategies, 5);
+  if (strategies.length === 0) return null;
+  const plan = { strategies, support: cleanItems(result.support, 3) };
+  setCachedAIResult(cacheKey, plan);
+  return plan;
+}
+
+/** Recommendations for one student in a class (teaching, activities, assessment, support, extension, home). */
+export async function writeClassroomStudentPlan(
+  student: StudentCognitiveProfile,
+  baseline: StudentRecommendation,
+): Promise<StudentRecommendation | null> {
+  const cacheKey = stableKey('class_student_plan', { id: student.userId, s: student.cognitiveScores, a: student.archetype, l: student.learningStyle, t: student.thinkingStyle, d: student.decisionStyle });
+  const cached = getCachedAIResult<StudentRecommendation['recommendations'] & { homeSupport: string[] }>(cacheKey);
+  const build = (r: StudentRecommendation['recommendations'] & { homeSupport: string[] }): StudentRecommendation => ({
+    ...baseline,
+    recommendations: {
+      teachingApproaches: r.teachingApproaches,
+      learningActivities: r.learningActivities,
+      assessmentMethods: r.assessmentMethods,
+      supportStrategies: r.supportStrategies,
+      extensionActivities: r.extensionActivities,
+    },
+    parentCommunication: { ...baseline.parentCommunication, homeSupport: r.homeSupport },
+  });
+  if (cached) return build(cached);
+
+  const first = (student.studentName || 'The student').split(' ')[0];
+  const result = await writeJSON<Record<string, unknown>>(
+    'You advise a classroom teacher on one student, using that student\'s measured cognitive profile.',
+    `Student first name: ${first}
+Age ${student.age}, ${student.grade}
+Profile type: ${student.archetype}
+Preferred learning style: ${student.learningStyle}; thinking style: ${student.thinkingStyle}; decision style: ${student.decisionStyle}
+Cognitive profile (each 0 to 100): learning agility ${student.cognitiveScores.learningAgility}, analytical depth ${student.cognitiveScores.analyticalDepth}, creative capacity ${student.cognitiveScores.creativeCapacity}, practical execution ${student.cognitiveScores.practicalExecution}, intuitive speed ${student.cognitiveScores.intuitiveSpeed}, reflective depth ${student.cognitiveScores.reflectiveDepth}
+Strengths noted: ${student.strengths.join('; ') || 'none noted'}
+Challenges noted: ${student.challenges.join('; ') || 'none noted'}
+
+Return strictly JSON with these keys. Each list item is ONE sentence that says what to do and why, and it must name the specific result it comes from with its number, for example "Because practical execution is 85, set a build-and-test task before any written work." An item that does not cite a result from the data above is not acceptable. Do not repeat the same idea in two lists.
+{"teachingApproaches":[3 to 4],"learningActivities":[3 to 4],"assessmentMethods":[2 to 3],"supportStrategies":[2 to 3, only if the data shows a need],"extensionActivities":[2 to 3, only if the data shows strength],"homeSupport":[2 to 3 things a parent can do at home]}`,
+    1100,
+  );
+  if (!result) return null;
+  const plan = {
+    teachingApproaches: cleanLines(result.teachingApproaches, 4),
+    learningActivities: cleanLines(result.learningActivities, 4),
+    assessmentMethods: cleanLines(result.assessmentMethods, 3),
+    supportStrategies: cleanLines(result.supportStrategies, 3),
+    extensionActivities: cleanLines(result.extensionActivities, 3),
+    homeSupport: cleanLines(result.homeSupport, 3),
+  };
+  if (plan.teachingApproaches.length === 0) return null;
+  setCachedAIResult(cacheKey, plan);
+  return build(plan);
+}
+
+/** One piece of advice per student style that the school's teaching suits least well. */
+export async function writeAlignmentAdvice(
+  rows: StyleFit[],
+  context: { teachers: number; students: number },
+): Promise<Record<string, string> | null> {
+  if (rows.length === 0) return null;
+  const cacheKey = stableKey('alignment_advice', { rows, context });
+  const cached = getCachedAIResult<Record<string, string>>(cacheKey);
+  if (cached) return cached;
+
+  const result = await writeJSON<{ advice?: Record<string, unknown> }>(
+    'You advise school leaders on where the school\'s teaching does not yet suit its students, using real results from the school.',
+    `The school has ${context.teachers} teachers with a Teaching Insights result and ${context.students} students.
+These student styles are served least well by the current teaching (fit is 0 to 100, higher means the teaching suits that style better):
+${rows.map(r => `- ${r.style} (${r.dimension.toLowerCase()} style): ${r.students} students, fit ${r.fit}`).join('\n')}
+
+Return strictly JSON: {"advice":{"<only the style name, for example Creative>":"2 sentences: what teachers should change in lessons for these students, mentioning the number of students and the fit"}}`,
+    700,
+  );
+  // Match the model's labels back to our style names even if it adds words like "(thinking style)".
+  const written = Object.entries(result?.advice || {}).filter(([, text]) => typeof text === 'string' && (text as string).trim());
+  const advice: Record<string, string> = {};
+  rows.forEach(r => {
+    const hit = written.find(([label]) => label.toLowerCase().includes(r.style.toLowerCase()));
+    if (hit) advice[r.style] = (hit[1] as string).trim();
+  });
+  if (Object.keys(advice).length === 0) return null;
+  setCachedAIResult(cacheKey, advice);
+  return advice;
+}

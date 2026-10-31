@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -24,13 +24,14 @@ import {
   Loader2,
   Sparkles,
 } from 'lucide-react';
-import { generateAILessonPlan } from '../utils/aiService';
+import { generateAILessonPlan, writeClassroomStudentPlan } from '../utils/aiService';
 import {
   analyzeClassroom,
   generateClassroomInsights,
   generateStudentRecommendations,
   generateDifferentiatedLesson,
   type StudentCognitiveProfile,
+  type StudentRecommendation,
   type ClassroomDistribution,
   type ClassroomInsight,
 } from '../utils/teacherIntelligence';
@@ -523,7 +524,25 @@ function StudentRecommendationsModal({
   classmates: StudentCognitiveProfile[];
   onClose: () => void;
 }) {
-  const recommendations = generateStudentRecommendations(student, classmates);
+  const baseline = useMemo(() => generateStudentRecommendations(student, classmates), [student, classmates]);
+  const [written, setWritten] = useState<StudentRecommendation | null>(null);
+  const [writing, setWriting] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    setWriting(true);
+    setWritten(null);
+    writeClassroomStudentPlan(student, baseline)
+      .then(plan => { if (!cancelled) setWritten(plan); })
+      .finally(() => { if (!cancelled) setWriting(false); });
+    return () => { cancelled = true; };
+  }, [student.userId]);
+  const recommendations = written ?? baseline;
+  const extra: Array<{ title: string; items: string[]; tip: string }> = [
+    { title: 'Assessment Methods', items: recommendations.recommendations.assessmentMethods, tip: 'Ways to check this student\'s understanding that suit their profile.' },
+    { title: 'Support Strategies', items: recommendations.recommendations.supportStrategies, tip: 'Extra help where this student\'s results show a need.' },
+    { title: 'Stretch Activities', items: recommendations.recommendations.extensionActivities, tip: 'Ways to extend this student where they are strong.' },
+    { title: 'At Home', items: recommendations.parentCommunication.homeSupport, tip: 'Things a parent or guardian can do at home.' },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -538,6 +557,7 @@ function StudentRecommendationsModal({
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {writing && <p className="text-sm text-muted-foreground animate-pulse">Preparing recommendations for {(student.studentName || '').split(' ')[0]}…</p>}
           {/* Teaching Approaches */}
           <div>
             <h3 className="font-semibold mb-2 flex items-center gap-2">
@@ -569,6 +589,20 @@ function StudentRecommendationsModal({
               ))}
             </ul>
           </div>
+
+          {!writing && extra.filter(e => e.items.length > 0).map(e => (
+            <div key={e.title}>
+              <h3 className="font-semibold mb-2">{e.title}<InfoTip>{e.tip}</InfoTip></h3>
+              <ul className="space-y-1">
+                {e.items.map((item, i) => (
+                  <li key={i} className="text-sm flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-purple-600 mt-0.5" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
           {/* Peer Pairings */}
           {recommendations.peerPairingsSuggestions.length > 0 && (

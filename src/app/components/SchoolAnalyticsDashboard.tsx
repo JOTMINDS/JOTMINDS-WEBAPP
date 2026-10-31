@@ -21,7 +21,7 @@ import { extractDimensionScores } from '../utils/cognitiveXP';
 import { getAllAssessmentResults } from '../utils/api';
 import { normalizeServerResults } from '../utils/assessmentApi';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { generateSchoolAIInsights, SchoolAIInsightsResponse } from '../utils/aiService';
+import { generateSchoolAIInsights, SchoolAIInsightsResponse, writeAlignmentAdvice } from '../utils/aiService';
 import { StudentDetailView } from './StudentDetailView';
 import { InstitutionMember } from '../utils/institution';
 import { getFriendlyDimensionName, getFriendlyStyleName } from '../utils/styleWording';
@@ -618,6 +618,21 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
       .filter((a): a is Record<string, number> => !!a);
     return { teacherCount: axes.length, rows: computeTeachingFit(axes, Array.from(studentStylesById.values())) };
   }, [teacherSummaries, studentStylesById]);
+
+  // Advice for the student styles the teaching suits least, written from the school's own numbers
+  const attentionRows = useMemo(() => teachingFit.rows.filter(r => r.fit < 75).slice(0, 4), [teachingFit]);
+  const [fitAdvice, setFitAdvice] = useState<Record<string, string> | null>(null);
+  const [fitAdviceLoading, setFitAdviceLoading] = useState(false);
+  const attentionKey = JSON.stringify(attentionRows) + teachingFit.teacherCount + summaries.length;
+  useEffect(() => {
+    let cancelled = false;
+    if (attentionRows.length === 0) { setFitAdvice(null); setFitAdviceLoading(false); return; }
+    setFitAdviceLoading(true);
+    writeAlignmentAdvice(attentionRows, { teachers: teachingFit.teacherCount, students: summaries.length })
+      .then(advice => { if (!cancelled) setFitAdvice(advice); })
+      .finally(() => { if (!cancelled) setFitAdviceLoading(false); });
+    return () => { cancelled = true; };
+  }, [attentionKey]);
 
   // Each facilitator's own fit, using the students they teach (all students when none are linked yet).
   const fitByTeacher = useMemo(() => {
@@ -1763,7 +1778,7 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                         </p>
                       );
                     }
-                    const attention = teachingFit.rows.filter(r => r.fit < 75).slice(0, 4);
+                    const attention = attentionRows;
                     if (attention.length === 0) {
                       return (
                         <div className="p-4 bg-green-50 text-green-800 rounded-lg border border-green-100 text-sm">
@@ -1780,7 +1795,12 @@ export function SchoolAnalyticsDashboard({ user, onBack, embedded, institutionMe
                             {r.students} {r.students === 1 ? 'student' : 'students'} · {fitTone(r.fit).label}
                           </Badge>
                         </div>
-                        <p className="text-xs text-blue-800">{STYLE_TEACHING_ADVICE[r.style] || `Provide more opportunities for students to use their ${r.style} strengths.`}</p>
+                        <p className="text-xs text-blue-800">
+                          {fitAdvice?.[r.style]
+                            ?? (fitAdviceLoading
+                              ? 'Preparing advice…'
+                              : STYLE_TEACHING_ADVICE[r.style] || `Provide more opportunities for students to use their ${r.style} strengths.`)}
+                        </p>
                       </div>
                     ));
                   })()

@@ -264,9 +264,6 @@ export const JTIASchoolDashboard: React.FC<JTIASchoolDashboardProps> = ({
                   <Target className="w-5 h-5 text-amber-600" />
                   Evidence-Based PD Priorities
                 <InfoTip>Professional development topics recommended from the biggest capability gaps across your school.</InfoTip></CardTitle>
-                <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 text-xs">
-                  {aiPdPriorities ? 'Live School Strategy' : 'Algorithmic Priorities'}
-                </Badge>
               </div>
               <CardDescription className="mt-1">
                 Recommended school-wide professional development programmes based on aggregated capability gaps.

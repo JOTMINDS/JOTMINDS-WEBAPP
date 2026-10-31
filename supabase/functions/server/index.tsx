@@ -2217,6 +2217,32 @@ app.post('/make-server-fc8eb847/signin', async (c) => {
 });
 
 // Get current session
+// A student's teacher is stored as an id. Work out the class teacher's name (or the linked teacher's)
+// so the student's School Portal can show it, including for students added by class code.
+async function resolveTeacherName(student: any): Promise<string | null> {
+  try {
+    let teacherId: string | undefined = student.teacherId;
+    if (student.classId) {
+      const kvClass = await kv.get(`class:${student.classId}`);
+      let classTeacherId: string | undefined = kvClass?.classTeacherId;
+      if (!classTeacherId) {
+        const { data } = await getSupabaseClient(true)
+          .from('classes')
+          .select('class_teacher_id')
+          .eq('id', student.classId)
+          .maybeSingle();
+        classTeacherId = data?.class_teacher_id || undefined;
+      }
+      if (classTeacherId) teacherId = classTeacherId;
+    }
+    if (!teacherId) return null;
+    const teacher = await kv.get(`user:${teacherId}`);
+    return teacher?.name || null;
+  } catch {
+    return null;
+  }
+}
+
 app.get('/make-server-fc8eb847/session', async (c) => {
   try {
     const user = await verifyAuth(c.req.raw);
@@ -2268,6 +2294,11 @@ app.get('/make-server-fc8eb847/session', async (c) => {
       console.log('[Session] Role normalization:', originalRole, '->', normalizedRole);
     }
     
+    if (String(userData.role || '').toLowerCase() === 'student' && !userData.teacherName) {
+      const teacherName = await resolveTeacherName(userData);
+      if (teacherName) userData.teacherName = teacherName;
+    }
+
     return c.json({ 
       success: true,
       user: userData
@@ -2330,6 +2361,20 @@ app.patch('/make-server-fc8eb847/user/profile', async (c) => {
     const updates: Record<string, any> = {};
     for (const field of ALLOWED_PROFILE_FIELDS) {
       if (field in rawUpdates) updates[field] = rawUpdates[field];
+    }
+
+    // A child's sound and voice choices follow them across devices. Only these fields are
+    // kept, and each is checked, so the object cannot carry anything else into the profile.
+    if (rawUpdates.kidsSound && typeof rawUpdates.kidsSound === 'object') {
+      const ks = rawUpdates.kidsSound;
+      const stamp = typeof ks.updatedAt === 'string' && !isNaN(Date.parse(ks.updatedAt)) ? ks.updatedAt : new Date().toISOString();
+      updates.kidsSound = {
+        effects: ks.effects !== false,
+        narration: ks.narration !== false,
+        voiceURI: typeof ks.voiceURI === 'string' ? ks.voiceURI.slice(0, 300) : null,
+        voiceName: typeof ks.voiceName === 'string' ? ks.voiceName.slice(0, 100) : null,
+        updatedAt: stamp,
+      };
     }
 
     console.log(`Updating profile for user ${user.id}:`, updates);
