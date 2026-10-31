@@ -954,7 +954,7 @@ export function KidsAssessment({ type, onComplete, onBack }: KidsAssessmentProps
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'linear-gradient(135deg, #667eea15 0%, #FF6B9D15 50%, #FEC16330 100%)' }}>
       <div className="max-w-6xl w-full">
         {/* Simple Header - Just back button and stars */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           {/* Back Button */}
           <motion.button
             onClick={onBack}
@@ -965,8 +965,8 @@ export function KidsAssessment({ type, onComplete, onBack }: KidsAssessmentProps
             <ArrowLeft className="w-8 h-8 text-gray-700" />
           </motion.button>
 
-          {/* Stars Progress (1 of 5) */}
-          <div className="flex items-center gap-3">
+          {/* Stars Progress (1 of 5). Own row on phones so the header never scrolls sideways. */}
+          <div className="flex items-center justify-center gap-3 order-last w-full sm:order-none sm:w-auto">
             {[...Array(questions.length)].map((_, i) => (
               <motion.div
                 key={i}
