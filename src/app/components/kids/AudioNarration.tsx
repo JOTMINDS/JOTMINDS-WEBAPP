@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2 } from 'lucide-react';
+import { kidsSound, useKidsSound, loadVoices, resolveVoice, cancelSpeech, speechSupported } from './kidsSound';
 
 interface AudioNarrationProps {
   text: string;
@@ -9,28 +10,6 @@ interface AudioNarrationProps {
   voice?: 'child' | 'adult';
   rate?: number;
   onComplete?: () => void;
-}
-
-/**
- * Picks a warm, natural English voice for children's narration.
- * Browsers rarely label voices "female" or "child", so rank well-known friendly voices
- * by name, then fall back to any English voice, then the first voice available.
- */
-const FRIENDLY_VOICE_NAMES = [
-  'samantha', 'ava', 'allison', 'karen', 'tessa', 'moira', 'serena', 'google uk english female',
-  'google us english', 'aria', 'jenny', 'sonia', 'libby', 'zira',
-];
-
-function pickKidsVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
-  const english = voices.filter(v => v.lang?.toLowerCase().startsWith('en'));
-  const pool = english.length ? english : voices;
-  for (const name of FRIENDLY_VOICE_NAMES) {
-    const matches = pool.filter(v => v.name.toLowerCase().includes(name));
-    // Prefer natural/enhanced variants of the same voice
-    const best = matches.find(v => /natural|enhanced|premium/i.test(v.name)) || matches[0];
-    if (best) return best;
-  }
-  return pool[0];
 }
 
 export function AudioNarration({
@@ -44,13 +23,17 @@ export function AudioNarration({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  // Bumped on every speak/stop so a request that was waiting for voices can tell it is stale.
+  const requestRef = useRef(0);
+  const { narration } = useKidsSound();
 
   useEffect(() => {
     // Check if speech synthesis is supported
-    setIsSupported('speechSynthesis' in window);
+    setIsSupported(speechSupported());
 
     return () => {
-      // Cleanup on unmount
+      // Cleanup on unmount; also drops a read-aloud still waiting for voices
+      requestRef.current++;
       try {
         if (window.speechSynthesis && window.speechSynthesis.speaking) {
           window.speechSynthesis.cancel();
@@ -62,8 +45,17 @@ export function AudioNarration({
     };
   }, []);
 
+  // Sound turned off for this child: stop whatever is being read right now.
   useEffect(() => {
-    if (autoPlay && isSupported && text) {
+    if (!narration) {
+      requestRef.current++;
+      cancelSpeech();
+      setIsSpeaking(false);
+    }
+  }, [narration]);
+
+  useEffect(() => {
+    if (autoPlay && isSupported && text && narration) {
       // Add a small delay for autoplay to prevent conflicts
       const timer = setTimeout(() => {
         speak();
@@ -71,10 +63,12 @@ export function AudioNarration({
       
       return () => clearTimeout(timer);
     }
-  }, [text, autoPlay, isSupported]);
+  }, [text, autoPlay, isSupported, narration]);
 
-  const speak = () => {
-    if (!isSupported || !text) return;
+  const speak = async () => {
+    if (!isSupported || !text || !kidsSound.get().narration) return;
+
+    const requestId = ++requestRef.current;
 
     try {
       // Cancel any ongoing speech
@@ -98,14 +92,17 @@ export function AudioNarration({
       }
 
       const utterance = new SpeechSynthesisUtterance(cleanText);
-      
-      // Try to find a suitable voice
-      const voices = window.speechSynthesis.getVoices();
-      
-      const preferredVoice = pickKidsVoice(voices);
+
+      // Wait for the browser's voice list. Asking too early returns nothing, which used to
+      // leave the browser's default voice in charge.
+      const voices = await loadVoices();
+      if (requestId !== requestRef.current) return;
+
+      const preferredVoice = resolveVoice(voices, kidsSound.get().voiceURI);
 
       if (preferredVoice) {
         utterance.voice = preferredVoice;
+        utterance.lang = preferredVoice.lang;
       }
 
       // Slower, clearer speech for children
@@ -135,7 +132,9 @@ export function AudioNarration({
       
       // Small delay to ensure cancel completes before speaking
       setTimeout(() => {
-        window.speechSynthesis.speak(utterance);
+        if (requestId === requestRef.current && kidsSound.get().narration) {
+          window.speechSynthesis.speak(utterance);
+        }
       }, 100);
     } catch (error) {
       // Gracefully handle any speech synthesis errors
@@ -145,6 +144,7 @@ export function AudioNarration({
   };
 
   const stop = () => {
+    requestRef.current++;
     try {
       if (window.speechSynthesis && window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
@@ -165,7 +165,7 @@ export function AudioNarration({
   };
 
   // Don't render if not supported, no button needed, or no text
-  if (!isSupported || !showButton || !text || text.trim() === '') {
+  if (!isSupported || !narration || !showButton || !text || text.trim() === '') {
     return null;
   }
 
@@ -231,20 +231,4 @@ export function NarratedText({
       </div>
     </div>
   );
-}
-
-// Pre-load voices (some browsers need this)
-if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-  try {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => {
-      try {
-        window.speechSynthesis.getVoices();
-      } catch (error) {
-        console.warn('Error loading voices:', error);
-      }
-    };
-  } catch (error) {
-    console.warn('Speech synthesis initialization error:', error);
-  }
 }

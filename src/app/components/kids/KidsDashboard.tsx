@@ -5,15 +5,18 @@ import { KidsButton, KidsIconButton } from './KidsButton';
 import { KidsCard, ProgressCard, RewardCard } from './KidsCard';
 import { AudioNarration, NarratedText } from './AudioNarration';
 import { Confetti, Badge } from './Confetti';
-import { LogOut, Trophy, Star, Book, Play, Settings, User as UserIcon, Volume2, VolumeX } from 'lucide-react';
+import { LogOut, Trophy, Star, Book, Play, Settings, User as UserIcon, Volume2, VolumeX, Mic } from 'lucide-react';
 import { User } from '../../types/index';
 import { soundManager } from './SoundFeedback';
+import { kidsSound, useKidsSound } from './kidsSound';
+import { SoundSettingsPanel } from './KidsSoundSettings';
 
 interface KidsDashboardProps {
   user: User;
   onStartAssessment: (type: 'learning' | 'thinking' | 'decision' | 'problem-solving' | 'decision-making' | 'social-thinking' | 'motivation' | 'attention-behaviour') => void;
   onLogout: () => void;
   onViewRewards?: () => void;
+  onViewProfile?: () => void;
   onViewProgress?: () => void;
   onParentAccess?: () => void;
   newlyCompletedAssessment?: {
@@ -29,6 +32,7 @@ export function KidsDashboard({
   onStartAssessment,
   onLogout,
   onViewRewards,
+  onViewProfile,
   onViewProgress,
   onParentAccess,
   newlyCompletedAssessment
@@ -36,14 +40,10 @@ export function KidsDashboard({
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showRewardAnimation, setShowRewardAnimation] = useState(!!newlyCompletedAssessment);
   const [rewardData, setRewardData] = useState(newlyCompletedAssessment);
-  const [isMuted, setIsMuted] = useState(() => {
-    try { return localStorage.getItem('kids_sound_muted') === 'true'; } catch { return false; }
-  });
-
-  // Apply saved mute preference on mount
-  useEffect(() => {
-    soundManager.setEnabled(!isMuted);
-  }, []);
+  const [showSoundSettings, setShowSoundSettings] = useState(false);
+  // Remembered per child (see kidsSound.ts). "Muted" means both beeps and the reading voice are off.
+  const { effects, narration } = useKidsSound();
+  const isMuted = !effects && !narration;
 
   // Play welcome audio on mount
   useEffect(() => {
@@ -111,9 +111,11 @@ export function KidsDashboard({
     onStartAssessment(assessmentType);
   };
 
-  const handleStarsClick = () => {
+  const handleAboutMeClick = () => {
     soundManager.play('pop');
-    if (onViewRewards) {
+    if (onViewProfile) {
+      onViewProfile();
+    } else if (onViewRewards) {
       onViewRewards();
     }
   };
@@ -129,10 +131,12 @@ export function KidsDashboard({
   };
 
   const handleToggleMute = () => {
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-    soundManager.setEnabled(!newMuted);
-    try { localStorage.setItem('kids_sound_muted', String(newMuted)); } catch { /* ignore */ }
+    if (isMuted) {
+      kidsSound.update({ effects: true, narration: true });
+      soundManager.play('pop');
+    } else {
+      kidsSound.update({ effects: false, narration: false });
+    }
   };
 
   return (
@@ -334,6 +338,15 @@ export function KidsDashboard({
             </button>
 
             <button
+              onClick={() => { soundManager.play('select'); setShowSoundSettings(true); }}
+              className="flex items-center gap-2 bg-white/90 hover:bg-white text-purple-900 px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
+              title="Change my voice"
+            >
+              <Mic className="w-5 h-5 text-purple-600" />
+              <span>Voice</span>
+            </button>
+
+            <button
               onClick={() => setShowAccountModal(true)}
               className="flex items-center gap-2 bg-white/90 hover:bg-white text-purple-900 px-4 py-2 rounded-full shadow-lg font-bold transition-all transform hover:scale-105"
             >
@@ -509,7 +522,7 @@ export function KidsDashboard({
             </div>
           </motion.button>
 
-          {/* MY STARS BUTTON */}
+          {/* ABOUT ME BUTTON - the child's own friendly profile */}
           <motion.button
             className="relative aspect-square rounded-3xl shadow-2xl overflow-hidden"
             style={{
@@ -519,7 +532,7 @@ export function KidsDashboard({
             }}
             whileHover={{ scale: 1.08, y: -10 }}
             whileTap={{ scale: 0.95 }}
-            onClick={handleStarsClick}
+            onClick={handleAboutMeClick}
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, type: "spring", stiffness: 150 }}
@@ -537,16 +550,16 @@ export function KidsDashboard({
                   ease: "easeInOut"
                 }}
               >
-                ⭐
+                😄
               </motion.div>
               <h2 
                 className="text-5xl font-black text-white"
                 style={{ textShadow: '3px 3px 6px rgba(0,0,0,0.4)' }}
               >
-                MY STARS
+                ABOUT ME
               </h2>
-              <p className="text-3xl font-black text-white mt-2">
-                {totalStars}
+              <p className="text-2xl font-black text-white mt-2">
+                ⭐ {totalStars}
               </p>
             </div>
           </motion.button>
@@ -821,6 +834,8 @@ export function KidsDashboard({
           )}
         </motion.div>
       </div>
+
+      {showSoundSettings && <SoundSettingsPanel onClose={() => setShowSoundSettings(false)} />}
 
       {/* Account Details Modal */}
       {showAccountModal && (

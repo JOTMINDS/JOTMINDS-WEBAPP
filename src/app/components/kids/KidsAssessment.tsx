@@ -6,6 +6,7 @@ import { KidsCard } from './KidsCard';
 import { AudioNarration, NarratedText } from './AudioNarration';
 import { Confetti, CelebrationEffect } from './Confetti';
 import { useSound } from './SoundFeedback';
+import { SoundToggleButton } from './KidsSoundSettings';
 import { TimeRemaining, MotivationalProgress } from './ProgressFlow';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { submitAssessment } from '../../utils/api';
@@ -591,15 +592,19 @@ export function KidsAssessment({ type, onComplete, onBack }: KidsAssessmentProps
         }}
       >
         <div className="max-w-4xl w-full">
-          {/* Back Button */}
-          <motion.button
-            className="mb-8 w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center"
-            onClick={onBack}
-            whileHover={{ scale: 1.15 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <ArrowLeft className="w-8 h-8 text-gray-700" />
-          </motion.button>
+          {/* Back Button and Sound */}
+          <div className="mb-8 flex items-center justify-between">
+            <motion.button
+              className="w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center"
+              onClick={onBack}
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
+              aria-label="Back"
+            >
+              <ArrowLeft className="w-8 h-8 text-gray-700" />
+            </motion.button>
+            <SoundToggleButton />
+          </div>
 
           <div className="text-center">
             {/* Mascot at Top */}
@@ -949,7 +954,7 @@ export function KidsAssessment({ type, onComplete, onBack }: KidsAssessmentProps
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'linear-gradient(135deg, #667eea15 0%, #FF6B9D15 50%, #FEC16330 100%)' }}>
       <div className="max-w-6xl w-full">
         {/* Simple Header - Just back button and stars */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           {/* Back Button */}
           <motion.button
             onClick={onBack}
@@ -960,8 +965,8 @@ export function KidsAssessment({ type, onComplete, onBack }: KidsAssessmentProps
             <ArrowLeft className="w-8 h-8 text-gray-700" />
           </motion.button>
 
-          {/* Stars Progress (1 of 5) */}
-          <div className="flex items-center gap-3">
+          {/* Stars Progress (1 of 5). Own row on phones so the header never scrolls sideways. */}
+          <div className="flex items-center justify-center gap-3 order-last w-full sm:order-none sm:w-auto">
             {[...Array(questions.length)].map((_, i) => (
               <motion.div
                 key={i}
@@ -981,11 +986,14 @@ export function KidsAssessment({ type, onComplete, onBack }: KidsAssessmentProps
             ))}
           </div>
 
-          {/* Audio Button */}
-          <AudioNarration
-            text={currentQuestion?.audioText || ''}
-            autoPlay={true}
-          />
+          {/* Sound and Audio Buttons */}
+          <div className="flex items-center gap-3">
+            <SoundToggleButton />
+            <AudioNarration
+              text={currentQuestion?.audioText || ''}
+              autoPlay={true}
+            />
+          </div>
         </div>
 
         {/* Question - HUGE and prominent */}

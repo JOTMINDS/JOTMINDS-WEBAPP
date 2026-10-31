@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import { User } from '../../types/index';
 import { KidsDashboard } from './KidsDashboard';
 import { KidsAssessment } from './KidsAssessment';
@@ -6,6 +6,8 @@ import { KidsResults } from './KidsResults';
 import { ParentPINGate } from './ParentPINGate';
 import { ParentPINSetup } from './ParentPINSetup';
 import { KidsCognitiveProfile } from './KidsCognitiveProfile';
+import { KidsMyProfile } from './KidsMyProfile';
+import { kidsSound } from './kidsSound';
 import { useAuth } from '../AuthContext';
 import { updateUserProfile } from '../../utils/api';
 
@@ -14,7 +16,7 @@ interface KidsModeWrapperProps {
   onLogout: () => void;
 }
 
-type KidsView = 'dashboard' | 'assessment' | 'results' | 'parent-profile';
+type KidsView = 'dashboard' | 'assessment' | 'results' | 'parent-profile' | 'my-profile';
 type AssessmentType = 'learning' | 'thinking' | 'decision' | 'problem-solving' | 'social-thinking';
 
 export function KidsModeWrapper({ user, onLogout }: KidsModeWrapperProps) {
@@ -36,6 +38,11 @@ export function KidsModeWrapper({ user, onLogout }: KidsModeWrapperProps) {
       setShowPINSetup(true);
     }
   }, [user.parentPin]);
+
+  // Sound settings (sounds, read-aloud, voice) belong to the child, not the device.
+  useLayoutEffect(() => {
+    kidsSound.setChild(user.id);
+  }, [user.id]);
 
   // Force light mode for Kids Mode (remove dark class from html element)
   useEffect(() => {
@@ -140,6 +147,15 @@ export function KidsModeWrapper({ user, onLogout }: KidsModeWrapperProps) {
           />
         ) : null;
 
+      case 'my-profile':
+        return (
+          <KidsMyProfile
+            user={user}
+            onBack={() => setCurrentView('dashboard')}
+            onPlay={handleStartAssessment}
+          />
+        );
+
       case 'parent-profile':
         return (
           <KidsCognitiveProfile
@@ -158,6 +174,7 @@ export function KidsModeWrapper({ user, onLogout }: KidsModeWrapperProps) {
               onStartAssessment={handleStartAssessment}
               onLogout={handleLogoutAttempt}
               onParentAccess={handleParentAccessAttempt}
+              onViewProfile={() => setCurrentView('my-profile')}
             />
             
             {/* Parent PIN Gate for Logout */}

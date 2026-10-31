@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jotminds-pwa-v3';
+const CACHE_NAME = 'jotminds-pwa-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
