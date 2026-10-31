@@ -749,16 +749,22 @@ function shuffleArray<T>(array: T[], seed?: string): T[] {
   const shuffled = [...array]; // Create a copy to avoid mutation
   
   if (seed) {
-    // Seeded random number generator (simple LCG)
+    // Seeded random number generator (mulberry32). The earlier generator could return negative
+    // values for many seeds, which turned the shuffle into undefined entries and made the whole
+    // request fail, so students silently got a fixed question order instead.
     let seedNum = 0;
     for (let i = 0; i < seed.length; i++) {
       seedNum = ((seedNum << 5) - seedNum) + seed.charCodeAt(i);
       seedNum = seedNum & seedNum; // Convert to 32-bit integer
     }
-    
+    let state = seedNum >>> 0;
+
     const seededRandom = () => {
-      seedNum = (seedNum * 9301 + 49297) % 233280;
-      return seedNum / 233280;
+      state = (state + 0x6D2B79F5) >>> 0;
+      let t = state;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
     
     // Fisher-Yates shuffle with seeded random
