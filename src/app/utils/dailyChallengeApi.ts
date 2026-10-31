@@ -1,6 +1,23 @@
 import { projectId, publicAnonKey } from './supabase/info';
+import { createClient } from './supabase/client';
+import { getAuthToken } from './api';
 
 const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/make-server-fc8eb847`;
+
+// These routes belong to one student, so they need that student's own session token.
+// The public key is refused by the server.
+async function authHeaders(): Promise<Record<string, string>> {
+  let token: string | null = null;
+  try {
+    token = (await (createClient() as any).auth.getSession())?.data?.session?.access_token || null;
+  } catch {
+    token = null;
+  }
+  return {
+    'Authorization': `Bearer ${token || getAuthToken() || publicAnonKey}`,
+    'Content-Type': 'application/json',
+  };
+}
 
 interface ChallengeProgress {
   currentStreak: number;
@@ -17,10 +34,7 @@ export async function getDailyChallengeProgress(userId: string): Promise<{ progr
   try {
     const response = await fetch(`${API_BASE_URL}/daily-challenge/progress/${userId}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${publicAnonKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: await authHeaders(),
     });
 
     if (!response.ok) {
@@ -49,10 +63,7 @@ export async function completeDailyChallenge(
   try {
     const res = await fetch(`${API_BASE_URL}/daily-challenge/complete`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${publicAnonKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: await authHeaders(),
       body: JSON.stringify({
         userId,
         challengeId,
@@ -81,10 +92,7 @@ export async function updateNotificationSettings(
   try {
     const response = await fetch(`${API_BASE_URL}/daily-challenge/notifications`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${publicAnonKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: await authHeaders(),
       body: JSON.stringify({
         userId,
         frequency,
@@ -110,10 +118,7 @@ export async function getChallengeSettings(userId: string): Promise<{
   try {
     const response = await fetch(`${API_BASE_URL}/daily-challenge/settings/${userId}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${publicAnonKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: await authHeaders(),
     });
 
     if (!response.ok) {

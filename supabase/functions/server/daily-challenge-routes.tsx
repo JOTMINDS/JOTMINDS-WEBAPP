@@ -1,7 +1,19 @@
 import { Hono } from 'npm:hono';
 import * as kv from './kv_store.tsx';
+import { verifyAuth } from './auth-helpers.tsx';
+import { isPlatformAdmin } from './platform-admin.tsx';
 
 const app = new Hono();
+
+// Every route here belongs to one student: the caller must be signed in as that same user.
+// A platform admin may read (never change) a student's data for support.
+async function requireOwner(c: any, userId: string | undefined, readOnly = false) {
+  const user = await verifyAuth(c.req.raw);
+  if (!user) return { error: c.json({ error: 'Unauthorized' }, 401) };
+  if (userId && user.id === userId) return { user };
+  if (readOnly && userId && (await isPlatformAdmin(user.id))) return { user };
+  return { error: c.json({ error: 'Forbidden' }, 403) };
+}
 
 // Helper function to get today's date in YYYY-MM-DD format
 function getTodayDate(): string {
@@ -48,6 +60,8 @@ app.get('/progress/:userId', async (c) => {
     if (!userId) {
       return c.json({ error: 'User ID is required' }, 400);
     }
+    const owner = await requireOwner(c, userId, true);
+    if (owner.error) return owner.error;
 
     const key = `daily_challenge:${userId}`;
     const progressData = await kv.get(key);
@@ -106,6 +120,8 @@ app.post('/complete', async (c) => {
     if (!userId || !challengeId) {
       return c.json({ error: 'User ID and Challenge ID are required' }, 400);
     }
+    const owner = await requireOwner(c, userId);
+    if (owner.error) return owner.error;
 
     const key = `daily_challenge:${userId}`;
     const progressData = await kv.get(key);
@@ -194,6 +210,8 @@ app.put('/notifications', async (c) => {
     if (!userId || !frequency) {
       return c.json({ error: 'User ID and frequency are required' }, 400);
     }
+    const owner = await requireOwner(c, userId);
+    if (owner.error) return owner.error;
 
     const validFrequencies = ['daily', 'weekly', 'monthly', 'off'];
     if (!validFrequencies.includes(frequency)) {
@@ -235,6 +253,8 @@ app.get('/settings/:userId', async (c) => {
     if (!userId) {
       return c.json({ error: 'User ID is required' }, 400);
     }
+    const owner = await requireOwner(c, userId, true);
+    if (owner.error) return owner.error;
 
     const key = `daily_challenge:${userId}`;
     const progressData = await kv.get(key);
