@@ -18,7 +18,9 @@ function calculateBadges(completedDays: string[], currentStreak: number): string
   }
   
   // Streak badges
-  if (currentStreak === 7) {
+  if (currentStreak === 3) {
+    badges.push('3-Day Spark');
+  } else if (currentStreak === 7) {
     badges.push('7-Day Warrior');
   } else if (currentStreak === 30) {
     badges.push('30-Day Champion');
@@ -119,21 +121,22 @@ app.post('/complete', async (c) => {
       return c.json({ error: 'Today\'s challenge is already completed' }, 400);
     }
 
-    // Determine points based on challenge type
-    const pointsEarned = calculatePoints(challengeId, response);
-
     // Update completed days
     const completedDays = [...(progressData.completedDays || []), today];
     
-    // Calculate streak
+    // Calculate streak (UTC dates, same as getTodayDate)
     const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
     const yesterdayDate = yesterday.toISOString().split('T')[0];
     
     let currentStreak = 1;
     if (progressData.lastCompletedDate === yesterdayDate) {
       currentStreak = (progressData.currentStreak || 0) + 1;
     }
+
+    // Points: a base for playing, a bonus for how well it went, and a small streak bonus
+    const breakdown = calculatePoints(challengeId, response, currentStreak);
+    const pointsEarned = breakdown.base + breakdown.score + breakdown.streak;
     
     const longestStreak = Math.max(currentStreak, progressData.longestStreak || 0);
     
@@ -169,6 +172,7 @@ app.post('/complete', async (c) => {
     return c.json({
       success: true,
       pointsEarned,
+      breakdown,
       newBadges,
       updatedProgress,
     });
@@ -255,19 +259,28 @@ app.get('/settings/:userId', async (c) => {
   }
 });
 
-// Helper function to calculate points based on challenge completion
-function calculatePoints(challengeId: string, response: any): number {
-  // Extract challenge type from ID
-  if (challengeId.startsWith('questions-')) {
-    return 20; // Questions challenges
-  } else if (challengeId.startsWith('puzzle-')) {
-    return 30; // Puzzle challenges
-  } else if (challengeId.startsWith('reflection-')) {
-    return 25; // Reflection challenges
-  } else if (challengeId.startsWith('practical-')) {
-    return 35; // Practical challenges
+// Helper function to calculate points based on challenge completion.
+// Daily games send { score: 0..1 }. Older clients send no score and get the flat points.
+function calculatePoints(
+  challengeId: string,
+  response: any,
+  currentStreak: number,
+): { base: number; score: number; streak: number } {
+  if (challengeId.startsWith('quest-')) {
+    const rawScore = typeof response?.score === 'number' ? response.score : 0;
+    const score = Math.min(1, Math.max(0, rawScore));
+    return {
+      base: 20,
+      score: Math.round(score * 15),
+      streak: Math.min(Math.max(currentStreak - 1, 0), 5) * 2,
+    };
   }
-  return 20; // Default
+
+  const legacy = challengeId.startsWith('puzzle-') ? 30
+    : challengeId.startsWith('reflection-') ? 25
+    : challengeId.startsWith('practical-') ? 35
+    : 20;
+  return { base: legacy, score: 0, streak: 0 };
 }
 
 export default app;

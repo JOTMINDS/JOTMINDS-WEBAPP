@@ -1,33 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { useEffect, useMemo, useState } from 'react';
+import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Flame, Trophy, Star, Calendar, CheckCircle2, XCircle, Sparkles, Brain, Lightbulb, Target, Clock, Settings, Bell, BellOff } from 'lucide-react';
-import { 
-  getDailyChallengeProgress, 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Bell, CheckCircle2, Flame, Lock, Star } from 'lucide-react';
+import {
+  getDailyChallengeProgress,
   completeDailyChallenge,
   updateNotificationSettings,
-  getChallengeSettings 
 } from '../utils/dailyChallengeApi';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from './ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { getBrainBoostPuzzle, getKolbDailyMission } from '../data/brainBoostData';
+import { BrainGame, GameResult } from './BrainGames';
+import { GAME_META, GameId, QUEST_ORDER, addDaysToKey, questFor, utcDateKey } from '../data/dailyQuestData';
+import { celebrateBadgeUnlock, celebrateSmallWin } from '../utils/confettiAnimations';
 
 interface DailyChallengeTabProps {
   userId: string;
   userName: string;
-  userAge: number;
+  userAge?: number;
 }
 
 interface ChallengeProgress {
@@ -41,873 +30,513 @@ interface ChallengeProgress {
   notificationFrequency: 'daily' | 'weekly' | 'monthly' | 'off';
 }
 
-interface DailyChallenge {
-  id: string;
-  type: 'questions' | 'puzzle' | 'reflection' | 'practical';
-  content: any;
-  points: number;
+interface Breakdown {
+  base: number;
+  score: number;
+  streak: number;
 }
 
-const AGE_GROUPS = {
-  YOUTH: { min: 11, max: 14, label: 'JHS Explorer' },
-  TEEN: { min: 15, max: 18, label: 'SHS Achiever' },
-  ADULT: { min: 19, max: 100, label: 'Professional' }
-};
+interface PlayedResult {
+  gameId: GameId;
+  game: GameResult;
+  practice: boolean;
+  save: 'saving' | 'saved' | 'error';
+  xp: number | null;
+  breakdown: Breakdown | null;
+  newBadges: string[];
+  streak: number | null;
+}
+
+const PURPLE = '#6B4C9A';
+const BLUE = '#5B7DB1';
+const GREEN = '#1E8A6E';
+
+/** Badges a student can see and collect. Earned status is worked out from progress, so it does not depend on the server version. */
+const BADGE_SHELF: { name: string; emoji: string; how: string; earned: (p: ChallengeProgress) => boolean }[] = [
+  { name: 'First Steps', emoji: '⭐', how: 'Finish your first challenge', earned: (p) => p.completedDays.length >= 1 },
+  { name: '3-Day Spark', emoji: '✨', how: 'Play 3 days in a row', earned: (p) => p.longestStreak >= 3 },
+  { name: '7-Day Warrior', emoji: '🔥', how: 'Play 7 days in a row', earned: (p) => p.longestStreak >= 7 },
+  { name: '10 Challenges Master', emoji: '🎓', how: 'Finish 10 challenges', earned: (p) => p.completedDays.length >= 10 },
+  { name: '30-Day Champion', emoji: '🏆', how: 'Play 30 days in a row', earned: (p) => p.longestStreak >= 30 },
+  { name: '50 Challenges Hero', emoji: '🦸', how: 'Finish 50 challenges', earned: (p) => p.completedDays.length >= 50 },
+];
+
+const STREAK_GOALS = [
+  { days: 3, badge: '3-Day Spark' },
+  { days: 7, badge: '7-Day Warrior' },
+  { days: 30, badge: '30-Day Champion' },
+  { days: 100, badge: '100-Day Legend' },
+];
+
+const WEEKDAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+/** A streak only counts if the last game was today or yesterday. */
+function liveStreak(p: ChallengeProgress, today: string): number {
+  if (!p.lastCompletedDate) return 0;
+  if (p.lastCompletedDate === today || p.lastCompletedDate === addDaysToKey(today, -1)) return p.currentStreak;
+  return 0;
+}
+
+function weekKeys(today: string): string[] {
+  const dow = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7; // Monday = 0
+  const monday = addDaysToKey(today, -dow);
+  return Array.from({ length: 7 }, (_, i) => addDaysToKey(monday, i));
+}
+
+function earnedBadgeNames(p: ChallengeProgress): string[] {
+  return BADGE_SHELF.filter((b) => b.earned(p)).map((b) => b.name);
+}
+
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
 
 export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeTabProps) {
-  const [progress, setProgress] = useState<ChallengeProgress | null>(null);
-  const [todayChallenge, setTodayChallenge] = useState<DailyChallenge | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [completing, setCompleting] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [earnedPoints, setEarnedPoints] = useState(0);
-  const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
-  
-  // Challenge response state
-  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: number }>({});
-  const [reflectionText, setReflectionText] = useState('');
-  const [puzzleAnswer, setPuzzleAnswer] = useState('');
-  const [practicalCompleted, setPracticalCompleted] = useState(false);
+  const today = utcDateKey();
+  const quest = useMemo(() => questFor(today), [today]);
+  const tomorrowGame = useMemo(() => questFor(addDaysToKey(today, 1)).gameId, [today]);
+  const young = !!userAge && userAge <= 14;
 
-  useEffect(() => {
-    loadProgress();
-  }, [userId]);
+  const [progress, setProgress] = useState<ChallengeProgress | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [playing, setPlaying] = useState<{ gameId: GameId; seed: number; practice: boolean } | null>(null);
+  const [result, setResult] = useState<PlayedResult | null>(null);
+  const [swappedGame, setSwappedGame] = useState<GameId | null>(null);
 
   const loadProgress = async () => {
     setLoading(true);
+    setLoadFailed(false);
     try {
       const data = await getDailyChallengeProgress(userId);
       setProgress(data.progress);
-      
-      // Check if today's challenge is already completed
-      const today = new Date().toISOString().split('T')[0];
-      if (!data.progress.todayCompleted) {
-        setTodayChallenge(generateDailyChallenge(data.progress.completedDays.length, userAge));
-      }
     } catch (error) {
       console.error('Error loading challenge progress:', error);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
   };
 
-  const generateDailyChallenge = (dayNumber: number, age: number): DailyChallenge => {
-    // Rotate through challenge types: questions → puzzle → reflection → practical
-    const cyclePosition = dayNumber % 4;
-    const challengeTypes: DailyChallenge['type'][] = ['questions', 'puzzle', 'reflection', 'practical'];
-    const type = challengeTypes[cyclePosition];
+  useEffect(() => {
+    loadProgress();
+  }, [userId]);
 
-    const ageGroup = getAgeGroup(age);
+  const todaysGame = swappedGame ?? quest.gameId;
+  const doneToday = !!progress && (progress.todayCompleted || progress.completedDays.includes(today));
 
-    switch (type) {
-      case 'questions':
-        return generateQuestionsChallenge(ageGroup, age);
-      case 'puzzle':
-        return generatePuzzleChallenge(ageGroup, age);
-      case 'reflection':
-        return generateReflectionChallenge(ageGroup, age);
-      case 'practical':
-        return generatePracticalChallenge(ageGroup, age);
-      default:
-        return generateQuestionsChallenge(ageGroup, age);
-    }
+  const startToday = () => {
+    setResult(null);
+    setPlaying({ gameId: todaysGame, seed: quest.seed, practice: false });
   };
 
-  const getAgeGroup = (age: number): 'youth' | 'teen' | 'adult' => {
-    const validAge = age || 16;
-    if (validAge >= 6 && validAge <= 14) return 'youth';
-    if (validAge >= 15 && validAge <= 18) return 'teen';
-    return 'teen';
+  const startPractice = () => {
+    const others = QUEST_ORDER.filter((g) => g !== todaysGame);
+    const gameId = others[Math.floor(Math.random() * others.length)];
+    setResult(null);
+    setPlaying({ gameId, seed: Math.floor(Math.random() * 100000), practice: true });
   };
 
-  const generateQuestionsChallenge = (ageGroup: string, age: number): DailyChallenge => {
-    const questionSets = {
-      youth: [
-        {
-          domainLabel: "Learning Style (Kolb)",
-          question: "When learning something new in class, how do you learn most effectively?",
-          options: [
-            "Doing hands-on trials and active experiments (Accommodating)",
-            "Brainstorming many ideas and watching examples quietly (Diverging)",
-            "Structuring clear theoretical models and detailed notes (Assimilating)",
-            "Applying logical concepts to solve a practical problem (Converging)"
-          ],
-          dimension: ['accommodating', 'diverging', 'assimilating', 'converging']
-        },
-        {
-          domainLabel: "Thinking Style",
-          question: "When solving a fun class puzzle or assignment, what is your primary strategy?",
-          options: [
-            "Logical step-by-step reasoning and checking details (Analytical)",
-            "Thinking of creative, non-traditional ideas (Creative)",
-            "Using real-life examples and practical tools (Practical)",
-            "Reflecting deeply about why the puzzle matters (Reflective)"
-          ],
-          dimension: ['analytical', 'creative', 'practical', 'reflective']
-        },
-        {
-          domainLabel: "Decision Style (Dual-Process)",
-          question: "When making a quick choice during a quiz or game, how do you decide?",
-          options: [
-            "Go with my rapid first gut feeling (Intuitive - System 1)",
-            "Stop to check the facts carefully first (Deliberate - System 2)",
-            "Ask my team members what they think (Collaborative)",
-            "Combine a quick initial guess with a logic check (Balanced)"
-          ],
-          dimension: ['intuitive', 'deliberate', 'collaborative', 'balanced']
-        }
-      ],
-      teen: [
-        {
-          domainLabel: "Learning Style (Kolb)",
-          question: "When mastering complex study material for tests, what is your strongest learning pathway?",
-          options: [
-            "Hands-on practice, physical lab work, and trial-and-error (Accommodating)",
-            "Watching case examples and viewing problems from diverse angles (Diverging)",
-            "Reading structured notes and organizing theoretical concepts (Assimilating)",
-            "Testing hypotheses and applying technical solutions directly (Converging)"
-          ],
-          dimension: ['accommodating', 'diverging', 'assimilating', 'converging']
-        },
-        {
-          domainLabel: "Thinking Style",
-          question: "When tasked with analyzing a multi-step project, what is your primary approach?",
-          options: [
-            "Break down data logically and evaluate evidence (Analytical)",
-            "Brainstorm innovative ideas and non-traditional angles (Creative)",
-            "Focus on real-world execution and practical steps (Practical)",
-            "Connect the project to broader goals and ethical outcomes (Reflective)"
-          ],
-          dimension: ['analytical', 'creative', 'practical', 'reflective']
-        },
-        {
-          domainLabel: "Decision Style (Dual-Process)",
-          question: "When making a decision under time pressure, how do you balance speed and accuracy?",
-          options: [
-            "Rely on rapid gut intuition and pattern matching (Intuitive - System 1)",
-            "Pause to deliberate, compare options, and double-check facts (Deliberate - System 2)",
-            "Consult peers or mentors before reaching a conclusion (Collaborative)",
-            "Combine initial intuition with a quick mental logic check (Balanced)"
-          ],
-          dimension: ['intuitive', 'deliberate', 'collaborative', 'balanced']
-        }
-      ],
-      adult: [
-        {
-          domainLabel: "Learning Style (Kolb)",
-          question: "When analyzing new systems or methods, how do you absorb and process best?",
-          options: [
-            "Immediate trial, real-world pilots, and adaptive testing (Accommodating)",
-            "Observing expert demos and synthesizing multiple perspectives (Diverging)",
-            "Reading comprehensive frameworks and theoretical models (Assimilating)",
-            "Applying analytical frameworks to practical implementation (Converging)"
-          ],
-          dimension: ['accommodating', 'diverging', 'assimilating', 'converging']
-        },
-        {
-          domainLabel: "Thinking Style",
-          question: "When approaching a professional challenge, what is your default thinking strategy?",
-          options: [
-            "Conduct systematic analysis and data-driven evaluation (Analytical)",
-            "Develop innovative strategies and non-linear solutions (Creative)",
-            "Implement proven frameworks and actionable steps (Practical)",
-            "Consider long-term systemic implications and ethics (Reflective)"
-          ],
-          dimension: ['analytical', 'creative', 'practical', 'reflective']
-        },
-        {
-          domainLabel: "Decision Style (Dual-Process)",
-          question: "In key decision-making scenarios, how do you make high-stakes choices?",
-          options: [
-            "Leverage rapid pattern recognition and intuition (Intuitive - System 1)",
-            "Conduct structured risk analysis and evidence checks (Deliberate - System 2)",
-            "Seek consensus and collaborative feedback (Collaborative)",
-            "Integrate rapid intuition with deliberate verification (Balanced)"
-          ],
-          dimension: ['intuitive', 'deliberate', 'collaborative', 'balanced']
-        }
-      ]
-    };
-
-    const questions = questionSets[ageGroup as keyof typeof questionSets];
-
-    return {
-      id: `questions-${Date.now()}`,
-      type: 'questions',
-      content: {
-        questions: questions
-      },
-      points: 20
-    };
-  };
-
-  const generatePuzzleChallenge = (ageGroup: string, age: number): DailyChallenge => {
-    // If youth or teen, use enriched brain boost challenges bank
-    if (ageGroup === 'youth' || ageGroup === 'teen') {
-      const puzzle = getBrainBoostPuzzle(age, Math.floor(Math.random() * 10));
-      return {
-        id: `puzzle-${puzzle.id}-${Date.now()}`,
-        type: 'puzzle',
-        content: {
-          title: puzzle.title,
-          description: puzzle.description,
-          hint: puzzle.hint,
-          answer: puzzle.answer,
-          explanation: puzzle.explanation,
-          kolbAlignment: puzzle.kolbAlignment
-        },
-        points: puzzle.points || 30
-      };
-    }
-
-    const puzzles = {
-      adult: [
-        {
-          title: "Business Logic 💼",
-          description: "A company's revenue grew from $100k to $121k. What was the percentage increase?",
-          hint: "Calculate the difference first!",
-          answer: "21",
-          explanation: "($121k - $100k) / $100k = 21% increase"
-        },
-        {
-          title: "Systems Thinking 🔄",
-          description: "In a circular meeting table with 8 seats, how many unique seating arrangements are possible?",
-          hint: "Rotations that look the same should count as one!",
-          answer: "5040",
-          explanation: "(8-1)! = 7! = 5,040 unique arrangements when accounting for rotational symmetry"
-        }
-      ]
-    };
-
-    const agePuzzles = puzzles.adult;
-    const randomPuzzle = agePuzzles[Math.floor(Math.random() * agePuzzles.length)];
-
-    return {
-      id: `puzzle-${Date.now()}`,
-      type: 'puzzle',
-      content: randomPuzzle,
-      points: 30
-    };
-  };
-
-  const generateReflectionChallenge = (ageGroup: string, age: number): DailyChallenge => {
-    const prompts = {
-      youth: [
-        "Think about a time when you solved a problem in a creative way. What did you do differently? How did it feel?",
-        "What's one thing you learned this week that made you think differently about something?",
-        "If you could teach one skill to everyone in your class, what would it be and why?",
-        "Describe a moment when you had to think really carefully before making a decision. What helped you decide?"
-      ],
-      teen: [
-        "Reflect on a recent academic challenge. Which thinking style (creative, analytical, practical, reflective) did you use most? Why?",
-        "How has your approach to problem-solving changed over the past year? What influenced this change?",
-        "Consider a subject you find difficult. How could you apply different thinking styles to improve your understanding?",
-        "What role does reflection play in your learning process? Give a specific example."
-      ],
-      adult: [
-        "Analyze a recent professional decision. How did your dominant thinking style influence the outcome?",
-        "What thinking style do you use least often? How might developing it benefit your career?",
-        "Reflect on a workplace challenge that required balancing multiple thinking approaches. What did you learn?",
-        "How do you adapt your thinking style when collaborating with colleagues who think differently than you?"
-      ]
-    };
-
-    const agePrompts = prompts[ageGroup as keyof typeof prompts];
-    const randomPrompt = agePrompts[Math.floor(Math.random() * agePrompts.length)];
-
-    return {
-      id: `reflection-${Date.now()}`,
-      type: 'reflection',
-      content: {
-        prompt: randomPrompt,
-        minWords: ageGroup === 'youth' ? 30 : ageGroup === 'teen' ? 50 : 75
-      },
-      points: 25
-    };
-  };
-
-  const generatePracticalChallenge = (ageGroup: string, age: number): DailyChallenge => {
-    const challenges = {
-      youth: [
-        {
-          title: "Creative Thinking Mission 🎨",
-          task: "Today, try to come up with 3 different ways to solve ONE problem you face. It could be organizing your homework, remembering something, or anything else!",
-          checkboxes: [
-            "I identified a problem I want to solve",
-            "I thought of at least 3 different solutions",
-            "I tried the most creative solution"
-          ]
-        },
-        {
-          title: "Analytical Thinking Quest 🔍",
-          task: "Pick something you use every day (like a pencil, phone, or backpack). Ask yourself: Why is it designed this way? What makes it work well? What could be improved?",
-          checkboxes: [
-            "I chose an everyday object to analyze",
-            "I thought about why it's designed that way",
-            "I came up with one improvement idea"
-          ]
-        },
-        {
-          title: "Practical Thinking Challenge 🛠️",
-          task: "Find one thing in your daily routine that could be more efficient. Make a simple plan to improve it, then try it out!",
-          checkboxes: [
-            "I identified something to improve",
-            "I made a practical plan",
-            "I tested my improvement"
-          ]
-        }
-      ],
-      teen: [
-        {
-          title: "Creative Innovation Task 💡",
-          task: "Identify a common frustration in your school or community. Design an innovative solution using creative thinking approaches.",
-          checkboxes: [
-            "I identified a real problem worth solving",
-            "I brainstormed multiple creative solutions",
-            "I developed one solution in detail",
-            "I considered how to implement it"
-          ]
-        },
-        {
-          title: "Analytical Deep Dive 📊",
-          task: "Choose a current event or news story. Analyze it from multiple perspectives, identifying assumptions, evidence, and logical connections.",
-          checkboxes: [
-            "I selected a current event to analyze",
-            "I identified different perspectives",
-            "I evaluated the evidence critically",
-            "I drew my own informed conclusion"
-          ]
-        }
-      ],
-      adult: [
-        {
-          title: "Strategic Innovation Exercise 🚀",
-          task: "Identify a process in your work that could be improved. Apply design thinking to develop and prototype a creative solution.",
-          checkboxes: [
-            "I mapped out the current process",
-            "I identified pain points and opportunities",
-            "I designed an innovative solution",
-            "I created an implementation plan",
-            "I identified success metrics"
-          ]
-        },
-        {
-          title: "Systems Analysis Project 🔄",
-          task: "Analyze a complex system in your professional domain. Map its components, relationships, and feedback loops.",
-          checkboxes: [
-            "I selected a complex system to analyze",
-            "I identified key components",
-            "I mapped relationships and dependencies",
-            "I recognized feedback loops",
-            "I proposed one optimization"
-          ]
-        }
-      ]
-    };
-
-    const ageChallenges = challenges[ageGroup as keyof typeof challenges];
-    const randomChallenge = ageChallenges[Math.floor(Math.random() * ageChallenges.length)];
-
-    return {
-      id: `practical-${Date.now()}`,
-      type: 'practical',
-      content: randomChallenge,
-      points: 35
-    };
-  };
-
-  const handleCompleteChallenge = async () => {
-    if (!todayChallenge || !progress) return;
-
-    setCompleting(true);
+  const saveResult = async (gameId: GameId, game: GameResult, before: ChallengeProgress) => {
+    setResult((r) => (r ? { ...r, save: 'saving' } : r));
     try {
-      let response: any = {};
-
-      // Collect response based on challenge type
-      switch (todayChallenge.type) {
-        case 'questions':
-          response = { answers: selectedAnswers };
-          break;
-        case 'puzzle':
-          response = { answer: puzzleAnswer };
-          break;
-        case 'reflection':
-          response = { reflection: reflectionText };
-          break;
-        case 'practical':
-          response = { completed: practicalCompleted };
-          break;
+      const res = await completeDailyChallenge(userId, `quest-${gameId}-${today}`, {
+        gameId,
+        score: Math.round(game.score * 100) / 100,
+        summary: game.summary,
+      });
+      const after = res.updatedProgress;
+      const hadBefore = new Set(earnedBadgeNames(before));
+      const fresh = earnedBadgeNames(after).filter((b) => !hadBefore.has(b));
+      setProgress(after);
+      setResult((r) =>
+        r
+          ? {
+              ...r,
+              save: 'saved',
+              xp: res.pointsEarned,
+              breakdown: (res as { breakdown?: Breakdown }).breakdown ?? null,
+              newBadges: fresh,
+              streak: after.currentStreak,
+            }
+          : r,
+      );
+      if (!prefersReducedMotion()) {
+        if (fresh.length > 0) celebrateBadgeUnlock('rare');
+        else celebrateSmallWin();
       }
-
-      const result = await completeDailyChallenge(userId, todayChallenge.id, response);
-      
-      setEarnedPoints(result.pointsEarned);
-      setEarnedBadges(result.newBadges);
-      setProgress(result.updatedProgress);
-      setShowResults(true);
-      setTodayChallenge(null);
     } catch (error) {
+      const text = error instanceof Error ? error.message : '';
+      if (text.includes('already completed')) {
+        // Played on another tab or device. Just refresh.
+        await loadProgress();
+        setResult((r) => (r ? { ...r, save: 'saved' } : r));
+        return;
+      }
       console.error('Error completing challenge:', error);
-    } finally {
-      setCompleting(false);
+      setResult((r) => (r ? { ...r, save: 'error' } : r));
     }
   };
 
-  const handleNotificationChange = async (frequency: 'daily' | 'weekly' | 'monthly' | 'off') => {
+  const handleFinish = (game: GameResult) => {
+    if (!playing || !progress) return;
+    const practice = playing.practice;
+    setResult({
+      gameId: playing.gameId,
+      game,
+      practice,
+      save: practice ? 'saved' : 'saving',
+      xp: null,
+      breakdown: null,
+      newBadges: [],
+      streak: null,
+    });
+    setPlaying(null);
+    if (!practice) saveResult(playing.gameId, game, progress);
+    else if (!prefersReducedMotion()) celebrateSmallWin();
+  };
+
+  const handleReminderChange = async (frequency: ChallengeProgress['notificationFrequency']) => {
     if (!progress) return;
-    
+    const previous = progress.notificationFrequency;
+    setProgress({ ...progress, notificationFrequency: frequency });
     try {
       await updateNotificationSettings(userId, frequency);
-      setProgress({ ...progress, notificationFrequency: frequency });
     } catch (error) {
       console.error('Error updating notification settings:', error);
+      setProgress((p) => (p ? { ...p, notificationFrequency: previous } : p));
     }
   };
 
-  const isAnswersComplete = () => {
-    if (!todayChallenge) return false;
-
-    switch (todayChallenge.type) {
-      case 'questions':
-        return Object.keys(selectedAnswers).length === todayChallenge.content.questions.length;
-      case 'puzzle':
-        return puzzleAnswer.trim().length > 0;
-      case 'reflection':
-        const wordCount = reflectionText.trim().split(/\s+/).length;
-        return wordCount >= todayChallenge.content.minWords;
-      case 'practical':
-        return practicalCompleted;
-      default:
-        return false;
-    }
-  };
+  // ---- Loading / error ---------------------------------------------------
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[300px]" role="status">
         <div className="text-center">
-          <Brain className="h-12 w-12 animate-pulse text-purple-500 mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading your challenges...</p>
+          <div className="text-5xl mb-3 motion-safe:animate-bounce" aria-hidden>🧠</div>
+          <p className="text-muted-foreground">Getting today's challenge ready…</p>
         </div>
       </div>
     );
   }
 
-  if (!progress) {
+  if (!progress || loadFailed) {
     return (
-      <div className="text-center p-8">
-        <p className="text-red-500">Error loading challenge data. Please try again.</p>
+      <div className="text-center p-8 space-y-3">
+        <p className="text-foreground">We couldn't load your challenge. Check your internet and try again.</p>
+        <Button onClick={loadProgress} style={{ background: PURPLE }} className="text-white">Try again</Button>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Header Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-red-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-orange-700/70">Current Streak</p>
-                <p className="text-3xl font-bold text-orange-600">{progress.currentStreak}</p>
-                <p className="text-xs text-orange-700/70 mt-1">days 🔥</p>
-              </div>
-              <Flame className="h-12 w-12 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
+  // ---- Playing -----------------------------------------------------------
 
-        <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50">
-          <CardContent className="pt-6">
+  if (playing) {
+    return (
+      <div className="max-w-xl mx-auto">
+        <Card>
+          <CardContent className="p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-yellow-700/70">Total Points</p>
-                <p className="text-3xl font-bold text-yellow-600">{progress.totalPoints}</p>
-                <p className="text-xs text-yellow-700/70 mt-1">XP earned ⭐</p>
-              </div>
-              <Star className="h-12 w-12 text-yellow-500" />
+              <button
+                type="button"
+                onClick={() => setPlaying(null)}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Leave game
+              </button>
+              <span className="text-xs rounded-full bg-muted px-3 py-1 text-muted-foreground">
+                {playing.practice ? 'Practice · no XP' : "Today's challenge"}
+              </span>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-purple-700/70">Longest Streak</p>
-                <p className="text-3xl font-bold text-purple-600">{progress.longestStreak}</p>
-                <p className="text-xs text-purple-700/70 mt-1">days 🏆</p>
-              </div>
-              <Trophy className="h-12 w-12 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-blue-700/70">Badges Earned</p>
-                <p className="text-3xl font-bold text-blue-600">{progress.badges.length}</p>
-                <p className="text-xs text-blue-700/70 mt-1">achievements 🎖️</p>
-              </div>
-              <Trophy className="h-12 w-12 text-blue-500" />
-            </div>
+            <BrainGame
+              key={`${playing.gameId}-${playing.seed}`}
+              gameId={playing.gameId}
+              seed={playing.seed}
+              young={young}
+              onFinish={handleFinish}
+              onSkip={
+                playing.practice
+                  ? undefined
+                  : () => {
+                      setSwappedGame('pattern');
+                      setPlaying({ gameId: 'pattern', seed: quest.seed, practice: false });
+                    }
+              }
+            />
           </CardContent>
         </Card>
       </div>
+    );
+  }
 
-      {/* Notification Settings */}
-      <Card className="border-2 border-slate-200">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-slate-600" />
-              <CardTitle className="text-lg">Challenge Reminders</CardTitle>
-            </div>
-            <Select
-              value={progress.notificationFrequency}
-              onValueChange={(value) => handleNotificationChange(value as any)}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily">Daily Reminders</SelectItem>
-                <SelectItem value="weekly">Weekly Reminders</SelectItem>
-                <SelectItem value="monthly">Monthly Reminders</SelectItem>
-                <SelectItem value="off">
-                  <span className="flex items-center gap-2">
-                    <BellOff className="h-4 w-4" />
-                    Off
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-      </Card>
+  // ---- Result ------------------------------------------------------------
 
-      {/* Today's Challenge or Completion Message */}
-      {progress.todayCompleted ? (
-        <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
-          <CardContent className="pt-8 pb-8 text-center">
-            <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-green-700 mb-2">Challenge Complete! 🎉</h3>
-            <p className="text-green-700/80 mb-4">
-              You've completed today's challenge. Come back tomorrow for a new one!
-            </p>
-            <div className="flex items-center justify-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-green-600" />
-                <span className="text-green-700/80">Next challenge in: {getTimeUntilMidnight()}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : todayChallenge ? (
-        <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-50">
-          <CardHeader>
-            <div className="flex items-center justify-between mb-2">
-              <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
-                {getChallengeTypeLabel(todayChallenge.type)}
-              </Badge>
-              <Badge variant="outline" className="border-yellow-500 text-yellow-700">
-                +{todayChallenge.points} XP
-              </Badge>
-            </div>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              {getChallengeIcon(todayChallenge.type)}
-              Today's Challenge
-            </CardTitle>
-            <CardDescription className="text-indigo-700/70">
-              Complete today's challenge to maintain your streak and earn points!
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {renderChallengeContent()}
-
-            <div className="flex items-center justify-between pt-4 border-t border-indigo-200">
-              <div className="text-sm text-indigo-700/70">
-                {isAnswersComplete() ? (
-                  <span className="text-green-600 flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Ready to submit!
-                  </span>
-                ) : (
-                  <span>Complete all parts to submit</span>
-                )}
-              </div>
-              <Button
-                onClick={handleCompleteChallenge}
-                disabled={!isAnswersComplete() || completing}
-                className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
-                size="default"
-              >
-                {completing ? 'Submitting...' : 'Complete Challenge'}
-                <Sparkles className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Badges Display */}
-      {progress.badges.length > 0 && (
+  if (result) {
+    const meta = GAME_META[result.gameId];
+    const stars = result.game.score >= 0.9 ? 3 : result.game.score >= 0.6 ? 2 : 1;
+    const tomorrow = GAME_META[tomorrowGame];
+    return (
+      <div className="max-w-xl mx-auto space-y-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
-              Your Badges
-            </CardTitle>
-            <CardDescription>Achievements you've unlocked</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {progress.badges.map((badge, index) => (
-                <div
-                  key={index}
-                  className="p-4 rounded-lg border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50 text-center"
-                >
-                  <div className="text-3xl mb-2">{getBadgeEmoji(badge)}</div>
-                  <p className="text-sm font-semibold">{badge}</p>
-                </div>
+          <CardContent className="p-6 text-center space-y-4">
+            <div className="text-6xl" aria-hidden>🎉</div>
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">
+                {result.practice ? 'Nice practice round!' : 'Challenge complete!'}
+              </h2>
+              <p className="text-muted-foreground">{meta.title}: {result.game.summary}</p>
+            </div>
+            <div className="text-3xl" role="img" aria-label={`${stars} out of 3 stars`}>
+              {[1, 2, 3].map((n) => (
+                <span key={n} className={n <= stars ? '' : 'opacity-25'}>⭐</span>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Results Modal */}
-      <Dialog open={showResults} onOpenChange={setShowResults}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-2xl">
-              🎉 Challenge Completed!
-            </DialogTitle>
-            <DialogDescription className="text-center">
-              View your earned points and badges
-            </DialogDescription>
-          </DialogHeader>
-          <div className="text-center pt-4 space-y-4">
-            <div className="text-6xl">✨</div>
-            <div>
-              <p className="text-3xl font-bold text-indigo-600">+{earnedPoints} XP</p>
-              <p className="text-sm text-muted-foreground mt-1">Points earned</p>
-            </div>
-            
-            {earnedBadges.length > 0 && (
-              <div className="pt-4 border-t">
-                <p className="font-semibold mb-2">New Badges Unlocked!</p>
-                <div className="flex justify-center gap-2">
-                  {earnedBadges.map((badge, index) => (
-                    <div key={index} className="text-2xl">
-                      {getBadgeEmoji(badge)}
-                    </div>
-                  ))}
+            {result.practice ? (
+              <p className="text-sm text-muted-foreground">Practice rounds are just for fun. They don't give XP.</p>
+            ) : result.save === 'saving' ? (
+              <p className="text-sm text-muted-foreground" role="status">Saving your reward…</p>
+            ) : result.save === 'error' ? (
+              <div className="rounded-lg border border-red-300 bg-red-50 dark:bg-red-950 p-3 text-sm text-red-800 dark:text-red-200 space-y-2" role="alert">
+                <p>We couldn't save your reward yet. Your game is not lost.</p>
+                <Button size="sm" onClick={() => saveResult(result.gameId, result.game, progress)}>Try saving again</Button>
+              </div>
+            ) : (
+              <div className="rounded-xl p-4" style={{ background: `${PURPLE}14` }}>
+                <p className="text-3xl font-extrabold" style={{ color: PURPLE }}>+{result.xp} XP</p>
+                {result.breakdown && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Play {result.breakdown.base}
+                    {result.breakdown.score > 0 && ` · Score +${result.breakdown.score}`}
+                    {result.breakdown.streak > 0 && ` · Streak +${result.breakdown.streak}`}
+                  </p>
+                )}
+                {result.streak !== null && (
+                  <p className="mt-2 text-sm font-semibold text-orange-700 dark:text-orange-400">
+                    <Flame className="inline h-4 w-4 mr-1" aria-hidden />
+                    {result.streak}-day streak. Come back tomorrow to keep it going!
+                  </p>
+                )}
+              </div>
+            )}
+
+            {result.newBadges.length > 0 && (
+              <div className="rounded-xl border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-950 p-4 space-y-2">
+                <p className="font-bold text-yellow-900 dark:text-yellow-100">New badge unlocked!</p>
+                <div className="flex flex-wrap justify-center gap-3">
+                  {result.newBadges.map((name) => {
+                    const b = BADGE_SHELF.find((x) => x.name === name);
+                    return (
+                      <div key={name} className="text-center">
+                        <div className="text-4xl" aria-hidden>{b?.emoji ?? '🎖️'}</div>
+                        <p className="text-xs font-semibold text-yellow-900 dark:text-yellow-100">{name}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            <div className="pt-4">
-              <p className="text-sm text-muted-foreground">
-                Current Streak: <span className="font-bold text-orange-500">{progress?.currentStreak} days 🔥</span>
+            <div className="rounded-xl bg-muted/60 p-4 text-left text-sm">
+              <p className="font-semibold text-foreground">Use it in real life</p>
+              <p className="text-muted-foreground mt-1">
+                <span className="font-medium" style={{ color: PURPLE }}>{meta.skill}:</span> {meta.useIt}
               </p>
             </div>
+
+            {!result.practice && (
+              <p className="text-sm text-muted-foreground">
+                Tomorrow: {tomorrow.emoji} <span className="font-semibold">{tomorrow.title}</span>
+              </p>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button className="flex-1 text-white" style={{ background: PURPLE }} onClick={() => setResult(null)}>
+                Done
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={startPractice}>
+                Play a practice round
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ---- Home --------------------------------------------------------------
+
+  const meta = GAME_META[todaysGame];
+  const streak = liveStreak(progress, today);
+  const week = weekKeys(today);
+  const nextGoal = STREAK_GOALS.find((g) => g.days > streak);
+  const tomorrow = GAME_META[tomorrowGame];
+  const dateLabel = new Date(`${today}T00:00:00Z`).toLocaleDateString(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+
+  let streakNote: string;
+  if (doneToday) streakNote = 'Streak safe for today. See you tomorrow!';
+  else if (streak > 0) streakNote = `Play today to keep your ${streak}-day streak alive!`;
+  else if (progress.longestStreak > 0) streakNote = `Start a new streak today. Your best is ${progress.longestStreak} days.`;
+  else streakNote = 'Play today to start your streak.';
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-5">
+      {/* Today's game */}
+      <section className="relative overflow-hidden rounded-2xl p-5 sm:p-7 text-white" style={{ background: PURPLE }}>
+        <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full opacity-40" style={{ background: BLUE }} />
+        <div className="relative space-y-4">
+          <p className="text-sm text-white/85">Today's Challenge · {dateLabel}</p>
+          <div className="flex items-center gap-4">
+            <div className="text-6xl" aria-hidden>{meta.emoji}</div>
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold">{meta.title}</h2>
+              <p className="text-white/90">{meta.tagline}</p>
+            </div>
           </div>
-          <div className="flex justify-center pt-4">
-            <Button onClick={() => setShowResults(false)} className="w-full">
-              Awesome! 🚀
+          <div className="flex flex-wrap gap-2 text-xs font-medium">
+            <span className="rounded-full bg-white/20 px-3 py-1">⏱ About 2 minutes</span>
+            <span className="rounded-full bg-white/20 px-3 py-1">⭐ 20+ XP</span>
+            <span className="rounded-full bg-white/20 px-3 py-1">🧠 {meta.skill}</span>
+          </div>
+
+          {doneToday ? (
+            <div className="rounded-xl bg-white/15 p-4 space-y-3">
+              <p className="font-semibold flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" aria-hidden /> You played today. Nice work!
+              </p>
+              <p className="text-sm text-white/90">Tomorrow: {tomorrow.emoji} {tomorrow.title}</p>
+              <Button variant="secondary" onClick={startPractice}>Play a practice round (no XP)</Button>
+            </div>
+          ) : (
+            <Button size="lg" variant="secondary" className="w-full sm:w-auto font-bold" onClick={startToday}>
+              Play now
             </Button>
+          )}
+          <p className="text-xs text-white/80">
+            Just for fun! Games like this don't change your Cognitive Profile. Your assessments do that.
+          </p>
+        </div>
+      </section>
+
+      {/* Streak */}
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950">
+              <Flame className="h-7 w-7 text-orange-600" aria-hidden />
+            </div>
+            <div className="flex-1">
+              <p className="text-2xl font-bold text-foreground leading-none">
+                {streak} <span className="text-base font-medium text-muted-foreground">day streak</span>
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">{streakNote}</p>
+            </div>
+            <div className="text-right text-sm">
+              <p className="font-bold text-foreground flex items-center gap-1 justify-end">
+                <Star className="h-4 w-4 text-yellow-500" aria-hidden /> {progress.totalPoints}
+              </p>
+              <p className="text-xs text-muted-foreground">total XP</p>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          <ol className="grid grid-cols-7 gap-1.5" aria-label="This week">
+            {week.map((key, i) => {
+              const done = progress.completedDays.includes(key);
+              const isToday = key === today;
+              const future = key > today;
+              return (
+                <li key={key} className="text-center">
+                  <div
+                    role="img"
+                    aria-label={`${WEEKDAY_NAMES[i]}: ${done ? 'played' : future ? 'coming up' : isToday ? 'today' : 'missed'}`}
+                    className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-bold ${
+                      done ? 'text-white border-transparent' : isToday ? 'border-[#6B4C9A] text-[#6B4C9A]' : 'border-muted text-muted-foreground'
+                    }`}
+                    style={done ? { background: GREEN } : undefined}
+                  >
+                    {done ? '✓' : ''}
+                  </div>
+                  <p className={`mt-1 text-xs ${isToday ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+                    {WEEKDAY_LETTERS[i]}
+                  </p>
+                </li>
+              );
+            })}
+          </ol>
+
+          {nextGoal && (
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-foreground">
+                  Next reward: <span className="font-semibold">{nextGoal.badge}</span>
+                </span>
+                <span className="text-muted-foreground">{streak}/{nextGoal.days} days</span>
+              </div>
+              <Progress value={Math.min(100, (streak / nextGoal.days) * 100)} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                {nextGoal.days - streak} more {nextGoal.days - streak === 1 ? 'day' : 'days'} in a row.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Badges */}
+      <Card>
+        <CardContent className="p-5 space-y-3">
+          <h3 className="font-semibold text-foreground">Badges to collect</h3>
+          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {BADGE_SHELF.map((b) => {
+              const got = b.earned(progress);
+              return (
+                <li
+                  key={b.name}
+                  className={`rounded-xl border-2 p-3 text-center ${got ? 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950' : 'border-dashed border-muted'}`}
+                >
+                  <div className={`text-3xl ${got ? '' : 'grayscale opacity-40'}`} aria-hidden>
+                    {got ? b.emoji : <Lock className="h-7 w-7 mx-auto text-muted-foreground" />}
+                  </div>
+                  <p className={`text-sm font-semibold mt-1 ${got ? 'text-yellow-900 dark:text-yellow-100' : 'text-foreground'}`}>{b.name}</p>
+                  <p className="text-xs text-muted-foreground">{got ? 'Unlocked!' : b.how}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Reminders */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border px-4 py-3">
+        <div className="flex items-center gap-2 text-sm text-foreground">
+          <Bell className="h-4 w-4 text-muted-foreground" aria-hidden />
+          <label htmlFor="challenge-reminder">Reminders</label>
+        </div>
+        <Select
+          value={progress.notificationFrequency}
+          onValueChange={(value) => handleReminderChange(value as ChallengeProgress['notificationFrequency'])}
+        >
+          <SelectTrigger id="challenge-reminder" className="w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="daily">Every day</SelectItem>
+            <SelectItem value="weekly">Every week</SelectItem>
+            <SelectItem value="monthly">Every month</SelectItem>
+            <SelectItem value="off">Off</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
-
-  function renderChallengeContent() {
-    if (!todayChallenge) return null;
-
-    switch (todayChallenge.type) {
-      case 'questions':
-        return (
-          <div className="space-y-6">
-            {todayChallenge.content.questions.map((q: any, qIndex: number) => (
-              <div key={qIndex} className="p-4 bg-white dark:bg-gray-900 rounded-xl border-2 border-indigo-200 dark:border-indigo-900 shadow-xs">
-                {q.domainLabel && (
-                  <Badge variant="outline" className="mb-2 text-[#6B4C9A] bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800 font-bold text-[11px]">
-                    {q.domainLabel}
-                  </Badge>
-                )}
-                <p className="font-semibold mb-4 text-gray-900 dark:text-white text-sm">
-                  {qIndex + 1}. {q.question}
-                </p>
-                <RadioGroup
-                  name={`question-${qIndex}`}
-                  value={selectedAnswers[qIndex]?.toString()}
-                  onValueChange={(value) => setSelectedAnswers({ ...selectedAnswers, [qIndex]: parseInt(value) })}
-                >
-                  {q.options.map((option: string, optIndex: number) => (
-                    <div key={optIndex} className="flex items-center space-x-2 mb-2 bg-[rgba(0,0,0,0)]">
-                      <RadioGroupItem value={optIndex.toString()} id={`q${qIndex}-opt${optIndex}`} />
-                      <Label htmlFor={`q${qIndex}-opt${optIndex}`} className="cursor-pointer text-gray-900">
-                        {option}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            ))}
-          </div>
-        );
-
-      case 'puzzle':
-        return (
-          <div className="p-6 bg-white rounded-lg border-2 border-purple-200">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="text-xl font-bold text-purple-700">
-                {todayChallenge.content.title}
-              </h3>
-              {todayChallenge.content.kolbAlignment && (
-                <Badge variant="outline" className="text-xs border-purple-300 text-purple-700 bg-purple-50">
-                  Kolb: {todayChallenge.content.kolbAlignment}
-                </Badge>
-              )}
-            </div>
-            <p className="text-gray-700 mb-4">{todayChallenge.content.description}</p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
-              <p className="text-sm text-yellow-800">
-                <strong>💡 Hint:</strong> {todayChallenge.content.hint}
-              </p>
-            </div>
-            <div>
-              <Label htmlFor="puzzle-answer" className="mb-2 block text-gray-900">
-                Your Answer:
-              </Label>
-              <input
-                id="puzzle-answer"
-                type="text"
-                value={puzzleAnswer}
-                onChange={(e) => setPuzzleAnswer(e.target.value)}
-                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
-                placeholder="Type your answer here..."
-              />
-            </div>
-          </div>
-        );
-
-      case 'reflection':
-        return (
-          <div className="p-6 bg-white rounded-lg border-2 border-cyan-200">
-            <h3 className="text-xl font-bold mb-3 text-cyan-700">
-              Today's Reflection
-            </h3>
-            <p className="text-gray-700 mb-4 italic">"{todayChallenge.content.prompt}"</p>
-            <div>
-              <Label htmlFor="reflection-text" className="mb-2 block text-gray-900">
-                Your Reflection (minimum {todayChallenge.content.minWords} words):
-              </Label>
-              <Textarea
-                id="reflection-text"
-                value={reflectionText}
-                onChange={(e) => setReflectionText(e.target.value)}
-                className="min-h-[150px] border-2 border-gray-300 focus:border-cyan-500"
-                placeholder="Share your thoughts..."
-              />
-              <p className="text-sm text-gray-500 mt-2">
-                Word count: {reflectionText.trim().split(/\s+/).filter(w => w.length > 0).length} / {todayChallenge.content.minWords}
-              </p>
-            </div>
-          </div>
-        );
-
-      case 'practical':
-        return (
-          <div className="p-6 bg-white rounded-lg border-2 border-green-200">
-            <h3 className="text-xl font-bold mb-3 text-green-700">
-              {todayChallenge.content.title}
-            </h3>
-            <p className="text-gray-700 mb-4">{todayChallenge.content.task}</p>
-            <div className="space-y-3">
-              <p className="font-semibold text-sm text-gray-600">Complete these steps:</p>
-              {todayChallenge.content.checkboxes.map((checkbox: string, index: number) => (
-                <div key={index} className="flex items-start gap-3 p-3 bg-green-50 rounded border border-green-200">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-700">{checkbox}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-300">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={practicalCompleted}
-                  onChange={(e) => setPracticalCompleted(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                />
-                <span className="font-semibold text-gray-900">
-                  I've completed this practical challenge
-                </span>
-              </label>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  }
-}
-
-function getChallengeTypeLabel(type: string): string {
-  switch (type) {
-    case 'questions':
-      return '📝 Thinking Questions';
-    case 'puzzle':
-      return '🧩 Brain Teaser';
-    case 'reflection':
-      return '💭 Daily Reflection';
-    case 'practical':
-      return '🎯 Practical Challenge';
-    default:
-      return 'Daily Challenge';
-  }
-}
-
-function getChallengeIcon(type: string) {
-  switch (type) {
-    case 'questions':
-      return <Brain className="h-6 w-6 text-indigo-500" />;
-    case 'puzzle':
-      return <Lightbulb className="h-6 w-6 text-purple-500" />;
-    case 'reflection':
-      return <Sparkles className="h-6 w-6 text-cyan-500" />;
-    case 'practical':
-      return <Target className="h-6 w-6 text-green-500" />;
-    default:
-      return <Brain className="h-6 w-6" />;
-  }
-}
-
-function getBadgeEmoji(badge: string): string {
-  if (badge.includes('7-Day')) return '🔥';
-  if (badge.includes('30-Day')) return '💯';
-  if (badge.includes('100-Day')) return '👑';
-  if (badge.includes('First')) return '⭐';
-  if (badge.includes('Master')) return '🎓';
-  if (badge.includes('Legend')) return '🏆';
-  return '🎖️';
-}
-
-function getTimeUntilMidnight(): string {
-  const now = new Date();
-  const midnight = new Date();
-  midnight.setHours(24, 0, 0, 0);
-  
-  const diff = midnight.getTime() - now.getTime();
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  
-  return `${hours}h ${minutes}m`;
 }
