@@ -376,7 +376,6 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
   const streak = liveStreak(progress, today);
   const week = weekKeys(today);
   const nextGoal = STREAK_GOALS.find((g) => g.days > streak);
-  const firstName = userName?.split(' ')[0] || 'there';
   const tomorrow = GAME_META[tomorrowGame];
   const dateLabel = new Date(`${today}T00:00:00Z`).toLocaleDateString(undefined, {
     weekday: 'long',
@@ -397,7 +396,7 @@ export function DailyChallengeTab({ userId, userName, userAge }: DailyChallengeT
       <section className="relative overflow-hidden rounded-2xl p-5 sm:p-7 text-white" style={{ background: PURPLE }}>
         <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full opacity-40" style={{ background: BLUE }} />
         <div className="relative space-y-4">
-          <p className="text-sm text-white/85">Hi {firstName}! Today's Challenge · {dateLabel}</p>
+          <p className="text-sm text-white/85">Today's Challenge · {dateLabel}</p>
           <div className="flex items-center gap-4">
             <div className="text-6xl" aria-hidden>{meta.emoji}</div>
             <div>

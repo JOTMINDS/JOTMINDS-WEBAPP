@@ -81,6 +81,7 @@ const ACTIVITY_BANK: Record<string, {
 };
 
 const FALLBACK = ACTIVITY_BANK.metacognition;
+const VALID_DIMENSIONS = Object.keys(ACTIVITY_BANK);
 
 function generatePlan(opts: {
   userId: string; dimensionId: string; tier: string;
@@ -137,9 +138,23 @@ app.post('/generate', async (c) => {
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
   const body = await c.req.json();
   const lengthDays = body.lengthDays === 14 ? 14 : 7;
+  const dimensionId = VALID_DIMENSIONS.includes(body.dimensionId) ? body.dimensionId : 'metacognition';
+
+  // One active plan per skill: hand back the one the student already has.
+  const existingPlans = (await kv.getByPrefix(`skillplan:${user.id}:`)) ?? [];
+  const existing = existingPlans.find((p: any) => p.dimensionId === dimensionId && p.status === 'active');
+  if (existing) {
+    if (body.sourceCareer && existing.sourceCareer !== body.sourceCareer) {
+      existing.sourceCareer = body.sourceCareer;
+      existing.updatedAt = new Date().toISOString();
+      await kv.set(`skillplan:${user.id}:${existing.planId}`, existing);
+    }
+    return c.json({ plan: existing, existing: true });
+  }
+
   const plan = generatePlan({
     userId: user.id,
-    dimensionId: body.dimensionId ?? 'metacognition',
+    dimensionId,
     tier: body.tier ?? 'adult',
     lengthDays,
     sourceResultId: body.sourceResultId ?? '',
@@ -160,10 +175,21 @@ app.post('/:planId/complete-day', async (c) => {
   if (!plan) return c.json({ error: 'Not found' }, 404);
   const activity = plan.activities.find((a: any) => a.day === day);
   if (!activity) return c.json({ error: 'Invalid day' }, 400);
-  activity.completed = true;
-  activity.completedAt = new Date().toISOString();
-  plan.currentDay = Math.min(day + 1, plan.lengthDays);
-  if (plan.activities.every((a: any) => a.completed)) plan.status = 'completed';
+
+  // Days unlock in order: you can only finish the first day that is not done yet.
+  const firstOpen = plan.activities.find((a: any) => !a.completed);
+  if (!activity.completed && firstOpen && activity.day > firstOpen.day) {
+    return c.json({ error: `Finish Day ${firstOpen.day} first.` }, 400);
+  }
+
+  if (!activity.completed) {
+    activity.completed = true;
+    activity.completedAt = new Date().toISOString();
+  }
+  // currentDay always points at the first day still to do, and never moves backwards.
+  const nextOpen = plan.activities.find((a: any) => !a.completed);
+  plan.currentDay = nextOpen ? nextOpen.day : plan.lengthDays;
+  if (!nextOpen) plan.status = 'completed';
   plan.updatedAt = new Date().toISOString();
   await kv.set(key, plan);
   return c.json({ plan });
