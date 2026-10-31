@@ -30,6 +30,7 @@ import { FeedbackTab } from './StudentDashboardTabs/FeedbackTab';
 import { ProfileTab } from './StudentDashboardTabs/ProfileTab';
 import { RecommendationsTab } from './StudentDashboardTabs/RecommendationsTab';
 import { SchoolPortalTab } from './StudentDashboardTabs/SchoolPortalTab';
+import { AssessmentsTab } from './StudentDashboardTabs/AssessmentsTab';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { toast } from 'sonner';
 import { formatMonthYear, formatDate, formatChartDate } from '../utils/dateFormat';
@@ -112,6 +113,7 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
   const [showingCognitiveProfile, setShowingCognitiveProfile] = useState(false);
   const [showingCareerRecommendations, setShowingCareerRecommendations] = useState(false);
   const [cognitiveProfile, setCognitiveProfile] = useState<CognitiveProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   // Student email address management
   const [studentEmail, setStudentEmail] = useState(user.email || '');
@@ -320,6 +322,8 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
     } catch (e: any) {
       console.log('[StudentDashboard] No cognitive profile yet:', e.message);
       setCognitiveProfile(null);
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -543,6 +547,14 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
   };
 
   const thinkingStylesAssessment = getThinkingStylesAssessment();
+
+  // Opens the extra thinking assessment that matches the student's level (same flows as the Home tab)
+  const startLevelAssessment = () => {
+    if (thinkingStylesAssessment === 'JHS') setShowJHSAssessment(true);
+    else if (thinkingStylesAssessment === 'SHS') setShowSHSAssessment(true);
+    else if (thinkingStylesAssessment === 'Adult') setShowAdultAssessment(true);
+    else if (thinkingStylesAssessment === 'Children') setShowChildrenAssessment(true);
+  };
 
   // Question bank for the Learning and Decision assessments follows the student's grade
   // (education level) first, so it matches what their class is assigned. Age is only a fallback.
@@ -796,11 +808,13 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
     }
   ];
 
+  const activeNavLabel = studentNavGroups.flatMap(g => g.items).find(item => item.id === activeTab)?.label;
+
   const headerContent = (
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-          {activeTab.replace('-', ' ')}<TabTitle help={STUDENT_TAB_HELP[activeTab]}>{null}</TabTitle>
+          {activeNavLabel || activeTab.replace('-', ' ')}<TabTitle help={STUDENT_TAB_HELP[activeTab]}>{null}</TabTitle>
         </h2>
         {user.className && (
           <Badge variant="outline" className="border-[#1E8A6E] text-[#1E8A6E]">
@@ -2113,10 +2127,21 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
           )}
 
           <TabsContent value="track-record" className="space-y-6">
-            <AssessmentHistory 
-              assessments={assessments}
-              onViewReport={(assessment) => setViewingReport(assessment)}
-            />
+            {isChild ? (
+              <AssessmentHistory
+                assessments={assessments}
+                onViewReport={(assessment) => setViewingReport(assessment)}
+              />
+            ) : (
+              <AssessmentsTab
+                assessments={assessments}
+                loading={loading}
+                coreCount={getCoreCompletedCount()}
+                level={thinkingStylesAssessment === 'JHS' || thinkingStylesAssessment === 'SHS' || thinkingStylesAssessment === 'Adult' ? thinkingStylesAssessment : null}
+                onStart={(key) => (key === 'level' ? startLevelAssessment() : setActiveAssessment(key))}
+                onViewReport={(assessment) => setViewingReport(assessment)}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="reflections" className="space-y-6">
@@ -2142,11 +2167,16 @@ export function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
             setActiveTab={setActiveTab}
             calculateAge={calculateAge}
             onAvatarChange={setAvatarUrl}
+            cognitiveProfile={cognitiveProfile}
+            profileLoading={profileLoading}
+            onOpenFullProfile={() => setShowingCognitiveProfile(true)}
+            onOpenCareers={() => setShowingCareerRecommendations(true)}
+            onViewAssessment={(assessment) => setViewingReport(assessment)}
           />
-          
+
           {/* School Profile Tab */}
           <TabsContent value="school-profile" className="space-y-6">
-            <SchoolPortalTab user={user} assessments={assessments} />
+            <SchoolPortalTab user={user} assessments={assessments} onNavigate={setActiveTab} />
           </TabsContent>
 
           {/* Recommendations Tab */}
