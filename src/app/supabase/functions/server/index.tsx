@@ -1327,6 +1327,11 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
       return c.json({ success: true, students: [] });
     }
 
+    // ?slim=1 (sent by the mobile app) leaves out each student's answer history and the stored
+    // profile fields a teacher list never shows (avatar, parent PIN, ...). A large class otherwise
+    // comes to several megabytes, which phones on weak connections fail to download.
+    const slim = c.req.query('slim') === '1';
+
     console.log(`[Backend] Fetching students for teacher ${user.id} at school: ${schoolName}`);
 
     // Get all users and filter by school and role
@@ -1395,11 +1400,29 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
             type: assessmentType === 'learning' ? 'kolb' : assessmentType === 'thinking' ? 'sternberg' : assessmentType === 'decision' ? 'dual-process' : assessmentType,
             completed: true,
             completedAt: assessment.completedAt,
-            responses: assessment.answers || assessment.responses || [],
+            responses: slim ? [] : (assessment.answers || assessment.responses || []),
             score: score
           };
         });
-        
+
+        if (slim) {
+          return {
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            role: student.role,
+            school: student.school,
+            studentCode: student.studentCode,
+            classId: student.classId,
+            className: student.className,
+            status: student.status,
+            dateOfBirth: student.dateOfBirth,
+            age: student.age,
+            educationLevel: student.educationLevel,
+            assessments: transformedAssessments
+          };
+        }
+
         return {
           ...student,
           assessments: transformedAssessments
