@@ -41,9 +41,9 @@ export function SchoolPortalTab({ user, assessments, onNavigate }: SchoolPortalT
   const teachers = [...new Set(assignments.map(a => a.teacherName).filter(Boolean))];
   const teacherName = user.teacherName || teachers.join(', ');
 
+  // The banner already names the school and class; list the class only when there is no school to put it under
   const facts: Array<{ icon: LucideIcon; label: string; value?: string }> = [
-    { icon: Building2, label: 'School', value: schoolName },
-    { icon: Users, label: 'Class', value: user.className },
+    { icon: Users, label: 'Class', value: schoolName ? undefined : user.className },
     { icon: GraduationCap, label: user.teacherName ? 'Class teacher' : 'Teacher', value: teacherName },
     { icon: BookOpen, label: 'Level', value: user.educationLevel },
     { icon: Calendar, label: 'Joined', value: user.createdAt ? formatMonthYear(user.createdAt) : undefined },

@@ -78,14 +78,16 @@ function AssessmentCard({ slot, record, onStart, onView }: {
             <Calendar className="h-3.5 w-3.5" /> {formatDate(record.completedAt)}
           </p>
           {parts.length > 0 && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {parts.map(p => (
-                <div key={p.key} className="flex items-center gap-2 text-xs">
-                  <span className="w-28 shrink-0 truncate text-muted-foreground">{p.label}</span>
-                  <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
+                <div key={p.key} className="space-y-1">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-muted-foreground">{p.label}</span>
+                    <span className="tabular-nums font-medium">{p.pct}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${p.pct}%`, backgroundColor: slot.color }} />
                   </div>
-                  <span className="w-9 text-right tabular-nums">{p.pct}%</span>
                 </div>
               ))}
             </div>
@@ -157,7 +159,7 @@ function ProfileChange() {
           <LineChart data={points} margin={{ top: 5, right: 16, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
             <XAxis dataKey="n" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} stroke="var(--border)" />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} stroke="var(--border)" />
+            <YAxis domain={[(min: number) => Math.max(0, Math.floor(min - 5)), (max: number) => Math.min(100, Math.ceil(max + 5))]} tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} stroke="var(--border)" />
             <Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.date || ''} />
             <Line type="monotone" dataKey="Overall" stroke="#6B4C9A" strokeWidth={2.5} dot={{ r: 4, fill: '#6B4C9A' }} />
           </LineChart>
@@ -211,7 +213,7 @@ export function AssessmentsTab({ assessments, loading, coreCount, level, onStart
       <div className="grid grid-cols-3 gap-3">
         {tiles.map(t => (
           <div key={t.label} className="rounded-xl border bg-card p-3 text-center">
-            <p className="text-lg sm:text-2xl font-bold text-[#6B4C9A]">{t.value}</p>
+            <p className="text-base sm:text-2xl font-bold text-[#6B4C9A]">{t.value}</p>
             <p className="text-xs text-muted-foreground">{t.label}</p>
           </div>
         ))}
