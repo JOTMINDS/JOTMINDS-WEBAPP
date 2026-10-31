@@ -379,9 +379,15 @@ app.post('/make-server-fc8eb847/send-org-code', async (c) => {
 // Send Teacher Invite Endpoint
 app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
   try {
+    const caller = await verifyAuth(c.req.raw);
+    if (!caller) return c.json({ error: 'Unauthorized' }, 401);
     const { email, institutionName, institutionCode, institutionId } = await c.req.json();
     if (!email || !institutionName || !institutionCode || !institutionId) {
       return c.json({ error: 'Missing required fields' }, 400);
+    }
+    // Only an admin of this institution may invite teachers to it.
+    if (!(await isCallerInstitutionAdmin(getSupabaseClient(true), caller, institutionId))) {
+      return c.json({ error: 'Forbidden' }, 403);
     }
     
     const token = crypto.randomUUID();
@@ -447,20 +453,27 @@ app.post('/make-server-fc8eb847/send-teacher-invite', async (c) => {
 // Send Student Invite Endpoint
 app.post('/make-server-fc8eb847/send-student-invite', async (c) => {
   try {
-    let { email, studentName, teacherName, schoolName, teacherId, institutionId } = await c.req.json();
+    const caller = await verifyAuth(c.req.raw);
+    if (!caller) return c.json({ error: 'Unauthorized' }, 401);
+    let { email, studentName, teacherName, schoolName, institutionId } = await c.req.json();
     
     const supabase = getSupabaseClient(true);
     
-    if (!institutionId && teacherId) {
+    // The institution is the caller's own, never one named by the request: look it up from their approved membership.
+    if (!institutionId) {
       const { data: member } = await supabase
         .from('institution_members')
         .select('institution_id')
-        .eq('user_id', teacherId)
+        .eq('user_id', caller.id)
         .eq('status', 'approved')
+        .limit(1)
         .maybeSingle();
       if (member) {
         institutionId = member.institution_id;
       }
+    }
+    if (institutionId && !(await isCallerInstitutionAdmin(supabase, caller, institutionId)) && !(await isCallerApprovedTeacher(supabase, caller, institutionId))) {
+      return c.json({ error: 'Forbidden' }, 403);
     }
 
     if (!email || !teacherName) {
@@ -1058,6 +1071,46 @@ async function isCallerInstitutionAdmin(supabase: any, user: any, institutionId:
   }
 
   return false;
+}
+
+/** The caller is an approved member (any role) of the institution, or its admin. */
+async function isCallerInstitutionMember(supabase: any, user: any, institutionId: string): Promise<boolean> {
+  if (!user || !institutionId) return false;
+  if (await isCallerInstitutionAdmin(supabase, user, institutionId)) return true;
+  const { data: member } = await supabase
+    .from('institution_members')
+    .select('status')
+    .eq('institution_id', institutionId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  return member?.status === 'approved';
+}
+
+/** The caller is an approved teacher of the institution. */
+async function isCallerApprovedTeacher(supabase: any, user: any, institutionId: string): Promise<boolean> {
+  if (!user || !institutionId) return false;
+  const { data: member } = await supabase
+    .from('institution_members')
+    .select('role, status')
+    .eq('institution_id', institutionId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  return member?.status === 'approved' && member?.role === 'teacher';
+}
+
+/** Finds a class by id (database first, then the key-value copy) with the two fields ownership depends on. */
+async function findClassOwnership(supabase: any, classId: string): Promise<{ institutionId: string | null; teacherId: string | null } | null> {
+  const { data: row } = await supabase.from('classes').select('institution_id, class_teacher_id').eq('id', classId).maybeSingle();
+  if (row) return { institutionId: row.institution_id ?? null, teacherId: row.class_teacher_id ?? null };
+  const kvClass: any = await kv.get(`class:${classId}`);
+  if (kvClass) return { institutionId: kvClass.institutionId ?? null, teacherId: kvClass.classTeacherId ?? null };
+  return null;
+}
+
+/** May the caller change or delete this class: its class teacher, or an admin of its institution. */
+async function callerOwnsClass(supabase: any, user: any, owner: { institutionId: string | null; teacherId: string | null }): Promise<boolean> {
+  if (owner.teacherId && owner.teacherId === user.id) return true;
+  return owner.institutionId ? await isCallerInstitutionAdmin(supabase, user, owner.institutionId) : false;
 }
 
 // Approve Institution Member Endpoint (Service Role guarantees persistence)
@@ -3208,8 +3261,16 @@ app.get('/make-server-fc8eb847/institutions/classes', async (c) => {
     const institutionId = url.searchParams.get('institutionId');
 
     const supabaseAdmin = getSupabaseClient(true);
+    // Class codes are join codes, so a caller sees only their own institution's classes and the classes they teach.
+    if (institutionId && !(await isCallerInstitutionMember(supabaseAdmin, user, institutionId))) {
+      return c.json({ error: 'Forbidden' }, 403);
+    }
+    const { data: myMemberships } = await supabaseAdmin.from('institution_members').select('institution_id').eq('user_id', user.id).eq('status', 'approved');
+    const myInstitutions = new Set((myMemberships || []).map((m: any) => m.institution_id));
+    if (institutionId) myInstitutions.add(institutionId);   // already verified above (covers an admin who has no member row)
+    const mayList = (cls: any) => !!cls && (cls.classTeacherId === user.id || (cls.institutionId && myInstitutions.has(cls.institutionId)));
     const { data: rawData } = await supabaseAdmin.from('kv_store_fc8eb847').select('key, value').like('key', 'class:%');
-    let classes = (rawData || []).map((d: any) => d.value).filter(Boolean);
+    let classes = (rawData || []).map((d: any) => d.value).filter(mayList);
 
     if (institutionId) {
       classes = classes.filter((cls: any) => cls.institutionId === institutionId);
@@ -3221,7 +3282,9 @@ app.get('/make-server-fc8eb847/institutions/classes', async (c) => {
       if (institutionId) {
         query = query.eq('institution_id', institutionId);
       }
-      const { data: dbClasses } = await query;
+      const { data: allDbClasses } = await query;
+      const dbClasses = (allDbClasses || []).filter((row: any) =>
+        row.class_teacher_id === user.id || (row.institution_id && myInstitutions.has(row.institution_id)));
       if (dbClasses && dbClasses.length > 0) {
         const merged = new Map();
         classes.forEach((c: any) => merged.set(c.id, c));
@@ -3264,6 +3327,24 @@ app.post('/make-server-fc8eb847/institutions/classes', async (c) => {
       return c.json({ error: 'Missing required class data' }, 400);
     }
     const classId = classData.id || `cls_${Date.now()}`;
+    const supabaseGuard = getSupabaseClient(true);
+    // Saving over an existing class needs to own it; a new class must be the caller's own (or an admin's for their institution).
+    const existing = await findClassOwnership(supabaseGuard, classId);
+    if (existing) {
+      if (!(await callerOwnsClass(supabaseGuard, user, existing))) return c.json({ error: 'Forbidden' }, 403);
+      // the owner fields of an existing class are not changed through this route by someone who is not its institution admin
+      if (existing.institutionId && classData.institutionId && classData.institutionId !== existing.institutionId) return c.json({ error: 'Forbidden' }, 403);
+    } else {
+      const targetInstitution = classData.institutionId || null;
+      if (targetInstitution) {
+        const admin = await isCallerInstitutionAdmin(supabaseGuard, user, targetInstitution);
+        const ownTeacher = (await isCallerApprovedTeacher(supabaseGuard, user, targetInstitution)) && (!classData.classTeacherId || classData.classTeacherId === user.id);
+        if (!admin && !ownTeacher) return c.json({ error: 'Forbidden' }, 403);
+      } else if (classData.classTeacherId && classData.classTeacherId !== user.id) {
+        // an independent class is the caller's own; an admin creating on behalf of a teacher names the institution
+        return c.json({ error: 'Forbidden' }, 403);
+      }
+    }
     const toSave = {
       ...classData,
       id: classId,
@@ -3322,6 +3403,11 @@ app.delete('/make-server-fc8eb847/institutions/classes/:id', async (c) => {
     const classId = c.req.param('id');
     if (!classId) {
       return c.json({ error: 'Missing class ID' }, 400);
+    }
+    const guardClient = getSupabaseClient(true);
+    const owner = await findClassOwnership(guardClient, classId);
+    if (owner && !(await callerOwnsClass(guardClient, user, owner))) {
+      return c.json({ error: 'Forbidden' }, 403);
     }
     await kv.del(`class:${classId}`);
 
@@ -5014,32 +5100,7 @@ app.get('/make-server-fc8eb847/organization/members', async (c) => {
 });
 
 // Debug endpoint - Get all results for a user (for debugging only)
-app.get('/make-server-fc8eb847/debug/user-results/:userId', async (c) => {
-  try {
-    const user = await verifyAuth(c.req.raw);
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const targetUserId = c.req.param('userId');
-    
-    // Get all results for this user
-    const allResults = await kv.getByPrefix(`result:${targetUserId}:`);
-    
-    console.log(`[DEBUG] Found ${allResults.length} results for user ${targetUserId}`);
-    console.log(`[DEBUG] Results:`, JSON.stringify(allResults, null, 2));
-    
-    return c.json({ 
-      success: true, 
-      userId: targetUserId,
-      count: allResults.length,
-      results: allResults 
-    });
-  } catch (error) {
-    console.log(`Error in debug endpoint: ${error}`);
-    return c.json({ error: 'Failed to fetch debug data' }, 500);
-  }
-});
+// (the debug/user-results route was removed: it returned any user's results to any signed-in caller)
 
 // MIGRATION: Fix professional's organization code
 app.post('/make-server-fc8eb847/admin/fix-professional-org-code', async (c) => {
