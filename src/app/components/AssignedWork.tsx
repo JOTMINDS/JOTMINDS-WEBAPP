@@ -4,7 +4,7 @@ import { Badge } from './ui/badge';
 import { ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
 import { getMyAssignments, getChildrenAssignments } from '../utils/api';
 
-interface AssignedItem {
+export interface AssignedItem {
   id: string;
   teacherName: string;
   content: Record<string, any>;
@@ -21,7 +21,7 @@ const SECTIONS: Array<[string, string]> = [
   ['homework', 'Homework'],
 ];
 
-function AssignmentCard({ item }: { item: AssignedItem }) {
+export function AssignmentCard({ item }: { item: AssignedItem }) {
   const [open, setOpen] = useState(false);
   const total = SECTIONS.reduce((n, [key]) => n + (item.content?.[key]?.length || 0), 0);
   return (
