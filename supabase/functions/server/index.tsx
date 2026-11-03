@@ -3641,6 +3641,26 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
 
     const supabaseAdmin = getSupabaseClient(true);
 
+    // ?slim=1 (sent by the mobile app) leaves out each student's answer history and the stored
+    // profile fields a teacher list never shows (avatar, parent PIN, ...). A large class otherwise
+    // comes to several megabytes, which phones on weak connections fail to download.
+    const slim = c.req.query('slim') === '1';
+    const forClient = (list: any[]) => !slim ? list : list.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      email: s.email,
+      role: s.role,
+      school: s.school,
+      studentCode: s.studentCode,
+      classId: s.classId,
+      className: s.className,
+      status: s.status,
+      dateOfBirth: s.dateOfBirth,
+      age: s.age,
+      educationLevel: s.educationLevel,
+      assessments: (s.assessments || []).map((a: any) => ({ ...a, responses: [] })),
+    }));
+
     // Helper function to determine primary style from scores
     const determinePrimaryStyle = (scores: any, type: string) => {
       if (type === 'kolb') {
@@ -3854,7 +3874,7 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
 
       const allStudents = [...institutionStudents, ...legacyWithAssessments];
       console.log(`[Backend] Found ${institutionStudents.length} students via institution_members + ${legacyWithAssessments.length} legacy KV-linked students for teacher ${user.id}`);
-      return c.json({ success: true, students: allStudents });
+      return c.json({ success: true, students: forClient(allStudents) });
     }
 
     // ── Strategy 2: KV-based lookup (legacy / non-institution teachers) ──
@@ -3931,7 +3951,7 @@ app.get('/make-server-fc8eb847/teacher/students', async (c) => {
       })
     );
 
-    return c.json({ success: true, students: studentsWithAssessments });
+    return c.json({ success: true, students: forClient(studentsWithAssessments) });
   } catch (error) {
     console.log(`Error fetching teacher students: ${error}`);
     return c.json({ error: 'Failed to fetch students' }, 500);
