@@ -1532,12 +1532,8 @@ const getSupabaseClient = (serviceRole = false) => {
 
 // Helper to verify authentication
 const verifyAuth = async (request: Request) => {
-  // Log all auth-related headers for debugging
-  console.log('[verifyAuth] === Authentication Debug ===');
-  console.log('[verifyAuth] All headers:', Object.fromEntries(request.headers.entries()));
-  // Check Authorization header for regular Supabase JWTs
+  // Check Authorization header for regular Supabase JWTs (headers and tokens are never written to the logs)
   const accessToken = request.headers.get('Authorization')?.split(' ')[1];
-  console.log(`[verifyAuth] Authorization token:`, accessToken?.substring(0, 30) + '...' || 'NOT PRESENT');
   
   if (!accessToken) {
     console.log(`[verifyAuth] ✗ No access token provided`);
