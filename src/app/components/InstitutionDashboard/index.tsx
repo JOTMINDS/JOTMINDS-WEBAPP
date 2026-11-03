@@ -189,7 +189,9 @@ export function InstitutionDashboard({
     if (!institution) return;
     try {
       const allUsers = getAllUsers();
-      setAllPlatformUsers(allUsers);
+      // Show the device's copy only if nothing is showing yet. Replacing richer data with it on every
+      // refresh made classes, codes and counts drop out until the server answered.
+      setAllPlatformUsers(prev => (prev.length > 0 ? prev : allUsers));
 
       const { members: updatedMembers, profiles: fetchedProfiles } = await getInstitutionMembers(institution.id);
       
@@ -207,6 +209,7 @@ export function InstitutionDashboard({
 
       // Fetch assessments for all members and store in state
       let fetchedAssessments: any[] = [];
+      let allResultsLoaded = true;
       if (updatedMembers.length > 0) {
         const memberIds = updatedMembers.map(m => m.userId);
         const chunkSize = 50;
@@ -224,10 +227,12 @@ export function InstitutionDashboard({
             fetchedAssessments.push(...normalized);
           } catch (e) {
             console.error('Failed to fetch member assessments:', e);
+            allResultsLoaded = false;
           }
         }
       }
-      setMemberAssessments(fetchedAssessments);
+      // A failed batch must not wipe the results already on screen (that showed zeros until the next refresh).
+      if (allResultsLoaded) setMemberAssessments(fetchedAssessments);
 
       // Check if the user is an institution admin/co-admin before applying teacher-only filter
       const isInstitutionAdmin = institution.adminId === user.id
@@ -248,9 +253,10 @@ export function InstitutionDashboard({
           }
           return false;
         });
-        setMembers(teacherStudents);
+        setMembers(prev => (teacherStudents.length === 0 && prev.length > 0 ? prev : teacherStudents));
       } else {
-        setMembers(updatedMembers);
+        // An empty answer while members are already showing is a failed lookup, not a school with nobody in it.
+        setMembers(prev => (updatedMembers.length === 0 && prev.length > 0 ? prev : updatedMembers));
       }
 
       const invitations = await getAllInvitations(institution.id);
