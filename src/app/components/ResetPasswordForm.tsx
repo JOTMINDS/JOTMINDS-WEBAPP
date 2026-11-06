@@ -136,7 +136,7 @@ export function ResetPasswordForm({ onSuccess, onBack, email }: ResetPasswordFor
         console.warn('[ResetPassword] Supabase auth updateUser notice:', sbErr);
       }
 
-      if (!updated && !email) {
+      if (!updated) {
         setError('Failed to reset password. Please request a new reset code.');
         setLoading(false);
         return;

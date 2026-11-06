@@ -6232,6 +6232,53 @@ app.post('/make-server-fc8eb847/auth/reset-password', async (c) => {
   }
 });
 
+// Reset password after the emailed 6-digit code was verified (/verify-otp leaves
+// the same email-ownership marker that /signup relies on).
+app.post('/make-server-fc8eb847/reset-password', async (c) => {
+  try {
+    const { email, newPassword } = await c.req.json();
+    if (!email || !newPassword) {
+      return c.json({ error: 'Email and new password are required' }, 400);
+    }
+    if (String(newPassword).length < 6) {
+      return c.json({ error: 'Password must be at least 6 characters' }, 400);
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const markerKey = `otpverified:${cleanEmail}`;
+    const marker = await kv.get(markerKey);
+    if (!marker || Date.now() - marker.verifiedAt > 10 * 60 * 1000) {
+      return c.json({ error: 'Verification expired. Please request a new reset code.' }, 403);
+    }
+
+    const supabase = getSupabaseClient(true);
+    let userId: string | null = null;
+    for (let page = 1; !userId; page++) {
+      const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+      if (error) throw error;
+      const users = data?.users || [];
+      userId = users.find((u: any) => u.email?.toLowerCase() === cleanEmail)?.id || null;
+      if (users.length < 1000) break;
+    }
+    if (!userId) {
+      return c.json({ error: 'No account found for this email.' }, 404);
+    }
+
+    const { error: updateError } = await supabase.auth.admin.updateUserById(userId, { password: newPassword });
+    if (updateError) {
+      console.error('[reset-password] update failed:', updateError.message);
+      return c.json({ error: updateError.message }, 400);
+    }
+
+    await kv.del(markerKey);
+    console.log(`[reset-password] Password reset for user: ${userId}`);
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('[reset-password] Server error:', error);
+    return c.json({ error: 'Failed to reset password' }, 500);
+  }
+});
+
 // ============= OAUTH CONSENT ROUTES =============
 
 // Generate OAuth consent session
