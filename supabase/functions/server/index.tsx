@@ -226,6 +226,8 @@ app.post('/make-server-fc8eb847/send-otp', async (c) => {
     } else {
       const err = await response.json();
       console.error('[send-otp] Resend API error:', err);
+      // Don't leave a cooldown behind for a code that was never delivered.
+      if (existing) await kv.set(key, existing); else await kv.del(key);
       return c.json({ error: 'Failed to send OTP via Resend', details: err }, 500);
     }
   } catch (error: any) {
