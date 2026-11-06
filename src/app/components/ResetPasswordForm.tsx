@@ -103,6 +103,7 @@ export function ResetPasswordForm({ onSuccess, onBack, email }: ResetPasswordFor
       }
 
       let updated = false;
+      let backendError = '';
 
       // 1. Try backend reset-password endpoint if email is available
       if (email) {
@@ -117,6 +118,8 @@ export function ResetPasswordForm({ onSuccess, onBack, email }: ResetPasswordFor
             if (data.success) {
               updated = true;
             }
+          } else {
+            backendError = (await res.json().catch(() => ({}))).error || '';
           }
         } catch (backendErr) {
           console.warn('[ResetPassword] Backend reset endpoint error:', backendErr);
@@ -137,7 +140,7 @@ export function ResetPasswordForm({ onSuccess, onBack, email }: ResetPasswordFor
       }
 
       if (!updated) {
-        setError('Failed to reset password. Please request a new reset code.');
+        setError(backendError || 'Failed to reset password. Please request a new reset code.');
         setLoading(false);
         return;
       }
